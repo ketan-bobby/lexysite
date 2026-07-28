@@ -20,6 +20,7 @@ jobs:
 
           script: |
             set -e
+            export CI=true
 
             cd ${{ secrets.APP_DIR }}
 
@@ -44,7 +45,7 @@ jobs:
             node -v
             pnpm -v
 
-            pnpm install
+            pnpm install --force
 
             pnpm --filter @workspace/api-server run build
 
