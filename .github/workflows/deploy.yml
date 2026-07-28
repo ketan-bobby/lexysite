@@ -24,6 +24,8 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            chmod 777 compile.sh
+
             ./compile.sh
 
             pm2 restart all
