@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS password_reset_tokens_one_active_per_user_idx;

@@ -1,0 +1,1392 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lexy Recruiter Guide</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm 20mm 16mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: #1a202c;
+        font-size: 10.5pt;
+        line-height: 1.55;
+        margin: 0;
+      }
+      h1 {
+        font-size: 21pt;
+        color: #0f172a;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 15pt;
+        color: #0f172a;
+        border-bottom: 2.5px solid #6d28d9;
+        padding-bottom: 5px;
+        margin: 28px 0 12px;
+        page-break-after: avoid;
+      }
+      h3 {
+        font-size: 12pt;
+        color: #4c1d95;
+        margin: 18px 0 6px;
+        page-break-after: avoid;
+      }
+      h4 {
+        font-size: 10.5pt;
+        color: #334155;
+        margin: 12px 0 4px;
+        page-break-after: avoid;
+      }
+      p {
+        margin: 6px 0;
+      }
+      ul,
+      ol {
+        margin: 6px 0 10px;
+        padding-left: 20px;
+      }
+      li {
+        margin: 3px 0;
+      }
+      .cover {
+        text-align: center;
+        padding-top: 150px;
+        page-break-after: always;
+      }
+      .cover img {
+        width: 220px;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      }
+      .cover h1 {
+        font-size: 30pt;
+        margin-top: 36px;
+      }
+      .cover .sub {
+        font-size: 13pt;
+        color: #64748b;
+        margin-top: 10px;
+      }
+      .cover .meta {
+        margin-top: 60px;
+        color: #94a3b8;
+        font-size: 10pt;
+      }
+      .toc {
+        page-break-after: always;
+      }
+      .toc ol {
+        columns: 2;
+        column-gap: 30px;
+        font-size: 10pt;
+      }
+      .tip,
+      .warn,
+      .note {
+        border-radius: 8px;
+        padding: 9px 13px;
+        margin: 10px 0;
+        font-size: 9.8pt;
+        page-break-inside: avoid;
+      }
+      .tip {
+        background: #f0fdf4;
+        border-left: 4px solid #16a34a;
+      }
+      .warn {
+        background: #fef2f2;
+        border-left: 4px solid #dc2626;
+      }
+      .note {
+        background: #eef2ff;
+        border-left: 4px solid #6d28d9;
+      }
+      .tip b:first-child,
+      .warn b:first-child,
+      .note b:first-child {
+        display: block;
+        margin-bottom: 2px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+        font-size: 9.5pt;
+        page-break-inside: avoid;
+      }
+      th {
+        background: #f5f3ff;
+        color: #4c1d95;
+        text-align: left;
+      }
+      th,
+      td {
+        border: 1px solid #e2e8f0;
+        padding: 6px 9px;
+        vertical-align: top;
+      }
+      code,
+      .kbd {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-family: Menlo, Consolas, monospace;
+        font-size: 9pt;
+      }
+      .pill {
+        display: inline-block;
+        background: #ede9fe;
+        color: #5b21b6;
+        border-radius: 999px;
+        padding: 1px 9px;
+        font-size: 8.5pt;
+        font-weight: 600;
+      }
+      .section {
+        page-break-before: always;
+      }
+      .steps li {
+        margin: 5px 0;
+      }
+      .muted {
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ COVER ============ -->
+    <div class="cover">
+      <img src="LOGO_SRC" alt="Lexy logo" />
+      <h1>Lexy Recruiter Guide</h1>
+      <div class="sub">The complete, module-by-module handbook for the Lexy AI Hiring Platform</div>
+      <div class="meta">
+        Version 1.0 &nbsp;•&nbsp; July 2026 &nbsp;•&nbsp; For recruiters, recruiter admins &amp;
+        hiring managers
+      </div>
+    </div>
+
+    <!-- ============ TOC ============ -->
+    <div class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li>Welcome &amp; how Lexy works</li>
+        <li>Getting started: login, roles &amp; navigation</li>
+        <li>Dashboard &amp; Morning Report</li>
+        <li>Work Orders (Jobs)</li>
+        <li>The Ideal Candidate Profile (ICP)</li>
+        <li>Sourcing &amp; AI Agent Runs</li>
+        <li>The Pipeline Board (Kanban)</li>
+        <li>Candidates &amp; the 360° Profile</li>
+        <li>Resume Screening &amp; Verification</li>
+        <li>Outreach, Approvals &amp; the Inbox</li>
+        <li>AI Interviews (end to end)</li>
+        <li>Recruiter Intro Videos</li>
+        <li>Evaluation Reports &amp; Hiring-Manager Sharing</li>
+        <li>Talent Match, Rediscovery &amp; Internal Talent</li>
+        <li>Engagement &amp; Anti-Ghost</li>
+        <li>Analytics, Calibration &amp; Fairness</li>
+        <li>Market Intelligence &amp; Ask Lexy</li>
+        <li>LINX Queue (agency ↔ client collaboration)</li>
+        <li>Team, Settings &amp; Subscription</li>
+        <li>Compliance, Privacy &amp; Candidate Consent</li>
+        <li>Troubleshooting &amp; FAQ</li>
+        <li>Glossary</li>
+      </ol>
+    </div>
+
+    <!-- ============ 1 ============ -->
+    <h2>1. Welcome &amp; how Lexy works</h2>
+    <p>
+      Lexy is an AI-powered hiring platform. You stay in control of every decision; Lexy's team of
+      AI agents does the heavy lifting: reading job descriptions, finding and scoring candidates,
+      drafting outreach, running structured screening interviews, verifying profiles, and writing
+      client-ready evaluation reports.
+    </p>
+    <h3>The agent team behind the scenes</h3>
+    <table>
+      <tr>
+        <th>Agent</th>
+        <th>What it does</th>
+        <th>Where you see it</th>
+      </tr>
+      <tr>
+        <td>ICP Agent</td>
+        <td>
+          Reads your job description and extracts an Ideal Candidate Profile — skills, seniority,
+          certifications, disqualifiers, location.
+        </td>
+        <td>Work Order → ICP tab</td>
+      </tr>
+      <tr>
+        <td>Sourcing Agent</td>
+        <td>
+          Searches internal talent first, then external providers, and ranks matches against the
+          ICP.
+        </td>
+        <td>Work Order → Sourcing tab, Agent Hub</td>
+      </tr>
+      <tr>
+        <td>Screening Agent</td>
+        <td>
+          Screens resumes against the role, producing a recommendation and matched/missing skills.
+        </td>
+        <td>Candidate profile → Resume Screening</td>
+      </tr>
+      <tr>
+        <td>Outreach Agent</td>
+        <td>
+          Drafts personalized first-touch emails in your brand voice. Drafts wait for your approval
+          by default.
+        </td>
+        <td>Outreach → Pending approvals</td>
+      </tr>
+      <tr>
+        <td>Conversation Agent</td>
+        <td>Classifies inbound replies (interested, not now, unsubscribe) and drafts responses.</td>
+        <td>Inbox</td>
+      </tr>
+      <tr>
+        <td>Interview Agent ("Lexy")</td>
+        <td>
+          Conducts live, voice-based structured interviews, grades every answer, and writes a
+          summary.
+        </td>
+        <td>Interview room, interview reports</td>
+      </tr>
+      <tr>
+        <td>Verification Agent</td>
+        <td>Cross-checks candidate claims (identity, employment consistency) and raises flags.</td>
+        <td>Candidate profile → Verification</td>
+      </tr>
+      <tr>
+        <td>Anti-Ghost Agent</td>
+        <td>Watches for silence and no-shows, and nudges at the right moments.</td>
+        <td>Anti-Ghost, Work Order → Anti-Ghost tab</td>
+      </tr>
+      <tr>
+        <td>Intelligence Agent</td>
+        <td>Continuously accrues a multi-dimension candidate score as new evidence arrives.</td>
+        <td>Candidate profile → Intelligence</td>
+      </tr>
+      <tr>
+        <td>Digest Agent</td>
+        <td>Compiles your Morning Report and daily priorities.</td>
+        <td>Dashboard</td>
+      </tr>
+    </table>
+    <div class="note">
+      <b>Golden rule</b> Lexy proposes, you decide. Outreach requires your approval before sending,
+      stage moves you make manually always win over agent gates, and every AI evaluation is
+      presented as evidence for <i>your</i> decision — never a verdict.
+    </div>
+
+    <!-- ============ 2 ============ -->
+    <h2 class="section">2. Getting started: login, roles &amp; navigation</h2>
+    <h3>Logging in</h3>
+    <ol class="steps">
+      <li>Open your Lexy workspace URL in a modern browser (Chrome, Edge, Safari, Firefox).</li>
+      <li>
+        Sign in with your work email and password, or via your company's Microsoft single sign-on if
+        enabled.
+      </li>
+      <li>
+        If you don't have an account, ask your Recruiter Admin to invite you from <b>Team</b>.
+        You'll receive an invite email with an activation link.
+      </li>
+    </ol>
+    <h3>Roles &amp; what each can see</h3>
+    <table>
+      <tr>
+        <th>Role</th>
+        <th>Access</th>
+      </tr>
+      <tr>
+        <td><span class="pill">Recruiter</span></td>
+        <td>
+          Works only with candidates and pipelines tied to the work orders <b>assigned to them</b>.
+          Full workflow access on those reqs: sourcing, outreach, interviews, evaluations.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="pill">Recruiter Admin</span></td>
+        <td>
+          Everything a recruiter has, across the whole team, plus the <b>Approvals</b> queue,
+          <b>Team</b> management (invite, edit roles), and governance/decision queues (view). Can
+          manage line staff in their own tenant.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="pill">Tenant Admin</span></td>
+        <td>Adds subscription/billing management and tenant-level settings.</td>
+      </tr>
+      <tr>
+        <td><span class="pill">Hiring Manager</span></td>
+        <td>
+          A focused view: dashboard, open roles, candidates awaiting their approval or interview
+          feedback. Cannot trigger sourcing or change AI settings.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="pill">Platform Admin</span></td>
+        <td>
+          Lexy staff only: client management, platform candidate pool, system health, fairness
+          dashboards.
+        </td>
+      </tr>
+    </table>
+    <div class="warn">
+      <b>Recruiter visibility is assignment-based</b> If you can't find a candidate or work order
+      you expect to see, check whether the req is assigned to you. Ask your Recruiter Admin to
+      assign it — visibility follows assignment, by design.
+    </div>
+    <h3>Finding your way around</h3>
+    <ul>
+      <li>
+        <b>Sidebar</b> (left, always dark): Dashboard, Work Orders, Approvals (admins), Candidates,
+        Internal Talent, Sourcing, Outreach &amp; Inbox, Engagement, Anti-Ghost, Analytics, Market
+        Intel, LINX Queue, AI Job Queue, Team, Settings.
+      </li>
+      <li>
+        <b>Light / dark theme</b>: toggle in the header. The interview room always stays dark for
+        candidates by design.
+      </li>
+      <li>
+        <b>Scores everywhere</b>: a score shown as <code>—</code> means "not evaluated yet", which
+        is different from a real 0. Lexy never fakes a number.
+      </li>
+    </ul>
+
+    <!-- ============ 3 ============ -->
+    <h2 class="section">3. Dashboard &amp; Morning Report</h2>
+    <p>The Dashboard is your daily home base.</p>
+    <h3>Morning Report</h3>
+    <ul>
+      <li>
+        A daily digest compiled by the Digest Agent: what happened overnight, what needs your
+        attention today, and direct links ("doors") into each item.
+      </li>
+      <li>
+        Every count in the report matches exactly what you'll see when you click through — same
+        filters, same compliance rules. If a count excludes erased or do-not-contact candidates, the
+        report says so.
+      </li>
+    </ul>
+    <h3>KPI cards</h3>
+    <ul>
+      <li><b>Roles in Motion</b> — active work orders with pipeline activity.</li>
+      <li><b>Total Candidates</b> — your visible bench (excludes erased/DNC records).</li>
+      <li><b>AI Interview Sessions</b> — completed and in-flight structured interviews.</li>
+      <li><b>Hires</b> — placements recorded via the offer funnel.</li>
+    </ul>
+    <p class="muted">
+      Clicking a KPI opens the exact list behind the number — the count and the list always agree.
+    </p>
+    <h3>Other dashboard widgets</h3>
+    <ul>
+      <li>
+        <b>AI Command Center</b> — start a sourcing run or screening task without leaving the
+        dashboard.
+      </li>
+      <li><b>Pipeline Funnel</b> — candidate distribution across stages, clickable per stage.</li>
+      <li>
+        <b>Hire-Ready Candidates</b> — your highest-scored, furthest-progressed people right now.
+      </li>
+      <li>
+        <b>Agent Activity Feed</b> — a real-time, truthful log of what the agents actually did (with
+        real timestamps). "Agents online" reflects genuinely active runs and live interviews.
+      </li>
+      <li>
+        <b>Live Run view</b> — while a sourcing/screening run is executing, the dashboard can take
+        over with the latest events streaming in; the elapsed clock stops when the run finishes.
+      </li>
+    </ul>
+
+    <!-- ============ 4 ============ -->
+    <h2 class="section">4. Work Orders (Jobs)</h2>
+    <p>
+      A Work Order is a hiring requisition: the job, its ideal candidate profile, its pipeline, its
+      interviews and its analytics — all in one workspace.
+    </p>
+    <h3>Creating a work order</h3>
+    <ol class="steps">
+      <li>Go to <b>Work Orders → New Work Order</b>.</li>
+      <li>
+        Paste or write the job description. The richer the JD, the better the ICP the AI extracts.
+      </li>
+      <li>
+        Fill in title, department, location, work type (on-site / hybrid / <b>remote</b> — remote
+        roles skip location filtering in sourcing), and compensation if known.
+      </li>
+      <li>
+        Optionally record your <b>client's own requisition number</b> — Lexy also assigns its own
+        internal Work Order # automatically; the two are kept separate and both are searchable.
+      </li>
+      <li>
+        Submit. Depending on your tenant's policy the work order may enter <b>Pending Approval</b>.
+      </li>
+    </ol>
+    <h3>The approval gate</h3>
+    <div class="warn">
+      <b>Nothing runs on an unapproved job</b> While a work order is in <i>pending approval</i>,
+      <i>draft</i>, or <i>rejected</i> status, Lexy blocks all candidate actions on it: no sourcing,
+      no outreach, no interview invites, no interview links — even previously issued links stop
+      working. Approvers (Recruiter Admins / Hiring Managers) act from the <b>Approvals</b> queue.
+      Once approved, everything unlocks.
+    </div>
+    <h3>Work order tabs</h3>
+    <table>
+      <tr>
+        <th>Tab</th>
+        <th>What you do there</th>
+      </tr>
+      <tr>
+        <td>Overview</td>
+        <td>Status, department, assigned recruiter, aggregate stats, approval state.</td>
+      </tr>
+      <tr>
+        <td>ICP</td>
+        <td>Review and edit the AI-extracted Ideal Candidate Profile (Section 5).</td>
+      </tr>
+      <tr>
+        <td>Sourcing</td>
+        <td>Trigger agent runs, review sourced matches, opt in to platform recommendations.</td>
+      </tr>
+      <tr>
+        <td>Pipeline</td>
+        <td>The Kanban board (Section 7).</td>
+      </tr>
+      <tr>
+        <td>Candidates</td>
+        <td>
+          Flat list of every candidate linked to this job, with a live search box that filters by
+          name, title, company, source or email as you type.
+        </td>
+      </tr>
+      <tr>
+        <td>Interviews</td>
+        <td>Sessions for this req: schedule, copy invite links, watch status, open reports.</td>
+      </tr>
+      <tr>
+        <td>Anti-Ghost</td>
+        <td>Pipeline health score, stale-candidate and no-show alerts, nurture settings.</td>
+      </tr>
+    </table>
+    <div class="tip">
+      <b>Tip</b> The header of each candidate row shows their <b>match score</b> pill. Bands: 80+
+      (strong), 60–79 (good), below 60 (stretch). A dash means not scored yet.
+    </div>
+
+    <!-- ============ 5 ============ -->
+    <h2 class="section">5. The Ideal Candidate Profile (ICP)</h2>
+    <p>
+      The ICP is the contract between you and the sourcing/screening agents. Time invested here pays
+      back across the entire pipeline.
+    </p>
+    <h3>What the ICP contains</h3>
+    <ul>
+      <li><b>Must-have skills</b> and <b>nice-to-have skills</b> (chips you can add/remove).</li>
+      <li><b>Seniority &amp; years of experience</b> ranges.</li>
+      <li><b>Certifications</b> required or preferred.</li>
+      <li><b>Disqualifiers</b> — hard "no" criteria the screener enforces.</li>
+      <li>
+        <b>Location preference</b> — a first-class field. If you clear it, it means "no location
+        preference" (Lexy will <i>not</i> silently fall back to the job's address). Out-of-area
+        candidates are kept but flagged, never hidden.
+      </li>
+    </ul>
+    <h3>Editing the ICP</h3>
+    <ol class="steps">
+      <li>Open <b>Work Order → ICP</b>. Each section renders as editable chips.</li>
+      <li>Click a chip to remove it; use the add field to insert new criteria.</li>
+      <li>
+        Changes save against the latest ICP version — edits are immediate and used by the very next
+        sourcing or screening run.
+      </li>
+    </ol>
+    <div class="note">
+      <b>Who can edit</b> Recruiters can edit the ICP of reqs assigned to them. On unassigned reqs,
+      ICP changes are admin-only.
+    </div>
+    <div class="tip">
+      <b>Tip for remote roles</b> Set the job's work type to <i>remote</i> — external sourcing will
+      then search without any location constraint. For located roles, sourcing automatically widens
+      city → region → country if the exact city returns nothing, and labels each result with the
+      tier it came from.
+    </div>
+
+    <!-- ============ 6 ============ -->
+    <h2 class="section">6. Sourcing &amp; AI Agent Runs</h2>
+    <h3>Internal first</h3>
+    <p>
+      Lexy always looks at your own bench before spending on external search. External sourcing only
+      unlocks after the internal review step is completed for the req — this is enforced by the
+      platform, not just suggested.
+    </p>
+    <h3>Starting a run</h3>
+    <ol class="steps">
+      <li>
+        From the Work Order's <b>Sourcing</b> tab (or the dashboard Command Center), click
+        <b>Run Sourcing</b>.
+      </li>
+      <li>
+        If a run is already in progress for that job, Lexy opens the existing run instead of
+        starting a duplicate.
+      </li>
+      <li>
+        Watch progress live: each step (ICP check, internal search, external providers, scoring,
+        dedup) streams as events.
+      </li>
+    </ol>
+    <h3>What a run produces</h3>
+    <ul>
+      <li>
+        A ranked list of sourced candidates with match scores, source labels (internal bench, PDL,
+        web search) and a location-tier label for external results.
+      </li>
+      <li>
+        Automatic deduplication — one candidate record per person per tenant, keyed by email. If a
+        sourced person matches an existing record you'll be prompted to merge rather than creating a
+        duplicate.
+      </li>
+      <li>
+        New candidates land in the <b>Sourced</b> lane of the pipeline and are automatically
+        resume-screened when a resume is available.
+      </li>
+    </ul>
+    <h3>Platform Recommendations</h3>
+    <p>
+      If you opt a job in (Sourcing tab toggle), Lexy's platform pool can push consenting,
+      privacy-screened candidates into your pipeline. Candidates control their own discoverability;
+      you only ever see people who opted in.
+    </p>
+    <h3>Agent Hub &amp; AI Job Queue</h3>
+    <ul>
+      <li>
+        <b>Agent Hub</b> shows each agent's recent runs, success rates and lets you trigger "Run
+        now".
+      </li>
+      <li>
+        <b>AI Job Queue</b> lists queued background AI tasks (screenings, rescores, enrichments) and
+        their statuses. Duplicate work is automatically collapsed.
+      </li>
+      <li>
+        Runs interrupted by a platform restart are labeled <b>interrupted</b>, not failed — just
+        re-run them.
+      </li>
+    </ul>
+
+    <!-- ============ 7 ============ -->
+    <h2 class="section">7. The Pipeline Board (Kanban)</h2>
+    <p>The Pipeline tab is where you move people through the hiring flow.</p>
+    <h3>Lanes</h3>
+    <p>
+      Working lanes follow the typical flow
+      <b>Sourced → Screened/Verified → Outreach → Interview stages → Offer stages → Hired</b>. Exact
+      lane names on your board may vary slightly by workspace configuration (for example,
+      verification and hiring-manager review may appear as their own lanes). Terminal stages don't
+      clutter the board:
+    </p>
+    <ul>
+      <li><b>Hired</b> candidates appear in a celebratory wins strip.</li>
+      <li>
+        <b>Rejected / withdrawn / closed</b> candidates live in the <b>Closed drawer</b> — open it
+        to review or <b>Restore</b> someone back into a working lane.
+      </li>
+    </ul>
+    <h3>Cards</h3>
+    <ul>
+      <li>
+        Each card shows name, current title/company, match score pill, and status badges (screening
+        verdict, verification flag, interview state).
+      </li>
+      <li>
+        <b>Copy interview link</b> right from the card once a session exists — the link is the exact
+        magic link the candidate uses. If your browser blocks the clipboard, Lexy shows the link in
+        a prompt for manual copy.
+      </li>
+      <li>
+        Action buttons advance the offer funnel (offer extended, accepted, declined) and record
+        outcomes for analytics.
+      </li>
+    </ul>
+    <h3>Moving candidates</h3>
+    <ul>
+      <li>Drag a card between lanes, or use the stage menu on the card.</li>
+      <li>
+        <b>Your manual move always wins.</b> If an agent gate would normally hold a candidate (e.g.
+        verification pending before outreach), an explicit recruiter move overrides it.
+      </li>
+      <li>
+        Moving into <b>Interview</b> can trigger the interview invitation flow; moving into
+        <b>Rejected</b> can trigger a brand-voice rejection email.
+      </li>
+      <li>
+        Need a silent move (data cleanup, recording history)? Use <b>“skip automation”</b> in the
+        move dialog — the candidate changes stage with <i>no</i> emails, invites, or agent runs
+        fired.
+      </li>
+    </ul>
+    <h3>Stage automation summary</h3>
+    <table>
+      <tr>
+        <th>Entering stage</th>
+        <th>What Lexy does automatically</th>
+      </tr>
+      <tr>
+        <td>Sourced / linked to job</td>
+        <td>Resume screening runs (if a resume exists); match score computed.</td>
+      </tr>
+      <tr>
+        <td>Verify</td>
+        <td>Verification agent runs for every candidate entering the stage.</td>
+      </tr>
+      <tr>
+        <td>Outreach</td>
+        <td>Outreach agent drafts a personalized email → waits in your approval queue.</td>
+      </tr>
+      <tr>
+        <td>Interview</td>
+        <td>Interview invitation (magic link) can be generated and sent.</td>
+      </tr>
+      <tr>
+        <td>Rejected</td>
+        <td>AI-written, brand-voice rejection email (with a safe template fallback).</td>
+      </tr>
+    </table>
+    <div class="tip">
+      <b>Positive replies auto-advance</b> When a sourced candidate replies positively to outreach,
+      Lexy classifies the reply and can advance them to Interview automatically, sending the
+      interview invite in the same motion.
+    </div>
+
+    <!-- ============ 8 ============ -->
+    <h2 class="section">8. Candidates &amp; the 360° Profile</h2>
+    <h3>The Candidates list</h3>
+    <ul>
+      <li>
+        Your full visible bench, grouped into <b>Matched</b> (has accrued intelligence) and
+        <b>Unmatched</b>.
+      </li>
+      <li>Filters for stage, source, activity. "Active" is derived from real recent activity.</li>
+      <li>
+        Erased (GDPR) and do-not-contact candidates are excluded everywhere — lists, counts and
+        analytics alike.
+      </li>
+    </ul>
+    <h3>The 360° profile</h3>
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Details</th>
+      </tr>
+      <tr>
+        <td>Header</td>
+        <td>
+          Name, title, company, contact info, <b>Fit Score ring</b> (0–100 hire probability),
+          current stage, trust/verification badge.
+        </td>
+      </tr>
+      <tr>
+        <td>Intelligence</td>
+        <td>
+          The accrued multi-dimension score (technical, domain, trajectory, engagement, and more).
+          Dimensions not yet evidenced show <code>—</code>. This accrued score is the source of
+          truth on every surface — point-in-time match scores are only a fallback.
+        </td>
+      </tr>
+      <tr>
+        <td>Resume Screening</td>
+        <td>
+          Extracted work history, matched vs. missing skills, AI recommendation and reasoning.
+        </td>
+      </tr>
+      <tr>
+        <td>Interviews</td>
+        <td>
+          Every session: recording player, per-question grades, transcript, proctoring summary.
+        </td>
+      </tr>
+      <tr>
+        <td>Verification</td>
+        <td>
+          Identity/employment consistency results and any flags. The badge appears only when a real
+          verification result exists.
+        </td>
+      </tr>
+      <tr>
+        <td>Timeline</td>
+        <td>
+          Chronological event feed: stage changes, emails sent/received, interviews, notes, outcome
+          events.
+        </td>
+      </tr>
+      <tr>
+        <td>Connection strength</td>
+        <td>
+          An engagement score that only grows through real completed interactions. A zero is honest
+          — it means no completed engagement yet, not an error.
+        </td>
+      </tr>
+    </table>
+    <div class="note">
+      <b>Trust gate</b> When a candidate's trust score is low or unverified, primary surfaces lead
+      with the gate badge so you see the caveat before the score.
+    </div>
+    <h3>Adding candidates manually</h3>
+    <ul>
+      <li>
+        <b>Add candidate</b> — form entry; if the email matches an existing record you'll get a
+        merge prompt instead of a duplicate.
+      </li>
+      <li>
+        <b>Bulk import</b> — CSV/spreadsheet upload; supports flagging rows as current employees for
+        the internal-mobility bench.
+      </li>
+      <li>
+        <b>Parse CVs</b> — drop resumes; Lexy extracts profiles and links them to the job (only on
+        approved jobs).
+      </li>
+    </ul>
+
+    <!-- ============ 9 ============ -->
+    <h2 class="section">9. Resume Screening &amp; Verification</h2>
+    <h3>Resume screening</h3>
+    <ul>
+      <li>
+        Runs automatically whenever a candidate with a resume is linked to a job — sourced, imported
+        or manually added.
+      </li>
+      <li>
+        Produces: recommendation (advance / review / reject), matched skills, missing skills,
+        summary, and evidence quotes.
+      </li>
+      <li>
+        Skills found in the resume are merged into the candidate's skill set, and the match score is
+        recomputed after enrichment.
+      </li>
+      <li>
+        The screening verdict drives the default Kanban lane — but your manual placement always
+        overrides it, and a human rejection is never overwritten by a re-screen.
+      </li>
+    </ul>
+    <h3>Fairness by construction</h3>
+    <div class="note">
+      <b>What the AI never sees</b> Every AI scorer runs behind a fairness firewall: personally
+      identifying details (name, photo, contact info, demographic hints) are redacted before
+      scoring, and every scoring prompt carries a fairness directive. Candidates with sparse
+      profiles are scored on the skills they show — absence of a job title is not treated as a
+      mismatch.
+    </div>
+    <h3>Verification</h3>
+    <ul>
+      <li>Runs automatically for every candidate entering the <b>Verify</b> stage.</li>
+      <li>
+        Checks profile consistency (employment claims, public footprint) and produces a verdict with
+        flags.
+      </li>
+      <li>
+        While it runs, the profile shows a live "verifying…" indicator; the badge appears only when
+        a real result lands.
+      </li>
+      <li>A pending verification never blocks you: an explicit stage move overrides the gate.</li>
+    </ul>
+
+    <!-- ============ 10 ============ -->
+    <h2 class="section">10. Outreach, Approvals &amp; the Inbox</h2>
+    <h3>How outreach works</h3>
+    <ol class="steps">
+      <li>A candidate enters the Outreach stage (or you enroll them in a sequence).</li>
+      <li>
+        The Outreach Agent writes a personalized email using your tenant's brand voice, documents
+        and the job context.
+      </li>
+      <li>
+        The draft lands in <b>Pending approvals</b>. Nothing sends without you (unless your admin
+        has explicitly enabled autopilot for a campaign).
+      </li>
+    </ol>
+    <h3>Reviewing drafts</h3>
+    <ul>
+      <li>
+        Open <b>Outreach → Pending</b>. Each draft shows the candidate, job, subject and body.
+      </li>
+      <li><b>Edit in place</b> — click into subject or body, adjust, and save. Then approve.</li>
+      <li><b>Approve</b> queues the send; <b>Discard</b> drops the draft.</li>
+      <li>
+        A candidate with no usable email can't be approved — the "no email on file" gate is
+        non-overridable; add an email to the profile first.
+      </li>
+    </ul>
+    <h3>Sequences &amp; campaigns</h3>
+    <ul>
+      <li>
+        Build multi-step sequences with delays and A/B subject variants in the Campaign Manager.
+      </li>
+      <li>Step messages honor the same approval rules; edits are per-message.</li>
+      <li>Every send is deduplicated — a candidate never receives the same first touch twice.</li>
+    </ul>
+    <h3>The Inbox</h3>
+    <ul>
+      <li>
+        Replies flow into a shared, tenant-wide inbox — every reply is captured even if a req has no
+        assigned recruiter.
+      </li>
+      <li>
+        The Conversation Agent classifies each reply: <i>Interested</i>, <i>Not now</i>,
+        <i>Question</i>, <i>Unsubscribe</i>.
+      </li>
+      <li>
+        <b>Interested</b> replies can auto-advance the candidate to Interview and trigger the
+        invite.
+      </li>
+      <li>
+        <b>Unsubscribe</b> adds the candidate to the Do-Not-Contact list immediately; DNC is
+        enforced platform-wide.
+      </li>
+      <li>
+        Where your tenant uses Microsoft 365, replies to recruiter mailboxes sync into Lexy
+        automatically.
+      </li>
+    </ul>
+    <div class="warn">
+      <b>Kill switch</b> Admins have a tenant-wide kill switch that halts every AI-generated message
+      instantly — use it if anything ever looks wrong with automated sending.
+    </div>
+
+    <!-- ============ 11 ============ -->
+    <h2 class="section">11. AI Interviews (end to end)</h2>
+    <p>
+      Lexy conducts live, voice-based structured interviews. The interviewer is always "Lexy" — a
+      consistent, calibrated persona.
+    </p>
+    <h3>Interview types</h3>
+    <ul>
+      <li><b>Screening interview</b> — role-based structured screen for a specific work order.</li>
+      <li><b>Technical interview</b> — includes coding/answer submissions where configured.</li>
+      <li>
+        <b>Mock &amp; baseline interviews</b> — candidate-initiated practice from their portal
+        (results visible to the candidate only).
+      </li>
+    </ul>
+    <h3>Inviting a candidate</h3>
+    <ol class="steps">
+      <li>
+        From the pipeline card, candidate profile, or Work Order → Interviews, choose
+        <b>Invite to interview</b>.
+      </li>
+      <li>
+        Lexy generates a <b>magic link</b> — a private URL that is itself the candidate's
+        credential. No account or password needed.
+      </li>
+      <li>
+        Send it via the built-in email, or click <b>Copy link</b> on the pipeline card to share it
+        yourself.
+      </li>
+      <li>
+        When you generate a link yourself, re-clicking reuses the existing session rather than
+        creating a duplicate. (Invites triggered automatically by a positive outreach reply create
+        their own fresh session.)
+      </li>
+    </ol>
+    <div class="warn">
+      <b>Approval gate applies</b> Interview links only work on approved work orders. If a job is
+      pushed back to pending/rejected, existing links stop working until it's re-approved.
+    </div>
+    <h3>Directing the interview</h3>
+    <ul>
+      <li>
+        In the Work Order's interview settings you can set a <b>focus directive</b> ("probe system
+        design depth") and add <b>custom questions</b> for all interview types.
+      </li>
+      <li>
+        Custom questions are guaranteed to be asked verbatim; they replace some of the generated
+        questions so total length stays the same.
+      </li>
+      <li>Defaults can be set once per job and apply to every session created after.</li>
+    </ul>
+    <h3>What the candidate experiences</h3>
+    <ol class="steps">
+      <li>
+        Opens the magic link → sees the start screen with the job context and, if configured,
+        <b>a personal video message from you</b> (Section 12).
+      </li>
+      <li>
+        Gives explicit consent to AI interviewing and recording — the interview cannot start without
+        it, and revoking mid-interview halts all capture instantly.
+      </li>
+      <li>
+        Grants mic/camera access. Lexy speaks each question aloud; the candidate answers naturally
+        by voice. Works on desktop and mobile, in multiple languages (the session language follows
+        the invite).
+      </li>
+      <li>
+        Long answers are safe: Lexy waits while the candidate is actively speaking and never cuts
+        off mid-thought.
+      </li>
+      <li>
+        Lexy closes the interview gracefully when the conversation reaches a natural farewell.
+      </li>
+    </ol>
+    <h3>After the interview</h3>
+    <ul>
+      <li>
+        <b>Per-question grades</b> — each answer is scored once at completion with reasoning;
+        ungraded items show <code>—</code>, and a genuine 0 shows as 0.
+      </li>
+      <li>
+        <b>Summary &amp; overall score</b>, competency breakdown (calibrated so competency averages
+        can't inflate above the graded overall).
+      </li>
+      <li><b>Recording</b> — full audio/video playback in the candidate profile.</li>
+      <li>
+        <b>Proctoring signals</b> — face presence, gaze, tab switches; the risk level, flags and
+        notes always agree with the same per-signal thresholds shown in the UI.
+      </li>
+      <li>
+        <b>Work authorization</b> — asked as a separate non-scored step, stored as compliance data,
+        never fed to the scorer.
+      </li>
+      <li>
+        On completion the candidate is automatically advanced past the Interview stage in your
+        pipeline.
+      </li>
+      <li>
+        <b>No-shows</b> — an overdue scheduled interview flips to <i>No show</i> automatically and
+        notifies the req owner; Anti-Ghost can nurture from there.
+      </li>
+    </ul>
+
+    <!-- ============ 12 ============ -->
+    <h2 class="section">12. Recruiter Intro Videos</h2>
+    <p>
+      Put a human face on the process: candidates see "A message from your recruiter" before their
+      interview starts.
+    </p>
+    <ol class="steps">
+      <li>Go to <b>Settings → Intro Video</b> (or your profile settings).</li>
+      <li>
+        Upload a photo of yourself and pick a voice/tone. Lexy generates a short, personalized
+        avatar video (per language, cached and reused).
+      </li>
+      <li>Preview the script first, tweak the tone, then generate.</li>
+      <li>
+        Every interview invite for your reqs now shows your video on the candidate's start screen.
+        If generation is unavailable, candidates see a branded Lexy fallback — the interview is
+        never blocked.
+      </li>
+    </ol>
+
+    <!-- ============ 13 ============ -->
+    <h2 class="section">13. Evaluation Reports &amp; Hiring-Manager Sharing</h2>
+    <h3>The Candidate Evaluation Report</h3>
+    <ul>
+      <li>
+        A client-facing report for a specific candidate × role: profile summary, match analysis,
+        interview assessment, verification status, recommendation.
+      </li>
+      <li>
+        Generated automatically the first time you export; it carries a
+        <b>draft notice until you approve it</b>. Approve once you've reviewed — subsequent exports
+        drop the notice.
+      </li>
+      <li>
+        Export as PDF from the candidate page, the interview page, or attach it when sharing with a
+        hiring manager — these surfaces use the same evaluation report (a simpler legacy export
+        exists as a fallback in rare cases).
+      </li>
+    </ul>
+    <h3>Sharing with a Hiring Manager (no login needed)</h3>
+    <ol class="steps">
+      <li>From the candidate profile choose <b>Share with hiring manager</b>.</li>
+      <li>
+        Lexy creates a private, expiring link containing a sanitized snapshot: evaluation, resume,
+        interview highlights. No login required — the link itself is the credential; treat it like a
+        confidential document.
+      </li>
+      <li>
+        The HM can record a decision (advance / reject / discuss) and leave feedback directly in the
+        page.
+      </li>
+      <li>Their decision and comments land in your inbox and on the candidate's timeline.</li>
+    </ol>
+    <div class="tip">
+      <b>Attachments open correctly</b> Resumes attach in their true format (PDF or Word) — Lexy
+      detects the file type so hiring managers never receive an unopenable file.
+    </div>
+
+    <!-- ============ 14 ============ -->
+    <h2 class="section">14. Talent Match, Rediscovery &amp; Internal Talent</h2>
+    <h3>Talent Match</h3>
+    <ul>
+      <li>
+        On a candidate: see every role they fit across your visible reqs, with per-role fit scores.
+      </li>
+      <li>On a job: see the best matches from your existing bench before sourcing externally.</li>
+      <li>
+        Scores are computed against the job's context; where no stored score exists yet, a
+        deterministic signal-based estimate is shown (never a random number).
+      </li>
+    </ul>
+    <h3>Talent Rediscovery</h3>
+    <ul>
+      <li>
+        Surfaces past candidates (silver medalists, previous applicants) who now match a new req.
+      </li>
+      <li>
+        Reading/rediscovering is open across your agency; <b>acting</b> (linking to a req, outreach)
+        requires the req to be assigned to you.
+      </li>
+    </ul>
+    <h3>Internal Talent</h3>
+    <ul>
+      <li>
+        A dedicated internal-mobility search over your own employees and bench (marked via import or
+        the employee toggle on a profile).
+      </li>
+      <li>
+        Strictly firewalled to your tenant pool — internal search never mixes in external or
+        platform candidates.
+      </li>
+      <li>
+        This is also the "internal first" step that unlocks external sourcing spend (Section 6).
+      </li>
+    </ul>
+    <h3>Staleness — fair but honest</h3>
+    <p>
+      Long-inactive candidates gently rank lower in match lists (never hidden, scores never
+      rewritten). Lexy also runs a 6-month check-in program that emails quiet candidates asking them
+      to refresh their status; self-reported job changes re-engage them automatically.
+    </p>
+
+    <!-- ============ 15 ============ -->
+    <h2 class="section">15. Engagement &amp; Anti-Ghost</h2>
+    <h3>Engagement</h3>
+    <ul>
+      <li>
+        Tracks candidate interest signals: email opens/replies, portal activity, interview
+        completion.
+      </li>
+      <li>
+        Feeds the connection-strength score on each profile (only real completed events count).
+      </li>
+    </ul>
+    <h3>Anti-Ghost</h3>
+    <ul>
+      <li>
+        <b>Pipeline Health</b> per work order: a score with the specific candidates dragging it
+        down.
+      </li>
+      <li>
+        Alerts for: no replies after N touches, interview no-shows, stale in-stage candidates.
+      </li>
+      <li>
+        Nurture actions: schedule a follow-up touch (goes through the same approval flow), or hand
+        back to you with a suggested next step.
+      </li>
+      <li>Candidate status check-ins keep long-term bench data fresh automatically.</li>
+    </ul>
+
+    <!-- ============ 16 ============ -->
+    <h2 class="section">16. Analytics, Calibration &amp; Fairness</h2>
+    <h3>Hiring analytics</h3>
+    <ul>
+      <li>
+        <b>Funnel</b> — stage-to-stage conversion for your reqs, split by how candidates entered
+        (sourced vs. applied).
+      </li>
+      <li><b>Source quality</b> — hire-rate and progression by source.</li>
+      <li><b>Outcomes</b> — offers extended/accepted/declined, time-to-hire.</li>
+      <li>
+        All analytics respect the same compliance filters as your lists (erased/DNC candidates are
+        excluded and labeled as such).
+      </li>
+    </ul>
+    <h3>AI calibration</h3>
+    <ul>
+      <li>
+        <b>Override rate</b> — how often your team disagrees with AI recommendations, per agent.
+      </li>
+      <li>
+        <b>Learning insights</b> — where the AI's scoring is drifting from your actual decisions,
+        with suggested adjustments.
+      </li>
+      <li>
+        Per-tenant learned scoring only ever activates after enough evidence <i>and</i> after
+        beating the baseline in a backtest — otherwise Lexy stays on defaults.
+      </li>
+    </ul>
+    <h3>Fairness monitoring</h3>
+    <ul>
+      <li>
+        Adverse-impact monitoring (4/5ths rule) over stage progression, computed on anonymized
+        aggregates.
+      </li>
+      <li>
+        Demographics are firewalled from all scoring; they exist only in aggregate fairness views.
+      </li>
+      <li>Sourcing diversity views are k-anonymized — no individual is ever identifiable.</li>
+    </ul>
+
+    <!-- ============ 17 ============ -->
+    <h2 class="section">17. Market Intelligence &amp; Ask Lexy</h2>
+    <ul>
+      <li><b>Hiring Velocity</b> — how fast similar roles are moving on the platform.</li>
+      <li><b>Candidate Supply</b> — depth of available talent for a skill/region.</li>
+      <li>
+        <b>Comp Signal</b> — salary expectation ranges, built only from cross-tenant aggregates
+        (never individual records).
+      </li>
+      <li><b>Internal Bench</b> — your own availability before you buy externally.</li>
+      <li>
+        <b>Ask Lexy</b> — a natural-language chat over these tools. Every answer cites its data
+        source, and when there isn't enough data Lexy says "no data" rather than guessing.
+      </li>
+    </ul>
+
+    <!-- ============ 18 ============ -->
+    <h2 class="section">18. LINX Queue (agency ↔ client collaboration)</h2>
+    <ul>
+      <li>
+        LINX lets a client tenant send staffing requests to your agency (and vice versa) without
+        sharing full workspaces.
+      </li>
+      <li>
+        Incoming requests appear in the <b>LINX Queue</b> with the role details and requesting
+        party.
+      </li>
+      <li>
+        <b>Accept</b> clones the request into a work order in your own tenant;
+        <b>Decline</b> returns it with a reason.
+      </li>
+      <li>Both sides can see the request status; only the originating side can withdraw it.</li>
+    </ul>
+
+    <!-- ============ 19 ============ -->
+    <h2 class="section">19. Team, Settings &amp; Subscription</h2>
+    <h3>Team (admins)</h3>
+    <ul>
+      <li><b>Invite</b> teammates by email with a role; they activate via the invite link.</li>
+      <li>
+        <b>Edit roles</b> — Recruiter Admins can manage line staff in their own tenant; only higher
+        roles can promote to admin.
+      </li>
+      <li>
+        Assign work orders to recruiters — remember, assignment controls what a recruiter can see.
+      </li>
+      <li>
+        The member count reflects staff only (candidates with portal accounts are never counted as
+        team members).
+      </li>
+    </ul>
+    <h3>Settings</h3>
+    <ul>
+      <li>
+        <b>Brand &amp; voice</b> — company description, tone, documents. This context flavors every
+        candidate-facing email Lexy writes, including rejections.
+      </li>
+      <li><b>Intro video</b> — your personal avatar video (Section 12).</li>
+      <li><b>Interview defaults</b> — per-job focus directives and custom questions.</li>
+      <li><b>Notifications</b> — email digests and reply alerts.</li>
+      <li><b>Theme</b> — light/dark.</li>
+    </ul>
+    <h3>Subscription (tenant admins)</h3>
+    <ul>
+      <li>
+        Country-based subscription with pricing per country; status moves automatically through
+        active → grace → suspended based on paid-through date.
+      </li>
+      <li>Recording a payment is the only manual step; everything else is automatic.</li>
+    </ul>
+
+    <!-- ============ 20 ============ -->
+    <h2 class="section">20. Compliance, Privacy &amp; Candidate Consent</h2>
+    <ul>
+      <li>
+        <b>Interview consent</b> — candidates must explicitly consent before any AI interview
+        capture; revocation stops recording, transcription and scoring immediately, mid-interview.
+      </li>
+      <li>
+        <b>Do Not Contact</b> — one unsubscribe anywhere blocks all future automated contact
+        platform-wide.
+      </li>
+      <li>
+        <b>Erasure (GDPR)</b> — erased candidates vanish from every list, count, export and
+        analytic.
+      </li>
+      <li>
+        <b>Candidate privacy controls</b> — platform-pool candidates control their discoverability;
+        pausing hides them everywhere including from historical "viewed you" style surfaces.
+      </li>
+      <li>
+        <b>Candidate-facing framing</b> — candidates never see raw low scores; their portal shows
+        percentile bands and growth guidance. What you see internally is more detailed than what
+        they see.
+      </li>
+      <li>
+        <b>EEO &amp; work authorization</b> — demographic questions are never asked in interviews;
+        work-authorization capture is separate from scoring.
+      </li>
+      <li>
+        <b>EU AI Act</b> — Lexy maintains decision audit logs, deviation panels and documentation
+        surfaces for regulated-market clients.
+      </li>
+      <li>
+        <b>Data isolation</b> — every tenant's data is isolated; agencies see their client
+        sub-tenants only through explicit hierarchy, and recruiters see only assigned reqs.
+      </li>
+    </ul>
+    <div class="warn">
+      <b>Your responsibilities</b> Treat magic links and HM share links as confidential. Don't paste
+      candidate PII into outside tools. Record real outcomes (offers, hires, rejections) —
+      calibration and fairness monitoring depend on truthful data.
+    </div>
+
+    <!-- ============ 21 ============ -->
+    <h2 class="section">21. Troubleshooting &amp; FAQ</h2>
+    <table>
+      <tr>
+        <th>Symptom</th>
+        <th>Likely cause &amp; fix</th>
+      </tr>
+      <tr>
+        <td>"I can't see a candidate/work order I know exists."</td>
+        <td>The req isn't assigned to you. Ask your Recruiter Admin to assign it.</td>
+      </tr>
+      <tr>
+        <td>"The interview link says the interview isn't available."</td>
+        <td>
+          The work order isn't approved (or was pushed back). Approve it and the link works again.
+        </td>
+      </tr>
+      <tr>
+        <td>"Sourcing found nobody."</td>
+        <td>
+          Location too narrow (Lexy auto-widens, but check the ICP location), or internal review not
+          yet completed for external spend.
+        </td>
+      </tr>
+      <tr>
+        <td>"Outreach draft won't approve."</td>
+        <td>
+          Candidate has no email on file — add one to the profile first. This gate cannot be
+          overridden.
+        </td>
+      </tr>
+      <tr>
+        <td>"A score shows a dash."</td>
+        <td>
+          Not evaluated yet — that's honest, not broken. Trigger the relevant step (screening,
+          interview) to get a score.
+        </td>
+      </tr>
+      <tr>
+        <td>"Work Order Not Found on a job I just had open."</td>
+        <td>
+          You're logged in as a different user in another tab. Log back in as yourself; visibility
+          is per-user.
+        </td>
+      </tr>
+      <tr>
+        <td>"Copy link didn't copy."</td>
+        <td>
+          Your browser blocked clipboard access; Lexy shows the link in a dialog — copy it manually.
+        </td>
+      </tr>
+      <tr>
+        <td>"Candidate says the interview froze."</td>
+        <td>Rare connectivity issue; the session is resumable — have them reopen the same link.</td>
+      </tr>
+      <tr>
+        <td>"Duplicate candidate warning when adding."</td>
+        <td>
+          A record with that email already exists. Choose merge — Lexy never creates duplicates by
+          email.
+        </td>
+      </tr>
+    </table>
+
+    <!-- ============ 22 ============ -->
+    <h2 class="section">22. Glossary</h2>
+    <table>
+      <tr>
+        <th>Term</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>Work Order</td>
+        <td>A hiring requisition/job, with its own pipeline, ICP, interviews and analytics.</td>
+      </tr>
+      <tr>
+        <td>ICP</td>
+        <td>Ideal Candidate Profile — the editable criteria the AI sources and screens against.</td>
+      </tr>
+      <tr>
+        <td>Magic link</td>
+        <td>A private interview URL that acts as the candidate's credential — no login needed.</td>
+      </tr>
+      <tr>
+        <td>Match score</td>
+        <td>A point-in-time fit score for candidate × job (bands: 80+ / 60–79 / &lt;60).</td>
+      </tr>
+      <tr>
+        <td>Intelligence / accrued score</td>
+        <td>
+          The continuously updated multi-dimension candidate score; the source of truth once it
+          exists.
+        </td>
+      </tr>
+      <tr>
+        <td>Fit Score ring</td>
+        <td>The 0–100 hire-probability visual on the candidate profile header.</td>
+      </tr>
+      <tr>
+        <td>DNC</td>
+        <td>Do Not Contact — a platform-wide block on automated contact.</td>
+      </tr>
+      <tr>
+        <td>Sourced candidate</td>
+        <td>A person found by the Sourcing Agent, pending your engagement.</td>
+      </tr>
+      <tr>
+        <td>Platform pool</td>
+        <td>Opt-in candidates discoverable across the platform, privacy-screened.</td>
+      </tr>
+      <tr>
+        <td>Closed drawer</td>
+        <td>Where rejected/withdrawn candidates live off the board; restorable.</td>
+      </tr>
+      <tr>
+        <td>Anti-Ghost</td>
+        <td>The agent + module that detects silence/no-shows and nurtures.</td>
+      </tr>
+      <tr>
+        <td>HM share link</td>
+        <td>An expiring, no-login link giving a hiring manager a sanitized candidate package.</td>
+      </tr>
+      <tr>
+        <td>LINX</td>
+        <td>Cross-tenant staffing request exchange between clients and agencies.</td>
+      </tr>
+      <tr>
+        <td>Morning Report</td>
+        <td>Your daily digest of agent activity and priorities, with honest counts.</td>
+      </tr>
+      <tr>
+        <td>Proctoring</td>
+        <td>Interview integrity signals: face presence, gaze, tab switches.</td>
+      </tr>
+    </table>
+
+    <p class="muted" style="margin-top: 30px; text-align: center">
+      © 2026 Lexy AI • This guide reflects the platform as of July 2026. Features may evolve — the
+      in-app experience is always authoritative.
+    </p>
+  </body>
+</html>

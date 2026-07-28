@@ -1,0 +1,18 @@
+packages:
+  "recharts": "For analytics and hiring funnel charts"
+  "date-fns": "For formatting dates in schedules and activity feeds"
+  "clsx": "For class name merging"
+  "tailwind-merge": "For class name merging"
+  "framer-motion": "For page transitions and interactive elements"
+
+images:
+  - path: "artifacts/lexy/public/images/auth-bg.png"
+    description: "Abstract premium geometric waves in dark navy and indigo, corporate SaaS feel, clean and professional"
+    aspect_ratio: "16:9"
+  - path: "artifacts/lexy/public/images/logo.png"
+    description: "Modern minimalist logo mark for an AI company named Lexy, an abstract brain or sparkle in vibrant indigo, transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - "App uses @workspace/api-client-react for TanStack Query hooks"
+  - "All routes use BASE_URL prefix"

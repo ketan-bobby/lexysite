@@ -1,0 +1,30 @@
+{
+  "_comment": "Written ONLY by a passing run of check:rubric-calibration. Never hand-edit — check:rubric-lockstep (build gate) verifies the live rubric sha against this.",
+  "rubricSha256": "0b82e35fab07a3b8d1d2e67a0e2ef8148cf2e291ee331dbaab98f3caf7fda1b1",
+  "contractSha256": "cd4e2fc349ed7ea704bafa221de55a0329d313b25916d1dafeb334103b38253c",
+  "probedAt": "2026-07-07T22:44:23.676Z",
+  "reps": 2,
+  "narrativeGapMax": 10,
+  "means": {
+    "A_star_substantive": {
+      "behavioral": 95,
+      "technical": 95
+    },
+    "B_ramble_substantive": {
+      "behavioral": 85,
+      "technical": 95
+    },
+    "C_star_thin": {
+      "behavioral": 55,
+      "technical": 45
+    },
+    "D_ramble_thin": {
+      "behavioral": 25,
+      "technical": 25
+    },
+    "E_narrative_substantive": {
+      "behavioral": 85,
+      "technical": 95
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/react-hooks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./use-toast": "./src/use-toast.ts",
+    "./use-mobile": "./src/use-mobile.tsx"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  }
+}

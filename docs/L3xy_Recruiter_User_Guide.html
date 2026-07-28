@@ -1,0 +1,1651 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<title>L3xy — Recruiter User Guide</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    color: #0f172a; line-height: 1.6; font-size: 11pt;
+    margin: 0; padding: 0; background: white;
+  }
+  .page { padding: 18mm 16mm; }
+  h1 { color: #0e7490; font-size: 24pt; border-bottom: 3px solid #06b6d4; padding-bottom: 8px; margin-top: 28px; }
+  h2 { color: #0891b2; font-size: 16pt; margin-top: 30px; border-left: 4px solid #06b6d4; padding-left: 12px; page-break-after: avoid; }
+  h3 { color: #0f172a; font-size: 12.5pt; margin-top: 22px; page-break-after: avoid; }
+  h4 { color: #475569; font-size: 11pt; margin-top: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 10.5pt; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.5pt; page-break-inside: avoid; }
+  th { background: #ecfeff; color: #0e7490; text-align: left; padding: 8px 10px; border-bottom: 2px solid #06b6d4; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  blockquote { background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 12px 16px; color: #134e4a; margin: 16px 0; border-radius: 4px; font-style: italic; }
+  blockquote p { font-size: 11pt; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 9.5pt; color: #0f766e; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 12px 16px; border-radius: 6px; font-size: 9.5pt; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .figure { width: 100%; height: auto; margin: 18px 0; border-radius: 12px; page-break-inside: avoid; display: block; }
+  .figure-caption { text-align: center; font-size: 9pt; color: #64748b; margin-top: -8px; margin-bottom: 18px; font-style: italic; }
+  .cover { text-align: center; padding: 80px 0 40px; page-break-after: always; }
+  .cover h1 { border: none; font-size: 56pt; color: #06b6d4; margin: 0; letter-spacing: -2px; font-weight: 800; }
+  .cover .subtitle { font-size: 14pt; color: #475569; margin-top: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .cover .tag { display:inline-block; margin-top: 30px; background: #06b6d4; color:white; padding: 8px 20px; border-radius: 999px; font-size: 11pt; font-weight: 600; letter-spacing: 1px; }
+  .cover .tag.dark { background: #0f172a; color: #06b6d4; border: 1px solid #06b6d4; }
+  .cover-svg { max-width: 720px; margin: 50px auto 0; display: block; }
+  .nda { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px 20px; border-radius: 8px; margin: 30px 0; font-size: 10pt; line-height: 1.5; }
+  .nda strong { display: block; margin-bottom: 6px; font-size: 11pt; }
+</style>
+</head><body><div class="page"><div class="cover">
+<h1>L3xy</h1>
+<div class="subtitle">Recruiter User Guide</div>
+<div class="tag">Your complete day-to-day playbook · 2026 Edition</div>
+
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" class="cover-svg">
+  <defs>
+    <linearGradient id="ucg" x1="0" x2="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  </defs>
+  <rect width="800" height="240" fill="#020617" rx="16"/>
+
+  <!-- Recruiter avatar (center) -->
+  <circle cx="400" cy="120" r="44" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="2"/>
+  <circle cx="400" cy="105" r="14" fill="#06b6d4" fill-opacity="0.7"/>
+  <path d="M 376 140 Q 400 122 424 140 L 424 152 Q 400 158 376 152 Z" fill="#06b6d4" fill-opacity="0.7"/>
+  <text x="400" y="180" text-anchor="middle" fill="#cffafe" font-size="11" font-weight="700" font-family="Inter,sans-serif" letter-spacing="2">YOU</text>
+
+  <!-- Agents around the recruiter -->
+  
+      <line x1="400" y1="120" x2="400" y2="40" stroke="#8b5cf6" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="400" cy="40" r="16" fill="#8b5cf6" fill-opacity="0.18" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="400" y="43" text-anchor="middle" fill="#8b5cf6" font-size="8" font-weight="700" font-family="Inter,sans-serif">ICP</text>
+    
+      <line x1="400" y1="120" x2="496.4181414529809" y2="58.71644455048176" stroke="#3b82f6" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="496.4181414529809" cy="58.71644455048176" r="16" fill="#3b82f6" fill-opacity="0.18" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="496.4181414529809" y="61.71644455048176" text-anchor="middle" fill="#3b82f6" font-size="8" font-weight="700" font-family="Inter,sans-serif">Source</text>
+    
+      <line x1="400" y1="120" x2="547.7211629518312" y2="106.10814578664557" stroke="#06b6d4" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="547.7211629518312" cy="106.10814578664557" r="16" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="547.7211629518312" y="109.10814578664557" text-anchor="middle" fill="#06b6d4" font-size="8" font-weight="700" font-family="Inter,sans-serif">Screen</text>
+    
+      <line x1="400" y1="120" x2="529.9038105676658" y2="160" stroke="#22c55e" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="529.9038105676658" cy="160" r="16" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="529.9038105676658" y="163" text-anchor="middle" fill="#22c55e" font-size="8" font-weight="700" font-family="Inter,sans-serif">Verify</text>
+    
+      <line x1="400" y1="120" x2="451.30302149885034" y2="195.17540966287265" stroke="#f97316" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="451.30302149885034" cy="195.17540966287265" r="16" fill="#f97316" fill-opacity="0.18" stroke="#f97316" stroke-width="1.5"/>
+      <text x="451.30302149885034" y="198.17540966287265" text-anchor="middle" fill="#f97316" font-size="8" font-weight="700" font-family="Inter,sans-serif">Reach</text>
+    
+      <line x1="400" y1="120" x2="348.6969785011497" y2="195.17540966287268" stroke="#6366f1" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="348.6969785011497" cy="195.17540966287268" r="16" fill="#6366f1" fill-opacity="0.18" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="348.6969785011497" y="198.17540966287268" text-anchor="middle" fill="#6366f1" font-size="8" font-weight="700" font-family="Inter,sans-serif">Sched</text>
+    
+      <line x1="400" y1="120" x2="270.0961894323342" y2="160.00000000000003" stroke="#10b981" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="270.0961894323342" cy="160.00000000000003" r="16" fill="#10b981" fill-opacity="0.18" stroke="#10b981" stroke-width="1.5"/>
+      <text x="270.0961894323342" y="163.00000000000003" text-anchor="middle" fill="#10b981" font-size="8" font-weight="700" font-family="Inter,sans-serif">Intvw</text>
+    
+      <line x1="400" y1="120" x2="252.27883704816878" y2="106.1081457866456" stroke="#f43f5e" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="252.27883704816878" cy="106.1081457866456" r="16" fill="#f43f5e" fill-opacity="0.18" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="252.27883704816878" y="109.1081457866456" text-anchor="middle" fill="#f43f5e" font-size="8" font-weight="700" font-family="Inter,sans-serif">Proct</text>
+    
+      <line x1="400" y1="120" x2="303.58185854701907" y2="58.71644455048177" stroke="#eab308" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="303.58185854701907" cy="58.71644455048177" r="16" fill="#eab308" fill-opacity="0.18" stroke="#eab308" stroke-width="1.5"/>
+      <text x="303.58185854701907" y="61.71644455048177" text-anchor="middle" fill="#eab308" font-size="8" font-weight="700" font-family="Inter,sans-serif">NoGhost</text>
+    
+
+  <text x="400" y="220" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif" letter-spacing="2">YOU LEAD · L3XY EXECUTES</text>
+</svg>
+
+</div>
+<hr>
+<h2>Welcome</h2>
+<p>You’ve just been handed an AI hiring team. Nine specialized agents that source, screen, verify, message, schedule, interview, and protect your pipeline against ghosting — all running in the background while you focus on the decisions only a human should make.</p>
+<p>This guide walks you through your day with L3xy: how to get into the product, what each screen does, what every button means, and how to get from “open requisition” to “signed offer” with the least possible busywork. It is meant to be <strong>complete</strong> — read it once front to back, then keep it open as a reference.</p>
+<blockquote>
+<p><strong>Read time:</strong> about 40 minutes for the full guide. If you just want to start working today, read <em>Welcome</em>, <em>Getting Started</em>, <em>Your Dashboard</em>, <em>Creating a Work Order</em>, and <em>Reading a Candidate Card</em> — then come back for the rest.</p>
+</blockquote>
+<h3>The mental model</h3>
+<p>Stop thinking of L3xy as an ATS. Think of it as a <strong>decision cockpit</strong>.</p>
+<ul>
+<li>The <strong>agents</strong> do the work — sourcing, outreach, screening, scheduling, interviewing.</li>
+<li>The <strong>Intelligence Engine</strong> scores every candidate and tells you <em>exactly</em> what to do next.</li>
+<li><strong>You</strong> approve, override, and push humans across the finish line.</li>
+</ul>
+<p>Your time is now spent on three things: defining good roles, reviewing flagged candidates, and closing the ones the system surfaces. Everything else runs itself.</p>
+<h3>How this guide is organized</h3>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Chapters</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Get in &amp; oriented</strong></td>
+<td>1–2</td>
+<td>Logging in, your role, the dashboard</td>
+</tr>
+<tr>
+<td><strong>Run a role end-to-end</strong></td>
+<td>3–9</td>
+<td>Jobs, sourcing, candidate cards, scoring, next actions</td>
+</tr>
+<tr>
+<td><strong>The automated layer</strong></td>
+<td>10–13</td>
+<td>Screening, verification, outreach, interviews</td>
+</tr>
+<tr>
+<td><strong>Work smart</strong></td>
+<td>14–17</td>
+<td>Decision queue, the always-on pool, talent pool, client portals</td>
+</tr>
+<tr>
+<td><strong>Measure &amp; manage</strong></td>
+<td>18–21</td>
+<td>Analytics, your team, billing, settings</td>
+</tr>
+<tr>
+<td><strong>Reference</strong></td>
+<td>22–24</td>
+<td>Best practices, FAQ, quick-reference card</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Chapter 1 · Getting Started</h2>
+<h3>Signing in</h3>
+<p>L3xy lives in your browser — no install. Open your organization’s L3xy URL and you’ll land on the <strong>Login</strong> page (<code>/login</code>). Enter your email and password and you’re in.</p>
+<ul>
+<li><strong>Forgot your password?</strong> Use the reset link on the login screen.</li>
+<li><strong>First time here?</strong> You were almost certainly invited by a teammate (see <em>Accepting an invite</em> below) or you started a trial.</li>
+</ul>
+<h3>Starting a trial</h3>
+<p>If your company is evaluating L3xy, someone can request a trial from the <strong>Trial Setup</strong> page (<code>/auth/trial-setup</code>). You fill in your company details, and a L3xy platform administrator reviews and activates the workspace. Once approved, you’ll receive your login and land straight on the dashboard.</p>
+<h3>Accepting an invite</h3>
+<p>When a teammate adds you to an existing workspace, you’ll get an email with a link. Click it to reach the <strong>Accept Invite</strong> page (<code>/accept-team-invite</code> or <code>/accept-invite</code>), set your password, and you’re in with the role your admin assigned.</p>
+<h3>Your role decides what you see</h3>
+<p>L3xy uses role-based access. The same product shows different controls depending on who you are:</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Who it’s for</th>
+<th>What it unlocks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Recruiter</strong></td>
+<td>Day-to-day sourcing and hiring</td>
+<td>Jobs, candidates, outreach, interviews, decisions — everything in this guide</td>
+</tr>
+<tr>
+<td><strong>Tenant Admin</strong></td>
+<td>Team leads / agency owners</td>
+<td>Everything a recruiter has, <strong>plus</strong> team management, client/branch setup, billing, and policy thresholds</td>
+</tr>
+<tr>
+<td><strong>Platform Admin</strong></td>
+<td>L3xy operators</td>
+<td>Cross-workspace administration, trial approvals, and bulk import</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>If you don’t see a screen mentioned in this guide, it’s almost always a permissions thing — ask your Tenant Admin to adjust your role.</p>
+</blockquote>
+<h3>Finding your way around</h3>
+<p>The top navigation is your home base. The core destinations:</p>
+<table>
+<thead>
+<tr>
+<th>Nav item</th>
+<th>Route</th>
+<th>What’s there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td><code>/dashboard</code></td>
+<td>Mission control — KPIs, recommended actions, hire-ready list</td>
+</tr>
+<tr>
+<td><strong>Jobs</strong></td>
+<td><code>/jobs</code></td>
+<td>Your open roles (work orders)</td>
+</tr>
+<tr>
+<td><strong>Candidates</strong></td>
+<td><code>/candidates</code></td>
+<td>The full talent pool</td>
+</tr>
+<tr>
+<td><strong>Inbox</strong></td>
+<td><code>/outreach/inbox</code></td>
+<td>Candidate replies that need you</td>
+</tr>
+<tr>
+<td><strong>Interviews</strong></td>
+<td><code>/interviews</code></td>
+<td>AI interview sessions and reports</td>
+</tr>
+<tr>
+<td><strong>Decisions</strong></td>
+<td><code>/decision-queue</code></td>
+<td>Candidates ready for a human call</td>
+</tr>
+</tbody>
+</table>
+<p>Admins also see <strong>Team</strong> (<code>/team</code>), <strong>Clients</strong> (<code>/clients</code>), <strong>Analytics</strong> (<code>/analytics</code>), and <strong>Billing</strong> (<code>/subscription</code>).</p>
+<hr>
+<h2>Chapter 2 · Your Dashboard</h2>
+<p>When you log in, you land on the <strong>Dashboard</strong> (<code>/dashboard</code>). It’s the mission-control view of every role and every candidate in motion.</p>
+
+<svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="440" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">A look at the L3xy Recruiter Dashboard</text>
+
+  <!-- Top nav -->
+  <rect x="20" y="44" width="860" height="32" rx="6" fill="#0f172a" stroke="#1e293b"/>
+  <text x="38" y="64" fill="#06b6d4" font-size="12" font-weight="700" font-family="Inter,sans-serif">L3XY</text>
+  
+    <text x="130" y="64" fill="#06b6d4" font-size="10" font-weight="700" font-family="Inter,sans-serif">Dashboard</text>
+  
+    <text x="222" y="64" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Jobs</text>
+  
+    <text x="314" y="64" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Candidates</text>
+  
+    <text x="406" y="64" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Inbox</text>
+  
+    <text x="498" y="64" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Interviews</text>
+  
+    <text x="590" y="64" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Decisions</text>
+  
+  <circle cx="860" cy="60" r="9" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4"/>
+
+  <!-- KPI strip -->
+  
+    <g transform="translate(20,92)">
+      <rect width="200" height="74" rx="8" fill="#0f172a" stroke="#8b5cf6" stroke-opacity="0.4"/>
+      <text x="14" y="22" fill="#64748b" font-size="9" font-family="Inter,sans-serif" text-transform="uppercase" letter-spacing="1">Roles in Motion</text>
+      <text x="14" y="56" fill="#8b5cf6" font-size="26" font-weight="800" font-family="Inter,sans-serif">24</text>
+      <text x="180" y="56" text-anchor="end" fill="#22c55e" font-size="10" font-family="Inter,sans-serif">↑ 12%</text>
+    </g>
+  
+    <g transform="translate(235,92)">
+      <rect width="200" height="74" rx="8" fill="#0f172a" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="14" y="22" fill="#64748b" font-size="9" font-family="Inter,sans-serif" text-transform="uppercase" letter-spacing="1">Total Candidates</text>
+      <text x="14" y="56" fill="#06b6d4" font-size="26" font-weight="800" font-family="Inter,sans-serif">1,847</text>
+      <text x="180" y="56" text-anchor="end" fill="#22c55e" font-size="10" font-family="Inter,sans-serif">↑ 12%</text>
+    </g>
+  
+    <g transform="translate(450,92)">
+      <rect width="200" height="74" rx="8" fill="#0f172a" stroke="#22c55e" stroke-opacity="0.4"/>
+      <text x="14" y="22" fill="#64748b" font-size="9" font-family="Inter,sans-serif" text-transform="uppercase" letter-spacing="1">AI Interviews</text>
+      <text x="14" y="56" fill="#22c55e" font-size="26" font-weight="800" font-family="Inter,sans-serif">312</text>
+      <text x="180" y="56" text-anchor="end" fill="#22c55e" font-size="10" font-family="Inter,sans-serif">↑ 12%</text>
+    </g>
+  
+    <g transform="translate(665,92)">
+      <rect width="200" height="74" rx="8" fill="#0f172a" stroke="#f97316" stroke-opacity="0.4"/>
+      <text x="14" y="22" fill="#64748b" font-size="9" font-family="Inter,sans-serif" text-transform="uppercase" letter-spacing="1">Offers & Hires</text>
+      <text x="14" y="56" fill="#f97316" font-size="26" font-weight="800" font-family="Inter,sans-serif">18</text>
+      <text x="180" y="56" text-anchor="end" fill="#22c55e" font-size="10" font-family="Inter,sans-serif">↑ 12%</text>
+    </g>
+  
+
+  <!-- Pipeline funnel -->
+  <g transform="translate(20,182)">
+    <rect width="555" height="160" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="16" y="22" fill="#e2e8f0" font-size="12" font-weight="700" font-family="Inter,sans-serif">AI Pipeline Funnel</text>
+    
+        <text x="16" y="54" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Sourced</text>
+        <rect x="100" y="44" width="380" height="13" rx="3" fill="#3b82f6" fill-opacity="0.7"/>
+        <text x="488" y="54" fill="#3b82f6" font-size="9" font-weight="700" font-family="Inter,sans-serif">847</text>
+      
+        <text x="16" y="72" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Screened</text>
+        <rect x="100" y="62" width="184.84061393152302" height="13" rx="3" fill="#06b6d4" fill-opacity="0.7"/>
+        <text x="292.840613931523" y="72" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">412</text>
+      
+        <text x="16" y="90" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Verified</text>
+        <rect x="100" y="80" width="128.7603305785124" height="13" rx="3" fill="#22c55e" fill-opacity="0.7"/>
+        <text x="236.7603305785124" y="90" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter,sans-serif">287</text>
+      
+        <text x="16" y="108" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Outreached</text>
+        <rect x="100" y="98" width="118.44155844155844" height="13" rx="3" fill="#f97316" fill-opacity="0.7"/>
+        <text x="226.44155844155844" y="108" fill="#f97316" font-size="9" font-weight="700" font-family="Inter,sans-serif">264</text>
+      
+        <text x="16" y="126" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Scheduled</text>
+        <rect x="100" y="116" width="63.70720188902007" height="13" rx="3" fill="#6366f1" fill-opacity="0.7"/>
+        <text x="171.70720188902007" y="126" fill="#6366f1" font-size="9" font-weight="700" font-family="Inter,sans-serif">142</text>
+      
+        <text x="16" y="144" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Interviewed</text>
+        <rect x="100" y="134" width="39.48051948051948" height="13" rx="3" fill="#10b981" fill-opacity="0.7"/>
+        <text x="147.4805194805195" y="144" fill="#10b981" font-size="9" font-weight="700" font-family="Inter,sans-serif">88</text>
+      
+  </g>
+
+  <!-- Recommended Actions -->
+  <g transform="translate(595,182)">
+    <rect width="285" height="160" rx="8" fill="#0f172a" stroke="#06b6d4" stroke-opacity="0.4"/>
+    <text x="14" y="22" fill="#06b6d4" font-size="12" font-weight="700" font-family="Inter,sans-serif">Recommended Actions</text>
+    
+      <g transform="translate(14,36)">
+        <rect width="60" height="20" rx="4" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-opacity="0.6"/>
+        <text x="30" y="14" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Review</text>
+        <text x="72" y="14" fill="#cbd5e1" font-size="9.5" font-family="Inter,sans-serif">5 hire-ready for Staff PM</text>
+      </g>
+    
+      <g transform="translate(14,64)">
+        <rect width="60" height="20" rx="4" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-opacity="0.6"/>
+        <text x="30" y="14" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Approve</text>
+        <text x="72" y="14" fill="#cbd5e1" font-size="9.5" font-family="Inter,sans-serif">3 outreach drafts pending</text>
+      </g>
+    
+      <g transform="translate(14,92)">
+        <rect width="60" height="20" rx="4" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-opacity="0.6"/>
+        <text x="30" y="14" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Re-engage</text>
+        <text x="72" y="14" fill="#cbd5e1" font-size="9.5" font-family="Inter,sans-serif">7 at risk of ghosting</text>
+      </g>
+    
+      <g transform="translate(14,120)">
+        <rect width="60" height="20" rx="4" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-opacity="0.6"/>
+        <text x="30" y="14" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Verify</text>
+        <text x="72" y="14" fill="#cbd5e1" font-size="9.5" font-family="Inter,sans-serif">2 trust flags need eyes</text>
+      </g>
+    
+  </g>
+
+  <!-- Hire-ready candidates -->
+  <g transform="translate(20,358)">
+    <rect width="860" height="68" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="16" y="20" fill="#e2e8f0" font-size="12" font-weight="700" font-family="Inter,sans-serif">Hire-Ready Candidates</text>
+    
+      <g transform="translate(16,32)">
+        <circle cx="12" cy="14" r="10" fill="#22c55e" fill-opacity="0.25" stroke="#22c55e"/>
+        <text x="28" y="12" fill="#e2e8f0" font-size="10" font-weight="600" font-family="Inter,sans-serif">Sarah K.</text>
+        <text x="28" y="24" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Staff Eng</text>
+        <text x="148" y="20" text-anchor="end" fill="#22c55e" font-size="14" font-weight="700" font-family="Inter,sans-serif">94%</text>
+      </g>
+    
+      <g transform="translate(184,32)">
+        <circle cx="12" cy="14" r="10" fill="#22c55e" fill-opacity="0.25" stroke="#22c55e"/>
+        <text x="28" y="12" fill="#e2e8f0" font-size="10" font-weight="600" font-family="Inter,sans-serif">Marcus T.</text>
+        <text x="28" y="24" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Sr PM</text>
+        <text x="148" y="20" text-anchor="end" fill="#22c55e" font-size="14" font-weight="700" font-family="Inter,sans-serif">89%</text>
+      </g>
+    
+      <g transform="translate(352,32)">
+        <circle cx="12" cy="14" r="10" fill="#22c55e" fill-opacity="0.25" stroke="#22c55e"/>
+        <text x="28" y="12" fill="#e2e8f0" font-size="10" font-weight="600" font-family="Inter,sans-serif">Priya R.</text>
+        <text x="28" y="24" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Director</text>
+        <text x="148" y="20" text-anchor="end" fill="#22c55e" font-size="14" font-weight="700" font-family="Inter,sans-serif">87%</text>
+      </g>
+    
+      <g transform="translate(520,32)">
+        <circle cx="12" cy="14" r="10" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4"/>
+        <text x="28" y="12" fill="#e2e8f0" font-size="10" font-weight="600" font-family="Inter,sans-serif">Devon L.</text>
+        <text x="28" y="24" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Designer</text>
+        <text x="148" y="20" text-anchor="end" fill="#06b6d4" font-size="14" font-weight="700" font-family="Inter,sans-serif">82%</text>
+      </g>
+    
+      <g transform="translate(688,32)">
+        <circle cx="12" cy="14" r="10" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4"/>
+        <text x="28" y="12" fill="#e2e8f0" font-size="10" font-weight="600" font-family="Inter,sans-serif">Aiko M.</text>
+        <text x="28" y="24" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Sr Eng</text>
+        <text x="148" y="20" text-anchor="end" fill="#06b6d4" font-size="14" font-weight="700" font-family="Inter,sans-serif">79%</text>
+      </g>
+    
+  </g>
+</svg>
+<div class="figure-caption">Mockup — the Recruiter Dashboard at a glance</div>
+<h3>What you’re looking at</h3>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>What it tells you</th>
+<th>When to act</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Roles in Motion</strong></td>
+<td>How many work orders are live</td>
+<td>Click any number to drill in</td>
+</tr>
+<tr>
+<td><strong>Total Candidates</strong></td>
+<td>Size of your living talent pool</td>
+<td>Trends matter more than the absolute number</td>
+</tr>
+<tr>
+<td><strong>AI Interviews</strong></td>
+<td>Sessions completed in the last period</td>
+<td>Spike = lots of decisions coming</td>
+</tr>
+<tr>
+<td><strong>Offers &amp; Hires</strong></td>
+<td>Closed-won outcomes</td>
+<td>Your scoreboard</td>
+</tr>
+<tr>
+<td><strong>AI Pipeline Funnel</strong></td>
+<td>Where candidates sit by stage</td>
+<td>Spot bottlenecks instantly</td>
+</tr>
+<tr>
+<td><strong>Recommended Actions</strong></td>
+<td>Things L3xy thinks you should do <em>right now</em></td>
+<td>Always start your day here</td>
+</tr>
+<tr>
+<td><strong>Agent Activity Feed</strong></td>
+<td>What the AI is doing in real time</td>
+<td>Background context — peek if curious</td>
+</tr>
+<tr>
+<td><strong>Hire-Ready Candidates</strong></td>
+<td>Top of the queue, ranked</td>
+<td>One-click into the candidate card</td>
+</tr>
+</tbody>
+</table>
+<h3>Your daily routine (5 minutes)</h3>
+<ol>
+<li>Open the dashboard.</li>
+<li>Skim <strong>Recommended Actions</strong> — clear the high-priority items first.</li>
+<li>Glance at <strong>Hire-Ready Candidates</strong> — anyone above 85% probability deserves a look.</li>
+<li>Check the <strong>Pipeline Funnel</strong> for bottlenecks (e.g., 40 candidates sourced but 0 verified means Verify is stuck — go check).</li>
+<li>Done. Most days, that’s it. The pipeline runs itself.</li>
+</ol>
+<hr>
+<h2>Chapter 3 · Creating a Work Order</h2>
+<p>A <strong>Work Order</strong> is L3xy’s name for an open requisition. Create one and the entire 9-agent pipeline wakes up for that role.</p>
+<p>Go to <code>/jobs</code> and click <strong>+ Create Work Order</strong>. You’ll see a 3-step wizard.</p>
+<h3>Step 1 — Client &amp; Branch</h3>
+<p>Pick the company and team. (Skip this if you’re an in-house recruiter — your own org is pre-selected.)</p>
+<h3>Step 2 — Job Basics</h3>
+<p>Title, location, employment type, seniority, salary band. The standard stuff. Take 30 seconds — these become hard filters for the Sourcing agent, so accuracy matters.</p>
+<blockquote>
+<p><strong>Tip:</strong> Use seniority levels like <em>IC4 / Senior / Staff</em> if your company has them. The ICP agent reads them and adjusts experience expectations automatically.</p>
+</blockquote>
+<h3>Step 3 — Job Description</h3>
+<p>You have three ways to give L3xy the JD:</p>
+<ol>
+<li><strong>Paste it</strong> — works fine, what most people do.</li>
+<li><strong>Upload a doc</strong> (PDF, Word) — the <strong>JD Parser</strong> extracts everything cleanly.</li>
+<li><strong>Generate it</strong> — click <strong>AI JD Generator</strong>, give it a one-line role brief, and it drafts a full description you can edit.</li>
+</ol>
+<p>When you save, the <strong>ICP agent</strong> kicks off automatically and produces an <em>Ideal Candidate Profile</em> — a structured persona with must-haves, nice-to-haves, target seniority, and domain. <strong>Read it before launching.</strong> If something looks off (e.g., it locked onto Python when you wanted Go), edit the ICP directly. Everything downstream depends on it.</p>
+<hr>
+<h2>Chapter 4 · Launching the Pipeline</h2>
+<p>On the work order detail page (<code>/jobs/:id</code>), you’ll see the <strong>Agent Configuration</strong> panel — nine toggles for the nine agents.</p>
+
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#020617"/><stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#06b6d4"/>
+    </marker>
+  </defs>
+  <rect width="900" height="320" fill="url(#bg)" rx="12"/>
+
+  <!-- Top row -->
+  
+      <g transform="translate(40,60)">
+        <rect width="130" height="80" rx="14" fill="#8b5cf6" fill-opacity="0.15" stroke="#8b5cf6" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="700" font-family="Inter,sans-serif">1</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">ICP</text>
+      </g>
+    
+      <g transform="translate(210,60)">
+        <rect width="130" height="80" rx="14" fill="#3b82f6" fill-opacity="0.15" stroke="#3b82f6" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700" font-family="Inter,sans-serif">2</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Sourcing</text>
+      </g>
+    
+      <g transform="translate(380,60)">
+        <rect width="130" height="80" rx="14" fill="#06b6d4" fill-opacity="0.15" stroke="#06b6d4" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#06b6d4" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#06b6d4" font-size="11" font-weight="700" font-family="Inter,sans-serif">3</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Screening</text>
+      </g>
+    
+      <g transform="translate(550,60)">
+        <rect width="130" height="80" rx="14" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700" font-family="Inter,sans-serif">4</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Verify</text>
+      </g>
+    
+      <g transform="translate(720,60)">
+        <rect width="130" height="80" rx="14" fill="#f97316" fill-opacity="0.15" stroke="#f97316" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#f97316" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#f97316" font-size="11" font-weight="700" font-family="Inter,sans-serif">5</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Outreach</text>
+      </g>
+    
+
+  <!-- Top arrows -->
+  <line x1="172" y1="100" x2="208" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="342" y1="100" x2="378" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="512" y1="100" x2="548" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="682" y1="100" x2="718" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/>
+
+  <!-- Down connector from Outreach to Schedule -->
+  <path d="M 855 140 Q 875 140 875 175 L 875 195 Q 875 220 850 220" stroke="#06b6d4" stroke-width="1.5" fill="none" marker-end="url(#arr)" opacity="0.7"/>
+
+  <!-- Bottom row reversed: Schedule, Interview, Proctoring, Anti-Ghost (right to left) -->
+  
+      <g transform="translate(720,200)">
+        <rect width="130" height="80" rx="14" fill="#6366f1" fill-opacity="0.15" stroke="#6366f1" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#6366f1" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#6366f1" font-size="11" font-weight="700" font-family="Inter,sans-serif">6</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Schedule</text>
+      </g>
+    
+      <g transform="translate(550,200)">
+        <rect width="130" height="80" rx="14" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#10b981" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" font-family="Inter,sans-serif">7</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Interview</text>
+      </g>
+    
+      <g transform="translate(380,200)">
+        <rect width="130" height="80" rx="14" fill="#f43f5e" fill-opacity="0.15" stroke="#f43f5e" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#f43f5e" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="700" font-family="Inter,sans-serif">8</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Proctoring</text>
+      </g>
+    
+      <g transform="translate(210,200)">
+        <rect width="130" height="80" rx="14" fill="#eab308" fill-opacity="0.15" stroke="#eab308" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#eab308" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#eab308" font-size="11" font-weight="700" font-family="Inter,sans-serif">9</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Anti-Ghost</text>
+      </g>
+    
+
+  <!-- Bottom arrows (right to left) -->
+  <line x1="718" y1="240" x2="682" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="548" y1="240" x2="512" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="378" y1="240" x2="342" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/>
+
+  <text x="450" y="305" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif">L3xy 9-Stage Autonomous Hiring Pipeline</text>
+</svg>
+<div class="figure-caption">Figure 1 — The L3xy 9-stage autonomous hiring pipeline</div>
+<p>The default is sensible: all nine on, in canonical order. You only need to touch this if:</p>
+<ul>
+<li><strong>You don’t want outbound sourcing</strong> — turn off Sourcing if you only want to evaluate inbound applicants.</li>
+<li><strong>You’re skipping live AI interviews</strong> — turn off Interview if your team prefers human screens only.</li>
+<li><strong>You don’t need proctoring</strong> — turn off Proctoring for non-technical or junior roles.</li>
+</ul>
+<p>Click <strong>Launch</strong> and the pipeline begins. The Agent Activity feed will start filling up. Within minutes you’ll see your first candidates appear in the work order’s Candidate Pipeline.</p>
+<blockquote>
+<p><strong>Don’t watch the pot boil.</strong> Close the tab and come back in an hour. By then you’ll have dozens of scored candidates ready to review.</p>
+</blockquote>
+<h3>The nine agents at a glance</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Agent</th>
+<th>What it does for you</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>ICP</strong></td>
+<td>Turns your JD into a structured ideal-candidate profile</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Sourcing</strong></td>
+<td>Finds matching people from the pool and external sources</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Screening</strong></td>
+<td>Reads every resume against the ICP and scores fit</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Verification</strong></td>
+<td>Checks identity, employment, and risk signals</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Outreach</strong></td>
+<td>Writes and sends personalized messages, classifies replies</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Scheduling</strong></td>
+<td>Coordinates interview timing without back-and-forth</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Interview</strong></td>
+<td>Runs autonomous AI video interviews and scores them</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Proctoring</strong></td>
+<td>Monitors interviews for integrity issues</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Anti-Ghost</strong></td>
+<td>Detects and re-engages candidates at risk of going dark</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Chapter 5 · Sourcing Candidates</h2>
+<p>Once a role is launched, the <strong>Sourcing agent</strong> goes to work. You don’t have to do anything — but here’s how to steer it and how to source manually when you want to.</p>
+<h3>How automatic sourcing works</h3>
+<p>The Sourcing agent reads the ICP and searches <strong>two places</strong>:</p>
+<ol>
+<li><strong>Your talent pool first</strong> — everyone L3xy has ever touched on your behalf is re-evaluated against this new role.</li>
+<li><strong>External sources</strong> — to fill gaps the pool can’t.</li>
+</ol>
+<p>Matches flow into the work order’s pipeline as <strong>Sourced</strong> candidates, each with an initial fit score. Watch them appear in the Agent Activity feed.</p>
+<h3>Searching on your own</h3>
+<p>Open <strong>Sourcing</strong> (<code>/sourcing</code>) to run an ad-hoc search in plain language — for example, <em>“senior Go engineers in Berlin with distributed-systems experience.”</em> The engine ranks results and lets you add anyone interesting to a role.</p>
+<h3>Talent Match — rank the pool against a role</h3>
+<p><strong>Talent Match</strong> (<code>/talent-match</code>) answers the question <em>“who in my warm pool fits this role?”</em> It ranks your entire pool against any job’s ICP in seconds. Use it <strong>before</strong> launching outbound sourcing — you’re often sitting on the perfect candidate already.</p>
+<h3>Adding a candidate by hand</h3>
+<p>Go to <code>/candidates → + Add Candidate</code>. Paste a LinkedIn URL or upload a resume. They enter the pool and get scored exactly like a sourced candidate.</p>
+<blockquote>
+<p><strong>If sourcing finds nobody:</strong> the ICP is usually too narrow, the location filter too tight, or the salary band below market. Open the work order, loosen one constraint, and relaunch.</p>
+</blockquote>
+<hr>
+<h2>Chapter 6 · Reading a Candidate Card</h2>
+<p>This is the screen where you’ll spend most of your day. Click any candidate name (from the dashboard, the talent pool, or a work order) to open their card at <code>/candidates/:id</code>.</p>
+
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="480" fill="#020617" rx="12"/>
+  <text x="450" y="26" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Anatomy of a Candidate Card</text>
+
+  <!-- Header card -->
+  <rect x="20" y="42" width="860" height="120" rx="10" fill="#0f172a" stroke="#1e293b"/>
+
+  <!-- Avatar -->
+  <circle cx="80" cy="102" r="34" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-width="2"/>
+  <circle cx="80" cy="92" r="11" fill="#06b6d4" fill-opacity="0.7"/>
+  <path d="M 60 122 Q 80 108 100 122 L 100 130 Q 80 134 60 130 Z" fill="#06b6d4" fill-opacity="0.7"/>
+
+  <!-- Name + meta -->
+  <text x="135" y="78" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">Sarah Kowalski</text>
+  <text x="135" y="98" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Staff Engineer · Distributed Systems · Berlin, DE</text>
+  <rect x="135" y="108" width="68" height="18" rx="4" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-opacity="0.6"/>
+  <text x="169" y="121" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter,sans-serif">VERIFIED</text>
+  <rect x="210" y="108" width="78" height="18" rx="4" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-opacity="0.6"/>
+  <text x="249" y="121" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="700" font-family="Inter,sans-serif">NBA: ADVANCE</text>
+
+  <!-- Hire probability gauge -->
+  <g transform="translate(620,62)">
+    <rect width="240" height="86" rx="8" fill="#020617" stroke="#22c55e" stroke-opacity="0.5"/>
+    <text x="14" y="20" fill="#64748b" font-size="9" font-family="Inter,sans-serif" letter-spacing="1">HIRE PROBABILITY</text>
+    <text x="14" y="58" fill="#22c55e" font-size="32" font-weight="800" font-family="Inter,sans-serif">94%</text>
+    <text x="100" y="58" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Fit 96 · Quality 92</text>
+    <text x="100" y="72" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Trust 95 · Conv 91</text>
+  </g>
+
+  <!-- Action buttons -->
+  <g transform="translate(135,138)">
+    
+      <rect x="0" y="0" width="100" height="20" rx="4" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-opacity="0.6"/>
+      <text x="50" y="13" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Push to Client</text>
+    
+      <rect x="112" y="0" width="100" height="20" rx="4" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-opacity="0.6"/>
+      <text x="162" y="13" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter,sans-serif">Advance</text>
+    
+      <rect x="224" y="0" width="100" height="20" rx="4" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-opacity="0.6"/>
+      <text x="274" y="13" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="700" font-family="Inter,sans-serif">Reject</text>
+    
+      <rect x="336" y="0" width="100" height="20" rx="4" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-opacity="0.6"/>
+      <text x="386" y="13" text-anchor="middle" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">Send Message</text>
+    
+  </g>
+
+  <!-- Lexy Prediction box -->
+  <rect x="20" y="178" width="860" height="62" rx="8" fill="#06b6d4" fill-opacity="0.06" stroke="#06b6d4" stroke-opacity="0.4"/>
+  <text x="36" y="200" fill="#06b6d4" font-size="10" font-weight="700" font-family="Inter,sans-serif" letter-spacing="1">LEXY PREDICTION</text>
+  <text x="36" y="220" fill="#cbd5e1" font-size="11" font-family="Inter,sans-serif">Sarah is a strong fit for Staff Engineer. Skills align across distributed systems and Go.</text>
+  <text x="36" y="234" fill="#cbd5e1" font-size="11" font-family="Inter,sans-serif">Trust verified. She's responsive (avg reply 4h) and likely to advance through interview.</text>
+
+  <!-- Tabs -->
+  <g transform="translate(20,256)">
+    
+      <rect x="0" y="0" width="140" height="24" rx="4" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4"/>
+      <text x="70" y="16" text-anchor="middle" fill="#06b6d4" font-size="10" font-weight="700" font-family="Inter,sans-serif">Intelligence</text>
+    
+      <rect x="150" y="0" width="140" height="24" rx="4" fill="#0f172a" fill-opacity="1" stroke="#1e293b"/>
+      <text x="220" y="16" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Timeline</text>
+    
+      <rect x="300" y="0" width="140" height="24" rx="4" fill="#0f172a" fill-opacity="1" stroke="#1e293b"/>
+      <text x="370" y="16" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Interviews</text>
+    
+      <rect x="450" y="0" width="140" height="24" rx="4" fill="#0f172a" fill-opacity="1" stroke="#1e293b"/>
+      <text x="520" y="16" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Resume</text>
+    
+      <rect x="600" y="0" width="140" height="24" rx="4" fill="#0f172a" fill-opacity="1" stroke="#1e293b"/>
+      <text x="670" y="16" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="500" font-family="Inter,sans-serif">Verification</text>
+    
+  </g>
+
+  <!-- Intelligence content -->
+  <rect x="20" y="288" width="860" height="178" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="36" y="310" fill="#e2e8f0" font-size="12" font-weight="700" font-family="Inter,sans-serif">Score Breakdown</text>
+
+  
+      <text x="36" y="338" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Skills</text>
+      <rect x="120" y="326" width="230.39999999999998" height="14" rx="3" fill="#06b6d4" fill-opacity="0.7"/>
+      <text x="356.4" y="337" fill="#06b6d4" font-size="10" font-weight="700" font-family="Inter,sans-serif">96</text>
+      <text x="400" y="337" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Go, Rust, Kubernetes, gRPC, Postgres</text>
+    
+      <text x="36" y="360" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Experience</text>
+      <rect x="120" y="348" width="220.79999999999998" height="14" rx="3" fill="#22c55e" fill-opacity="0.7"/>
+      <text x="346.79999999999995" y="359" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">92</text>
+      <text x="400" y="359" fill="#64748b" font-size="9" font-family="Inter,sans-serif">8 yrs · 2 staff roles · ex-Datadog</text>
+    
+      <text x="36" y="382" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">ICP Fit</text>
+      <rect x="120" y="370" width="225.6" height="14" rx="3" fill="#8b5cf6" fill-opacity="0.7"/>
+      <text x="351.6" y="381" fill="#8b5cf6" font-size="10" font-weight="700" font-family="Inter,sans-serif">94</text>
+      <text x="400" y="381" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Domain match · seniority match · location ok</text>
+    
+      <text x="36" y="404" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Engagement</text>
+      <rect x="120" y="392" width="211.2" height="14" rx="3" fill="#f97316" fill-opacity="0.7"/>
+      <text x="337.2" y="403" fill="#f97316" font-size="10" font-weight="700" font-family="Inter,sans-serif">88</text>
+      <text x="400" y="403" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Replied 2/2 · avg 4h response</text>
+    
+      <text x="36" y="426" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Trust</text>
+      <rect x="120" y="414" width="228" height="14" rx="3" fill="#10b981" fill-opacity="0.7"/>
+      <text x="354" y="425" fill="#10b981" font-size="10" font-weight="700" font-family="Inter,sans-serif">95</text>
+      <text x="400" y="425" fill="#64748b" font-size="9" font-family="Inter,sans-serif">ID verified · employment confirmed · no flags</text>
+    
+      <text x="36" y="448" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Quality</text>
+      <rect x="120" y="436" width="218.4" height="14" rx="3" fill="#ec4899" fill-opacity="0.7"/>
+      <text x="344.4" y="447" fill="#ec4899" font-size="10" font-weight="700" font-family="Inter,sans-serif">91</text>
+      <text x="400" y="447" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Screening 94% · Interview pending</text>
+    
+</svg>
+<div class="figure-caption">Mockup — a Candidate Card with the Intelligence tab open</div>
+<p>The candidate card has five tabs and one big number at the top: the <strong>Hire Probability</strong>.</p>
+<h3>The header</h3>
+<ul>
+<li><strong>Name, current title, photo, contact links.</strong></li>
+<li><strong>Hire Probability gauge</strong> — the headline number. 0–100%. This is the Bayesian composite of Fit, Quality, Trust, and Conversion. Hover for the breakdown.</li>
+<li><strong>Lexy Candidate Prediction</strong> — a one-paragraph plain-English summary written by the Intelligence Engine. <em>“Sarah is a strong fit for this Staff Engineer role. Skills align across distributed systems and Go. Trust verified. She’s responsive and likely to advance.”</em> Read this first.</li>
+<li><strong>Action buttons:</strong> <em>Push to Client</em>, <em>Advance Stage</em>, <em>Reject</em>, <em>Send Message</em>.</li>
+</ul>
+<h3>Tab 1 — Intelligence</h3>
+<p>The full scoring breakdown across six dimensions: Skills, Experience, ICP fit, Engagement, Trust, and Quality. Each shows a sub-score plus the signals that drove it. This is what you show the hiring manager when they ask <em>“why this person?”</em></p>
+<h3>Tab 2 — Timeline</h3>
+<p>Every event in chronological order: sourced from X, screened on Y, replied on Z, interviewed at T. Conversation history, agent actions, status changes. If something feels off, the Timeline tells you exactly what happened.</p>
+<h3>Tab 3 — Interviews</h3>
+<p>The full record of every AI video interview. Watch the playback, read the transcript, see the per-question scores, and review proctoring flags (if any). Click into a question to see the AI’s evaluation rubric.</p>
+<h3>Tab 4 — Resume / Screening</h3>
+<p>Original resume on one side, the <strong>AI Recruiter Summary</strong> on the other. Below: extracted skills, missing skills, and a flag if anything in the resume contradicts a verification signal.</p>
+<h3>Tab 5 — Verification</h3>
+<p>Identity check status, document review, employment verification, fraud signals. Green = clear, amber = needs review, red = blocked. Click any flag for the underlying evidence.</p>
+<hr>
+<h2>Chapter 7 · Understanding the Score</h2>
+<p>Every candidate carries a <strong>Hire Probability</strong> — the single number you triage on. It’s worth understanding what’s behind it so you trust it (and know when to override it).</p>
+
+<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="280" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">Hire Probability — Composite Score Stack</text>
+  <text x="450" y="56" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Bayesian posterior over four weighted composites, decay-adjusted per signal</text>
+
+  
+      <g>
+        <text x="50" y="108" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Fit</text>
+        <rect x="140" y="90" width="490" height="26" rx="4" fill="#06b6d4" fill-opacity="0.85"/>
+        <text x="635" y="108" fill="#06b6d4" font-size="13" font-weight="700" font-family="Inter,sans-serif">35%</text>
+        <text x="50" y="124" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Skills 45% · Experience 30% · ICP 25%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="150" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Quality</text>
+        <rect x="140" y="132" width="350" height="26" rx="4" fill="#22c55e" fill-opacity="0.85"/>
+        <text x="495" y="150" fill="#22c55e" font-size="13" font-weight="700" font-family="Inter,sans-serif">25%</text>
+        <text x="50" y="166" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Screening 40-60% · Interview 40% · Sourcing 20-40%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="192" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Trust</text>
+        <rect x="140" y="174" width="280" height="26" rx="4" fill="#f59e0b" fill-opacity="0.85"/>
+        <text x="425" y="192" fill="#f59e0b" font-size="13" font-weight="700" font-family="Inter,sans-serif">20%</text>
+        <text x="50" y="208" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Verification 50% · Proctoring 30% · Fraud 20%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="234" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Conversion</text>
+        <rect x="140" y="216" width="280" height="26" rx="4" fill="#ec4899" fill-opacity="0.85"/>
+        <text x="425" y="234" fill="#ec4899" font-size="13" font-weight="700" font-family="Inter,sans-serif">20%</text>
+        <text x="50" y="250" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Engagement 30% · Anti-ghost 30% · Scheduling 40%</text>
+      </g>
+    
+</svg>
+<div class="figure-caption">Figure 2 — Composite score weights feeding the Hire Probability gauge</div>
+<h3>Four composites, many signals</h3>
+<p>Hire Probability is a Bayesian blend of four weighted composites:</p>
+<ul>
+<li><strong>Fit</strong> — skills, experience, and ICP alignment.</li>
+<li><strong>Quality</strong> — screening result, interview performance, sourcing strength.</li>
+<li><strong>Trust</strong> — verification, proctoring, fraud checks.</li>
+<li><strong>Conversion</strong> — engagement, anti-ghost signals, scheduling responsiveness.</li>
+</ul>
+<p>Each composite is fed by independent signals from the agents, and <strong>fresher signals count more</strong> — a reply from yesterday outweighs a resume keyword from last year. That’s why a score can move on its own: a new signal arrived and the engine re-weighed everything.</p>
+
+<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="280" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">From Signals to Decision</text>
+
+  <!-- Agents column -->
+  
+      <rect x="40" y="58" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="71" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">ICP</text>
+    
+      <rect x="40" y="80" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="93" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Sourcing</text>
+    
+      <rect x="40" y="102" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="115" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Screening</text>
+    
+      <rect x="40" y="124" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="137" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Verify</text>
+    
+      <rect x="40" y="146" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="159" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Outreach</text>
+    
+      <rect x="40" y="168" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="181" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Schedule</text>
+    
+      <rect x="40" y="190" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="203" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Interview</text>
+    
+      <rect x="40" y="212" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="225" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Proctoring</text>
+    
+      <rect x="40" y="234" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="247" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Anti-Ghost</text>
+    
+
+  <!-- Engine box -->
+  <rect x="380" y="80" width="220" height="130" rx="14" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="2"/>
+  <text x="490" y="115" text-anchor="middle" fill="#06b6d4" font-size="16" font-weight="700" font-family="Inter,sans-serif">Intelligence</text>
+  <text x="490" y="135" text-anchor="middle" fill="#06b6d4" font-size="16" font-weight="700" font-family="Inter,sans-serif">Engine</text>
+  <text x="490" y="160" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Bayesian merge · decay</text>
+  <text x="490" y="174" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">policy gating · tenant β</text>
+  <text x="490" y="192" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">closed-loop learning</text>
+
+  <!-- Output column -->
+  
+      <rect x="700" y="77" width="170" height="22" rx="5" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-opacity="0.6"/>
+      <text x="785" y="92" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="600" font-family="Inter,sans-serif">Hire Probability</text>
+    
+      <rect x="700" y="105" width="170" height="22" rx="5" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-opacity="0.6"/>
+      <text x="785" y="120" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600" font-family="Inter,sans-serif">Next Best Action</text>
+    
+      <rect x="700" y="133" width="170" height="22" rx="5" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-opacity="0.6"/>
+      <text x="785" y="148" text-anchor="middle" fill="#06b6d4" font-size="11" font-weight="600" font-family="Inter,sans-serif">Strengths & Risks</text>
+    
+      <rect x="700" y="161" width="170" height="22" rx="5" fill="#ec4899" fill-opacity="0.18" stroke="#ec4899" stroke-opacity="0.6"/>
+      <text x="785" y="176" text-anchor="middle" fill="#ec4899" font-size="11" font-weight="600" font-family="Inter,sans-serif">Stage Forecasts</text>
+    
+      <rect x="700" y="189" width="170" height="22" rx="5" fill="#a855f7" fill-opacity="0.18" stroke="#a855f7" stroke-opacity="0.6"/>
+      <text x="785" y="204" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="600" font-family="Inter,sans-serif">Decision Audit</text>
+    
+
+  <!-- Connecting lines -->
+  <line x1="195" y1="70" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="114" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="158" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="202" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="246" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/>
+  <line x1="602" y1="145" x2="698" y2="90" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="602" y1="145" x2="698" y2="202" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="602" y1="145" x2="698" y2="314" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/>
+
+  <text x="115" y="50" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif" font-weight="600">9 Specialist Agents</text>
+  <text x="785" y="50" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif" font-weight="600">Recruiter Surface</text>
+</svg>
+<div class="figure-caption">Figure 4 — Signal flow from agents through the Intelligence Engine to recruiter outputs</div>
+<blockquote>
+<p><strong>The takeaway:</strong> the score is an <em>input</em>, not a verdict. It’s the engine’s best estimate from the data so far. Your judgment, the transcript, and the conversation are where you make the real call.</p>
+</blockquote>
+<hr>
+<h2>Chapter 8 · Acting on Next Best Action (NBA)</h2>
+<p>Above every candidate card and in your Recommended Actions list, you’ll see an <strong>NBA chip</strong> — L3xy’s recommendation for what to do next with this person.</p>
+
+<svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="220" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">Next Best Action — Decision Waterfall</text>
+
+  
+      <g transform="translate(50,80)">
+        <rect width="160" height="60" rx="10" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#f59e0b" font-size="15" font-weight="700" font-family="Inter,sans-serif">Verify</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Trust score below policy floor</text>
+      </g>
+    
+      <g transform="translate(220,80)">
+        <rect width="160" height="60" rx="10" fill="#ec4899" fill-opacity="0.18" stroke="#ec4899" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#ec4899" font-size="15" font-weight="700" font-family="Inter,sans-serif">Re-engage</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Dropoff probability > ghosting alert</text>
+      </g>
+    
+      <g transform="translate(390,80)">
+        <rect width="160" height="60" rx="10" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#22c55e" font-size="15" font-weight="700" font-family="Inter,sans-serif">Advance</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Hire probability ≥ advance threshold</text>
+      </g>
+    
+      <g transform="translate(560,80)">
+        <rect width="160" height="60" rx="10" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#ef4444" font-size="15" font-weight="700" font-family="Inter,sans-serif">Reject</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Quality below floor & screening complete</text>
+      </g>
+    
+      <g transform="translate(730,80)">
+        <rect width="160" height="60" rx="10" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#06b6d4" font-size="15" font-weight="700" font-family="Inter,sans-serif">Schedule</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Default action — keep moving</text>
+      </g>
+    
+
+  <line x1="212" y1="110" x2="218" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="382" y1="110" x2="388" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="552" y1="110" x2="558" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="722" y1="110" x2="728" y2="110" stroke="#475569" stroke-width="1.5"/>
+
+  <text x="450" y="180" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif">First matching condition wins. Tenant policy defines all thresholds.</text>
+  <text x="450" y="200" text-anchor="middle" fill="#475569" font-size="10" font-family="Inter,sans-serif">Every NBA records a snapshot of the policy that produced it — fully auditable.</text>
+</svg>
+<div class="figure-caption">Figure 3 — Next Best Action waterfall (first match wins)</div>
+<p>There are five possible NBAs. Treat them like guardrails, not commands — you can always override.</p>
+<table>
+<thead>
+<tr>
+<th>NBA</th>
+<th>What it means</th>
+<th>Default action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Verify</strong></td>
+<td>Trust score is below your tenant’s policy floor</td>
+<td>Trigger an extra verification check</td>
+</tr>
+<tr>
+<td><strong>Re-engage</strong></td>
+<td>This candidate is at risk of ghosting</td>
+<td>Send the AI-drafted nudge, or write your own</td>
+</tr>
+<tr>
+<td><strong>Advance</strong></td>
+<td>Hire probability is above your advance threshold</td>
+<td>Move to the next stage</td>
+</tr>
+<tr>
+<td><strong>Reject</strong></td>
+<td>Quality is below floor and screening is complete</td>
+<td>Send the polite rejection (templated)</td>
+</tr>
+<tr>
+<td><strong>Schedule</strong></td>
+<td>Default — keep moving the pipeline forward</td>
+<td>Book the next interview</td>
+</tr>
+</tbody>
+</table>
+<p>Each NBA is recorded in the audit trail with the policy snapshot that produced it. If a hiring manager later asks <em>“why did we reject this person?”</em> you can show them the exact decision and the data behind it.</p>
+<hr>
+<h2>Chapter 9 · The Candidate Pipeline (Kanban)</h2>
+<p>Each work order has a <strong>pipeline board</strong> that shows where every candidate sits. Candidates move left to right as agents (and you) act on them.</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>How candidates arrive</th>
+<th>What’s happening</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sourced</strong></td>
+<td>Sourcing agent or manual add</td>
+<td>Initial fit score assigned</td>
+</tr>
+<tr>
+<td><strong>Screening</strong></td>
+<td>Auto, on link to the role</td>
+<td>Resume scored against the ICP</td>
+</tr>
+<tr>
+<td><strong>Verification</strong></td>
+<td>Auto, on entering the stage</td>
+<td>Identity &amp; employment checks run for <em>every</em> candidate</td>
+</tr>
+<tr>
+<td><strong>Outreach</strong></td>
+<td>After verification clears</td>
+<td>Personalized messages sent; replies classified</td>
+</tr>
+<tr>
+<td><strong>Interview</strong></td>
+<td>After a positive reply</td>
+<td>AI interview invited, run, and scored</td>
+</tr>
+<tr>
+<td><strong>Decision</strong></td>
+<td>After interview</td>
+<td>Waiting for your push-to-client or advance call</td>
+</tr>
+<tr>
+<td><strong>Hired / Rejected</strong></td>
+<td>Your decision</td>
+<td>Closed; the candidate stays in your pool</td>
+</tr>
+</tbody>
+</table>
+<h3>Moving candidates yourself</h3>
+<p>Drag a card to a new stage, or use <strong>Advance</strong> / <strong>Reject</strong> on the card. A manual move is always respected — if you push someone forward, the system trusts your call and won’t silently pull them back.</p>
+<blockquote>
+<p><strong>Watch for stalls.</strong> If a column is full but the next one is empty (e.g., lots Sourced, nothing Screened), open a card in that column — there’s usually a flag or a missing input explaining the holdup.</p>
+</blockquote>
+<hr>
+<h2>Chapter 10 · Screening &amp; Verification</h2>
+<p>Two agents quietly do the work that used to eat your mornings. You mostly just review their output on the candidate card — but here’s what’s happening under the hood.</p>
+<h3>Screening</h3>
+<p>The <strong>Screening agent</strong> reads each resume the moment a candidate is linked to a role and scores it against the ICP. On the <strong>Resume / Screening</strong> tab you get:</p>
+<ul>
+<li>An <strong>AI Recruiter Summary</strong> — the “why this person, in plain English.”</li>
+<li><strong>Extracted skills</strong> and <strong>missing skills</strong> versus the ICP.</li>
+<li>A contradiction flag if the resume conflicts with a verification signal.</li>
+</ul>
+<p>Screening is automatic — you never trigger it. While it’s running you’ll see a brief “screening…” indicator on the card; results usually land in seconds.</p>
+<h3>Verification</h3>
+<p>When a candidate enters the <strong>Verification</strong> stage, the <strong>Verification agent</strong> runs automatically for <em>everyone</em> in that stage — sourced, applied, or manually added. It checks identity, employment history, and risk/fraud signals, and writes a verdict to the <strong>Verification</strong> tab:</p>
+<ul>
+<li>🟢 <strong>Green</strong> — clear, nothing to see.</li>
+<li>🟠 <strong>Amber</strong> — needs a human review; click for the evidence.</li>
+<li>🔴 <strong>Red</strong> — blocked; a serious flag.</li>
+</ul>
+<blockquote>
+<p><strong>Don’t ignore amber.</strong> A five-minute review now prevents an embarrassing reversal later. The flag is amber for a reason — the system isn’t sure, so it’s asking you.</p>
+</blockquote>
+<p>You can also re-run verification on demand from the candidate card if new information arrives.</p>
+<hr>
+<h2>Chapter 11 · The Outreach Inbox</h2>
+<p>When candidates reply to L3xy’s messages, the responses land in <code>/outreach/inbox</code>. This is your second-most-visited screen.</p>
+<h3>How it’s organized</h3>
+<ul>
+<li><strong>Grouped by Work Order</strong> — keeps the noise down.</li>
+<li><strong>Each message has a classification badge</strong> assigned by AI:
+<ul>
+<li><strong>Positive Reply</strong> — they’re interested, no action needed (auto-progressed)</li>
+<li><strong>Question</strong> — they asked something, needs your touch</li>
+<li><strong>Not Interested</strong> — politely declined, auto-marked DNC for this role</li>
+<li><strong>DNC</strong> — Do Not Contact (also blocks future cross-role outreach unless overridden)</li>
+</ul>
+</li>
+</ul>
+<h3>Campaigns &amp; autopilot</h3>
+<p>Outreach runs as a <strong>campaign</strong> — a first touch, a second touch, and follow-ups, each personalized from the candidate’s profile and your brand voice. With <strong>autopilot</strong> on, the agent advances the sequence on its own (sending the next nudge only if there was no reply), so warm candidates never go cold while you sleep.</p>
+<h3>The AI-drafted reply</h3>
+<p>For “Question” and other “Needs Review” messages, you’ll see an <strong>AI Reply Draft</strong> below the candidate’s message. You have three buttons:</p>
+<ul>
+<li><strong>Approve</strong> — sends it as-is.</li>
+<li><strong>Edit</strong> — opens the editor with the draft pre-loaded; tweak and send.</li>
+<li><strong>Discard</strong> — write your own from scratch.</li>
+</ul>
+<blockquote>
+<p><strong>Tip:</strong> Approve drafts liberally. The AI’s tone matches your campaign settings, and edits should only be needed for genuinely tricky asks. Trust the system; review the outputs.</p>
+</blockquote>
+<h3>The Do Not Contact list</h3>
+<p>Manage your <strong>DNC</strong> list at <code>/dnc</code>. Anyone here is excluded from every message, every cadence, every worker, and every future scan — universally and permanently. When a candidate says “please stop,” that promise is non-negotiable and honored across all roles.</p>
+<hr>
+<h2>Chapter 12 · AI Interviews</h2>
+<p>L3xy can run <strong>autonomous video interviews</strong> — the candidate joins a room, the AI conducts the session, scores it, and writes you the report. No scheduler needed (the candidate self-books from the link they receive).</p>
+<h3>Setting up an interview</h3>
+<p>From a candidate card, click <strong>Schedule Interview</strong>. You’ll see the configurator:</p>
+<ul>
+<li><strong>Interview type:</strong> Technical, Behavioral, System Design, Cultural Fit, or Custom.</li>
+<li><strong>Question count:</strong> 5 / 8 / 12.</li>
+<li><strong>Language:</strong> 30+ supported. Defaults to the candidate’s apparent language but you can override.</li>
+<li><strong>Proctoring:</strong> On by default for technical interviews.</li>
+</ul>
+<p>Click <strong>Send Invite</strong> and the candidate gets a self-scheduling link. They book a time, the AI runs the session, and you get a notification when the report is ready.</p>
+<h3>What the candidate experiences</h3>
+<p>Candidates take the interview from their <strong>portal</strong> (<code>/portal/career</code>). The AI interviewer — always named <strong>Lexy</strong> — greets them, asks one question at a time, listens, and responds naturally. It’s a real conversation, not a form.</p>
+<h3>Reviewing an interview</h3>
+<p>From <code>/interviews/:id</code> you’ll see:</p>
+<ul>
+<li><strong>Score Badge</strong> — overall AI evaluation (0–100).</li>
+<li><strong>Per-question breakdown</strong> with transcript, evaluation rubric, and the AI’s reasoning.</li>
+<li><strong>Proctoring report</strong> (if enabled) — see below.</li>
+<li><strong>Playback</strong> — watch the actual session.</li>
+</ul>
+<blockquote>
+<p>Treat the AI score as one input, not the verdict. The transcript and the playback are where you make the real call.</p>
+</blockquote>
+<h3>Proctoring</h3>
+<p>When proctoring is on, L3xy monitors the session for integrity and produces a <strong>proctor report</strong> (<code>/interviews/:id/proctor-report</code>): environmental analysis, identity confirmation, and behavioral flags such as additional voices, tab-switching, or screen-sharing. Flags are signals for your judgment — not automatic disqualifications.</p>
+<h3>Scoring fairly</h3>
+<p>Interviews are scored on the <strong>substance</strong> of the answers — relevance, depth, correctness, specific examples. The engine is explicitly instructed <em>not</em> to reward or penalize accent, dialect, grammar, or speaking style except where it genuinely blocks job-relevant communication.</p>
+<hr>
+<h2>Chapter 13 · The Decision Queue</h2>
+<p><code>/decision-queue</code> is where L3xy puts candidates that are <em>ready for a human decision</em> — usually because they’ve cleared every automated gate and are waiting for either a “push to client” or an “advance to onsite” call.</p>
+<p>Work the queue top-down. Each card has the candidate’s photo, hire probability, the NBA, and a one-line summary. Click to open the full card; act; repeat.</p>
+<blockquote>
+<p>Power-user tip: Set yourself a 15-minute timer twice a day to clear the Decision Queue. That’s usually enough to keep every role moving without it consuming you.</p>
+</blockquote>
+<hr>
+<h2>Chapter 14 · The Always-On Pool</h2>
+<p>Here’s a thing nobody tells you about most recruiting tools: when you log out, the system goes to sleep. Sequences pause. Cold candidates stay cold. New roles don’t surface old people.</p>
+<p><strong>L3xy is different.</strong> Six background workers run 24/7 on your behalf, even on weekends and holidays. You don’t configure them. You don’t schedule them. They just run.</p>
+
+<svg viewBox="0 0 900 410" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="pulse" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="410" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">The Always-On Pool</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Six background workers run continuously — even when the recruiter sleeps</text>
+
+  <!-- Center pool -->
+  <circle cx="450" cy="200" r="100" fill="url(#pulse)"/>
+  <circle cx="450" cy="200" r="62" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="2"/>
+  <text x="450" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">TALENT</text>
+  <text x="450" y="212" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">POOL</text>
+
+  <!-- Schedulers around the pool -->
+  
+    <line x1="160" y1="100" x2="450" y2="200" stroke="#f97316" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="70" y="74" width="180" height="52" rx="8" fill="#f97316" fill-opacity="0.12" stroke="#f97316" stroke-width="1.5"/>
+    <text x="160" y="91" text-anchor="middle" fill="#f97316" font-size="11" font-weight="700" font-family="Inter,sans-serif">Outreach Autopilot</text>
+    <text x="160" y="105" text-anchor="middle" fill="#f97316" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 15 min</text>
+    <text x="160" y="118" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Advances campaign sequences</text>
+  
+    <line x1="740" y1="100" x2="450" y2="200" stroke="#ef4444" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="650" y="74" width="180" height="52" rx="8" fill="#ef4444" fill-opacity="0.12" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="740" y="91" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700" font-family="Inter,sans-serif">Ghosting Detectors</text>
+    <text x="740" y="105" text-anchor="middle" fill="#ef4444" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 30 min</text>
+    <text x="740" y="118" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">4 detectors scan continuously</text>
+  
+    <line x1="110" y1="240" x2="450" y2="200" stroke="#ec4899" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="20" y="214" width="180" height="52" rx="8" fill="#ec4899" fill-opacity="0.12" stroke="#ec4899" stroke-width="1.5"/>
+    <text x="110" y="231" text-anchor="middle" fill="#ec4899" font-size="11" font-weight="700" font-family="Inter,sans-serif">Nurture Cycle</text>
+    <text x="110" y="245" text-anchor="middle" fill="#ec4899" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 6 hours</text>
+    <text x="110" y="258" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">AI re-engagement emails</text>
+  
+    <line x1="790" y1="240" x2="450" y2="200" stroke="#22c55e" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="700" y="214" width="180" height="52" rx="8" fill="#22c55e" fill-opacity="0.12" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="790" y="231" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700" font-family="Inter,sans-serif">Pool Revival</text>
+    <text x="790" y="245" text-anchor="middle" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="790" y="258" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Wakes Passive 30-89d / Inactive 90+d</text>
+  
+    <line x1="280" y1="345" x2="450" y2="200" stroke="#8b5cf6" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="190" y="319" width="180" height="52" rx="8" fill="#8b5cf6" fill-opacity="0.12" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="280" y="336" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="700" font-family="Inter,sans-serif">Cross-Role Re-Scan</text>
+    <text x="280" y="350" text-anchor="middle" fill="#8b5cf6" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="280" y="363" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Every candidate × every open role</text>
+  
+    <line x1="620" y1="345" x2="450" y2="200" stroke="#0ea5e9" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="530" y="319" width="180" height="52" rx="8" fill="#0ea5e9" fill-opacity="0.12" stroke="#0ea5e9" stroke-width="1.5"/>
+    <text x="620" y="336" text-anchor="middle" fill="#0ea5e9" font-size="11" font-weight="700" font-family="Inter,sans-serif">LinkedIn Drift Monitor</text>
+    <text x="620" y="350" text-anchor="middle" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="620" y="363" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Detects job changes after 180d quiet</text>
+  
+</svg>
+<div class="figure-caption">Six always-on background workers keep the pool alive 24/7</div>
+<table>
+<thead>
+<tr>
+<th>What runs</th>
+<th>How often</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Outreach autopilot</td>
+<td>every 15 min</td>
+<td>Advances campaign sequences — sends the next nudge if a candidate didn’t reply</td>
+</tr>
+<tr>
+<td>Ghosting detectors</td>
+<td>every 30 min</td>
+<td>Scans for interview no-shows, dropped conversations, stalled pipelines, offers in limbo</td>
+</tr>
+<tr>
+<td>Nurture re-engagement</td>
+<td>every 6 hours</td>
+<td>Generates personalized “stay warm” emails for at-risk candidates</td>
+</tr>
+<tr>
+<td>Pool revival</td>
+<td>every 24 hours</td>
+<td>Mails dormant candidates: Passive (30-89d quiet) and Inactive (90+d quiet)</td>
+</tr>
+<tr>
+<td>Cross-role re-scan</td>
+<td>every 24 hours</td>
+<td>Re-evaluates every pool candidate against every open role; strong matches (≥75) get a heads-up email — <em>“a company is interested in you, want me to introduce you?”</em></td>
+</tr>
+<tr>
+<td>LinkedIn drift monitor</td>
+<td>every 24 hours</td>
+<td>For candidates 6+ months stale, checks LinkedIn for job changes; sends either a “congrats on the new role” email or a calendar-based wellness check-in</td>
+</tr>
+</tbody>
+</table>
+<h3>What the candidate sees</h3>
+<p>Three of these workers send candidate-facing emails automatically. Here’s the plain-English version of each:</p>
+<table>
+<thead>
+<tr>
+<th>When this happens</th>
+<th>The candidate gets</th>
+<th>Why it’s powerful</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>They’ve been silent 30-89 days</td>
+<td><em>“Are you still looking? Anything you’d like us to know?”</em></td>
+<td>Soft, low-pressure — invites them back into the conversation</td>
+</tr>
+<tr>
+<td>They’ve been silent 90+ days</td>
+<td><em>“Your profile is losing visibility — quick check-in?”</em></td>
+<td>Honest about what’s at stake — drives a refresh</td>
+</tr>
+<tr>
+<td>Their Lexy profile is 6+ months old AND LinkedIn shows a new job</td>
+<td><em>“Congrats on the new role at [Company]! Want to update your profile?”</em></td>
+<td>Catches the candidates who got promoted and forgot to tell us — without anyone having to ask</td>
+</tr>
+<tr>
+<td>Their Lexy profile is 6+ months old AND LinkedIn shows no change (or no data)</td>
+<td><em>“Has something exciting happened lately? New job, promotion, relocation?”</em></td>
+<td>The 6-month wellness check that other platforms simply don’t do</td>
+</tr>
+<tr>
+<td>A new role opens that scores them ≥ 75</td>
+<td><em>“A company has shown interest in you — want me to make the intro?”</em></td>
+<td>The reverse pitch: the platform is selling <strong>opportunities to candidates</strong>, not just candidates to recruiters</td>
+</tr>
+</tbody>
+</table>
+<h3>What this means for your day</h3>
+<p>When you open the dashboard each morning, the <strong>Recommended Actions</strong> list is <em>not</em> the leftover work from yesterday. It’s the result of overnight activity:</p>
+<ul>
+<li>Candidates who replied to a 2 a.m. nurture email and need your touch.</li>
+<li>Candidates who got auto-matched to a new role overnight and are waiting for your “yes.”</li>
+<li>Candidates the ghosting detectors flagged who need a 30-second decision from you.</li>
+<li>Candidates from 6 months ago who just re-engaged because the pool revival worker reached them.</li>
+</ul>
+<blockquote>
+<p><strong>The discipline:</strong> trust the overnight queue. If you find yourself manually scrubbing the talent pool for “people who might be a fit,” you’re doing the job the system already did while you slept.</p>
+</blockquote>
+<h3>The DNC promise</h3>
+<p>Every re-engagement respects the <strong>Do Not Contact</strong> flag — universally and forever. If a candidate says “please stop,” the DNC marker is honored across every role, every cadence, every worker, and every future scan. This is non-negotiable.</p>
+<hr>
+<h2>Chapter 15 · The Talent Pool — Your Warm Asset</h2>
+<p><code>/candidates</code> is the full list of every person L3xy has ever touched on your behalf. <strong>This is the most underused page in the product, and it shouldn’t be.</strong></p>
+
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="core" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0e7490" stop-opacity="0.4"/>
+    </radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="900" height="380" fill="#020617" rx="12"/>
+  <text x="450" y="32" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">The Candidate is the Center</text>
+  <text x="450" y="52" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">A single living profile, continuously enriched by every agent and every interaction</text>
+
+  <!-- Core candidate node -->
+  <circle cx="450" cy="200" r="55" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="450" cy="200" r="48" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4" stroke-width="2"/>
+  <text x="450" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">CANDIDATE</text>
+  <text x="450" y="212" text-anchor="middle" fill="#cffafe" font-size="9" font-family="Inter,sans-serif">live profile</text>
+
+  <!-- Orbiting nodes -->
+  
+    <line x1="200" y1="120" x2="450" y2="200" stroke="#3b82f6" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="200" cy="120" r="6" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="200" y="108" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="600" font-family="Inter,sans-serif">Sourcing signals</text>
+  
+    <line x1="260" y1="280" x2="450" y2="200" stroke="#06b6d4" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="260" cy="280" r="6" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4" stroke-width="1.5"/>
+    <text x="260" y="268" text-anchor="middle" fill="#06b6d4" font-size="10" font-weight="600" font-family="Inter,sans-serif">Screening history</text>
+  
+    <line x1="160" y1="220" x2="450" y2="200" stroke="#8b5cf6" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="160" cy="220" r="6" fill="#8b5cf6" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="160" y="208" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="600" font-family="Inter,sans-serif">ICP fit (per role)</text>
+  
+    <line x1="730" y1="120" x2="450" y2="200" stroke="#22c55e" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="730" cy="120" r="6" fill="#22c55e" fill-opacity="0.3" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="730" y="108" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="600" font-family="Inter,sans-serif">Verify trust</text>
+  
+    <line x1="760" y1="230" x2="450" y2="200" stroke="#f97316" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="760" cy="230" r="6" fill="#f97316" fill-opacity="0.3" stroke="#f97316" stroke-width="1.5"/>
+    <text x="760" y="218" text-anchor="middle" fill="#f97316" font-size="10" font-weight="600" font-family="Inter,sans-serif">Outreach replies</text>
+  
+    <line x1="680" y1="310" x2="450" y2="200" stroke="#10b981" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="680" cy="310" r="6" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.5"/>
+    <text x="680" y="298" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600" font-family="Inter,sans-serif">Interview scores</text>
+  
+    <line x1="380" y1="75" x2="450" y2="200" stroke="#ec4899" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="380" cy="75" r="6" fill="#ec4899" fill-opacity="0.3" stroke="#ec4899" stroke-width="1.5"/>
+    <text x="380" y="63" text-anchor="middle" fill="#ec4899" font-size="10" font-weight="600" font-family="Inter,sans-serif">Engagement timeline</text>
+  
+    <line x1="520" y1="75" x2="450" y2="200" stroke="#a855f7" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="520" cy="75" r="6" fill="#a855f7" fill-opacity="0.3" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="520" y="63" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="600" font-family="Inter,sans-serif">Connection strength</text>
+  
+    <line x1="380" y1="330" x2="450" y2="200" stroke="#eab308" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="380" cy="330" r="6" fill="#eab308" fill-opacity="0.3" stroke="#eab308" stroke-width="1.5"/>
+    <text x="380" y="318" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600" font-family="Inter,sans-serif">Conversation history</text>
+  
+    <line x1="520" y1="330" x2="450" y2="200" stroke="#f43f5e" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="520" cy="330" r="6" fill="#f43f5e" fill-opacity="0.3" stroke="#f43f5e" stroke-width="1.5"/>
+    <text x="520" y="318" text-anchor="middle" fill="#f43f5e" font-size="10" font-weight="600" font-family="Inter,sans-serif">Cross-role rankings</text>
+  
+
+  <text x="450" y="365" text-anchor="middle" fill="#475569" font-size="10" font-family="Inter,sans-serif">Signals append. They never overwrite. The graph grows. The candidate stays warm — for every role, forever.</text>
+</svg>
+<div class="figure-caption">The Living Talent Graph — every candidate is a node that grows richer over time</div>
+<h3>Why it matters</h3>
+<p>Every candidate here is a <strong>living node</strong> — their profile is automatically re-scored against every new role you open. Someone who wasn’t right for last quarter’s Senior PM role might be a perfect fit for this quarter’s Director role, and L3xy will tell you so without you lifting a finger.</p>
+<h3>How to use it</h3>
+<ol>
+<li>Open <code>/candidates</code>.</li>
+<li>Filter by skill, location, or <strong>Talent Match Score</strong> for any specific job.</li>
+<li>Use <strong>Talent Match</strong> (<code>/talent-match</code>) when you want to ask “find me everyone in the pool who fits this new role” — the engine ranks the entire pool against the new ICP in seconds.</li>
+<li>Reactivate anyone interesting with a single click — their full history, prior conversations, and stage progress carry over.</li>
+</ol>
+<blockquote>
+<p><strong>The discipline:</strong> Before you launch outbound sourcing for a new role, <em>always</em> check the talent pool first. You’re sitting on a compounding asset. Use it.</p>
+</blockquote>
+<hr>
+<h2>Chapter 16 · Pushing to Client (Agency Recruiters)</h2>
+<p>If you’re an agency, the <strong>Push to Client</strong> action sends a candidate’s curated profile to your client portal — sanitized, branded, and with the AI Recruiter Summary front and center.</p>
+<p>The client sees what you want them to see. They don’t see proctoring flags, raw scores, or internal notes unless you explicitly enable that share.</p>
+<p>You’ll get a notification when the client views, comments, or moves the candidate forward.</p>
+<hr>
+<h2>Chapter 17 · Analytics &amp; Reporting</h2>
+<p>Open <strong>Analytics</strong> (<code>/analytics</code>) for the numbers that tell you whether your hiring engine is healthy.</p>
+<h3>What you can see</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>What it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Time-to-hire</strong></td>
+<td>How long candidates take to move from sourced to hired</td>
+</tr>
+<tr>
+<td><strong>Funnel conversion</strong></td>
+<td>Where candidates drop off, stage by stage</td>
+</tr>
+<tr>
+<td><strong>Source effectiveness</strong></td>
+<td>Which sources produce the candidates who actually convert</td>
+</tr>
+<tr>
+<td><strong>Agent performance</strong></td>
+<td>How much work each agent is doing and how well</td>
+</tr>
+</tbody>
+</table>
+<h3>Engagement</h3>
+<p>The <strong>Engagement</strong> view (<code>/engagement</code>) zooms in on candidate responsiveness — reply rates, time-to-first-response, and portal activity. Use it to spot campaigns that aren’t landing and roles where candidates are going quiet.</p>
+<blockquote>
+<p><strong>How to read a funnel:</strong> a healthy funnel narrows smoothly. A sharp cliff between two stages is a process problem — for example, lots of outreach but few replies means your messaging or targeting needs a look, not more volume.</p>
+</blockquote>
+<hr>
+<h2>Chapter 18 · Team &amp; Tenant Management</h2>
+<p><em>(Tenant Admins)</em></p>
+<h3>Managing your team</h3>
+<p>Go to <strong>Team</strong> (<code>/team</code>) to manage seats and roles:</p>
+<ul>
+<li><strong>Invite a teammate</strong> — enter their email and choose a role (Recruiter or Tenant Admin). They get an invite link to accept.</li>
+<li><strong>Change a role</strong> — promote a recruiter to admin, or vice versa.</li>
+<li><strong>Remove a member</strong> — revoke access when someone leaves.</li>
+</ul>
+<h3>Agencies: clients &amp; branches</h3>
+<p>If you run an agency or a multi-team org, <strong>Clients</strong> (<code>/clients</code>) lets you manage sub-clients and branches. L3xy supports a hierarchy:</p>
+<p><strong>Platform → Agency → Sub-client / Branch</strong></p>
+<p>Visibility flows down the tree: a parent can see its children’s work, but siblings stay separate. When you create a work order, you choose which client/branch it belongs to (that’s Step 1 of the wizard).</p>
+<blockquote>
+<p><strong>Tip:</strong> Keep your client/branch structure tidy from the start. It drives who can see which roles and candidates, and it’s what your analytics roll up by.</p>
+</blockquote>
+<hr>
+<h2>Chapter 19 · Billing &amp; Subscription</h2>
+<p><em>(Tenant Admins)</em></p>
+<p>Manage your plan from <strong>Billing</strong> (<code>/subscription</code>).</p>
+<h3>Plans</h3>
+<table>
+<thead>
+<tr>
+<th>Plan</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Starter</strong></td>
+<td>Smaller teams getting going — core agents and a starting set of seats and usage</td>
+</tr>
+<tr>
+<td><strong>Growth</strong></td>
+<td>Scaling teams — higher limits and more room across seats, usage, and advanced agent use</td>
+</tr>
+</tbody>
+</table>
+<h3>Credits &amp; usage</h3>
+<p>L3xy meters the work the AI does for you — things like AI generations, outreach messages, and interview sessions — as <strong>credits</strong>. The Billing page shows your current usage against your plan so there are no surprises. If you’re approaching a limit, that’s your cue to review usage or upgrade.</p>
+<h3>Payment</h3>
+<p>Payment and invoices are handled securely through <strong>Stripe</strong>. From the Billing page, click through to the <strong>Stripe customer portal</strong> to update your card, download invoices, or change your plan. L3xy never stores your card details directly.</p>
+<blockquote>
+<p><strong>Watch your usage trend, not just the total.</strong> A steady climb in interview or outreach credits is a good sign your pipeline is busy — plan your upgrade before you hit the ceiling, not after.</p>
+</blockquote>
+<hr>
+<h2>Chapter 20 · Settings &amp; Your Account</h2>
+<p>Beyond the big screens, a few settings shape how L3xy behaves for you and your team.</p>
+<ul>
+<li><strong>Your profile</strong> — name, photo, and contact details that appear to teammates and (where relevant) candidates.</li>
+<li><strong>Notifications</strong> — choose what reaches you in-app and by email: new replies, interview reports, verification flags, and ghosting alerts. Tune these so the dashboard’s Recommended Actions stay signal, not noise.</li>
+<li><strong>Policy thresholds</strong> <em>(Tenant Admins)</em> — the floors and thresholds that drive Next Best Action: the trust floor that triggers <strong>Verify</strong>, the probability that triggers <strong>Advance</strong>, and the quality floor that triggers <strong>Reject</strong>. Every NBA records the policy snapshot that produced it, so changes here are fully auditable.</li>
+</ul>
+<blockquote>
+<p><strong>The system learns from you.</strong> When you override an AI suggestion, that disagreement feeds a closed-loop learning system that gradually tunes your tenant’s policy to match how <em>you</em> actually decide.</p>
+</blockquote>
+<hr>
+<h2>Chapter 21 · Tips, Tricks, and Best Practices</h2>
+<h3>Do</h3>
+<ul>
+<li><strong>Read the ICP before launching.</strong> Five seconds of review saves an hour of bad sourcing.</li>
+<li><strong>Mine the talent pool before every new role.</strong> Cross-role intelligence is the moat — use it.</li>
+<li><strong>Approve AI replies liberally.</strong> That’s the productivity win. Don’t second-guess every draft.</li>
+<li><strong>Work the Decision Queue twice a day.</strong> It’s the highest-leverage 30 minutes you’ll spend.</li>
+<li><strong>Trust the NBA recommendations</strong> unless you have a specific reason not to. They’re built from your tenant’s policy + the math.</li>
+</ul>
+<h3>Don’t</h3>
+<ul>
+<li><strong>Don’t disable agents to “have more control.”</strong> You’ll just create blind spots. The system is designed to run end-to-end.</li>
+<li><strong>Don’t manually re-score candidates.</strong> Decay is automatic; the engine knows fresh signals are worth more than old ones.</li>
+<li><strong>Don’t ignore amber verification flags.</strong> They’re amber for a reason. Five-minute review now saves an embarrassing reversal later.</li>
+<li><strong>Don’t write outreach from scratch when an AI draft is sitting there.</strong> Edit it instead. Save your writing time for the messages that actually need a human voice.</li>
+</ul>
+<h3>Keyboard shortcuts</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g d</code></td>
+<td>Go to Dashboard</td>
+</tr>
+<tr>
+<td><code>g j</code></td>
+<td>Go to Jobs</td>
+</tr>
+<tr>
+<td><code>g c</code></td>
+<td>Go to Candidates</td>
+</tr>
+<tr>
+<td><code>g i</code></td>
+<td>Go to Inbox</td>
+</tr>
+<tr>
+<td><code>n</code></td>
+<td>New Work Order (from Jobs page)</td>
+</tr>
+<tr>
+<td><code>j / k</code></td>
+<td>Next / previous candidate in any list</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>Advance current candidate</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Reject current candidate</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>Show all shortcuts</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Chapter 22 · FAQ</h2>
+<p><strong>Why is my Hire Probability changing without me doing anything?</strong>
+Because new signals arrived (a reply, a verification result, an interview score) and the engine re-scored. That’s the system working as designed. Open the Timeline tab to see what changed.</p>
+<p><strong>A candidate I rejected six months ago is showing up as a “match” for a new role. Is this a bug?</strong>
+No, it’s the feature. They were rejected for <em>that</em> role, not banned from your pool. If they’re a fit for the new role, L3xy will surface them. Reactivate or ignore — your call.</p>
+<p><strong>The Sourcing agent isn’t finding anyone.</strong>
+Three usual causes: (1) the ICP is too narrow — relax must-haves, (2) the location filter is too tight, (3) the salary band is below market. Check the work order, edit, relaunch.</p>
+<p><strong>Can I add a candidate manually?</strong>
+Yes — <code>/candidates → + Add Candidate</code>. Paste a LinkedIn URL or upload a resume. They enter the pool just like a sourced candidate.</p>
+<p><strong>Can I export candidate data?</strong>
+Yes — every list view has an Export button (CSV). Compliance: respect your tenant’s data retention policy.</p>
+<p><strong>Can I turn off the AI interview and just use human screens?</strong>
+Yes. Disable the Interview agent on a per-work-order basis in Agent Configuration.</p>
+<p><strong>How do I add a teammate?</strong>
+Tenant Admins go to <code>/team</code>, click invite, enter the email, and pick a role. The teammate accepts via the emailed link.</p>
+<p><strong>Where do I change my plan or update my card?</strong>
+Tenant Admins open <code>/subscription</code> and use the Stripe customer portal link to manage payment and plan.</p>
+<p><strong>A candidate is asking who’s actually messaging them. What do I say?</strong>
+Be transparent: <em>“I’m using an AI assistant to coordinate scheduling and initial outreach. Everything substantive comes through me.”</em> Honesty wins.</p>
+<p><strong>I disagreed with an AI-suggested rejection. What happens to that signal?</strong>
+Your override is logged and feeds the closed-loop learning system. Over time, the engine adjusts its policy for your tenant to match how <em>you</em> actually decide. The system gets smarter from disagreement, not just agreement.</p>
+<hr>
+<h2>Chapter 23 · Quick Reference Card</h2>
+<table>
+<thead>
+<tr>
+<th>You want to…</th>
+<th>Go to…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>See what’s hot today</td>
+<td><code>/dashboard</code></td>
+</tr>
+<tr>
+<td>Open a new role</td>
+<td><code>/jobs</code> → <strong>+ Create Work Order</strong></td>
+</tr>
+<tr>
+<td>Run an ad-hoc search</td>
+<td><code>/sourcing</code></td>
+</tr>
+<tr>
+<td>Rank your pool for a role</td>
+<td><code>/talent-match</code></td>
+</tr>
+<tr>
+<td>Review a candidate</td>
+<td><code>/candidates/:id</code></td>
+</tr>
+<tr>
+<td>Reply to a candidate</td>
+<td><code>/outreach/inbox</code></td>
+</tr>
+<tr>
+<td>Manage the Do Not Contact list</td>
+<td><code>/dnc</code></td>
+</tr>
+<tr>
+<td>Schedule an AI interview</td>
+<td>Candidate card → <strong>Schedule Interview</strong></td>
+</tr>
+<tr>
+<td>Review an interview</td>
+<td><code>/interviews/:id</code></td>
+</tr>
+<tr>
+<td>Clear ready-to-decide candidates</td>
+<td><code>/decision-queue</code></td>
+</tr>
+<tr>
+<td>Find people in your warm pool</td>
+<td><code>/candidates</code></td>
+</tr>
+<tr>
+<td>Watch what the agents are doing</td>
+<td>Dashboard → <strong>Agent Activity Feed</strong></td>
+</tr>
+<tr>
+<td>See who’s at risk of ghosting</td>
+<td>Dashboard → <strong>Recommended Actions</strong></td>
+</tr>
+<tr>
+<td>Check funnel &amp; time-to-hire</td>
+<td><code>/analytics</code></td>
+</tr>
+<tr>
+<td>Manage your team</td>
+<td><code>/team</code></td>
+</tr>
+<tr>
+<td>Manage clients / branches</td>
+<td><code>/clients</code></td>
+</tr>
+<tr>
+<td>Change plan or payment</td>
+<td><code>/subscription</code></td>
+</tr>
+<tr>
+<td>Push to a client portal</td>
+<td>Candidate card → <strong>Push to Client</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Welcome to the team</h2>
+<p>L3xy isn’t trying to replace you. It’s trying to delete the parts of your job you hate so you can focus on what you’re actually good at — judging humans, building relationships, and closing offers.</p>
+<p>Use it boldly. Trust the math. Override when your gut says otherwise. And every override teaches the system to recruit more like <em>you</em>.</p>
+<p>Now go open your dashboard and let’s hire someone.</p>
+<p>— <em>The L3xy Team</em></p>
+</div></body></html>

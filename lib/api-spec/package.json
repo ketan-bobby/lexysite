@@ -1,0 +1,12 @@
+{
+  "name": "@workspace/api-spec",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "codegen": "orval --config ./orval.config.ts",
+    "check-codegen": "node ./scripts/check-codegen.mjs"
+  },
+  "devDependencies": {
+    "orval": "^8.5.2"
+  }
+}

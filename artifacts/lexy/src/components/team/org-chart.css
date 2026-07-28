@@ -1,0 +1,72 @@
+/* Pure-CSS top-down org chart connectors.
+   Lines are drawn with bordered ::before/::after on each <li>. */
+.org-tree {
+  display: inline-block;
+  min-width: 100%;
+  text-align: center;
+}
+.org-tree ul {
+  display: flex;
+  justify-content: center;
+  padding-top: 22px;
+  position: relative;
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.org-tree li {
+  list-style: none;
+  text-align: center;
+  position: relative;
+  padding: 22px 14px 0 14px;
+}
+/* connectors going up from each node */
+.org-tree li::before,
+.org-tree li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 50%;
+  border-top: 1.5px solid hsl(var(--border));
+  width: 50%;
+  height: 22px;
+}
+.org-tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 1.5px solid hsl(var(--border));
+}
+/* a single child needs no horizontal connectors */
+.org-tree li:only-child::after,
+.org-tree li:only-child::before {
+  display: none;
+}
+.org-tree li:only-child {
+  padding-top: 0;
+}
+/* remove the outer halves of the first/last child's top connector */
+.org-tree li:first-child::before,
+.org-tree li:last-child::after {
+  border: 0 none;
+}
+.org-tree li:last-child::before {
+  border-right: 1.5px solid hsl(var(--border));
+  border-radius: 0 6px 0 0;
+}
+.org-tree li:first-child::after {
+  border-radius: 6px 0 0 0;
+}
+/* vertical line down from a parent into its children row */
+.org-tree ul ul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-left: 1.5px solid hsl(var(--border));
+  width: 0;
+  height: 22px;
+}
+/* the root node has no incoming connector */
+.org-tree > ul {
+  padding-top: 0;
+}

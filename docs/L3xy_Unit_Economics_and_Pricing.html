@@ -1,0 +1,2505 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<title>L3xy — Unit Economics & Pricing</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    color: #0f172a; line-height: 1.6; font-size: 11pt;
+    margin: 0; padding: 0; background: white;
+  }
+  .page { padding: 18mm 16mm; }
+  h1 { color: #0e7490; font-size: 24pt; border-bottom: 3px solid #06b6d4; padding-bottom: 8px; margin-top: 28px; }
+  h2 { color: #0891b2; font-size: 16pt; margin-top: 30px; border-left: 4px solid #06b6d4; padding-left: 12px; page-break-after: avoid; }
+  h3 { color: #0f172a; font-size: 12.5pt; margin-top: 22px; page-break-after: avoid; }
+  h4 { color: #475569; font-size: 11pt; margin-top: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 10.5pt; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.5pt; page-break-inside: avoid; }
+  th { background: #ecfeff; color: #0e7490; text-align: left; padding: 8px 10px; border-bottom: 2px solid #06b6d4; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  blockquote { background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 12px 16px; color: #134e4a; margin: 16px 0; border-radius: 4px; font-style: italic; }
+  blockquote p { font-size: 11pt; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 9.5pt; color: #0f766e; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 12px 16px; border-radius: 6px; font-size: 9.5pt; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .figure { width: 100%; height: auto; margin: 18px 0; border-radius: 12px; page-break-inside: avoid; display: block; }
+  .figure-caption { text-align: center; font-size: 9pt; color: #64748b; margin-top: -8px; margin-bottom: 18px; font-style: italic; }
+  .cover { text-align: center; padding: 80px 0 40px; page-break-after: always; }
+  .cover h1 { border: none; font-size: 56pt; color: #06b6d4; margin: 0; letter-spacing: -2px; font-weight: 800; }
+  .cover .subtitle { font-size: 14pt; color: #475569; margin-top: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .cover .tag { display:inline-block; margin-top: 30px; background: #06b6d4; color:white; padding: 8px 20px; border-radius: 999px; font-size: 11pt; font-weight: 600; letter-spacing: 1px; }
+  .cover .tag.dark { background: #0f172a; color: #06b6d4; border: 1px solid #06b6d4; }
+  .cover-svg { max-width: 720px; margin: 50px auto 0; display: block; }
+  .nda { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px 20px; border-radius: 8px; margin: 30px 0; font-size: 10pt; line-height: 1.5; }
+  .nda strong { display: block; margin-bottom: 6px; font-size: 11pt; }
+</style>
+</head><body><div class="page"><div class="cover">
+<h1>L3xy</h1>
+<div class="subtitle">Unit Economics & Pricing Strategy</div>
+<div class="tag">Confidential · Internal & Board · 2026 Edition</div>
+
+<svg viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg" class="cover-svg">
+  <defs>
+    <linearGradient id="ecg" x1="0" x2="0" y1="1" y2="0">
+      <stop offset="0" stop-color="#22c55e" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#22c55e" stop-opacity="0.7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="240" fill="#020617" rx="16"/>
+  <text x="400" y="32" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif" letter-spacing="2">COST PER HIRE — TRAJECTORY</text>
+
+  <!-- Y axis baseline -->
+  <line x1="80" y1="200" x2="720" y2="200" stroke="#1e293b" stroke-width="1"/>
+  <line x1="80" y1="60" x2="80" y2="200" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Bars -->
+  
+      <rect x="110" y="89.5" width="60" height="110.5" rx="4" fill="url(#ecg)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="140" y="84.5" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="800" font-family="Inter,sans-serif">$85</text>
+      <text x="140" y="218" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 1</text>
+    
+      <rect x="250" y="125.9" width="60" height="74.1" rx="4" fill="url(#ecg)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="280" y="120.9" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="800" font-family="Inter,sans-serif">$57</text>
+      <text x="280" y="218" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 6</text>
+    
+      <rect x="390" y="138.9" width="60" height="61.099999999999994" rx="4" fill="url(#ecg)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="420" y="133.9" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="800" font-family="Inter,sans-serif">$47</text>
+      <text x="420" y="218" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 12</text>
+    
+      <rect x="530" y="145.4" width="60" height="54.6" rx="4" fill="url(#ecg)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="560" y="140.4" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="800" font-family="Inter,sans-serif">$42</text>
+      <text x="560" y="218" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 24</text>
+    
+
+  <!-- Market reference line -->
+  <text x="50" y="80" fill="#ef4444" font-size="9" font-family="Inter,sans-serif">$4,700</text>
+  <text x="50" y="92" fill="#64748b" font-size="8" font-family="Inter,sans-serif">in-house avg</text>
+</svg>
+
+</div>
+<div class="nda">
+<p><strong>CONFIDENTIAL — INTERNAL ONLY.</strong> This document contains L3xy’s cost model, gross-margin analysis, and pricing strategy. Distribution is limited to L3xy employees, board members, and prospective investors under NDA. Do not share with prospects, customers, or competitors.</p>
+</div>
+<hr>
+<h2>Executive summary</h2>
+<p>L3xy’s marginal cost to deliver a hire ranges from <strong>~$45 (mature tenant) to ~$90 (new tenant)</strong>. Industry average cost-per-hire for in-house recruiters is <strong>~$4,700</strong> (SHRM, 2023); for agencies it’s <strong>15-25% of first-year salary</strong> ($12,000-$25,000+ on tech roles).</p>
+<p>Even at a conservative $300-$500 per-hire price point, gross margins land north of <strong>85%</strong>. At our recommended hybrid pricing — <strong>$799/mo platform fee + $250 per successful hire</strong> — a typical 5-seat customer producing 30 hires/year generates <strong>~$57K ARR at ~88% gross margin</strong>.</p>
+<p>The most important number in this document is not a single cost figure — it’s the <strong>cost trajectory</strong>. Because every Tier-3 (paid external) candidate that passes screening is promoted into the warm pool (Tier 1), our marginal cost per hire <strong>trends down</strong> as a tenant matures. By month 12 we should be filling 60-80% of pipelines from Tiers 1+2 with <strong>zero external API spend</strong>. This compounding margin is the financial expression of the Living Talent Graph thesis.</p>
+<blockquote>
+<p><strong>The headline:</strong> sub-$100 cost-per-hire vs. $5K-$25K market price. Pick any pricing model and we win on margin. The strategic question is which model maximizes the <em>flywheel</em>, not which maximizes per-hire margin in year one.</p>
+</blockquote>
+<hr>
+<h2>1. Cost components — the full breakdown</h2>
+<p>Costs fall into five categories. All figures are estimates based on 2026 published API pricing and industry-standard infrastructure rates. Every number is sensitivity-tested in §6.</p>
+<h3>1.1 LLM inference (per agent)</h3>
+<p>The single largest variable cost. We assume Anthropic Claude Sonnet 4 (or comparable) at <strong>~$3 / MTok input · $15 / MTok output</strong>, routed through the Replit AI integrations proxy.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Token profile (avg)</th>
+<th>Per-candidate cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ICP</strong></td>
+<td>8K in · 1.5K out, <strong>once per job</strong> (amortized over ~50 candidates)</td>
+<td>$0.001</td>
+</tr>
+<tr>
+<td><strong>Screening</strong></td>
+<td>Two-pass: 9K in · 1.5K out total</td>
+<td><strong>$0.050</strong></td>
+</tr>
+<tr>
+<td><strong>Verify</strong></td>
+<td>2K in · 300 out + email/phone validator lookups</td>
+<td>$0.020</td>
+</tr>
+<tr>
+<td><strong>Outreach</strong></td>
+<td>6K in · 1.2K out (3 messages avg)</td>
+<td>$0.040</td>
+</tr>
+<tr>
+<td><strong>Schedule</strong></td>
+<td>1K in · 200 out + calendar API</td>
+<td>$0.010</td>
+</tr>
+<tr>
+<td><strong>Interview</strong> (realtime voice)</td>
+<td>20-min session, OpenAI Realtime ($0.06/min in, $0.24/min out) + scoring pass</td>
+<td><strong>$3.50</strong></td>
+</tr>
+<tr>
+<td><strong>Proctoring</strong></td>
+<td>Vision inference, ~$0.02/min × 20 min</td>
+<td>$0.40</td>
+</tr>
+<tr>
+<td><strong>Anti-Ghost</strong></td>
+<td>1K in · 300 out per nudge × ~2 nudges</td>
+<td>$0.020</td>
+</tr>
+<tr>
+<td><strong>LinkedIn Drift Monitor</strong></td>
+<td>Enrich Layer call ($0.08) × ~4 checks/yr (180d stale + 90d cooldown) per pool candidate</td>
+<td>$0.32 / candidate / yr</td>
+</tr>
+<tr>
+<td><strong>Reverse-pitch notification</strong></td>
+<td>template + light LLM personalization, ~1K in · 300 out</td>
+<td>$0.005 / sent alert</td>
+</tr>
+</tbody>
+</table>
+<h3>1.2 External data sources (Tier 3 only)</h3>
+<p>Sourcing budget consumed <em>only</em> when Tiers 1 and 2 (warm pools) cannot satisfy the job’s target candidate count.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Rate (2026)</th>
+<th>Per-candidate cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PDL</strong> (People Data Labs)</td>
+<td>~$0.15 / profile retrieved</td>
+<td>$0.15</td>
+</tr>
+<tr>
+<td><strong>EnrichLayer</strong> (LinkedIn enricher)</td>
+<td>~$0.08 / profile resolved</td>
+<td>$0.08 (top ~50% of pool)</td>
+</tr>
+<tr>
+<td><strong>SerpAPI</strong></td>
+<td>~$0.01 / search query (~10 results each)</td>
+<td>$0.002</td>
+</tr>
+<tr>
+<td><strong>GitHub API</strong></td>
+<td>Free (rate-limited)</td>
+<td>$0.00</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tier-3 blended cost per sourced candidate: ~$0.24</strong> (assuming PDL on all + EnrichLayer on top 50%).</p>
+<blockquote>
+<p><strong>Key dynamic:</strong> A new tenant pays ~$0.24/sourced for 100% of their candidates. A mature tenant pays it for ~20-40% of their candidates. The other 60-80% come from warm pools at <strong>$0</strong>.</p>
+</blockquote>
+<h3>1.3 Infrastructure</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Rate</th>
+<th>Per-candidate cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Postgres storage (~50KB/candidate signals)</td>
+<td>$0.10 / GB·mo</td>
+<td>&lt;$0.001</td>
+</tr>
+<tr>
+<td>Compute (orchestrator, API workers)</td>
+<td>amortized, ~$0.02/candidate lifetime</td>
+<td>$0.020</td>
+</tr>
+<tr>
+<td>Vector embeddings (ICP matching)</td>
+<td>text-embedding-3-small @ $0.02 / MTok</td>
+<td>$0.0001</td>
+</tr>
+<tr>
+<td>Object storage — resumes</td>
+<td>$0.023 / GB·mo</td>
+<td>$0.001</td>
+</tr>
+<tr>
+<td>Object storage — interview recordings (2GB × 6mo retention)</td>
+<td>$0.023 / GB·mo</td>
+<td><strong>$0.28 per interview</strong></td>
+</tr>
+<tr>
+<td>TURN/STUN servers (interview WebRTC)</td>
+<td>~$0.10 per interview</td>
+<td>$0.10 per interview</td>
+</tr>
+</tbody>
+</table>
+<h3>1.4 Communications</h3>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Rate</th>
+<th>Per-candidate cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Email (SendGrid / equivalent)</td>
+<td>$0.0006 / send × ~5 sends</td>
+<td>$0.003</td>
+</tr>
+<tr>
+<td>SMS (Twilio)</td>
+<td>$0.008 / msg × ~2 msgs (subset only)</td>
+<td>$0.008</td>
+</tr>
+<tr>
+<td>Calendar API (Google/Microsoft Graph)</td>
+<td>Free</td>
+<td>$0.00</td>
+</tr>
+</tbody>
+</table>
+<h3>1.5 Platform &amp; overhead (allocated)</h3>
+<p>These don’t scale with per-candidate volume but must be allocated to compute true gross margin.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Annual cost (early-stage estimate)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Replit hosting + autoscale</td>
+<td>~$3,000</td>
+<td>Scales with ~$0.30 per active customer/mo at scale</td>
+</tr>
+<tr>
+<td>Monitoring (Sentry, Datadog-equivalent)</td>
+<td>~$2,000</td>
+<td>Flat</td>
+</tr>
+<tr>
+<td>Background job infrastructure</td>
+<td>~$1,500</td>
+<td>Included in Replit autoscale</td>
+</tr>
+<tr>
+<td>AI integrations proxy markup</td>
+<td>~5-10% on LLM spend</td>
+<td>Already priced into §1.1</td>
+</tr>
+</tbody>
+</table>
+<p>At scale (100+ tenants), allocated overhead per hire is <strong>&lt;$5</strong>.</p>
+<hr>
+<h2>2. Per-stage funnel cost waterfall</h2>
+<p>To produce <strong>one hire</strong>, a typical role moves the following number of candidates through each stage. Conversion rates are industry baselines for tech roles, calibrated to L3xy’s funnel design.</p>
+
+<svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="360" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">Per-Hire Cost Waterfall</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Cold-start tenant — every candidate sourced via paid Tier-3 APIs (worst case)</text>
+
+  
+      <text x="36" y="92" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Sourced (Tier 3)</text>
+      <text x="200" y="92" fill="#64748b" font-size="9" font-family="Inter,sans-serif">200 candidates</text>
+      <rect x="320" y="80" width="364.8" height="18" rx="3" fill="#f59e0b" fill-opacity="0.7"/>
+      <text x="692.8" y="93" fill="#f59e0b" font-size="11" font-weight="700" font-family="Inter,sans-serif">$48.00</text>
+    
+      <text x="36" y="120" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Screened</text>
+      <text x="200" y="120" fill="#64748b" font-size="9" font-family="Inter,sans-serif">100 candidates</text>
+      <rect x="320" y="108" width="38" height="18" rx="3" fill="#06b6d4" fill-opacity="0.7"/>
+      <text x="366" y="121" fill="#06b6d4" font-size="11" font-weight="700" font-family="Inter,sans-serif">$5.00</text>
+    
+      <text x="36" y="148" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Verified</text>
+      <text x="200" y="148" fill="#64748b" font-size="9" font-family="Inter,sans-serif">50 candidates</text>
+      <rect x="320" y="136" width="7.6000000000000005" height="18" rx="3" fill="#22c55e" fill-opacity="0.7"/>
+      <text x="335.6" y="149" fill="#22c55e" font-size="11" font-weight="700" font-family="Inter,sans-serif">$1.00</text>
+    
+      <text x="36" y="176" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Outreached</text>
+      <text x="200" y="176" fill="#64748b" font-size="9" font-family="Inter,sans-serif">40 candidates</text>
+      <rect x="320" y="164" width="13.072" height="18" rx="3" fill="#f97316" fill-opacity="0.7"/>
+      <text x="341.072" y="177" fill="#f97316" font-size="11" font-weight="700" font-family="Inter,sans-serif">$1.72</text>
+    
+      <text x="36" y="204" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Scheduled</text>
+      <text x="200" y="204" fill="#64748b" font-size="9" font-family="Inter,sans-serif">8 candidates</text>
+      <rect x="320" y="192" width="4" height="18" rx="3" fill="#6366f1" fill-opacity="0.7"/>
+      <text x="332" y="205" fill="#6366f1" font-size="11" font-weight="700" font-family="Inter,sans-serif">$0.08</text>
+    
+      <text x="36" y="232" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Interviewed</text>
+      <text x="200" y="232" fill="#64748b" font-size="9" font-family="Inter,sans-serif">6 candidates</text>
+      <rect x="320" y="220" width="195.16799999999998" height="18" rx="3" fill="#10b981" fill-opacity="0.7"/>
+      <text x="523.168" y="233" fill="#10b981" font-size="11" font-weight="700" font-family="Inter,sans-serif">$25.68</text>
+    
+      <text x="36" y="260" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Anti-ghost ops</text>
+      <text x="200" y="260" fill="#64748b" font-size="9" font-family="Inter,sans-serif">40 candidates</text>
+      <rect x="320" y="248" width="6.08" height="18" rx="3" fill="#eab308" fill-opacity="0.7"/>
+      <text x="334.08" y="261" fill="#eab308" font-size="11" font-weight="700" font-family="Inter,sans-serif">$0.80</text>
+    
+      <text x="36" y="288" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">Comms + infra</text>
+      <text x="200" y="288" fill="#64748b" font-size="9" font-family="Inter,sans-serif">—</text>
+      <rect x="320" y="276" width="22.8" height="18" rx="3" fill="#a855f7" fill-opacity="0.7"/>
+      <text x="350.8" y="289" fill="#a855f7" font-size="11" font-weight="700" font-family="Inter,sans-serif">$3.00</text>
+    
+      <text x="36" y="316" fill="#cbd5e1" font-size="10" font-weight="600" font-family="Inter,sans-serif">ICP setup</text>
+      <text x="200" y="316" fill="#64748b" font-size="9" font-family="Inter,sans-serif">1 job</text>
+      <rect x="320" y="304" width="4" height="18" rx="3" fill="#8b5cf6" fill-opacity="0.7"/>
+      <text x="332" y="317" fill="#8b5cf6" font-size="11" font-weight="700" font-family="Inter,sans-serif">$0.05</text>
+    
+
+  <line x1="36" y1="332" x2="864" y2="332" stroke="#334155" stroke-width="1"/>
+  <text x="36" y="350" fill="#22c55e" font-size="13" font-weight="800" font-family="Inter,sans-serif">TOTAL — NEW TENANT (worst case)</text>
+  <text x="864" y="350" text-anchor="end" fill="#22c55e" font-size="16" font-weight="800" font-family="Inter,sans-serif">$85.33 / hire</text>
+</svg>
+<div class="figure-caption">Per-hire cost waterfall — cold-start tenant, all sourcing via paid Tier-3 APIs</div>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th style="text-align:right">Candidates</th>
+<th style="text-align:right">Per-candidate cost</th>
+<th style="text-align:right">Stage subtotal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sourced (Tier 3 worst case)</td>
+<td style="text-align:right">200</td>
+<td style="text-align:right">$0.24</td>
+<td style="text-align:right">$48.00</td>
+</tr>
+<tr>
+<td>Screened</td>
+<td style="text-align:right">100</td>
+<td style="text-align:right">$0.05</td>
+<td style="text-align:right">$5.00</td>
+</tr>
+<tr>
+<td>Verified</td>
+<td style="text-align:right">50</td>
+<td style="text-align:right">$0.02</td>
+<td style="text-align:right">$1.00</td>
+</tr>
+<tr>
+<td>Outreached (incl. emails)</td>
+<td style="text-align:right">40</td>
+<td style="text-align:right">$0.043</td>
+<td style="text-align:right">$1.72</td>
+</tr>
+<tr>
+<td>Replied positively</td>
+<td style="text-align:right">12</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td>Scheduled</td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">$0.01</td>
+<td style="text-align:right">$0.08</td>
+</tr>
+<tr>
+<td>Interviewed (incl. proctoring + storage + TURN)</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">$4.28</td>
+<td style="text-align:right">$25.68</td>
+</tr>
+<tr>
+<td>Anti-ghost (across all outreached)</td>
+<td style="text-align:right">40</td>
+<td style="text-align:right">$0.02</td>
+<td style="text-align:right">$0.80</td>
+</tr>
+<tr>
+<td>ICP setup (amortized)</td>
+<td style="text-align:right">1 job</td>
+<td style="text-align:right">$0.05</td>
+<td style="text-align:right">$0.05</td>
+</tr>
+<tr>
+<td>Comms &amp; infra overhead</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">~$3.00</td>
+</tr>
+<tr>
+<td><strong>TOTAL — new tenant (100% Tier 3)</strong></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"><strong>~$85.33</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Mature-tenant case (50% Tier 1, 30% Tier 2, 20% Tier 3)</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th style="text-align:right">Candidates</th>
+<th style="text-align:right">Per-candidate cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tier 1 (warm pool)</td>
+<td style="text-align:right">100</td>
+<td style="text-align:right">$0.00 (no external sourcing)</td>
+</tr>
+<tr>
+<td>Tier 2 (platform pool)</td>
+<td style="text-align:right">60</td>
+<td style="text-align:right">$0.00 (intro infrastructure already paid)</td>
+</tr>
+<tr>
+<td>Tier 3 (external)</td>
+<td style="text-align:right">40</td>
+<td style="text-align:right">$0.24 = $9.60</td>
+</tr>
+</tbody>
+</table>
+<p>Replace the $48 sourcing line with $9.60. Total drops to <strong>~$47</strong>.</p>
+<h3>Network-mature case (year 2+, 70% Tier 1+2)</h3>
+<p>Sourcing collapses to ~$5 in external spend. Total: <strong>~$42</strong>.</p>
+<hr>
+<h2>3. Cost-per-hire trajectory</h2>
+<p>This is the chart that matters for the investor narrative.</p>
+
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="320" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">Cost Per Hire — Trajectory vs. Market</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Living Talent Graph compounds margin with tenant maturity</text>
+
+  <!-- Market reference band -->
+  <rect x="80" y="70" width="780" height="20" fill="#ef4444" fill-opacity="0.1" stroke="#ef4444" stroke-opacity="0.3" stroke-dasharray="3 3"/>
+  <text x="90" y="84" fill="#ef4444" font-size="10" font-weight="700" font-family="Inter,sans-serif">$4,700 — in-house industry average · $12K–$25K agency</text>
+
+  <!-- Y axis -->
+  <line x1="80" y1="120" x2="80" y2="270" stroke="#334155" stroke-width="1"/>
+  <line x1="80" y1="270" x2="860" y2="270" stroke="#334155" stroke-width="1"/>
+  
+    <text x="72" y="274" text-anchor="end" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$0</text>
+    <line x1="78" y1="270" x2="80" y2="270" stroke="#334155"/>
+  
+    <text x="72" y="236.5" text-anchor="end" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$25</text>
+    <line x1="78" y1="232.5" x2="80" y2="232.5" stroke="#334155"/>
+  
+    <text x="72" y="199" text-anchor="end" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$50</text>
+    <line x1="78" y1="195" x2="80" y2="195" stroke="#334155"/>
+  
+    <text x="72" y="161.5" text-anchor="end" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$75</text>
+    <line x1="78" y1="157.5" x2="80" y2="157.5" stroke="#334155"/>
+  
+    <text x="72" y="124" text-anchor="end" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$100</text>
+    <line x1="78" y1="120" x2="80" y2="120" stroke="#334155"/>
+  
+
+  <!-- Trajectory line -->
+  
+      <path d="M 160 142.5 L 340 184.5 L 520 199.5 L 700 207" stroke="#22c55e" stroke-width="3" fill="none"/>
+      <path d="M 160 142.5 L 340 184.5 L 520 199.5 L 700 207 L 700 270 L 160 270 Z" fill="#22c55e" fill-opacity="0.1"/>
+      
+        <circle cx="160" cy="142.5" r="6" fill="#22c55e" stroke="#020617" stroke-width="2"/>
+        <text x="160" y="128.5" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="800" font-family="Inter,sans-serif">$85</text>
+        <text x="160" y="288" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 1</text>
+      
+        <circle cx="340" cy="184.5" r="6" fill="#22c55e" stroke="#020617" stroke-width="2"/>
+        <text x="340" y="170.5" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="800" font-family="Inter,sans-serif">$57</text>
+        <text x="340" y="288" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 6</text>
+      
+        <circle cx="520" cy="199.5" r="6" fill="#22c55e" stroke="#020617" stroke-width="2"/>
+        <text x="520" y="185.5" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="800" font-family="Inter,sans-serif">$47</text>
+        <text x="520" y="288" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 12</text>
+      
+        <circle cx="700" cy="207" r="6" fill="#22c55e" stroke="#020617" stroke-width="2"/>
+        <text x="700" y="193" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="800" font-family="Inter,sans-serif">$42</text>
+        <text x="700" y="288" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Month 24</text>
+      
+    
+
+  <text x="450" y="310" text-anchor="middle" fill="#475569" font-size="10" font-family="Inter,sans-serif" font-style="italic">Every other AI sourcing tool's curve goes the other way — they spend more on external APIs as they grow.</text>
+</svg>
+<div class="figure-caption">Cost-per-hire trajectory — the financial expression of the Living Talent Graph</div>
+<table>
+<thead>
+<tr>
+<th>Tenant maturity</th>
+<th style="text-align:right">Tier-3 share</th>
+<th style="text-align:right">Cost per hire</th>
+<th style="text-align:right">YoY change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Month 1 (cold start)</td>
+<td style="text-align:right">100%</td>
+<td style="text-align:right"><strong>$85</strong></td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td>Month 6</td>
+<td style="text-align:right">50%</td>
+<td style="text-align:right"><strong>$57</strong></td>
+<td style="text-align:right">-33%</td>
+</tr>
+<tr>
+<td>Month 12</td>
+<td style="text-align:right">25%</td>
+<td style="text-align:right"><strong>$47</strong></td>
+<td style="text-align:right">-45% from start</td>
+</tr>
+<tr>
+<td>Month 24 (network-mature)</td>
+<td style="text-align:right">10%</td>
+<td style="text-align:right"><strong>$42</strong></td>
+<td style="text-align:right">-51% from start</td>
+</tr>
+</tbody>
+</table>
+<p>Compare this to LinkedIn Recruiter, HireEZ, Eightfold — all of whose marginal sourcing cost <strong>rises</strong> with usage because every search hits paid external APIs. L3xy’s curve goes the other way. <strong>This is the moat in financial form.</strong></p>
+<hr>
+<h2>4. Market price reference (US baseline)</h2>
+<p>What does the customer pay today, with whom, for what? <strong>The numbers below are US-centric.</strong> See §9 for regional benchmarks and pricing (and §7 for the hire-attribution layer that makes any of this billable in the first place) — customer willingness-to-pay swings 10-50× across markets.</p>
+<table>
+<thead>
+<tr>
+<th>Solution</th>
+<th>Price</th>
+<th>Per-hire cost to customer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>In-house recruiter</strong> (loaded)</td>
+<td>~$120K/yr salary + tools</td>
+<td>~$4,700/hire (SHRM 2023)</td>
+</tr>
+<tr>
+<td><strong>Agency / contingency</strong></td>
+<td>15-25% of first-year salary</td>
+<td>$12K-$25K (tech roles)</td>
+</tr>
+<tr>
+<td><strong>LinkedIn Recruiter Lite</strong></td>
+<td>$1,680/seat/yr</td>
+<td>Sourcing only</td>
+</tr>
+<tr>
+<td><strong>LinkedIn Recruiter Corporate</strong></td>
+<td>$10K-15K/seat/yr</td>
+<td>Sourcing only</td>
+</tr>
+<tr>
+<td><strong>Greenhouse ATS</strong></td>
+<td>$6K-$25K/yr</td>
+<td>Workflow only</td>
+</tr>
+<tr>
+<td><strong>HireEZ / Eightfold</strong></td>
+<td>$12K-$50K/seat/yr</td>
+<td>AI-assisted sourcing</td>
+</tr>
+<tr>
+<td><strong>Paradox</strong></td>
+<td>$25K-$100K+/yr enterprise</td>
+<td>Conversational AI</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Customer willingness-to-pay framing:</strong> if L3xy reduces a customer’s per-hire cost from $4,700 to $1,500 (still saving them $3,200), they will gladly pay us $1,500. Our cost is $50. Margin: ~97%.</p>
+<p>The strategy isn’t to capture all the value — it’s to price aggressively, win the network, and let the platform pool become the moat that prevents anyone from undercutting us.</p>
+<hr>
+<h2>5. Pricing strategy — three models</h2>
+<h3>Model A · Per-seat SaaS (familiar, slow growth)</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Price</th>
+<th>Includes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starter</td>
+<td>$499 / seat / mo</td>
+<td>5 active jobs · 50 AI interviews/mo · email outreach</td>
+</tr>
+<tr>
+<td>Pro</td>
+<td>$999 / seat / mo</td>
+<td>Unlimited jobs · 200 interviews/mo · SMS · platform pool consume</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>Custom (~$2K+ /seat /mo)</td>
+<td>SSO, custom proctoring, white-label client portal, SLA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pros:</strong> Predictable revenue. Familiar buying motion. Easy to forecast.
+<strong>Cons:</strong> Caps growth. Doesn’t reward heavy users. Doesn’t accelerate the platform pool flywheel.</p>
+<h3>Model B · Per-hire success fee (sales-friendly, variable)</h3>
+<ul>
+<li><strong>$500-$2,000 per successful hire</strong> (~15-25% of typical agency fee)</li>
+<li>Free pipeline. You pay when they sign the offer letter.</li>
+<li>Tier by company size or salary band.</li>
+</ul>
+<p><strong>Pros:</strong> Magical sales pitch (“only pay when you win”). Easy to displace agencies.
+<strong>Cons:</strong> Cash-flow drag. Hard to forecast. Customers game it (e.g., contractor extensions to dodge fee).</p>
+<h3>Model C · Hybrid (recommended) ★</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Price</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Platform fee</strong></td>
+<td>$799 / mo per organization</td>
+<td>Covers infra + warm pool access; signals commitment</td>
+</tr>
+<tr>
+<td><strong>Per-seat add-on</strong></td>
+<td>$199 / mo per recruiter seat</td>
+<td>Soft cap on scale</td>
+</tr>
+<tr>
+<td><strong>Per-hire success bonus</strong></td>
+<td>$250 per signed offer</td>
+<td>Aligns incentives, low friction</td>
+</tr>
+<tr>
+<td><strong>AI interview overage</strong></td>
+<td>$15 each above 100/mo included</td>
+<td>Variable matches our variable cost</td>
+</tr>
+<tr>
+<td><strong>Cross-tenant platform-pool consume</strong></td>
+<td>Pro tier only ($1,499/mo platform fee)</td>
+<td>Network effect gating</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example customer P&amp;L (mid-market):</strong></p>
+<ul>
+<li>1 organization, 5 recruiters, 30 hires/year, 800 AI interviews/year</li>
+<li>Revenue: $799×12 + $199×5×12 + $250×30 + $15×(800−1200, capped at 0) = <strong>$9,588 + $11,940 + $7,500 + $0 = $28,528 / year</strong></li>
+<li>Our cost (mature tenant): 30 hires × $47 = $1,410 + interview overhead amortized ≈ <strong>$3,200</strong></li>
+<li><strong>Gross margin: ~89%</strong></li>
+</ul>
+<p><strong>Pros:</strong> Captures recurring base + usage upside. Aligns with customer success. Doesn’t punish heavy or light users disproportionately.
+<strong>Cons:</strong> Three line items requires a clean billing surface.</p>
+<h3>Model D · Free → paid funnel (growth play)</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Price</th>
+<th>Includes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Free</td>
+<td>$0</td>
+<td>1 active job · 50 candidates/mo · platform pool <strong>share required</strong></td>
+</tr>
+<tr>
+<td>Growth</td>
+<td>$799 / mo</td>
+<td>10 active jobs · 500 candidates/mo · platform pool consume</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>$2,499 / mo</td>
+<td>Unlimited · priority support · custom branding</td>
+</tr>
+<tr>
+<td>Enterprise</td>
+<td>Custom</td>
+<td>Full white-label, SLA, on-prem option</td>
+</tr>
+</tbody>
+</table>
+<p>The key strategic move: <strong>Free tier requires opting into the platform pool (Tier 2 sharing).</strong> Free tenants donate their warm pool to the network in exchange for using L3xy. Growth+ tenants get to consume that pool.</p>
+<p><strong>Pros:</strong> Maximum platform-pool growth velocity. Aggressive land-and-expand. Compounds the moat fastest.
+<strong>Cons:</strong> Free-tier abuse risk. Slower revenue ramp. Sales motion harder.</p>
+<hr>
+<h2>6. Recommended pricing — Hybrid (Model C) with Free-tier on-ramp</h2>
+<p>Combine the best of C and D:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Monthly</th>
+<th>Per Seat</th>
+<th>Per Hire</th>
+<th>Platform Pool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Free</strong></td>
+<td>$0</td>
+<td>$0</td>
+<td>$0</td>
+<td>Share required, no consume</td>
+</tr>
+<tr>
+<td><strong>Starter</strong></td>
+<td>$399</td>
+<td>$99</td>
+<td>$250</td>
+<td>Share + consume</td>
+</tr>
+<tr>
+<td><strong>Pro</strong> ★</td>
+<td>$799</td>
+<td>$199</td>
+<td>$250</td>
+<td>Share + consume + priority</td>
+</tr>
+<tr>
+<td><strong>Scale</strong></td>
+<td>$1,999</td>
+<td>$149</td>
+<td>$150</td>
+<td>Full + cross-org analytics</td>
+</tr>
+<tr>
+<td><strong>Enterprise</strong></td>
+<td>Custom</td>
+<td>Custom</td>
+<td>Negotiated</td>
+<td>Custom + on-prem option</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this wins:</strong></p>
+<ol>
+<li>Free tier acquires tenants and grows the platform pool — the moat compounds at zero CAC.</li>
+<li>$250/hire success fee aligns to outcomes without spooking buyers (vs. $2,000+ agency fees).</li>
+<li>Per-seat add-on captures scale-up revenue without punishing single-recruiter shops.</li>
+<li>Volume discount at Scale tier (per-hire drops to $150) keeps enterprise customers from feeling penalized.</li>
+<li>Platform pool gating (Pro+) makes the Pro tier the natural upgrade target.</li>
+</ol>
+<hr>
+<h2>7. Hire attribution &amp; billing — the integrity layer</h2>
+<blockquote>
+<p><strong>Brutal honest assessment (May 2026):</strong> L3xy today <strong>cannot reliably bill per hire.</strong> We have a <code>hired</code> pipeline stage and a state machine that prevents skipping it, but no <code>hired_at</code> timestamp, no offer letter capture, no candidate-side confirmation, no Stripe integration, no invoicing, no ATS-sync verification, and no fraud-detection layer. A dishonest customer who hires a candidate we sourced and quietly moves them to “rejected” in our UI gets the hire for free. This section is the blueprint to close that gap.</p>
+</blockquote>
+<p>The per-hire success-fee model is what makes our unit economics work. It is also the highest-fraud-risk billing model in B2B SaaS — recruiters are commercially incentivized to under-report, and “we hired them through another channel” is the world’s most common dispute. <strong>Solving this is existential, not optional.</strong></p>
+<h3>7.1 The “people lie” problem — categorized</h3>
+<table>
+<thead>
+<tr>
+<th>Failure mode</th>
+<th>What happens</th>
+<th>Frequency we should assume</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Silent hide</strong></td>
+<td>Recruiter moves a candidate we sourced to “rejected” or just stops engaging, then hires them off-platform</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Channel-shopping</strong></td>
+<td>Recruiter claims “they applied directly via our careers page after seeing your email” — technically true, attribution disputed</td>
+<td>Very high</td>
+</tr>
+<tr>
+<td><strong>Delayed hide</strong></td>
+<td>Candidate gets hired but Mark Hired is delayed 90+ days “until they pass probation”</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>Stage downgrade</strong></td>
+<td>Application moves to <code>offer</code>, then back to <code>interview</code>, then quietly disappears</td>
+<td>Moderate</td>
+</tr>
+<tr>
+<td><strong>Tenant-side outage</strong></td>
+<td>Tenant team doesn’t update L3xy for weeks; hires happen, we don’t know</td>
+<td>Universal</td>
+</tr>
+<tr>
+<td><strong>Cross-tenant theft</strong></td>
+<td>Agency tenant places candidate at <em>their</em> client, claims it wasn’t a placement <em>they</em> did</td>
+<td>Moderate</td>
+</tr>
+<tr>
+<td><strong>Renegotiation lever</strong></td>
+<td>Customer disputes a perfectly real hire to negotiate down fees</td>
+<td>Frequent at renewal</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mitigation principle:</strong> No single “Mark Hired” event can be ground truth. Attribution must be <strong>triangulated from many independent signals</strong>, most of them outside the customer’s control to manipulate.</p>
+<h3>7.2 The multi-signal attribution model</h3>
+
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="hirepulse" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="460" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">Multi-Signal Hire Attribution</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">No single signal is ground truth — confidence is triangulated from many independent sources</text>
+
+  <!-- Center: hire confirmation -->
+  <circle cx="450" cy="240" r="105" fill="url(#hirepulse)"/>
+  <circle cx="450" cy="240" r="70" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-width="2"/>
+  <text x="450" y="232" text-anchor="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">HIRE</text>
+  <text x="450" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">CONFIRMED</text>
+  <text x="450" y="268" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="Inter,sans-serif">score ≥ 80 → auto-bill</text>
+
+  
+        <line x1="130" y1="90" x2="450" y2="240" stroke="#64748b" stroke-width="1.15" opacity="0.45"/>
+        <rect x="58" y="75" width="144" height="30" rx="6" fill="#64748b" fill-opacity="0.15" stroke="#64748b" stroke-width="1.2"/>
+        <text x="130" y="89" text-anchor="middle" fill="#64748b" font-size="10" font-weight="700" font-family="Inter,sans-serif">Mark Hired (UI)</text>
+        <text x="130" y="101" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+30 weight</text>
+      
+        <line x1="130" y1="150" x2="450" y2="240" stroke="#64748b" stroke-width="0.9" opacity="0.45"/>
+        <rect x="58" y="135" width="144" height="30" rx="6" fill="#64748b" fill-opacity="0.15" stroke="#64748b" stroke-width="1.2"/>
+        <text x="130" y="149" text-anchor="middle" fill="#64748b" font-size="10" font-weight="700" font-family="Inter,sans-serif">Pipeline → hired</text>
+        <text x="130" y="161" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+20 weight</text>
+      
+        <line x1="130" y1="210" x2="450" y2="240" stroke="#94a3b8" stroke-width="0.775" opacity="0.45"/>
+        <rect x="58" y="195" width="144" height="30" rx="6" fill="#94a3b8" fill-opacity="0.15" stroke="#94a3b8" stroke-width="1.2"/>
+        <text x="130" y="209" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" font-family="Inter,sans-serif">Offer letter upload</text>
+        <text x="130" y="221" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+15 weight</text>
+      
+        <line x1="130" y1="270" x2="450" y2="240" stroke="#94a3b8" stroke-width="0.775" opacity="0.45"/>
+        <rect x="58" y="255" width="144" height="30" rx="6" fill="#94a3b8" fill-opacity="0.15" stroke="#94a3b8" stroke-width="1.2"/>
+        <text x="130" y="269" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" font-family="Inter,sans-serif">Reference checks sent</text>
+        <text x="130" y="281" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+15 weight</text>
+      
+        <line x1="770" y1="90" x2="450" y2="240" stroke="#22c55e" stroke-width="1.4" opacity="0.45"/>
+        <rect x="698" y="75" width="144" height="30" rx="6" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.2"/>
+        <text x="770" y="89" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">E-signature webhook</text>
+        <text x="770" y="101" text-anchor="middle" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+40 weight</text>
+      
+        <line x1="770" y1="150" x2="450" y2="240" stroke="#22c55e" stroke-width="1.525" opacity="0.45"/>
+        <rect x="698" y="135" width="144" height="30" rx="6" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.2"/>
+        <text x="770" y="149" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">ATS hire webhook</text>
+        <text x="770" y="161" text-anchor="middle" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+45 weight</text>
+      
+        <line x1="770" y1="210" x2="450" y2="240" stroke="#22c55e" stroke-width="1.025" opacity="0.45"/>
+        <rect x="698" y="195" width="144" height="30" rx="6" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.2"/>
+        <text x="770" y="209" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">Background check fired</text>
+        <text x="770" y="221" text-anchor="middle" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+25 weight</text>
+      
+        <line x1="770" y1="270" x2="450" y2="240" stroke="#10b981" stroke-width="1.65" opacity="0.45"/>
+        <rect x="698" y="255" width="144" height="30" rx="6" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.2"/>
+        <text x="770" y="269" text-anchor="middle" fill="#10b981" font-size="10" font-weight="700" font-family="Inter,sans-serif">Payroll/HRIS webhook</text>
+        <text x="770" y="281" text-anchor="middle" fill="#10b981" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+50 weight</text>
+      
+        <line x1="200" y1="380" x2="450" y2="240" stroke="#0ea5e9" stroke-width="1.15" opacity="0.45"/>
+        <rect x="128" y="365" width="144" height="30" rx="6" fill="#0ea5e9" fill-opacity="0.15" stroke="#0ea5e9" stroke-width="1.2"/>
+        <text x="200" y="379" text-anchor="middle" fill="#0ea5e9" font-size="10" font-weight="700" font-family="Inter,sans-serif">Candidate confirms</text>
+        <text x="200" y="391" text-anchor="middle" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+30 weight</text>
+      
+        <line x1="380" y1="410" x2="450" y2="240" stroke="#0ea5e9" stroke-width="0.9" opacity="0.45"/>
+        <rect x="308" y="395" width="144" height="30" rx="6" fill="#0ea5e9" fill-opacity="0.15" stroke="#0ea5e9" stroke-width="1.2"/>
+        <text x="380" y="409" text-anchor="middle" fill="#0ea5e9" font-size="10" font-weight="700" font-family="Inter,sans-serif">Email phrase detection</text>
+        <text x="380" y="421" text-anchor="middle" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+20 weight</text>
+      
+        <line x1="540" y1="410" x2="450" y2="240" stroke="#a855f7" stroke-width="1.65" opacity="0.45"/>
+        <rect x="468" y="395" width="144" height="30" rx="6" fill="#a855f7" fill-opacity="0.15" stroke="#a855f7" stroke-width="1.2"/>
+        <text x="540" y="409" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="700" font-family="Inter,sans-serif">LinkedIn drift</text>
+        <text x="540" y="421" text-anchor="middle" fill="#a855f7" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+50 weight</text>
+      
+        <line x1="720" y1="380" x2="450" y2="240" stroke="#a855f7" stroke-width="1.025" opacity="0.45"/>
+        <rect x="648" y="365" width="144" height="30" rx="6" fill="#a855f7" fill-opacity="0.15" stroke="#a855f7" stroke-width="1.2"/>
+        <text x="720" y="379" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="700" font-family="Inter,sans-serif">Public hire announcement</text>
+        <text x="720" y="391" text-anchor="middle" fill="#a855f7" font-size="9" font-family="Inter,sans-serif" opacity="0.85">+25 weight</text>
+      
+
+  <!-- Legend -->
+  <text x="36" y="60" fill="#64748b" font-size="9" font-family="Inter,sans-serif" font-weight="700">CUSTOMER-CONTROLLABLE</text>
+  <text x="864" y="60" text-anchor="end" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" font-weight="700">EXTERNAL / HARD TO FAKE</text>
+  <text x="450" y="450" text-anchor="middle" fill="#a855f7" font-size="10" font-style="italic" font-family="Inter,sans-serif">LinkedIn drift is the killer signal — detects off-platform hires within an 18-month attribution window</text>
+</svg>
+<div class="figure-caption">Multi-signal hire attribution — confidence triangulated from many independent sources</div>
+<p>We treat hire detection as a <strong>confidence score</strong>, not a binary. A score of ≥ 80 auto-bills. Scores 50-79 surface a manual confirmation dialog (Stripe-style “we noticed activity that looks like a hire — confirm or dispute within 14 days”). Below 50, we flag for sales-ops human review.</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th style="text-align:right">Confidence weight</th>
+<th>Source</th>
+<th>Customer-controllable?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Recruiter clicks “Mark Hired”</strong></td>
+<td style="text-align:right">30</td>
+<td>In-app action</td>
+<td>Yes (low trust)</td>
+</tr>
+<tr>
+<td><strong>Application reaches <code>offer</code> then <code>hired</code></strong></td>
+<td style="text-align:right">20</td>
+<td>Pipeline state machine</td>
+<td>Yes (low trust)</td>
+</tr>
+<tr>
+<td><strong>Offer letter uploaded</strong> (PDF parsed for salary/start date)</td>
+<td style="text-align:right">15</td>
+<td>UI upload + LLM extraction</td>
+<td>Mostly</td>
+</tr>
+<tr>
+<td><strong>E-signature webhook</strong> (DocuSign / Dropbox Sign / PandaDoc)</td>
+<td style="text-align:right"><strong>40</strong></td>
+<td>Direct integration</td>
+<td>Hard to fake</td>
+</tr>
+<tr>
+<td><strong>ATS push + ATS webhook</strong> (Greenhouse / Lever / Ashby / Workday)</td>
+<td style="text-align:right"><strong>45</strong></td>
+<td>OAuth integration</td>
+<td>No (ATS is source of truth)</td>
+</tr>
+<tr>
+<td><strong>Background check triggered</strong> (Checkr, GoodHire)</td>
+<td style="text-align:right">25</td>
+<td>Integration</td>
+<td>Hard to fake</td>
+</tr>
+<tr>
+<td><strong>Reference check requests sent via L3xy</strong></td>
+<td style="text-align:right">15</td>
+<td>In-app</td>
+<td>Mostly</td>
+</tr>
+<tr>
+<td><strong>Candidate self-confirmation email</strong></td>
+<td style="text-align:right">30</td>
+<td>Outbound from L3xy: <em>“Did you accept the role at [Company]?”</em></td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Email thread phrase detection</strong> (“I accepted”, “first day Monday”, “welcome to”)</td>
+<td style="text-align:right">20</td>
+<td>Inbox sync (with consent)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>LinkedIn drift detection</strong> — candidate now lists tenant company as employer within 90 days of last L3xy touch</td>
+<td style="text-align:right"><strong>50</strong></td>
+<td>Existing <code>linkedin-profile-monitor.ts</code></td>
+<td><strong>No — this is the killer signal</strong></td>
+</tr>
+<tr>
+<td><strong>Public hiring announcement scan</strong> (press releases, LinkedIn posts)</td>
+<td style="text-align:right">25</td>
+<td>SerpAPI / LinkedIn scraper</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Calendar invite for “first day” / “orientation”</strong></td>
+<td style="text-align:right">20</td>
+<td>Calendar integration</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Payroll/onboarding webhook</strong> (Rippling, Gusto, Deel)</td>
+<td style="text-align:right"><strong>50</strong></td>
+<td>Integration</td>
+<td><strong>No — gold standard</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Combined attribution rule (<code>hire-attribution-engine.ts</code>, to be built):</strong></p>
+<ul>
+<li>Run continuously (every 6h) for any candidate who reached <code>screening</code> or beyond.</li>
+<li>Sum signal weights observed within an <strong>18-month attribution window</strong> from first L3xy touch.</li>
+<li>Score ≥ 80 → auto-bill; emit <code>hire.confirmed</code> event; trigger Stripe usage record.</li>
+<li>Score 50-79 → emit <code>hire.suspected</code>; email customer confirmation request; 14-day clock.</li>
+<li>Score &lt; 50 → quarterly batch review.</li>
+</ul>
+<h3>7.3 The originating-touch lock (contractual + technical)</h3>
+<p>Beyond multi-signal detection, the contract itself does heavy lifting:</p>
+<blockquote>
+<p><em>“Any Candidate first surfaced to Customer through the L3xy Platform — including via Sourcing, Screening, Outreach, or Platform Recommendations — and subsequently Hired by Customer (or by any of Customer’s clients in the case of agency Customers) within eighteen (18) months of such first surfacing, regardless of the channel through which the Hire is ultimately formalized, shall constitute a Billable Hire under this Agreement.”</em></p>
+</blockquote>
+<p><strong>Technical implementation:</strong> every candidate-tenant pair gets an <code>originatingTouchAt</code> timestamp the first time the candidate appears in that tenant’s pool. The 18-month window starts from that timestamp. The LinkedIn drift monitor (already built) is what detects the off-platform hire — if the candidate’s current employer matches a tenant who saw that candidate within 18 months, the attribution engine fires.</p>
+<p>This is the single most important sentence we will ever put in a customer contract. <strong>Without it, the fraud surface is unbounded. With it, every off-platform hire becomes detectable through LinkedIn alone.</strong></p>
+<h3>7.4 Audit infrastructure (build now, regardless of billing)</h3>
+<p>Several gaps in the current audit trail need closing immediately because they’re cheap and protect us in disputes:</p>
+<table>
+<thead>
+<tr>
+<th>To build</th>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add <code>hired_at</code>, <code>offer_extended_at</code>, <code>offer_accepted_at</code>, <code>attribution_score</code>, <code>attribution_signals[]</code> columns</td>
+<td><code>lib/db/schema/applications.ts</code> migration</td>
+<td>Forensic record</td>
+</tr>
+<tr>
+<td>Call <code>recordAudit()</code> on every stage transition into <code>offer</code> and <code>hired</code></td>
+<td><code>routes/applications.ts</code> PUT handler</td>
+<td>Immutable trail</td>
+</tr>
+<tr>
+<td>Webhook receivers for DocuSign, Dropbox Sign, Greenhouse, Lever, Ashby, Rippling, Gusto, Checkr</td>
+<td><code>routes/webhooks/</code></td>
+<td>External corroboration sources</td>
+</tr>
+<tr>
+<td>Candidate self-confirmation email automation triggered by stage = <code>offer</code></td>
+<td>new <code>hire-confirmation-engine.ts</code></td>
+<td>Independent candidate-side signal</td>
+</tr>
+<tr>
+<td>LinkedIn drift cross-check on attribution candidates at 30/60/90/180 days post-last-touch</td>
+<td>extend <code>linkedin-profile-monitor.ts</code></td>
+<td>Off-platform hire detection</td>
+</tr>
+<tr>
+<td><code>hire_attribution_events</code> table with full signal log per candidate-tenant-job</td>
+<td>new schema</td>
+<td>The bill-defense audit log</td>
+</tr>
+</tbody>
+</table>
+<h3>7.5 Billing mechanics (the build to ship)</h3>
+<p><strong>Stripe stack:</strong></p>
+<ul>
+<li><strong>Stripe Billing</strong> for monthly subscription fees (Pro $799/mo, etc.) — straightforward subscription objects, customer portal for self-serve.</li>
+<li><strong>Stripe Usage-Based Billing</strong> for per-hire fees — meter the <code>hire.confirmed</code> event into a Stripe Usage Record. Monthly invoice rolls subscription + usage into a single line.</li>
+<li><strong>Stripe Tax</strong> for global VAT/GST handling (especially Europe and India GST).</li>
+<li><strong>Local rails</strong> where Stripe is weak: Razorpay for India INR billing, Pix for Brazil, Flutterwave/Paystack for Africa.</li>
+</ul>
+<p><strong>Implementation phases:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Build</th>
+<th>Effort estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1 — minimum viable billing</strong> (~2 weeks)</td>
+<td>Stripe subscription billing, manual hire-event entry by sales-ops, monthly invoicing</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Phase 2 — attribution engine v1</strong> (~4 weeks)</td>
+<td><code>hire-attribution-engine.ts</code>, hired-at timestamps, audit calls, candidate self-confirmation email, e-signature webhook receivers (DocuSign + Dropbox Sign)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Phase 3 — ATS integrations</strong> (~6 weeks)</td>
+<td>Greenhouse, Lever, Ashby, Workday OAuth + webhook ingestion. This is where attribution becomes high-confidence for enterprise customers.</td>
+<td>Medium-high</td>
+</tr>
+<tr>
+<td><strong>Phase 4 — LinkedIn drift cross-attribution</strong> (~2 weeks)</td>
+<td>Extend existing <code>linkedin-profile-monitor.ts</code> to flag drift events where the candidate’s new employer matches a tenant in the 18-month window. <strong>Highest leverage per dev hour of any item in this list.</strong></td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Phase 5 — payroll / HRIS integrations</strong> (~6 weeks)</td>
+<td>Rippling, Gusto, Deel, BambooHR webhook receivers. Gold-standard attribution for SMB customers using these systems.</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>Phase 6 — Stripe usage metering + dispute workflow</strong> (~3 weeks)</td>
+<td>Auto-meter <code>hire.confirmed</code> to Stripe Usage Records. Build the 14-day dispute UI. Integrate with audit log for evidence presentation.</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total to a defensible billing system: ~5-6 months of focused engineering.</strong> Phase 1+4 alone (4 weeks total) gets us to a credible “we caught you” position on most disputes via LinkedIn drift detection — that should be the immediate priority.</p>
+<h3>7.6 Operational defenses</h3>
+<p>Beyond technology:</p>
+<ol>
+<li><strong>Quarterly attribution audit emails to customers.</strong> “Per our records, the following candidates were active in your L3xy pipeline in the last 90 days. If any have been hired off-platform, please confirm.” Forces honest annotation while it’s fresh.</li>
+<li><strong>Renewal-time reconciliation.</strong> At every renewal, run a full LinkedIn drift sweep on all candidates the tenant ever touched. Surface any matches as part of the renewal conversation.</li>
+<li><strong>Sales-ops “bill-back” workflow.</strong> When LinkedIn drift detects an attributable hire that wasn’t billed, sales-ops issues a back-billing invoice with the evidence packet (signal log + LinkedIn snapshot + first-touch timestamp). Customer can dispute within 14 days with counter-evidence.</li>
+<li><strong>Public LinkedIn announcement scraper.</strong> Engineering hires especially get announced (“Excited to join [Company] as Staff Engineer”). SerpAPI sweep at low cost.</li>
+<li><strong>DNC + privacy compliance.</strong> Every candidate-side confirmation email and LinkedIn check honors the existing DNC promise. Attribution is not a license to spam.</li>
+</ol>
+<h3>7.7 The economic case for building this now</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th style="text-align:right">Annual revenue (100 mid-market customers, 30 hires each)</th>
+<th style="text-align:right">Loss from un-tracked hires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Today (no attribution)</strong></td>
+<td style="text-align:right">$99 × 12 × 100 platform = ~$120K (subscription only)</td>
+<td style="text-align:right">We collect $0 of the $750K in per-hire fees we earned</td>
+</tr>
+<tr>
+<td><strong>Phase 1+4 only</strong> (LinkedIn drift)</td>
+<td style="text-align:right">~$120K + ~60% of $750K = <strong>$570K</strong></td>
+<td style="text-align:right">$300K still leaking</td>
+</tr>
+<tr>
+<td><strong>Phase 1-6 complete</strong></td>
+<td style="text-align:right">~$120K + ~92% of $750K = <strong>$810K</strong></td>
+<td style="text-align:right">$60K residual leakage (acceptable)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Building this is worth roughly $7,000 per customer per year in recovered revenue.</strong> At 100 customers that’s $700K ARR / year recovered, which pays for the entire 5-6 month build in the first quarter post-launch. The delta scales linearly with customer count — at 1,000 customers it’s $7M ARR / year recovered.</p>
+<blockquote>
+<p><strong>The single most important takeaway of this document:</strong> Building the hire attribution &amp; billing layer is the highest-ROI engineering investment we can make in 2026. Everything else in the unit-economics model is theoretical until we can prove a hire happened and bill for it.</p>
+</blockquote>
+<hr>
+<h2>8. Sensitivity &amp; risk</h2>
+<p>The above assumes 2026 LLM pricing. The two big sensitivities:</p>
+<h3>7.1 LLM cost trajectory</h3>
+<p>If frontier model prices fall 50% by 2027 (likely), our per-hire cost drops by ~$15-20 — margin expansion of ~3-4 percentage points without changing pricing.</p>
+<p>If LLM pricing <em>rises</em> due to capacity constraints (less likely but possible), the AI interview line item ($3.50) is most exposed. We can fall back to text-only interviews ($0.30) at lower per-customer satisfaction but ~10× cost reduction.</p>
+<h3>7.2 External sourcing pricing</h3>
+<p>PDL and EnrichLayer have pricing power. If they raise rates 2× (a real scenario in a consolidating market), Tier 3 cost per candidate goes from $0.24 to $0.48. <strong>For a mature tenant, this barely matters</strong> — Tier 3 is 10-25% of sourcing. For a brand-new tenant it adds ~$50/hire (still 100× under market price).</p>
+<p>This is exactly why the Living Talent Graph is the moat: it makes us <em>price-takers immune</em> to external API inflation.</p>
+<h3>7.3 Realistic worst-case cost-per-hire</h3>
+<p>Stack everything against us — frontier LLM doubles, PDL doubles, customer churns out before maturing — worst case is <strong>~$170/hire</strong>. Still a &gt;70% gross margin at $500/hire pricing. The business model is robust.</p>
+<hr>
+<h2>9. Regional pricing &amp; global markets</h2>
+<p>The L3xy product runs on USD-denominated infrastructure (LLM APIs, PDL, EnrichLayer, cloud compute) so our <strong>marginal cost per hire is roughly flat across geographies — ~$45-$85 everywhere</strong>. What changes dramatically is what customers will pay. A single global price (US-style $799/mo + $250/hire) leaves enormous TAM uncaptured outside North America and prices us out of the high-volume markets that are the fastest path to a global Living Talent Graph.</p>
+<h3>9.1 What customers pay today — by region</h3>
+
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="460" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">Customer Cost-Per-Hire vs. L3xy Cost — by Region</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Our cost is roughly flat globally; customer willingness-to-pay swings 20×</text>
+
+  <!-- L3xy cost reference line -->
+  <line x1="320" y1="70" x2="320" y2="430" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="324" y="76" fill="#22c55e" font-size="9" font-weight="700" font-family="Inter,sans-serif">L3xy ~$50/hire</text>
+
+  
+        <text x="312" y="104" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Japan / Korea (agency)</text>
+        <line x1="752.034332968794" y1="100" x2="811.1424245494808" y2="100" stroke="#a855f7" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="752.034332968794" cy="100" r="4" fill="#a855f7"/>
+        <circle cx="811.1424245494808" cy="100" r="4" fill="#a855f7"/>
+        <text x="746.034332968794" y="103" text-anchor="end" fill="#a855f7" font-size="9" font-family="Inter,sans-serif">$3,300</text>
+        <text x="817.1424245494808" y="103" fill="#a855f7" font-size="9" font-weight="700" font-family="Inter,sans-serif">$10,000</text>
+      
+        <text x="312" y="130" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">US / Canada (agency, tech)</text>
+        <line x1="770.8872106429587" y1="126" x2="860" y2="126" stroke="#06b6d4" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="770.8872106429587" cy="126" r="4" fill="#06b6d4"/>
+        <circle cx="860" cy="126" r="4" fill="#06b6d4"/>
+        <text x="764.8872106429587" y="129" text-anchor="end" fill="#06b6d4" font-size="9" font-family="Inter,sans-serif">$4,700</text>
+        <text x="866" y="129" fill="#06b6d4" font-size="9" font-weight="700" font-family="Inter,sans-serif">$25,000</text>
+      
+        <text x="312" y="156" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">GCC (UAE/Saudi)</text>
+        <line x1="762.2896471313031" y1="152" x2="799.2447320104231" y2="152" stroke="#facc15" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="762.2896471313031" cy="152" r="4" fill="#facc15"/>
+        <circle cx="799.2447320104231" cy="152" r="4" fill="#facc15"/>
+        <text x="756.2896471313031" y="155" text-anchor="end" fill="#facc15" font-size="9" font-family="Inter,sans-serif">$4,000</text>
+        <text x="805.2447320104231" y="155" fill="#facc15" font-size="9" font-weight="700" font-family="Inter,sans-serif">$8,000</text>
+      
+        <text x="312" y="182" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Australia / NZ</text>
+        <line x1="752.034332968794" y1="178" x2="777.2925657216722" y2="178" stroke="#10b981" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="752.034332968794" cy="178" r="4" fill="#10b981"/>
+        <circle cx="777.2925657216722" cy="178" r="4" fill="#10b981"/>
+        <text x="746.034332968794" y="181" text-anchor="end" fill="#10b981" font-size="9" font-family="Inter,sans-serif">$3,300</text>
+        <text x="783.2925657216722" y="181" fill="#10b981" font-size="9" font-weight="700" font-family="Inter,sans-serif">$5,300</text>
+      
+        <text x="312" y="208" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Western Europe (DE/FR)</text>
+        <line x1="746.9535775913012" y1="204" x2="768.5688915294077" y2="204" stroke="#0ea5e9" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="746.9535775913012" cy="204" r="4" fill="#0ea5e9"/>
+        <circle cx="768.5688915294077" cy="204" r="4" fill="#0ea5e9"/>
+        <text x="740.9535775913012" y="207" text-anchor="end" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif">$3,000</text>
+        <text x="774.5688915294077" y="207" fill="#0ea5e9" font-size="9" font-weight="700" font-family="Inter,sans-serif">$4,500</text>
+      
+        <text x="312" y="234" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">UK</text>
+        <line x1="767.37080625768" y1="230" x2="786.507731128514" y2="230" stroke="#3b82f6" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="767.37080625768" cy="230" r="4" fill="#3b82f6"/>
+        <circle cx="786.507731128514" cy="230" r="4" fill="#3b82f6"/>
+        <text x="761.37080625768" y="233" text-anchor="end" fill="#3b82f6" font-size="9" font-family="Inter,sans-serif">$4,400</text>
+        <text x="792.507731128514" y="233" fill="#3b82f6" font-size="9" font-weight="700" font-family="Inter,sans-serif">$6,300</text>
+      
+        <text x="312" y="260" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Singapore / HK</text>
+        <line x1="730.4211721433667" y1="256" x2="758.1334650191275" y2="256" stroke="#14b8a6" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="730.4211721433667" cy="256" r="4" fill="#14b8a6"/>
+        <circle cx="758.1334650191275" cy="256" r="4" fill="#14b8a6"/>
+        <text x="724.4211721433667" y="259" text-anchor="end" fill="#14b8a6" font-size="9" font-family="Inter,sans-serif">$2,200</text>
+        <text x="764.1334650191275" y="259" fill="#14b8a6" font-size="9" font-weight="700" font-family="Inter,sans-serif">$3,700</text>
+      
+        <text x="312" y="286" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">LATAM (BR/MX)</text>
+        <line x1="676.5204078099662" y1="282" x2="746.9535775913012" y2="282" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="676.5204078099662" cy="282" r="4" fill="#f59e0b"/>
+        <circle cx="746.9535775913012" cy="282" r="4" fill="#f59e0b"/>
+        <text x="670.5204078099662" y="285" text-anchor="end" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif">$800</text>
+        <text x="752.9535775913012" y="285" fill="#f59e0b" font-size="9" font-weight="700" font-family="Inter,sans-serif">$3,000</text>
+      
+        <text x="312" y="312" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">India (tech roles)</text>
+        <line x1="735.0589941341531" y1="308" x2="783.906441586639" y2="308" stroke="#ef4444" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="735.0589941341531" cy="308" r="4" fill="#ef4444"/>
+        <circle cx="783.906441586639" cy="308" r="4" fill="#ef4444"/>
+        <text x="729.0589941341531" y="311" text-anchor="end" fill="#ef4444" font-size="9" font-family="Inter,sans-serif">$2,400</text>
+        <text x="789.906441586639" y="311" fill="#ef4444" font-size="9" font-weight="700" font-family="Inter,sans-serif">$6,000</text>
+      
+        <text x="312" y="338" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">India (commodity roles)</text>
+        <line x1="661.2020820552" y1="334" x2="719.7258847654002" y2="334" stroke="#ef4444" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="661.2020820552" cy="334" r="4" fill="#ef4444"/>
+        <circle cx="719.7258847654002" cy="334" r="4" fill="#ef4444"/>
+        <text x="655.2020820552" y="337" text-anchor="end" fill="#ef4444" font-size="9" font-family="Inter,sans-serif">$600</text>
+        <text x="725.7258847654002" y="337" fill="#ef4444" font-size="9" font-weight="700" font-family="Inter,sans-serif">$1,800</text>
+      
+        <text x="312" y="364" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">SE Asia (PH/VN/ID)</text>
+        <line x1="651.4976126334982" y1="360" x2="710.0095943564711" y2="360" stroke="#f97316" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="651.4976126334982" cy="360" r="4" fill="#f97316"/>
+        <circle cx="710.0095943564711" cy="360" r="4" fill="#f97316"/>
+        <text x="645.4976126334982" y="363" text-anchor="end" fill="#f97316" font-size="9" font-family="Inter,sans-serif">$500</text>
+        <text x="716.0095943564711" y="363" fill="#f97316" font-size="9" font-weight="700" font-family="Inter,sans-serif">$1,500</text>
+      
+        <text x="312" y="390" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Africa (NG/KE/ZA)</text>
+        <line x1="639.6251895423536" y1="386" x2="710.0095943564711" y2="386" stroke="#ec4899" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="639.6251895423536" cy="386" r="4" fill="#ec4899"/>
+        <circle cx="710.0095943564711" cy="386" r="4" fill="#ec4899"/>
+        <text x="633.6251895423536" y="389" text-anchor="end" fill="#ec4899" font-size="9" font-family="Inter,sans-serif">$400</text>
+        <text x="716.0095943564711" y="389" fill="#ec4899" font-size="9" font-weight="700" font-family="Inter,sans-serif">$1,500</text>
+      
+        <text x="312" y="416" text-anchor="end" fill="#cbd5e1" font-size="10" font-family="Inter,sans-serif">Pakistan / Bangladesh / SL</text>
+        <line x1="624.3289854684901" y1="412" x2="688.4061171599074" y2="412" stroke="#fb7185" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="624.3289854684901" cy="412" r="4" fill="#fb7185"/>
+        <circle cx="688.4061171599074" cy="412" r="4" fill="#fb7185"/>
+        <text x="618.3289854684901" y="415" text-anchor="end" fill="#fb7185" font-size="9" font-family="Inter,sans-serif">$300</text>
+        <text x="694.4061171599074" y="415" fill="#fb7185" font-size="9" font-weight="700" font-family="Inter,sans-serif">$1,000</text>
+      
+
+  <!-- X axis -->
+  <line x1="320" y1="438" x2="860" y2="438" stroke="#334155"/>
+  <text x="566.0991429200844" y="452" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$100</text><text x="688.4061171599074" y="452" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$1,000</text><text x="774.186007006861" y="452" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$5,000</text><text x="860" y="452" text-anchor="middle" fill="#64748b" font-size="9" font-family="Inter,sans-serif">$25,000</text>
+</svg>
+<div class="figure-caption">Customer cost-per-hire range by region (log scale) — our flat ~$50 cost vs. 20× global variance</div>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>In-house cost-per-hire</th>
+<th>Agency norm</th>
+<th>Local incumbent (price reference)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>United States / Canada</strong></td>
+<td>$4,700 (SHRM)</td>
+<td>15-25% of first-year salary</td>
+<td>LinkedIn Recruiter Corporate ~$10-15K/seat/yr</td>
+</tr>
+<tr>
+<td><strong>United Kingdom</strong></td>
+<td>£3,500-£5,000</td>
+<td>15-25%</td>
+<td>LinkedIn Recruiter ~£8-12K/seat/yr</td>
+</tr>
+<tr>
+<td><strong>Western Europe (DE/FR/NL)</strong></td>
+<td>€3,000-€4,500</td>
+<td>20-30% (higher than US/UK)</td>
+<td>StepStone, Personio recruiting modules ~€3-8K/yr</td>
+</tr>
+<tr>
+<td><strong>Eastern Europe (PL/RO/CZ)</strong></td>
+<td>€1,500-€2,500</td>
+<td>15-20%</td>
+<td><a href="http://Pracuj.pl">Pracuj.pl</a>, eJobs, regional ATS €500-2K/yr</td>
+</tr>
+<tr>
+<td><strong>Australia / New Zealand</strong></td>
+<td>A$5,000-A$8,000</td>
+<td>15-20%</td>
+<td>Seek Talent Search ~A$8-12K/seat/yr</td>
+</tr>
+<tr>
+<td><strong>GCC (UAE / Saudi / Qatar)</strong></td>
+<td>$4,000-$8,000 (high salaries)</td>
+<td>15-25%</td>
+<td>Bayt, GulfTalent ~$3-8K/yr</td>
+</tr>
+<tr>
+<td><strong>Singapore / Hong Kong</strong></td>
+<td>S$3,000-S$5,000</td>
+<td>18-25%</td>
+<td>JobStreet Premium ~S$3-6K/yr</td>
+</tr>
+<tr>
+<td><strong>India</strong></td>
+<td>₹50K-₹150K (~$600-$1,800); tech roles ₹2-5L (~$2,400-$6,000)</td>
+<td><strong>8.33% standard</strong> (one month’s salary)</td>
+<td>Naukri RecruiterPlus ~₹50K-₹2L/yr (~$600-$2,400); LinkedIn Recruiter India ~$3K/seat/yr</td>
+</tr>
+<tr>
+<td><strong>Pakistan / Bangladesh / Sri Lanka</strong></td>
+<td>$300-$1,000</td>
+<td>5-10%</td>
+<td><a href="http://Rozee.pk">Rozee.pk</a>, Bdjobs ~$200-$800/yr</td>
+</tr>
+<tr>
+<td><strong>SE Asia (PH / VN / ID / TH / MY)</strong></td>
+<td>$500-$1,500</td>
+<td>10-15%</td>
+<td>JobStreet, Kalibrr, VietnamWorks ~$400-$2K/yr</td>
+</tr>
+<tr>
+<td><strong>LATAM (BR / MX / AR / CO)</strong></td>
+<td>R$4K-R$15K (~$800-$3,000)</td>
+<td>1-3 months’ salary</td>
+<td>Catho, <a href="http://Vagas.com">Vagas.com</a>, OCC Mundial ~$300-$1,500/yr</td>
+</tr>
+<tr>
+<td><strong>Africa (NG / KE / ZA / EG)</strong></td>
+<td>$400-$1,500</td>
+<td>10-15%</td>
+<td>LinkedIn (limited), BrighterMonday, MyJobMag ~$200-$800/yr</td>
+</tr>
+<tr>
+<td><strong>Japan / South Korea</strong></td>
+<td>¥500K-¥1.5M (~$3,300-$10K)</td>
+<td>30-35% (highest globally)</td>
+<td>Bizreach, Wantedly Direct Scout ~¥800K-¥3M/yr</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two regional patterns matter most:</strong></p>
+<ul>
+<li><strong>India + South Asia + Africa: agency fees are dramatically lower</strong> (8.33% in India vs 15-25% in US), so the “we replace your agency” pitch lands smaller in absolute dollars but larger in <em>relative</em> savings vs. local incumbents like Naukri.</li>
+<li><strong>Japan/Korea: agency fees are dramatically higher</strong> (30-35% of first-year salary). The agency-displacement pitch is <em>most</em> lucrative here per hire — but sales cycles are long, and Bizreach is entrenched.</li>
+</ul>
+<h3>9.2 Recommended regional pricing — Pro tier reference</h3>
+<p>We hold the global product unchanged and let pricing flex. PPP-adjusted, currency-localized, billed in local currency where Stripe/local rails support it.</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th style="text-align:right">Platform fee / mo</th>
+<th style="text-align:right">Per seat / mo</th>
+<th style="text-align:right">Per hire</th>
+<th>Currency</th>
+<th>vs US (PPP-adjusted)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>US / Canada</strong></td>
+<td style="text-align:right">$799</td>
+<td style="text-align:right">$199</td>
+<td style="text-align:right">$250</td>
+<td>USD</td>
+<td>baseline</td>
+</tr>
+<tr>
+<td><strong>UK</strong></td>
+<td style="text-align:right">£649</td>
+<td style="text-align:right">£159</td>
+<td style="text-align:right">£199</td>
+<td>GBP</td>
+<td>~equal</td>
+</tr>
+<tr>
+<td><strong>Western Europe</strong></td>
+<td style="text-align:right">€749</td>
+<td style="text-align:right">€179</td>
+<td style="text-align:right">€230</td>
+<td>EUR</td>
+<td>~equal</td>
+</tr>
+<tr>
+<td><strong>Australia / NZ</strong></td>
+<td style="text-align:right">A$1,199</td>
+<td style="text-align:right">A$299</td>
+<td style="text-align:right">A$375</td>
+<td>AUD</td>
+<td>~equal</td>
+</tr>
+<tr>
+<td><strong>Eastern Europe</strong></td>
+<td style="text-align:right">€399</td>
+<td style="text-align:right">€99</td>
+<td style="text-align:right">€120</td>
+<td>EUR</td>
+<td>-45%</td>
+</tr>
+<tr>
+<td><strong>GCC</strong></td>
+<td style="text-align:right">$799</td>
+<td style="text-align:right">$199</td>
+<td style="text-align:right">$250</td>
+<td>USD</td>
+<td>~equal (high salaries support US pricing)</td>
+</tr>
+<tr>
+<td><strong>Singapore / HK</strong></td>
+<td style="text-align:right">S$899</td>
+<td style="text-align:right">S$229</td>
+<td style="text-align:right">S$299</td>
+<td>SGD</td>
+<td>~equal</td>
+</tr>
+<tr>
+<td><strong>Japan</strong></td>
+<td style="text-align:right">¥99,000</td>
+<td style="text-align:right">¥24,000</td>
+<td style="text-align:right">¥35,000</td>
+<td>JPY</td>
+<td>~equal (agency fees are higher, room to push)</td>
+</tr>
+<tr>
+<td><strong>South Korea</strong></td>
+<td style="text-align:right">₩999K</td>
+<td style="text-align:right">₩249K</td>
+<td style="text-align:right">₩330K</td>
+<td>KRW</td>
+<td>~equal</td>
+</tr>
+<tr>
+<td><strong>LATAM</strong></td>
+<td style="text-align:right">$349</td>
+<td style="text-align:right">$89</td>
+<td style="text-align:right">$120</td>
+<td>USD/local</td>
+<td>-55%</td>
+</tr>
+<tr>
+<td><strong>India</strong></td>
+<td style="text-align:right"><strong>₹14,999</strong> (~$180)</td>
+<td style="text-align:right"><strong>₹2,999</strong> (~$36)</td>
+<td style="text-align:right"><strong>₹2,500</strong> (~$30)</td>
+<td>INR</td>
+<td>-75%</td>
+</tr>
+<tr>
+<td><strong>Pakistan / Bangladesh / Sri Lanka</strong></td>
+<td style="text-align:right">~$99</td>
+<td style="text-align:right">~$24</td>
+<td style="text-align:right">~$20</td>
+<td>USD</td>
+<td>-85%</td>
+</tr>
+<tr>
+<td><strong>SE Asia (PH/VN/ID/TH/MY)</strong></td>
+<td style="text-align:right">$249</td>
+<td style="text-align:right">$59</td>
+<td style="text-align:right">$80</td>
+<td>USD/local</td>
+<td>-65%</td>
+</tr>
+<tr>
+<td><strong>Africa (NG/KE/ZA/EG)</strong></td>
+<td style="text-align:right">$179</td>
+<td style="text-align:right">$39</td>
+<td style="text-align:right">$50</td>
+<td>USD</td>
+<td>-75%</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Pricing principle:</strong> We are not racing local players to the bottom — we are pricing at <strong>roughly 30-50% of the local incumbent’s per-seat fee</strong> and replacing 1.5-2× the work. The customer still saves money vs. their current spend, and we still earn a healthy gross margin because our cost-per-hire is the same everywhere.</p>
+</blockquote>
+<h3>9.3 Regional unit economics — typical mid-market customer (5 seats, 30 hires/year)</h3>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th style="text-align:right">Annual revenue (Pro)</th>
+<th style="text-align:right">Our cost (mature)</th>
+<th style="text-align:right">Gross margin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>US / Canada</td>
+<td style="text-align:right">$9,588 + $11,940 + $7,500 = <strong>$29,028</strong></td>
+<td style="text-align:right">~$1,410 + ~$1,800 infra</td>
+<td style="text-align:right"><strong>~89%</strong></td>
+</tr>
+<tr>
+<td>UK</td>
+<td style="text-align:right">£7,788 + £9,540 + £5,970 = <strong>£23,298</strong> (~$28,500)</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~88%</strong></td>
+</tr>
+<tr>
+<td>Western Europe</td>
+<td style="text-align:right">€8,988 + €10,740 + €6,900 = <strong>€26,628</strong> (~$28,800)</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~88%</strong></td>
+</tr>
+<tr>
+<td>Singapore / GCC / Japan</td>
+<td style="text-align:right">~$28,000-$32,000</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~88%</strong></td>
+</tr>
+<tr>
+<td>LATAM</td>
+<td style="text-align:right">$4,188 + $5,340 + $3,600 = <strong>$13,128</strong></td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~76%</strong></td>
+</tr>
+<tr>
+<td>Eastern Europe</td>
+<td style="text-align:right">€4,788 + €5,940 + €3,600 = <strong>€14,328</strong> (~$15,500)</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~78%</strong></td>
+</tr>
+<tr>
+<td><strong>India</strong></td>
+<td style="text-align:right">₹179,988 + ₹179,940 + ₹75,000 = <strong>₹434,928</strong> (~$5,200)</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~52%</strong></td>
+</tr>
+<tr>
+<td>SE Asia</td>
+<td style="text-align:right">$2,988 + $3,540 + $2,400 = <strong>$8,928</strong></td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~71%</strong></td>
+</tr>
+<tr>
+<td>Africa</td>
+<td style="text-align:right">$2,148 + $2,340 + $1,500 = <strong>$5,988</strong></td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~63%</strong></td>
+</tr>
+<tr>
+<td>Pakistan / South Asia</td>
+<td style="text-align:right">$1,188 + $1,440 + $600 = <strong>$3,228</strong></td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>~44%</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key reads:</strong></p>
+<ul>
+<li>Tier-1 markets (NA, UK, EU, GCC, ANZ, JP/KR): <strong>&gt;85% gross margin</strong> — same model, same prices in PPP-adjusted local currency.</li>
+<li>Mid-tier markets (LATAM, EE): <strong>~75-80%</strong> — perfectly viable.</li>
+<li>High-volume / strategic markets (India, SE Asia, Africa): <strong>~50-70%</strong> — lower per-customer margin, but <strong>massive volume potential</strong> and these are the markets where the platform pool grows fastest.</li>
+<li>Lowest-tier (Pakistan, smaller South Asia): <strong>~45%</strong> — operate near break-even to seed the pool. Treat as customer-acquisition spend.</li>
+</ul>
+<h3>9.4 Why low-margin regions are still strategic</h3>
+<p>The Living Talent Graph is a <strong>network</strong>. Every tenant adds candidates to the platform pool. A ₹14,999/mo Indian customer adding 200 tech candidates a month is <em>more strategically valuable</em> to the network than a $799/mo US customer adding 30 — because:</p>
+<ol>
+<li><strong>Pool depth wins searches.</strong> A US recruiter searching for “Bangalore-based React engineer” gets results because the Indian tenants seeded the pool.</li>
+<li><strong>Cross-border placements are the highest-margin transactions.</strong> A US tenant hiring an Indian engineer pays full US per-hire pricing ($250) on a candidate that Indian tenants effectively contributed at zero CAC.</li>
+<li><strong>PPP-priced markets compound the platform pool 5-10× faster</strong> because more customers can afford to be on it.</li>
+</ol>
+<p><strong>Strategic recommendation:</strong> Treat Tier-1 markets as the revenue engine and South Asia / SE Asia / Africa as the <strong>pool-growth engine</strong>. Each subsidizes the other; together they form the moat.</p>
+<h3>9.5 Local sales motion considerations</h3>
+<table>
+<thead>
+<tr>
+<th>Market cluster</th>
+<th>Sales motion</th>
+<th>Payment rails</th>
+<th>Customer support hours</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NA / UK / ANZ</td>
+<td>PLG + inside sales</td>
+<td>Stripe USD/GBP/AUD</td>
+<td>English, US/UK timezones</td>
+</tr>
+<tr>
+<td>Western Europe</td>
+<td>Inside sales, GDPR-first messaging</td>
+<td>Stripe EUR + SEPA</td>
+<td>English + DE/FR support tier</td>
+</tr>
+<tr>
+<td>Eastern Europe</td>
+<td>PLG, low-touch</td>
+<td>Stripe EUR</td>
+<td>English</td>
+</tr>
+<tr>
+<td>GCC</td>
+<td>Field sales, relationship-led</td>
+<td>Stripe USD + local invoicing</td>
+<td>English/Arabic, GMT+3/4</td>
+</tr>
+<tr>
+<td>Japan / Korea</td>
+<td>Partner-led (long sales cycles)</td>
+<td>Local invoice + bank transfer</td>
+<td>JA/KO required, GMT+9</td>
+</tr>
+<tr>
+<td>India</td>
+<td>PLG + Free tier acquisition + inside sales</td>
+<td>Stripe INR + Razorpay backup</td>
+<td>English + Hindi tier, IST</td>
+</tr>
+<tr>
+<td>Pakistan / Bangladesh / Sri Lanka</td>
+<td>PLG only, Free tier emphasized</td>
+<td>Stripe USD (where supported) + Wise</td>
+<td>English</td>
+</tr>
+<tr>
+<td>SE Asia</td>
+<td>PLG + regional partnerships (JobStreet integrations)</td>
+<td>Stripe USD/SGD + GrabPay/local</td>
+<td>English, regional timezones</td>
+</tr>
+<tr>
+<td>LATAM</td>
+<td>PLG + inside sales</td>
+<td>Stripe USD/BRL/MXN + Pix in BR</td>
+<td>EN/PT/ES, GMT-3 to -6</td>
+</tr>
+<tr>
+<td>Africa</td>
+<td>PLG only, mobile-first UX critical</td>
+<td>Stripe USD + Flutterwave/Paystack</td>
+<td>English (FR for francophone)</td>
+</tr>
+</tbody>
+</table>
+<h3>9.6 Phased global rollout</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Markets</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 1 (now)</strong></td>
+<td>US, Canada, UK, Australia, India</td>
+<td>Highest English-language LTV (NA/UK/AU) + highest pool-growth velocity (India)</td>
+</tr>
+<tr>
+<td><strong>Phase 2 (+6 mo)</strong></td>
+<td>Singapore, UAE, Western Europe (DE/FR/NL)</td>
+<td>High-margin Tier-1 expansion; Singapore as APAC HQ</td>
+</tr>
+<tr>
+<td><strong>Phase 3 (+12 mo)</strong></td>
+<td>SE Asia (PH/VN/ID), LATAM (BR/MX), South Africa</td>
+<td>Volume + pool-growth markets; partner with regional job boards</td>
+</tr>
+<tr>
+<td><strong>Phase 4 (+18 mo)</strong></td>
+<td>Eastern Europe, Japan, Korea</td>
+<td>Localized UX &amp; language support requirements</td>
+</tr>
+<tr>
+<td><strong>Phase 5 (+24 mo)</strong></td>
+<td>Pakistan, Bangladesh, Sri Lanka, broader Africa</td>
+<td>Free-tier-first, near-cost pricing, pool-growth play</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>10. Partnership revenue share &amp; channel economics</h2>
+<p>The fastest way to populate the Living Talent Graph globally is <strong>not</strong> by hiring a 50-country sales team — it’s by sharing the upside with partners who already own the customer relationships in those markets. This section defines the partnership program: who we share revenue with, how much, why it still works financially, and how we track attribution so partners actually get paid.</p>
+<h3>10.1 Why partnerships are central to the model</h3>
+<ol>
+<li><strong>Distribution.</strong> Naukri, JobStreet, Bayt, Catho already own the recruiter relationship in their regions. We don’t need to displace them — we need to be inside their tooling.</li>
+<li><strong>Pool growth.</strong> Each agency/RPO partner brings a candidate book that seeds the platform pool. An RPO running 200 hires/month generates 5,000+ candidates/month into the Living Graph.</li>
+<li><strong>Enterprise reach.</strong> Deloitte, Accenture, Korn Ferry, and regional SIs sell into accounts we cannot reach directly with PLG. Their fee is small relative to the ARR they unlock.</li>
+<li><strong>Capital efficiency.</strong> Channel CAC is fundamentally lower than direct CAC. A 25% lifetime rev share is cheaper than building inside-sales infrastructure for the same volume.</li>
+</ol>
+
+<svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="centerpulse" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flowL" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#06b6d4" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="flowR" x1="1" x2="0" y1="0" y2="0">
+      <stop offset="0" stop-color="#22c55e" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#22c55e" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="460" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">L3xy Partner Network — Channel Economics</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Partners bring distribution + pool depth → L3xy shares 20-40% of attributed revenue</text>
+
+  <!-- Center: L3xy -->
+  <circle cx="450" cy="240" r="115" fill="url(#centerpulse)"/>
+  <circle cx="450" cy="240" r="78" fill="#06b6d4" fill-opacity="0.22" stroke="#06b6d4" stroke-width="2"/>
+  <text x="450" y="232" text-anchor="middle" fill="white" font-size="15" font-weight="800" font-family="Inter,sans-serif">L3XY</text>
+  <text x="450" y="252" text-anchor="middle" fill="white" font-size="10" font-family="Inter,sans-serif">platform + pool</text>
+  <text x="450" y="270" text-anchor="middle" fill="#67e8f9" font-size="9" font-family="Inter,sans-serif">attribution engine</text>
+
+  
+        <path d="M 235 105 Q 280 105 372 240" stroke="url(#flowL)" stroke-width="2" fill="none"/>
+        <rect x="132" y="88" width="190" height="34" rx="7" fill="#a855f7" fill-opacity="0.16" stroke="#a855f7" stroke-width="1.2"/>
+        <text x="145" y="105" fill="#a855f7" font-size="10" font-weight="700" font-family="Inter,sans-serif">Staffing agency / RPO</text>
+        <text x="145" y="117" fill="#a855f7" font-size="9" font-family="Inter,sans-serif" opacity="0.85">share: 30-40%</text>
+      
+        <path d="M 215 175 Q 280 175 372 240" stroke="url(#flowL)" stroke-width="2" fill="none"/>
+        <rect x="112" y="158" width="190" height="34" rx="7" fill="#ec4899" fill-opacity="0.16" stroke="#ec4899" stroke-width="1.2"/>
+        <text x="125" y="175" fill="#ec4899" font-size="10" font-weight="700" font-family="Inter,sans-serif">Regional reseller</text>
+        <text x="125" y="187" fill="#ec4899" font-size="9" font-family="Inter,sans-serif" opacity="0.85">share: 30-40%</text>
+      
+        <path d="M 215 245 Q 280 245 372 240" stroke="url(#flowL)" stroke-width="2" fill="none"/>
+        <rect x="112" y="228" width="190" height="34" rx="7" fill="#22c55e" fill-opacity="0.16" stroke="#22c55e" stroke-width="1.2"/>
+        <text x="125" y="245" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">ATS marketplace</text>
+        <text x="125" y="257" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">share: 15-25%</text>
+      
+        <path d="M 215 315 Q 280 315 372 240" stroke="url(#flowL)" stroke-width="2" fill="none"/>
+        <rect x="112" y="298" width="190" height="34" rx="7" fill="#10b981" fill-opacity="0.16" stroke="#10b981" stroke-width="1.2"/>
+        <text x="125" y="315" fill="#10b981" font-size="10" font-weight="700" font-family="Inter,sans-serif">HRIS embedded</text>
+        <text x="125" y="327" fill="#10b981" font-size="9" font-family="Inter,sans-serif" opacity="0.85">share: 20-30%</text>
+      
+        <path d="M 235 385 Q 280 385 372 240" stroke="url(#flowL)" stroke-width="2" fill="none"/>
+        <rect x="132" y="368" width="190" height="34" rx="7" fill="#f59e0b" fill-opacity="0.16" stroke="#f59e0b" stroke-width="1.2"/>
+        <text x="145" y="385" fill="#f59e0b" font-size="10" font-weight="700" font-family="Inter,sans-serif">Job board partner</text>
+        <text x="145" y="397" fill="#f59e0b" font-size="9" font-family="Inter,sans-serif" opacity="0.85">share: 20-30%</text>
+      
+        <path d="M 528 240 Q 640 122 660 122" stroke="url(#flowR)" stroke-width="2" fill="none"/>
+        <rect x="660" y="108" width="200" height="34" rx="7" fill="#06b6d4" fill-opacity="0.14" stroke="#06b6d4" stroke-width="1.2"/>
+        <text x="668" y="125" fill="#06b6d4" font-size="10" font-weight="700" font-family="Inter,sans-serif">+ Customers</text>
+        <text x="668" y="137" fill="#06b6d4" font-size="9" font-family="Inter,sans-serif" opacity="0.85">distribution into markets</text>
+      
+        <path d="M 528 240 Q 640 212 680 212" stroke="url(#flowR)" stroke-width="2" fill="none"/>
+        <rect x="680" y="198" width="200" height="34" rx="7" fill="#0ea5e9" fill-opacity="0.14" stroke="#0ea5e9" stroke-width="1.2"/>
+        <text x="688" y="215" fill="#0ea5e9" font-size="10" font-weight="700" font-family="Inter,sans-serif">+ Pool depth</text>
+        <text x="688" y="227" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif" opacity="0.85">each partner seeds candidates</text>
+      
+        <path d="M 528 240 Q 640 302 680 302" stroke="url(#flowR)" stroke-width="2" fill="none"/>
+        <rect x="680" y="288" width="200" height="34" rx="7" fill="#22c55e" fill-opacity="0.14" stroke="#22c55e" stroke-width="1.2"/>
+        <text x="688" y="305" fill="#22c55e" font-size="10" font-weight="700" font-family="Inter,sans-serif">~ Net margin</text>
+        <text x="688" y="317" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">~91% T1 / ~54% India</text>
+      
+        <path d="M 528 240 Q 640 392 660 392" stroke="url(#flowR)" stroke-width="2" fill="none"/>
+        <rect x="660" y="378" width="200" height="34" rx="7" fill="#facc15" fill-opacity="0.14" stroke="#facc15" stroke-width="1.2"/>
+        <text x="668" y="395" fill="#facc15" font-size="10" font-weight="700" font-family="Inter,sans-serif">− CAC borne by partner</text>
+        <text x="668" y="407" fill="#facc15" font-size="9" font-family="Inter,sans-serif" opacity="0.85">channel CAC ≈ 0</text>
+      
+
+  <!-- Tier ribbon along bottom -->
+  <text x="36" y="440" fill="#94a3b8" font-size="9" font-weight="700" font-family="Inter,sans-serif">TIERS:</text>
+  <rect x="86" y="428" width="120" height="20" rx="10" fill="#94a3b8" fill-opacity="0.15" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="146" y="442" text-anchor="middle" fill="#cbd5e1" font-size="9" font-family="Inter,sans-serif">Silver — 20% / $0-50K</text>
+  <rect x="216" y="428" width="120" height="20" rx="10" fill="#facc15" fill-opacity="0.18" stroke="#facc15" stroke-width="1"/>
+  <text x="276" y="442" text-anchor="middle" fill="#facc15" font-size="9" font-family="Inter,sans-serif">Gold — 25% / $50-250K</text>
+  <rect x="346" y="428" width="140" height="20" rx="10" fill="#06b6d4" fill-opacity="0.22" stroke="#06b6d4" stroke-width="1"/>
+  <text x="416" y="442" text-anchor="middle" fill="#67e8f9" font-size="9" font-family="Inter,sans-serif">Platinum — 30% / $250K+</text>
+  <rect x="496" y="428" width="160" height="20" rx="10" fill="#a855f7" fill-opacity="0.22" stroke="#a855f7" stroke-width="1"/>
+  <text x="576" y="442" text-anchor="middle" fill="#c084fc" font-size="9" font-family="Inter,sans-serif">Anchor — up to 40%, exclusive</text>
+</svg>
+<div class="figure-caption">L3xy Partner Network — partners bring distribution and pool depth in exchange for 20-40% of attributed revenue</div>
+<h3>10.2 Partner types &amp; rev-share structure</h3>
+<table>
+<thead>
+<tr>
+<th>Partner type</th>
+<th>Target segment</th>
+<th style="text-align:right">Typical rev share</th>
+<th>Term</th>
+<th>What they bring</th>
+<th>What we provide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Staffing agency / RPO</strong> (white-label or co-branded resale)</td>
+<td>SMB &amp; mid-market direct hires</td>
+<td style="text-align:right"><strong>30-40%</strong></td>
+<td>Lifetime of customer</td>
+<td>Existing recruiter relationships, candidate book</td>
+<td>White-label UI, training, partner portal, MDF</td>
+</tr>
+<tr>
+<td><strong>HR consultancy / SI</strong> (Deloitte, Accenture, regional firms)</td>
+<td>Enterprise (1,000+ employees)</td>
+<td style="text-align:right"><strong>20-30%</strong></td>
+<td>First 24 months</td>
+<td>Enterprise sales motion, change-mgmt services</td>
+<td>Co-sell support, SE resources, deal registration</td>
+</tr>
+<tr>
+<td><strong>Regional reseller</strong> (markets we have no presence in)</td>
+<td>Regional SMB &amp; mid-market</td>
+<td style="text-align:right"><strong>30-40%</strong></td>
+<td>Lifetime</td>
+<td>Local language, currency, support, sales</td>
+<td>Reseller portal, localized product, training</td>
+</tr>
+<tr>
+<td><strong>ATS marketplace integration</strong> (Greenhouse, Lever, Ashby, Workday)</td>
+<td>Their installed base</td>
+<td style="text-align:right"><strong>15-25%</strong></td>
+<td>First 12 months</td>
+<td>Distribution to thousands of orgs</td>
+<td>Native integration, marketplace listing</td>
+</tr>
+<tr>
+<td><strong>HRIS embedded partner</strong> (Rippling, Gusto, Deel, BambooHR)</td>
+<td>Their SMB customers</td>
+<td style="text-align:right"><strong>20-30%</strong> or revenue swap</td>
+<td>Lifetime</td>
+<td>Embedded distribution into HRIS workflow</td>
+<td>Embedded experience, white-label option</td>
+</tr>
+<tr>
+<td><strong>Job board partner</strong> (Naukri, JobStreet, Bayt, Catho, Seek)</td>
+<td>Their recruiter base</td>
+<td style="text-align:right"><strong>20-30%</strong></td>
+<td>Lifetime</td>
+<td>Massive recruiter audience, regional brand</td>
+<td>Co-branded “Smart Sourcing” feature, integration</td>
+</tr>
+<tr>
+<td><strong>Affiliate / community / influencer</strong> (HR thought leaders, newsletters, Slack communities)</td>
+<td>Long tail</td>
+<td style="text-align:right"><strong>15-20% first 12 mo</strong> OR <strong>$500-2K flat per signup</strong></td>
+<td>First year</td>
+<td>Top-of-funnel awareness</td>
+<td>Tracking link, creative assets, leaderboard</td>
+</tr>
+<tr>
+<td><strong>Tech integration partner</strong> (background-check, e-sign, video-interview)</td>
+<td>Cross-sell base</td>
+<td style="text-align:right"><strong>Mutual referral</strong> (10-15% each way)</td>
+<td>Lifetime</td>
+<td>Cross-sell distribution</td>
+<td>Reciprocal listings + integration</td>
+</tr>
+</tbody>
+</table>
+<h3>10.3 Margin impact at each rev-share level</h3>
+<p>Using the <strong>mid-market customer @ Pro tier</strong> (5 seats, 30 hires/year) reference customer from §9:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th style="text-align:right">Direct ARR</th>
+<th style="text-align:right">Our cost</th>
+<th style="text-align:right">Direct margin</th>
+<th style="text-align:right">After 25% rev share</th>
+<th style="text-align:right">After 35% rev share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>US / Canada</td>
+<td style="text-align:right">$29,028</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right"><strong>89%</strong></td>
+<td style="text-align:right">$19,971 net → <strong>91% net margin</strong></td>
+<td style="text-align:right">$17,068 net → <strong>89% net margin</strong></td>
+</tr>
+<tr>
+<td>Western Europe</td>
+<td style="text-align:right">~$28,800</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right">88%</td>
+<td style="text-align:right">~$19,800 net → <strong>91% net margin</strong></td>
+<td style="text-align:right">~$16,920 net → <strong>89% net margin</strong></td>
+</tr>
+<tr>
+<td>India</td>
+<td style="text-align:right">$5,200</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right">52%</td>
+<td style="text-align:right">$3,900 net → <strong>54% net margin</strong>*</td>
+<td style="text-align:right">$3,380 net → <strong>47% net margin</strong>*</td>
+</tr>
+<tr>
+<td>SE Asia</td>
+<td style="text-align:right">$8,928</td>
+<td style="text-align:right">~$1,800</td>
+<td style="text-align:right">71%</td>
+<td style="text-align:right">$6,696 net → <strong>73% net margin</strong></td>
+<td style="text-align:right">$5,803 net → <strong>69% net margin</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>*India example: $5,200 × 0.75 = $3,900 net to L3xy. Of that, $3,900 - $1,800 cost = $2,100 contribution. $2,100 / $3,900 = <strong>54% net margin</strong> on the <em>retained</em> revenue. Partner takes the other $1,300 entirely as their margin (their cost to acquire and serve the customer is borne by them, not us).</p>
+</blockquote>
+<p><strong>Counter-intuitive but critical insight:</strong> <strong>net margin on partner-sourced revenue is actually equal to or better than direct margin</strong> because we don’t bear the CAC, sales rep cost, or local support cost — the partner does. The 25-35% we share is essentially CAC-as-a-service.</p>
+<h3>10.4 Partner tier program — “L3xy Partner Network”</h3>
+<p>A formal three-tier program creates clear progression and concentrates investment on the partners that are actually producing. Tiers reset annually based on trailing-12-month L3xy-attributed ARR.</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th style="text-align:right">Threshold (TTM L3xy ARR)</th>
+<th style="text-align:right">Rev share</th>
+<th>Co-sell support</th>
+<th>MDF</th>
+<th>Other benefits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Silver</strong></td>
+<td style="text-align:right">$0 - $50K</td>
+<td style="text-align:right">20% lifetime</td>
+<td>Self-serve only</td>
+<td>None</td>
+<td>Partner portal, training, tracking links</td>
+</tr>
+<tr>
+<td><strong>Gold</strong></td>
+<td style="text-align:right">$50K - $250K</td>
+<td style="text-align:right">25% lifetime</td>
+<td>1 partner manager (shared)</td>
+<td>Up to $5K/yr</td>
+<td>Marketplace listing, deal registration, beta features</td>
+</tr>
+<tr>
+<td><strong>Platinum</strong></td>
+<td style="text-align:right">$250K+</td>
+<td style="text-align:right">30% lifetime + 5% accelerator on net-new logos</td>
+<td>Dedicated partner manager + SE</td>
+<td>Up to $25K/yr</td>
+<td>Quarterly biz reviews, joint roadmap input, exec sponsorship, lead-share from L3xy direct pipeline</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Special tier — Anchor Partners</strong> (negotiated, e.g., a national ATS or RPO): up to <strong>40% rev share + co-marketing investment</strong>, in exchange for exclusivity in a region or integration depth (native embedded experience). Used sparingly — these are strategic agreements signed with the CEO, not the partner team.</p>
+<h3>10.5 Partner attribution &amp; payment infrastructure</h3>
+<p>This re-uses the §7 multi-signal attribution engine. Same architecture, different signals.</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th style="text-align:right">Weight</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Partner-specific signup link</strong> (<code>l3xy.com/?ref=naukri-2026</code>)</td>
+<td style="text-align:right">60</td>
+<td>URL attribution cookie + DB write</td>
+</tr>
+<tr>
+<td><strong>Deal registration submitted by partner</strong> (before customer signs)</td>
+<td style="text-align:right">50</td>
+<td>Partner portal</td>
+</tr>
+<tr>
+<td><strong>OAuth-style partner-mediated tenant creation</strong> (partner’s app provisions the tenant via API)</td>
+<td style="text-align:right"><strong>80</strong></td>
+<td>Partner API</td>
+</tr>
+<tr>
+<td><strong>Co-sell email thread present in customer’s communication history</strong></td>
+<td style="text-align:right">25</td>
+<td>Email-domain match</td>
+</tr>
+<tr>
+<td><strong>Customer self-attribution at signup</strong> (“How did you hear about us?” → partner)</td>
+<td style="text-align:right">15</td>
+<td>Onboarding form</td>
+</tr>
+</tbody>
+</table>
+<p>A customer is <strong>partner-attributed</strong> if total partner-signal weight is ≥ 50 within a 90-day attribution window from partner first touch. Once attributed, the partner earns rev share for the agreed term (lifetime or first-12-months).</p>
+<p><strong>Schema additions</strong> (extends <code>update_db.sql</code>):</p>
+<ul>
+<li><code>partners</code> table (id, name, tier, default_rev_share, contact, payout_method, stripe_connect_id)</li>
+<li><code>partner_attribution_events</code> (mirrors <code>hire_attribution_events</code>)</li>
+<li><code>tenants.partner_id</code> + <code>tenants.partner_rev_share_pct</code> + <code>tenants.partner_attribution_term</code> columns</li>
+<li><code>partner_payouts</code> table (period, gross_attributed_revenue, share_pct, payout_amount_cents, stripe_payout_id, status)</li>
+</ul>
+<p><strong>Payment mechanics:</strong></p>
+<ul>
+<li>Stripe Connect for partner payouts — onboarding via OAuth, payouts via Express accounts.</li>
+<li>Monthly payout, net 30 (calculated on collected revenue, not invoiced — protects against churn-back).</li>
+<li>Partner portal shows: pipeline (open deals), active customers, MTD/QTD/YTD attributed ARR, expected vs. paid commission, dispute log.</li>
+<li>Tax compliance: 1099 generation in US, equivalent forms in other jurisdictions; Stripe Tax handles the heavy lifting.</li>
+</ul>
+<h3>10.6 The economic case — partner-led GTM at scale</h3>
+<p>Modeled scenario: <strong>200 customers acquired in Year 1 via partners</strong>, average customer = mid-market global blend (~$15,000 ARR), average rev share = 25%.</p>
+<table>
+<thead>
+<tr>
+<th>Line item</th>
+<th style="text-align:right">Direct GTM</th>
+<th style="text-align:right">Partner GTM</th>
+<th style="text-align:right">Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gross ARR (200 customers)</td>
+<td style="text-align:right">$3.0M</td>
+<td style="text-align:right">$3.0M</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td>Sales/marketing cost (CAC)</td>
+<td style="text-align:right">$1.5M (CAC ~$7,500/customer typical SaaS)</td>
+<td style="text-align:right"><strong>$0</strong> (partner bears cost)</td>
+<td style="text-align:right">-$1.5M</td>
+</tr>
+<tr>
+<td>Partner rev share paid</td>
+<td style="text-align:right">$0</td>
+<td style="text-align:right">$750K (25%)</td>
+<td style="text-align:right">+$750K</td>
+</tr>
+<tr>
+<td>Customer support cost</td>
+<td style="text-align:right">$300K</td>
+<td style="text-align:right">$200K (partners handle Tier-1)</td>
+<td style="text-align:right">-$100K</td>
+</tr>
+<tr>
+<td>Infra / COGS</td>
+<td style="text-align:right">$360K</td>
+<td style="text-align:right">$360K</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td><strong>Net contribution</strong></td>
+<td style="text-align:right"><strong>$840K (28%)</strong></td>
+<td style="text-align:right"><strong>$1.69M (56%)</strong></td>
+<td style="text-align:right"><strong>+$850K</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Partner-led GTM produces <strong>roughly 2× the contribution margin per dollar of revenue</strong> at this stage, even after the 25% share. The crossover only inverts at very large customer ARR ($100K+) where the direct sales cost amortizes well — so the model is: <strong>partner-led for SMB and mid-market, direct for enterprise.</strong></p>
+<h3>10.7 Margin floors, regional caps, and the kill-switch — making sure we don’t go broke</h3>
+<p>A flat global rev-share scheme would bankrupt the partner program in low-margin regions. The 25-35% numbers in §10.2 work fine in Tier-1 markets, but they push Pakistan, Bangladesh, and parts of Africa into negative territory. This section defines the guardrails.</p>
+<h4>Hard floor: 35% net margin or no rev share</h4>
+<p>Every payout calculation is gated by this rule:</p>
+<blockquote>
+<p><strong>L3xy net margin on the customer’s revenue, after rev share, must remain ≥ 35%.</strong> If a proposed share would drop net margin below 35%, the share is automatically capped at the level that preserves 35%, with the customer flagged for manual partner-program review at quarter-end.</p>
+</blockquote>
+<p>This is enforced by a database constraint on <code>partner_payouts.payout_amount_cents</code> calculated against <code>tenant.gross_collected_cents</code> and <code>tenant.cogs_cents</code> for the period.</p>
+<h4>Regional rev-share caps (override the §10.2 ranges)</h4>
+<p>Rev share scales <strong>down</strong> as customer ARR scales down. Tier-1 markets absorb 30-40%; Tier-3 markets cannot. The published <code>default_rev_share</code> in the partner contract is regionally indexed:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th style="text-align:right">Max rev share — agency/RPO/reseller</th>
+<th style="text-align:right">Max — affiliate/community</th>
+<th style="text-align:right">Per-customer payout floor (no payout below this collected revenue)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>US / Canada / UK / ANZ / GCC / JP-KR</td>
+<td style="text-align:right">35%</td>
+<td style="text-align:right">20%</td>
+<td style="text-align:right">$0 (no floor)</td>
+</tr>
+<tr>
+<td>Western Europe</td>
+<td style="text-align:right">30%</td>
+<td style="text-align:right">18%</td>
+<td style="text-align:right">$0</td>
+</tr>
+<tr>
+<td>Singapore / HK</td>
+<td style="text-align:right">30%</td>
+<td style="text-align:right">18%</td>
+<td style="text-align:right">$0</td>
+</tr>
+<tr>
+<td>Eastern Europe</td>
+<td style="text-align:right">25%</td>
+<td style="text-align:right">15%</td>
+<td style="text-align:right">$300</td>
+</tr>
+<tr>
+<td>LATAM</td>
+<td style="text-align:right">25%</td>
+<td style="text-align:right">15%</td>
+<td style="text-align:right">$250</td>
+</tr>
+<tr>
+<td><strong>India</strong></td>
+<td style="text-align:right"><strong>20%</strong></td>
+<td style="text-align:right"><strong>12%</strong></td>
+<td style="text-align:right"><strong>₹15,000 (~$180)</strong></td>
+</tr>
+<tr>
+<td>SE Asia</td>
+<td style="text-align:right">20%</td>
+<td style="text-align:right">12%</td>
+<td style="text-align:right">$200</td>
+</tr>
+<tr>
+<td>Africa</td>
+<td style="text-align:right">15%</td>
+<td style="text-align:right">10%</td>
+<td style="text-align:right">$200</td>
+</tr>
+<tr>
+<td><strong>Pakistan / Bangladesh / Sri Lanka</strong></td>
+<td style="text-align:right"><strong>Flat fee only — $40-60 per paying signup</strong> (no % share)</td>
+<td style="text-align:right">$25-40 flat</td>
+<td style="text-align:right">n/a</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Why flat fees in the lowest tier:</strong> at Pakistan ARR (~$3,228), even a 10% share leaves us with ~14% contribution margin per customer — below the operational cost of administering the partner relationship. We pay a one-time flat acquisition fee instead, and the customer’s lifetime value flows entirely to L3xy.</p>
+</blockquote>
+<h4>Break-even sensitivity — where does each region go negative?</h4>
+<p>For a mid-market Pro customer (5 seats, 30 hires/yr) with COGS of $1,800/yr:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th style="text-align:right">ARR</th>
+<th style="text-align:right">Cost</th>
+<th style="text-align:right">Direct margin</th>
+<th style="text-align:right">Rev share that hits <strong>35% net floor</strong></th>
+<th style="text-align:right">Rev share that hits <strong>0% (break-even)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>US / Canada</td>
+<td style="text-align:right">$29,028</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">89%</td>
+<td style="text-align:right"><strong>&gt;50%</strong> (room to spare)</td>
+<td style="text-align:right">~94%</td>
+</tr>
+<tr>
+<td>Western Europe</td>
+<td style="text-align:right">$28,800</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">88%</td>
+<td style="text-align:right">&gt;50%</td>
+<td style="text-align:right">~94%</td>
+</tr>
+<tr>
+<td>Singapore / GCC / Japan</td>
+<td style="text-align:right">~$28,500</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">88%</td>
+<td style="text-align:right">&gt;50%</td>
+<td style="text-align:right">~94%</td>
+</tr>
+<tr>
+<td>Eastern Europe</td>
+<td style="text-align:right">$15,500</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">88%</td>
+<td style="text-align:right">~46%</td>
+<td style="text-align:right">~88%</td>
+</tr>
+<tr>
+<td>LATAM</td>
+<td style="text-align:right">$13,128</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">86%</td>
+<td style="text-align:right">~38%</td>
+<td style="text-align:right">~86%</td>
+</tr>
+<tr>
+<td><strong>India</strong></td>
+<td style="text-align:right">$5,200</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">65%</td>
+<td style="text-align:right"><strong>~24%</strong></td>
+<td style="text-align:right">~65%</td>
+</tr>
+<tr>
+<td>SE Asia</td>
+<td style="text-align:right">$8,928</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">80%</td>
+<td style="text-align:right">~30%</td>
+<td style="text-align:right">~80%</td>
+</tr>
+<tr>
+<td>Africa</td>
+<td style="text-align:right">$5,988</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">70%</td>
+<td style="text-align:right">~17%</td>
+<td style="text-align:right">~70%</td>
+</tr>
+<tr>
+<td><strong>Pakistan / Bangladesh / SL</strong></td>
+<td style="text-align:right">$3,228</td>
+<td style="text-align:right">$1,800</td>
+<td style="text-align:right">44%</td>
+<td style="text-align:right"><strong>~7%</strong> (essentially zero)</td>
+<td style="text-align:right">~44%</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the table: in India, we can pay up to 24% rev share before our net margin drops below 35%. In Pakistan, the math doesn’t even support 10% — hence the flat-fee model. <strong>The §10.2 “30-40%” ranges only apply where the math allows it; in practice the regional caps in §10.7 are binding.</strong></p>
+<h4>Onboarding revenue floor (no payout on the first $X per customer)</h4>
+<p>The first 90 days of any new customer relationship cost L3xy real money: support tickets, onboarding calls, integration setup, free credits. Rev share starts only after the customer has cumulatively paid us <strong>the equivalent of the regional per-customer payout floor</strong> (last column of the table above). This protects against partners flooding the system with low-quality signups.</p>
+<h4>Spend-control mechanisms — keeping operational overhead minimal</h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Self-serve partner onboarding</strong></td>
+<td>OAuth signup → automatic Stripe Connect Express creation → no human touch for Silver tier</td>
+</tr>
+<tr>
+<td><strong>Batched monthly payouts</strong></td>
+<td>One Stripe payout per partner per month — Stripe Express fees are flat per payout, so batching kills per-transaction fee dilution</td>
+</tr>
+<tr>
+<td><strong>No MDF below Gold</strong></td>
+<td>Silver tier gets training + portal only — zero cash spend</td>
+</tr>
+<tr>
+<td><strong>Auto-generated 1099 / equivalent forms</strong></td>
+<td>Stripe Connect handles US 1099s, equivalent forms in supported jurisdictions; zero accounting overhead</td>
+</tr>
+<tr>
+<td><strong>Automated dispute resolution</strong></td>
+<td>Same <code>attribution_disputes</code> workflow from §7 — partner submits evidence in portal, automated rules resolve 80%+ of cases without humans</td>
+</tr>
+<tr>
+<td><strong>Hard MDF caps in contract</strong></td>
+<td>Gold $5K/yr, Platinum $25K/yr, Anchor by deal — no exceptions, written into the partner agreement</td>
+</tr>
+<tr>
+<td><strong>No co-marketing investment in Year 1</strong></td>
+<td>Defer all co-branded content, events, ads until partner crosses Gold threshold ($50K TTM ARR)</td>
+</tr>
+<tr>
+<td><strong>No dedicated CSM below Platinum</strong></td>
+<td>Gold tier shares one partner manager across 20+ partners; Silver is fully self-serve</td>
+</tr>
+<tr>
+<td><strong>Quarterly partner ROI review</strong></td>
+<td>Any partner whose 12-mo gross attributed revenue × (1 - share %) - support cost - MDF spend &lt; $0 is auto-demoted to Silver at the next quarterly review</td>
+</tr>
+</tbody>
+</table>
+<h4>The kill-switch (unwind clause)</h4>
+<p>The partner agreement includes an explicit termination right:</p>
+<blockquote>
+<p><em>“L3xy may terminate any Partner’s status in the Partner Network with 30 days’ notice if (a) the Partner’s L3xy-attributed gross revenue over any trailing 12-month period is less than $0 net contribution to L3xy after sharing, support cost, and MDF spend, or (b) the Partner has been the originating party on any disputed attribution claim that was resolved in L3xy’s favor on three or more occasions in any rolling 12-month period.”</em></p>
+</blockquote>
+<p>Net effect: <strong>no partner can bleed us indefinitely.</strong> If a partner is net-negative for a year, we can drop them. If a partner repeatedly tries to claim attribution they don’t deserve, we can drop them.</p>
+<h4>Summary — does the math work?</h4>
+<p><strong>Yes, but only with the regional caps and the 35% floor in place.</strong> With the §10.7 guardrails:</p>
+<ul>
+<li><strong>Tier-1 customers</strong> (US/UK/EU/JP/GCC/ANZ): direct margin 88-89% → after 30-35% share = <strong>net margin 60-83%</strong>. Comfortable.</li>
+<li><strong>Tier-2 customers</strong> (LATAM, EE, Singapore): direct 80-86% → after 25% share = <strong>net margin 73-81%</strong>. Healthy.</li>
+<li><strong>Tier-3 customers</strong> (India, SE Asia, Africa): direct 65-80% → after 12-20% share = <strong>net margin 53-72%</strong>. Acceptable.</li>
+<li><strong>Tier-4 customers</strong> (Pakistan, Bangladesh, etc.): direct 44% → flat-fee partner model, no rev share → <strong>net margin 44% retained</strong>. Amortize partner acquisition cost over LTV.</li>
+</ul>
+<p>Without these guardrails, the program loses money in Tier-3 and Tier-4. With them, every region clears 35% net margin. <strong>Build the regional rev-share matrix into the database from day one — not as a future feature.</strong></p>
+<h3>10.8 Partner program rollout plan</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Partners</th>
+<th>Effort</th>
+<th style="text-align:right">Expected ARR contribution by month 18</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 0 (now → +60 days)</strong></td>
+<td>Build partner portal, attribution engine, Stripe Connect onboarding, partner agreement templates</td>
+<td>4-6 weeks engineering + legal</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td><strong>Phase 1 (+2 mo)</strong></td>
+<td>Affiliate / influencer launch (low-touch, 15-20% first-year)</td>
+<td>Marketing-led</td>
+<td style="text-align:right">~$200K</td>
+</tr>
+<tr>
+<td><strong>Phase 2 (+4 mo)</strong></td>
+<td>ATS marketplace integrations (Greenhouse, Lever, Ashby)</td>
+<td>6 weeks engineering each</td>
+<td style="text-align:right">~$500K</td>
+</tr>
+<tr>
+<td><strong>Phase 3 (+6 mo)</strong></td>
+<td>First 5-10 RPO / agency partners (handpicked, white-label)</td>
+<td>Sales-led</td>
+<td style="text-align:right">~$800K</td>
+</tr>
+<tr>
+<td><strong>Phase 4 (+9 mo)</strong></td>
+<td>Regional reseller deals (India, SE Asia, LATAM, GCC) — 1-2 per region</td>
+<td>Sales-led, exclusive territories</td>
+<td style="text-align:right">~$1.5M</td>
+</tr>
+<tr>
+<td><strong>Phase 5 (+12 mo)</strong></td>
+<td>HRIS embedded (Rippling, Gusto, Deel) — flagship partners</td>
+<td>8-12 weeks engineering each</td>
+<td style="text-align:right">~$2M</td>
+</tr>
+<tr>
+<td><strong>Phase 6 (+18 mo)</strong></td>
+<td>SI / consultancy partnerships (Deloitte, Accenture, regional Big 4) for enterprise</td>
+<td>Long sales cycle</td>
+<td style="text-align:right">~$3M+</td>
+</tr>
+</tbody>
+</table>
+<h3>10.9 What we will NOT do</h3>
+<ul>
+<li><strong>No double-dipping.</strong> A customer can have at most one attributed partner. If two partners both have a claim, the deal-registration timestamp wins.</li>
+<li><strong>No back-dated rev share.</strong> Rev share applies to attributed-after-launch customers, not the existing book.</li>
+<li><strong>No commission on partner-self-customers.</strong> A partner can’t sign themselves up as a customer through their own ref link to claim rev share.</li>
+<li><strong>No exclusivity by default.</strong> Only Anchor Partners get territory or vertical exclusivity, and only with a minimum committed ARR.</li>
+<li><strong>No partner-rev-share on per-hire fees in Year 1.</strong> Rev share applies to subscription only initially. Once the §7 attribution engine is mature (Phase 4-6 in §7), per-hire fees become eligible too.</li>
+</ul>
+<blockquote>
+<p><strong>Strategic recommendation:</strong> Build the partner program as <strong>Phase 0 of GTM, not Phase 5.</strong> The attribution and payout infrastructure is ~6 weeks of engineering — comparable to a single major feature — but it unlocks every regional, vertical, and enterprise channel for the next decade. Build it before you need it.</p>
+</blockquote>
+<hr>
+<h2>11. Recommendations</h2>
+<ol>
+<li><strong>Build the hire-attribution &amp; billing layer immediately</strong> (see §7). This is the highest-ROI engineering investment in 2026 — without it, the per-hire fee model is theoretical. Phase 1 (Stripe subscription) + Phase 4 (LinkedIn drift cross-attribution) together are ~4 weeks and recover ~60% of leaked per-hire revenue.</li>
+<li><strong>Launch with Model C (Hybrid) + Free tier.</strong> Aggressive land-and-expand. Use the Free tier explicitly as a platform-pool acquisition channel.</li>
+<li><strong>Don’t optimize for margin in year one.</strong> Optimize for <em>tenants on the network</em>. Each one makes the next one’s pool bigger.</li>
+<li><strong>Price regionally from day one</strong> (see §9). A single global USD price is a strategic mistake — it gives up the world’s biggest hiring markets to local incumbents. PPP-adjusted local pricing keeps us competitive globally without sacrificing Tier-1 margin.</li>
+<li><strong>Treat India + SE Asia + Africa as pool-growth markets, not revenue markets.</strong> Lower per-customer margin, higher strategic value. These regions feed the cross-border placement engine that produces the platform’s highest-margin transactions.</li>
+<li><strong>Publish a public ROI calculator on the marketing site.</strong> “Replace your agency: enter your hiring volume, see your savings.” Localize it per region — the agency-displacement story is huge in US/EU/JP and the Naukri-displacement story is huge in India.</li>
+<li><strong>Negotiate volume discounts now with PDL and EnrichLayer.</strong> At even modest scale (~100 tenants × ~200 Tier-3 candidates/mo) we move enough volume to halve list pricing.</li>
+<li><strong>Re-price annually.</strong> Track the cost trajectory chart religiously — when our cost-per-hire crosses $40, we have room to either drop price (defensive) or hold price and bank margin (offensive). Probably do the latter in Tier-1 markets; in Tier-3 markets, pass the savings to customers to widen the moat.</li>
+<li><strong>Lock the 18-month originating-touch clause into every customer contract from contract v1.</strong> This single sentence — combined with the LinkedIn drift monitor we already built — makes off-platform hires detectable and back-billable. It is the most important sentence in the entire commercial agreement.</li>
+<li><strong>Build the L3xy Partner Network as Phase 0 of GTM, not Phase 5</strong> (see §10). Six weeks of engineering for the partner portal, attribution engine, and Stripe Connect payouts unlocks regional, vertical, and enterprise channels for a decade. Partner-led GTM produces ~2× the contribution margin per revenue dollar at SMB/mid-market scale even after the 25% rev share, because the partner bears the CAC.</li>
+</ol>
+<hr>
+<h2>Quick reference — one-pager</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cost per sourced candidate (mature tenant)</td>
+<td>~$0.10</td>
+</tr>
+<tr>
+<td>Cost per AI interview</td>
+<td>~$4.30 (incl. recording storage)</td>
+</tr>
+<tr>
+<td>Cost per hire (new tenant)</td>
+<td>~$85</td>
+</tr>
+<tr>
+<td>Cost per hire (12-mo mature tenant)</td>
+<td>~$47</td>
+</tr>
+<tr>
+<td>Cost per hire (network-mature)</td>
+<td>~$42</td>
+</tr>
+<tr>
+<td>Recommended price per hire</td>
+<td>$250</td>
+</tr>
+<tr>
+<td>Gross margin at recommended pricing</td>
+<td><strong>~88%</strong></td>
+</tr>
+<tr>
+<td>Customer market reference — US (in-house)</td>
+<td>$4,700/hire</td>
+</tr>
+<tr>
+<td>Customer market reference — US (agency)</td>
+<td>$12K-$25K/hire</td>
+</tr>
+<tr>
+<td>Customer market reference — India (agency, 8.33%)</td>
+<td>$200-$500/hire (commodity), $2-5K (tech)</td>
+</tr>
+<tr>
+<td>Customer market reference — Japan (agency)</td>
+<td>30-35% of salary, $3-10K+</td>
+</tr>
+<tr>
+<td>Mid-market customer ARR — US Pro tier</td>
+<td>~$29,000/yr (~89% margin)</td>
+</tr>
+<tr>
+<td>Mid-market customer ARR — India Pro tier</td>
+<td>~$5,200/yr (~52% margin)</td>
+</tr>
+<tr>
+<td>Mid-market customer ARR — SE Asia Pro tier</td>
+<td>~$9,000/yr (~71% margin)</td>
+</tr>
+<tr>
+<td>Mid-market customer ARR — Western Europe Pro tier</td>
+<td>~$28,800/yr (~88% margin)</td>
+</tr>
+<tr>
+<td>Partner rev share — Silver / Gold / Platinum tiers</td>
+<td>20% / 25% / 30% lifetime</td>
+</tr>
+<tr>
+<td>Net margin on partner-sourced customer (after regional-capped share)</td>
+<td><strong>~60-83% Tier-1 / ~53-72% Tier-3</strong></td>
+</tr>
+<tr>
+<td>Hard net-margin floor enforced on every payout</td>
+<td><strong>≥ 35%</strong></td>
+</tr>
+<tr>
+<td>Partner-led GTM contribution margin (200-customer scenario)</td>
+<td><strong>~56% vs. ~28% direct</strong></td>
+</tr>
+<tr>
+<td>Regional rev-share caps</td>
+<td>US/UK/EU 30-35% · India 20% · Africa 15% · Pakistan flat-fee only</td>
+</tr>
+<tr>
+<td>Customer payback period</td>
+<td>&lt;1 quarter on first hire</td>
+</tr>
+</tbody>
+</table>
+<p>— <em>L3xy Inc., Internal &amp; Board Use Only</em></p>
+</div></body></html>

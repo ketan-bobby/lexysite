@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lexy AI Hiring Platform — Plain English Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f8f9fb;
+      color: #1a1a2e;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ── Cover page ── */
+    .cover {
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1040 50%, #0d1b3e 100%);
+      color: white;
+      padding: 80px 60px 70px;
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 360px; height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.25);
+      border: 1px solid rgba(99,102,241,0.5);
+      color: #a5b4fc;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+    }
+    .cover h1 {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .cover h1 span { color: #818cf8; }
+    .cover .subtitle {
+      font-size: 20px;
+      color: rgba(255,255,255,0.65);
+      max-width: 600px;
+      margin-bottom: 36px;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .cover-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+    }
+    .cover-meta-item .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #818cf8;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+
+    /* ── Table of contents ── */
+    .toc {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 32px 40px;
+      margin: 40px 0;
+    }
+    .toc h2 {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #6366f1;
+      margin-bottom: 20px;
+    }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 40px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      color: #374151;
+      text-decoration: none;
+      padding: 4px 0;
+    }
+    .toc-item:hover { color: #6366f1; }
+    .toc-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6366f1;
+      background: #eef2ff;
+      border-radius: 6px;
+      padding: 2px 7px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    /* ── Section headers ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 56px 0 32px;
+    }
+    .section-divider-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .section-divider-icon.blue   { background: #eff6ff; }
+    .section-divider-icon.purple { background: #f5f3ff; }
+    .section-divider-icon.green  { background: #f0fdf4; }
+    .section-divider-icon.amber  { background: #fffbeb; }
+    .section-divider-icon.rose   { background: #fff1f2; }
+    .section-divider-icon.cyan   { background: #ecfeff; }
+
+    .section-divider-text h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -0.3px;
+    }
+    .section-divider-text p {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
+
+    /* ── Feature cards ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .feature-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .feature-card:hover { border-color: #c7d2fe; }
+    .feature-card .emoji { font-size: 28px; margin-bottom: 12px; display: block; }
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+    .feature-card.wide {
+      grid-column: span 2;
+    }
+
+    /* ── Flow steps ── */
+    .flow {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+    .flow h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 20px;
+    }
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      position: relative;
+    }
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 36px;
+      width: 2px;
+      height: calc(100% - 20px);
+      background: #e5e7eb;
+    }
+    .flow-step-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .flow-step-content {
+      padding-bottom: 24px;
+      flex: 1;
+    }
+    .flow-step-content h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+      padding-top: 6px;
+    }
+    .flow-step-content p {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    /* ── Agent table ── */
+    .agent-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .agent-table th {
+      background: #f9fafb;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6b7280;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .agent-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 14px;
+      color: #374151;
+      vertical-align: top;
+    }
+    .agent-table tr:last-child td { border-bottom: none; }
+    .agent-table tr:nth-child(even) td { background: #fafafa; }
+    .agent-name {
+      font-weight: 700;
+      color: #111827;
+    }
+    .agent-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .badge-auto { background: #dcfce7; color: #166534; }
+    .badge-assist { background: #dbeafe; color: #1e40af; }
+    .badge-detect { background: #fef3c7; color: #92400e; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .callout.blue  { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .callout.green { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .callout.amber { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.purple { background: #f5f3ff; border-left: 4px solid #8b5cf6; }
+    .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #111827;
+    }
+    .callout-body p { font-size: 14px; color: #374151; line-height: 1.6; }
+
+    /* ── Score example ── */
+    .score-example {
+      background: #0f0f1a;
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin: 20px 0;
+      color: white;
+      font-family: 'SF Mono', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 2;
+    }
+    .score-green  { color: #4ade80; font-weight: 700; }
+    .score-amber  { color: #facc15; font-weight: 700; }
+    .score-red    { color: #fb7185; font-weight: 700; }
+    .score-cyan   { color: #22d3ee; font-weight: 700; }
+    .score-purple { color: #a78bfa; font-weight: 700; }
+    .score-label  { color: #94a3b8; }
+
+    /* ── Pipeline stages ── */
+    .pipeline {
+      display: flex;
+      gap: 0;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    .pipeline-stage {
+      flex: 1;
+      min-width: 90px;
+      text-align: center;
+      position: relative;
+    }
+    .pipeline-stage::after {
+      content: '→';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-size: 16px;
+    }
+    .pipeline-stage:last-child::after { display: none; }
+    .pipeline-dot {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin: 0 auto 6px;
+    }
+    .pipeline-stage p {
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    /* ── Prediction card ── */
+    .prediction-card {
+      background: #0f172a;
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin: 20px 0;
+      color: white;
+    }
+    .prediction-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .prediction-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #818cf8;
+    }
+    .prediction-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+    .prediction-key {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .prediction-val {
+      font-size: 14px;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+    .prediction-val.green  { color: #4ade80; font-weight: 700; font-size: 22px; }
+    .prediction-val.amber  { color: #facc15; font-weight: 700; }
+    .prediction-val.signals { color: #94a3b8; }
+    .sig-up   { color: #4ade80; }
+    .sig-down { color: #fb7185; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 60px;
+      padding: 32px 40px;
+      background: #1a1a2e;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      font-size: 13px;
+    }
+    .footer strong { color: #818cf8; }
+
+    /* ── Print bar ── */
+    .print-bar {
+      background: #1e1b4b;
+      color: white;
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(99,102,241,0.4);
+    }
+    .print-bar p { font-size: 14px; color: rgba(255,255,255,0.75); }
+    .print-bar strong { color: white; }
+    .print-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+    .print-btn:hover { background: #4f46e5; }
+    @media print { .print-bar { display: none !important; } }
+
+    /* ── Print styles ── */
+    @media print {
+      body { background: white; }
+      .cover {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .feature-card, .flow, .toc, .agent-table, .score-example, .prediction-card {
+        break-inside: avoid;
+      }
+      .section-divider { break-before: auto; }
+    }
+
+    @media (max-width: 700px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .feature-card.wide { grid-column: span 1; }
+      .toc-grid { grid-template-columns: 1fr; }
+      .cover { padding: 48px 28px; }
+      .cover h1 { font-size: 32px; }
+      .container { padding: 0 20px 60px; }
+      .prediction-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Print / Save bar ── -->
+<div class="print-bar">
+  <p><strong>Lexy Platform Guide</strong> &nbsp;·&nbsp; Open in browser, then save as PDF using File → Print → Save as PDF</p>
+  <button class="print-btn" onclick="window.print()">
+    🖨️ Save as PDF
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ COVER -->
+<div class="cover">
+  <div class="cover-badge">Plain English Guide</div>
+  <h1>The <span>Lexy</span> AI Hiring Platform</h1>
+  <p class="subtitle">A complete walkthrough of what we built — what it does, how it works, and why it matters. Written for anyone, no tech background needed.</p>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><div class="dot"></div> Recruiter &amp; Agency Side</div>
+    <div class="cover-meta-item"><div class="dot"></div> Candidate Portal</div>
+    <div class="cover-meta-item"><div class="dot"></div> 10 AI Agents</div>
+    <div class="cover-meta-item"><div class="dot"></div> Predictive Hiring Engine</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════ TOC -->
+<div class="toc">
+  <h2>What's in this guide</h2>
+  <div class="toc-grid">
+    <span class="toc-item"><span class="toc-num">1</span> What is Lexy?</span>
+    <span class="toc-item"><span class="toc-num">6</span> The 10 AI Agents</span>
+    <span class="toc-item"><span class="toc-num">2</span> Who uses it?</span>
+    <span class="toc-item"><span class="toc-num">7</span> The Predictive Hiring Engine</span>
+    <span class="toc-item"><span class="toc-num">3</span> The Recruiter Side</span>
+    <span class="toc-item"><span class="toc-num">8</span> The Candidate Portal</span>
+    <span class="toc-item"><span class="toc-num">4</span> Finding Candidates</span>
+    <span class="toc-item"><span class="toc-num">9</span> Career Trajectory</span>
+    <span class="toc-item"><span class="toc-num">5</span> The Hiring Pipeline</span>
+    <span class="toc-item"><span class="toc-num">10</span> How it all connects</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 1. WHAT IS LEXY -->
+<div class="section-divider">
+  <div class="section-divider-icon purple">🤖</div>
+  <div class="section-divider-text">
+    <h2>1. What is Lexy?</h2>
+    <p>The big picture in plain English</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-card wide" style="margin-bottom:16px;">
+  <p>
+    <strong>Lexy is an AI-powered hiring platform.</strong> Think of it as a highly intelligent assistant that sits between companies looking to hire and people looking for work — and does most of the heavy lifting that normally takes recruiters weeks to do by hand.
+  </p>
+  <br>
+  <p>
+    Instead of a recruiter spending their day writing job descriptions, searching LinkedIn, emailing candidates one by one, chasing people who go quiet, and trying to guess which candidates are most likely to succeed — <strong>Lexy automates all of that</strong> and makes smart recommendations at every step.
+  </p>
+  <br>
+  <p>
+    At the same time, candidates get their own private space where Lexy learns about them through a friendly conversation, matches them to real opportunities, and tells them exactly what they need to do to land their dream job.
+  </p>
+</div>
+
+<div class="callout blue">
+  <div class="callout-icon">💡</div>
+  <div class="callout-body">
+    <h4>The analogy that makes it click</h4>
+    <p>Imagine hiring a team of 10 expert assistants, each one a specialist — one who reads CVs, one who conducts interviews, one who sends emails, one who monitors fraud, one who never lets a good candidate slip through the cracks. Now make all 10 of them work 24/7 and never forget a detail. That's Lexy.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 2. WHO USES IT -->
+<div class="section-divider">
+  <div class="section-divider-icon blue">👥</div>
+  <div class="section-divider-text">
+    <h2>2. Who uses Lexy?</h2>
+    <p>Three different types of users, one connected system</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">🏢</span>
+    <h3>Platform Admin</h3>
+    <p>The people who run Lexy itself. They can see everything across all companies, manage who gets access, and control the overall platform. Think of them as the landlord of the whole system.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🏬</span>
+    <h3>Tenant (Agency or Company)</h3>
+    <p>A recruitment agency or a company that uses Lexy to hire people. They might have multiple branches or offices (called subsidiaries). Each one has its own recruiters, its own jobs, and its own candidates. They only see their own data.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🤵</span>
+    <h3>Recruiter</h3>
+    <p>The humans inside a company or agency who do the actual hiring work. They use Lexy to find candidates, run the hiring process, and make final decisions. Lexy does all the grunt work; they make the judgment calls.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🙋</span>
+    <h3>Candidate</h3>
+    <p>Job seekers who create a profile on the platform. They answer questions in a conversational interview, get matched to jobs automatically, and receive personalised guidance on their career — all without filling in a single form.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 3. RECRUITER SIDE -->
+<div class="section-divider">
+  <div class="section-divider-icon blue">💼</div>
+  <div class="section-divider-text">
+    <h2>3. The Recruiter Side</h2>
+    <p>What recruiters see and can do inside the platform</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<p style="color:#4b5563; margin-bottom:20px;">When a recruiter logs in, they get a full command centre. Here's what every section does:</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">📋</span>
+    <h3>Job Board</h3>
+    <p>Create and manage job openings. Each job has a full description, salary range, required skills, and location. Lexy uses this information to automatically find and match the right people.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🎯</span>
+    <h3>Talent Match</h3>
+    <p>Lexy scours its database (including people who registered themselves) and presents a ranked list of who best matches each job. The list shows a match score and explains why each person is a good fit.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">📬</span>
+    <h3>Outreach Campaigns</h3>
+    <p>Instead of a recruiter writing individual emails, Lexy generates personalised messages for each candidate and sends them automatically. It then tracks who opened the email, who replied, and who needs a follow-up.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">📥</span>
+    <h3>Recruiter Inbox</h3>
+    <p>All replies from candidates land here — neatly organised by which job they're about, not one big jumbled list. Lexy reads each reply and labels it: "Positive", "Question", or "Needs Follow-up" so the recruiter knows exactly what to do next.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🧠</span>
+    <h3>AI Agents Panel</h3>
+    <p>A live dashboard showing all 10 AI agents and what they're currently doing. Recruiters can see agent activity, start or stop specific agents, and review their recommendations.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">⚖️</span>
+    <h3>Decision Queue</h3>
+    <p>When the AI thinks a candidate is ready to be advanced (or rejected), it puts that suggestion in a queue for the recruiter to review. The recruiter either agrees or overrides it — and the AI learns from the decision.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🏢</span>
+    <h3>Client Management</h3>
+    <p>For agencies managing multiple client companies, this section lets them control access, grant permissions, and manage which company can see which candidates. Each company is kept completely separate.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🚫</span>
+    <h3>Do Not Contact (DNC) List</h3>
+    <p>If someone asks not to be contacted (or unsubscribes), they're added to a protected list. Lexy will never send that person a message again — even automatically. This keeps the company legally compliant and respectful.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 4. FINDING CANDIDATES -->
+<div class="section-divider">
+  <div class="section-divider-icon cyan">🔍</div>
+  <div class="section-divider-text">
+    <h2>4. Finding the Right Candidates</h2>
+    <p>How Lexy sources, scores, and ranks people</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-card wide" style="margin-bottom:16px;">
+  <span class="emoji">🗄️</span>
+  <h3>Three Pools of Candidates</h3>
+  <p>Lexy draws from three sources of people. First, the <strong>company's own private database</strong> — people they've already worked with or who applied directly. Second, the <strong>platform-wide pool</strong> — candidates who registered on Lexy themselves and agreed to be found by any qualifying company. Third, <strong>people sourced from external sources</strong> like LinkedIn or job boards.</p>
+</div>
+
+<div class="flow">
+  <h3>🔄 How matching works, step by step</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <h4>The recruiter posts a job</h4>
+        <p>They describe the role, skills needed, experience level, salary range, and any specific requirements. This creates what Lexy calls an "Ideal Candidate Profile" (ICP).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <h4>Lexy searches its database</h4>
+        <p>The Sourcing Agent scans all available candidates — comparing their skills, experience, location, and career history against the ICP. It scores each person on how well they match.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <h4>A ranked shortlist appears</h4>
+        <p>Candidates are ranked from strongest match to weakest. Each card shows the person's name, current job title, match score, key strengths, and any gaps or concerns.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <h4>The recruiter approves the outreach</h4>
+        <p>The recruiter selects who to contact. Lexy then writes a personalised message for each person and — with approval — sends it automatically on the recruiter's behalf.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <h4>Replies are classified automatically</h4>
+        <p>When candidates write back, Lexy reads the reply and categorises it — interested, asking questions, not interested, out of office — and routes it to the recruiter's inbox with a suggested next action.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout amber">
+  <div class="callout-icon">⚡</div>
+  <div class="callout-body">
+    <h4>Anti-Ghosting Protection</h4>
+    <p>One of the biggest problems in hiring is candidates who go silent. Lexy tracks every candidate's engagement and, if someone hasn't responded, automatically sends gentle follow-up messages at the right time — so good candidates don't slip away because of a missed email.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 5. PIPELINE -->
+<div class="section-divider">
+  <div class="section-divider-icon green">🚦</div>
+  <div class="section-divider-text">
+    <h2>5. The Hiring Pipeline</h2>
+    <p>How a candidate moves from "found" to "hired"</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<p style="color:#4b5563; margin-bottom:20px;">Every candidate goes through a series of stages. Lexy tracks exactly where each person is and tells the recruiter what to do next.</p>
+
+<div class="pipeline">
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#f0fdf4;">🎯</div>
+    <p>Sourced</p>
+  </div>
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#eff6ff;">📄</div>
+    <p>Screening</p>
+  </div>
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#fdf4ff;">🎤</div>
+    <p>Interview</p>
+  </div>
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#fffbeb;">✅</div>
+    <p>Verification</p>
+  </div>
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#fff1f2;">📨</div>
+    <p>Offer</p>
+  </div>
+  <div class="pipeline-stage">
+    <div class="pipeline-dot" style="background:#f0fdf4;">🎉</div>
+    <p>Hired</p>
+  </div>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">📄</span>
+    <h3>Screening</h3>
+    <p>Lexy reads the candidate's CV and profile, checks their skills against the job requirements, and produces a match score with a written summary. The recruiter doesn't have to read every CV manually.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🎤</span>
+    <h3>AI Interviews</h3>
+    <p>Lexy conducts a structured voice or text interview with the candidate. It scores them on communication, technical depth, and culture fit — then writes a summary report so the recruiter gets a full picture without sitting in on every call.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🛡️</span>
+    <h3>Verification</h3>
+    <p>Before making an offer, Lexy checks that the candidate's claimed work history, identity, and qualifications appear legitimate. It flags anything that looks inconsistent so the recruiter can investigate.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">👁️</span>
+    <h3>Interview Proctoring</h3>
+    <p>During AI interviews, Lexy monitors for unusual behaviour — like someone else answering on the candidate's behalf. It logs a "trust score" so the recruiter knows how authentic the interview was.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 6. AGENTS -->
+<div class="section-divider">
+  <div class="section-divider-icon amber">🤖</div>
+  <div class="section-divider-text">
+    <h2>6. The 10 AI Agents</h2>
+    <p>The specialists working behind the scenes, 24/7</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<p style="color:#4b5563; margin-bottom:20px;">Think of these as 10 permanent employees, each with a specific expertise. They work automatically in the background and hand off their findings to the recruiter.</p>
+
+<table class="agent-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Agent name</th>
+      <th>What it actually does</th>
+      <th>How it works</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td class="agent-name">🎯 ICP Builder</td>
+      <td>Reads the job description and creates a detailed profile of the ideal candidate — required skills, experience level, what good looks like.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td class="agent-name">🔍 Sourcing Agent</td>
+      <td>Searches the entire candidate database and ranks everyone by how well they match the ideal profile. Filters out people who are clearly wrong for the role.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td class="agent-name">📋 Screening Agent</td>
+      <td>Reviews CVs and profiles in detail. Highlights strengths, flags gaps, and gives each candidate a fit score out of 100.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td class="agent-name">🎤 Interview Agent</td>
+      <td>Conducts structured interviews with candidates using voice or text. Scores their communication, technical depth, and behaviour. Produces a written report.</td>
+      <td><span class="agent-badge badge-assist">With candidate</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td class="agent-name">✅ Verification Agent</td>
+      <td>Cross-checks claimed work history, qualifications, and identity signals. Flags inconsistencies for human review before any offer is made.</td>
+      <td><span class="agent-badge badge-detect">Detection</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td class="agent-name">👁️ Proctoring Agent</td>
+      <td>Monitors AI interviews in real time for signs of cheating or impersonation — multiple faces, unusual gaze, suspicious patterns. Generates an integrity score.</td>
+      <td><span class="agent-badge badge-detect">Detection</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td class="agent-name">📬 Outreach Agent</td>
+      <td>Writes and sends personalised emails to candidates on the recruiter's behalf. Tracks opens, replies, and click rates. Adjusts the message style based on what works.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td class="agent-name">👻 Anti-Ghosting Agent</td>
+      <td>Detects when a candidate has gone quiet. Automatically sends re-engagement messages at the right time to bring them back into the conversation before they disappear.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td class="agent-name">📅 Scheduling Agent</td>
+      <td>Handles interview scheduling. Detects if someone is likely to not show up and sends reminders or alternatives to reduce no-shows.</td>
+      <td><span class="agent-badge badge-auto">Automatic</span></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td class="agent-name">📊 Analytics Agent</td>
+      <td>Tracks how the overall hiring process is performing — how many people reach each stage, what the average hire time is, where candidates drop off — and uses that to improve future recommendations.</td>
+      <td><span class="agent-badge badge-assist">Reporting</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════ 7. PREDICTIVE ENGINE -->
+<div class="section-divider">
+  <div class="section-divider-icon purple">🔮</div>
+  <div class="section-divider-text">
+    <h2>7. The Predictive Hiring Engine</h2>
+    <p>The brain that scores, predicts, and recommends</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-card wide" style="margin-bottom:20px;">
+  <p>
+    The Predictive Hiring Engine is the most powerful part of Lexy. It continuously analyses every signal it has on a candidate — their CV match, interview performance, identity verification, engagement level, and behavioural signals — and produces a single, clear recommendation: <strong>what should happen next, and why.</strong>
+  </p>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">🎯</span>
+    <h3>Fit Score</h3>
+    <p>How well does the candidate's background, skills, and experience align with what the role actually requires? A high fit score means this is the right person for the right job.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">⭐</span>
+    <h3>Quality Score</h3>
+    <p>How good is the candidate, independent of the role? This covers communication skills, technical depth, interview performance, and how they compare to the broader candidate pool.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🛡️</span>
+    <h3>Trust Score</h3>
+    <p>Can we trust what the candidate has told us? This blends identity verification, CV consistency checks, and interview integrity signals into a single number.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">⚡</span>
+    <h3>Conversion Score</h3>
+    <p>How likely is this person to actually complete the process without going quiet or dropping out? This looks at engagement history, responsiveness, and ghosting risk.</p>
+  </div>
+</div>
+
+<p style="color:#4b5563; margin-bottom:16px; font-weight:600;">What "Lexy Prediction" looks like in practice:</p>
+
+<div class="prediction-card">
+  <div class="prediction-header">
+    <span>⚡</span>
+    <span class="prediction-label">Lexy Prediction · AI Hiring Intelligence</span>
+  </div>
+  <div class="prediction-row">
+    <div class="prediction-key">Hire likelihood</div>
+    <div class="prediction-val green">72%</div>
+  </div>
+  <div class="prediction-row">
+    <div class="prediction-key">Predicted risk</div>
+    <div class="prediction-val">Hiring manager rejection due to domain depth — role fit and domain expertise may not fully align</div>
+  </div>
+  <div class="prediction-row">
+    <div class="prediction-key">Confidence</div>
+    <div class="prediction-val amber">Medium — 54/100 signal coverage</div>
+  </div>
+  <div class="prediction-row">
+    <div class="prediction-key">Why</div>
+    <div class="prediction-val signals">
+      <span class="sig-up">↑</span> Strong communication skills<br>
+      <span class="sig-up">↑</span> High coachability score<br>
+      <span class="sig-down">↓</span> Moderate experience gap<br>
+      <span class="sig-down">↓</span> Limited domain knowledge depth
+    </div>
+  </div>
+</div>
+
+<div class="callout purple">
+  <div class="callout-icon">🔍</div>
+  <div class="callout-body">
+    <h4>What the 4 questions tell you</h4>
+    <p><strong>Hire likelihood</strong> tells you the overall probability this person gets hired. <strong>Predicted risk</strong> tells you the exact point in the process where they're most likely to stumble. <strong>Confidence</strong> tells you how much data Lexy has — the more agents have assessed this person, the more confident the prediction. <strong>Why</strong> breaks down the specific signals driving the score up or down in plain English.</p>
+  </div>
+</div>
+
+<div class="callout green">
+  <div class="callout-icon">📚</div>
+  <div class="callout-body">
+    <h4>The engine learns over time</h4>
+    <p>Every time a recruiter overrides Lexy's recommendation — and especially when the recruiter turns out to be right — the engine records it. Over time, Lexy gets better at predicting which candidates succeed at your specific company, with your specific hiring managers, for your specific types of roles.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 8. CANDIDATE PORTAL -->
+<div class="section-divider">
+  <div class="section-divider-icon green">🙋</div>
+  <div class="section-divider-text">
+    <h2>8. The Candidate Portal</h2>
+    <p>What job seekers experience when they use Lexy</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-card wide" style="margin-bottom:20px;">
+  <p>
+    Candidates don't fill in forms. They have a conversation. When someone registers on Lexy, they go through a friendly 10-minute AI interview that learns everything about them — their experience, skills, communication style, career goals, and what kind of opportunity they're looking for. From that single conversation, Lexy builds their entire profile automatically.
+  </p>
+</div>
+
+<div class="flow">
+  <h3>🎤 The Candidate Journey</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <h4>Sign up and do the baseline interview</h4>
+        <p>A 10-minute conversational interview. Lexy asks about work history, skills, what the candidate is looking for, and their career ambitions. No forms. No CV upload required. Just a natural back-and-forth.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <h4>Get a career profile and visibility score</h4>
+        <p>After the interview, Lexy creates a complete profile. A "Visibility Score" (0–100%) shows how discoverable the candidate is — the more they complete, the more likely recruiters are to find them.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <h4>See matched job opportunities</h4>
+        <p>The Opportunity Engine shows jobs that genuinely match the candidate's profile. Jobs currently hiring are shown in green. Jobs that are paused but coming soon are shown in amber — the candidate can register interest and get notified when they open.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <h4>Practise interviews</h4>
+        <p>Candidates can do as many practice interviews as they like. Lexy gives them a mock interview for any role and scores their performance — helping them prepare and get better before the real thing.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <h4>Apply with a single click</h4>
+        <p>When a candidate finds a role they like, they can express interest in one click. This sends their full Lexy profile to the recruiter automatically — no separate application form needed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">📊</span>
+    <h3>Visibility Score</h3>
+    <p>A score from 0 to 100% that tells candidates how "findable" they are. Adding skills, completing the interview, and setting career goals all push the score up. Higher scores = more recruiter eyeballs.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🌍</span>
+    <h3>Platform Candidate Pool</h3>
+    <p>Candidates who register on Lexy themselves go into a shared pool that any qualifying company can access. This means a candidate might be discovered by a company they'd never thought to apply to.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">🔔</span>
+    <h3>Job Alerts (Coming Soon)</h3>
+    <p>If a candidate sees a job that isn't open yet — a role marked "Coming Soon" — they can register their interest. When the role opens, they get notified first and already have a head start.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">📈</span>
+    <h3>Interview Practice</h3>
+    <p>Lexy can run a mock interview for any job the candidate is interested in. It plays the role of the interviewer, asks realistic questions, and gives a score with feedback at the end.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 9. CAREER TRAJECTORY -->
+<div class="section-divider">
+  <div class="section-divider-icon rose">🚀</div>
+  <div class="section-divider-text">
+    <h2>9. Career Trajectory</h2>
+    <p>Where Lexy helps candidates see their future, not just today</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="feature-card wide" style="margin-bottom:20px;">
+  <p>
+    This is where Lexy goes beyond job matching and becomes a genuine career coach. Based on the candidate's interview, skills, and stated goals, Lexy generates up to three personalised career paths — different routes from where they are today to where they want to be in 3–5 years.
+  </p>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <span class="emoji">🎯</span>
+    <h3>Achievable Path</h3>
+    <p>A realistic route based on the candidate's current skills — the most direct way to reach their goal. Likely to be achievable within 2–3 years with focused effort.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">📈</span>
+    <h3>Ambitious Path</h3>
+    <p>A slightly more challenging route that requires developing new skills or making a bigger career leap. High growth potential but will take more deliberate effort.</p>
+  </div>
+  <div class="feature-card">
+    <span class="emoji">⚡</span>
+    <h3>Stretch Path</h3>
+    <p>The bold version — a significantly more senior or different role that requires a substantial skills upgrade. Motivating and aspirational, with clear steps on how to get there.</p>
+  </div>
+  <div class="feature-card wide">
+    <span class="emoji">🔮</span>
+    <h3>Future Role Targets in the Opportunity Engine</h3>
+    <p>
+      Inside the Opportunity Engine — alongside today's open roles — Lexy now shows a "Your Career Trajectory" section. This displays each of the candidate's target roles with:
+      <br><br>
+      • A <strong>readiness percentage</strong> — how close they are today to qualifying for that role<br>
+      • A <strong>motivational message</strong> — "At your current rate, you could qualify in 3 years"<br>
+      • The <strong>skills they need to build</strong> to close the gap<br>
+      • The <strong>target company type and salary range</strong> for that role<br>
+      • A snippet from their own <strong>stated 3-year or 5-year goal</strong>, making it personal
+      <br><br>
+      This section updates automatically as the candidate adds skills, completes interviews, and progresses — so it always reflects where they are right now.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ 10. HOW IT CONNECTS -->
+<div class="section-divider">
+  <div class="section-divider-icon cyan">🔗</div>
+  <div class="section-divider-text">
+    <h2>10. How It All Connects</h2>
+    <p>The full picture from first contact to hire</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<div class="flow">
+  <h3>🌐 End-to-end: from a candidate's first visit to their first day on the job</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">1</div>
+      <div class="flow-step-content">
+        <h4>Candidate registers and completes their baseline interview</h4>
+        <p>Lexy builds their full profile. They're added to the platform candidate pool and immediately start seeing matched opportunities.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">2</div>
+      <div class="flow-step-content">
+        <h4>A recruiter posts a new job</h4>
+        <p>The Sourcing Agent immediately scans all candidates — including those from the platform pool — and surfaces the best matches, ranked by predicted success.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">3</div>
+      <div class="flow-step-content">
+        <h4>The Outreach Agent sends a personalised message</h4>
+        <p>The candidate receives an email that references their specific background and explains why this role is relevant to their goals. It doesn't feel like a mass mail-out.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">4</div>
+      <div class="flow-step-content">
+        <h4>The candidate replies (or Lexy follows up automatically)</h4>
+        <p>If the candidate is interested, their reply lands in the recruiter's inbox under the correct job group, labelled "Positive Reply". If they go quiet, the Anti-Ghosting Agent sends a gentle nudge.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">5</div>
+      <div class="flow-step-content">
+        <h4>The Interview Agent conducts a structured assessment</h4>
+        <p>The candidate does an AI interview. The Proctoring Agent ensures the interview is authentic. The results feed directly into the candidate's intelligence record.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">6</div>
+      <div class="flow-step-content">
+        <h4>The Predictive Hiring Engine issues a Lexy Prediction</h4>
+        <p>With all signals collected, Lexy publishes its prediction: hire likelihood, the specific stage where failure is most likely, confidence level, and a plain-English explanation of what's driving the score.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">7</div>
+      <div class="flow-step-content">
+        <h4>The recruiter reviews and decides</h4>
+        <p>The recruiter reads the Lexy Prediction and either agrees with the recommendation or overrides it. If they override it, Lexy records the reasoning and learns from the outcome.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">8</div>
+      <div class="flow-step-content">
+        <h4>Verification and offer</h4>
+        <p>Before the offer goes out, the Verification Agent checks the candidate's identity and history. If everything checks out, the recruiter makes the offer. If the candidate declines, Lexy tracks that too — and uses it to calibrate future predictions.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">9</div>
+      <div class="flow-step-content">
+        <h4>The engine records the outcome and gets smarter</h4>
+        <p>Whether the candidate is hired, rejected, ghosts, or declines — every outcome is fed back into the engine. Over time, Lexy's predictions become more accurate for every company using the platform.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ SUMMARY TABLE -->
+<div class="section-divider" style="margin-top:48px;">
+  <div class="section-divider-icon blue">📋</div>
+  <div class="section-divider-text">
+    <h2>Quick Reference</h2>
+    <p>Everything in one place</p>
+  </div>
+  <div class="section-line"></div>
+</div>
+
+<table class="agent-table">
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Who it's for</th>
+      <th>What it does in one sentence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="agent-name">Job Board</td><td>Recruiter</td><td>Post and manage job openings; each job drives automatic sourcing and outreach.</td></tr>
+    <tr><td class="agent-name">Talent Match</td><td>Recruiter</td><td>Ranks all candidates by how well they match a specific job, with explanations.</td></tr>
+    <tr><td class="agent-name">Outreach Campaigns</td><td>Recruiter</td><td>Automatically writes and sends personalised emails to shortlisted candidates.</td></tr>
+    <tr><td class="agent-name">Recruiter Inbox</td><td>Recruiter</td><td>All candidate replies, sorted by job and labelled by type (positive, question, follow-up).</td></tr>
+    <tr><td class="agent-name">Hiring Pipeline</td><td>Recruiter</td><td>Tracks every candidate through each stage from sourced to hired.</td></tr>
+    <tr><td class="agent-name">Decision Queue</td><td>Recruiter</td><td>AI recommendations for what to do next with each candidate, awaiting human approval.</td></tr>
+    <tr><td class="agent-name">Lexy Prediction</td><td>Recruiter</td><td>Plain-English hiring prediction: likelihood, failure risk, confidence, and why.</td></tr>
+    <tr><td class="agent-name">Anti-Ghosting</td><td>Recruiter</td><td>Automatically follows up with candidates who've gone quiet before it's too late.</td></tr>
+    <tr><td class="agent-name">DNC Manager</td><td>Recruiter</td><td>Permanently removes people who opt out from all future communications.</td></tr>
+    <tr><td class="agent-name">Client Management</td><td>Agency</td><td>Manage multiple client companies, each with their own data and access controls.</td></tr>
+    <tr><td class="agent-name">Platform Candidate Pool</td><td>Recruiter</td><td>Access self-registered candidates who've consented to be found by any company.</td></tr>
+    <tr><td class="agent-name">Baseline Interview</td><td>Candidate</td><td>A 10-minute AI conversation that builds the candidate's full profile automatically.</td></tr>
+    <tr><td class="agent-name">Opportunity Engine</td><td>Candidate</td><td>Shows matched jobs currently hiring, plus "coming soon" roles the candidate can register interest in.</td></tr>
+    <tr><td class="agent-name">Career Trajectory</td><td>Candidate</td><td>Shows 3 personalised career paths and how ready the candidate is for each target role.</td></tr>
+    <tr><td class="agent-name">Future Role Targets</td><td>Candidate</td><td>Inside the Opportunity Engine — shows aspirational roles with readiness %, skills to build, and motivational timeline.</td></tr>
+    <tr><td class="agent-name">Practice Interviews</td><td>Candidate</td><td>Mock AI interviews for any role, with scoring and feedback to help candidates prepare.</td></tr>
+    <tr><td class="agent-name">Visibility Score</td><td>Candidate</td><td>A 0–100% score showing how likely recruiters are to discover the candidate's profile.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout blue" style="margin-top:32px;">
+  <div class="callout-icon">🏁</div>
+  <div class="callout-body">
+    <h4>The bottom line</h4>
+    <p>Lexy takes everything that's slow, manual, and error-prone about hiring — finding people, writing emails, conducting interviews, checking backgrounds, predicting success — and automates it with AI. Recruiters spend their time on what humans do best: building relationships and making judgment calls. Candidates spend their time on what matters: being genuinely ready for the right opportunity.</p>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <p><strong>Lexy AI Hiring Platform</strong> &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; Built with L3xy Intelligence Engine v3</p>
+  <p style="margin-top:8px; font-size:12px;">This guide is written for non-technical readers. For technical documentation, refer to the developer reference.</p>
+</div>
+
+</body>
+</html>

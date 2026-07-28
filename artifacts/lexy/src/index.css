@@ -1,0 +1,808 @@
+/*
+ * index.css — Global stylesheet and design-token definitions for the Lexy app.
+ *
+ * What this file does:
+ *   - Imports the Inter web font, Tailwind CSS v4, animation helpers and the
+ *     typography plugin.
+ *   - Declares the `dark` custom variant and maps CSS custom properties (the
+ *     --background / --foreground / etc. design tokens) into Tailwind's theme
+ *     via `@theme inline` so utility classes resolve to the right colors.
+ *   - Defines the light/dark token values and base layer styling.
+ *
+ * Note: per the CSS spec, @import rules must remain the first statements
+ * (comments are allowed before them), so this header sits above the imports.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Motion defaults — transition utilities without an explicit duration/ease
+     inherit a 200ms brand curve so hovers feel physical (Step 5 motion tuning). */
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted-bg));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-bg-border);
+
+  /* Tier 3 text (#94A3B8 light) — ONLY placeholders, keyboard hints, count
+     chips. Never for readable/actionable text. Dark keeps its comfortable
+     secondary brightness (see --faint below). */
+  --color-faint: hsl(var(--faint));
+
+  --color-accent: hsl(var(--hover));
+  --color-accent-foreground: hsl(var(--hover-foreground));
+  --color-accent-border: var(--hover-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary-border: var(--sidebar-primary-border);
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Design-token color utilities → text-ink, text-body, bg-canvas, bg-surface,
+   * border-line, bg-accent-soft, text-signal-green, text-signal-amber, …
+   * (the brand accent is exposed as text-primary / bg-primary). */
+  --color-ink: hsl(var(--ink));
+  --color-body: hsl(var(--body));
+  --color-canvas: hsl(var(--canvas));
+  --color-surface: hsl(var(--surface));
+  --color-panel: hsl(var(--panel));
+  --color-line: hsl(var(--line));
+  --color-accent-soft: hsl(var(--accent-soft));
+  --color-signal-green: hsl(var(--signal-green));
+  --color-signal-amber: hsl(var(--signal-amber));
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, sans-serif;
+
+  /* Radius system: pills use rounded-full, inputs 12px, cards 18px.
+     rounded-full stays for circles/capsules; the sm/md/DEFAULT tier (10px)
+     remains for misc small containers. */
+  --radius: 0.625rem;      /* 10px — misc small containers */
+  --radius-sm: 0.625rem;   /* 10px */
+  --radius-md: 0.625rem;   /* 10px */
+  --radius-lg: 1.125rem;   /* 18px — cards */
+  --radius-xl: 1.125rem;   /* 18px — cards */
+  --radius-2xl: 1.125rem;  /* 18px — cards */
+  --radius-3xl: 1.125rem;  /* 18px — cards */
+}
+
+/* ── Light theme (fallback — app forces dark) ──────────────────────────────── */
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+
+  /* ─── Design tokens — the single source of truth for every color ──────────
+   * Stored as HSL triplets (hex shown for reference) so they feed both
+   * hsl(var(--token)) and the Tailwind @theme color utilities. All framework
+   * tokens below are derived from these — change a color here, once.
+   */
+  --ink:          222 47% 11%;   /* #0F172A  headings, stat numbers, primary button bg */
+  --body:         215 25% 27%;   /* #475569  body text */
+  --muted:        215 20% 65%;   /* #94A3B8  labels, metadata, empty-state text */
+  --surface:      0 0% 100%;     /* #FFFFFF  cards */
+  --canvas:       210 40% 96%;   /* #F1F5F9  page background */
+  --panel:        210 40% 98%;   /* section panel — one step above canvas, below card */
+  --line:         214 32% 91%;   /* #E2E8F0  borders */
+  --accent:       210 71% 54%;   /* #378ADD  the ONE brand accent — links, active, icons */
+  --accent-soft:  210 74% 83%;  /* #B5D4F4  tinted backgrounds */
+  --signal-green: 160 84% 39%;   /* #10B981  live / success indicators only */
+  /* RULE: --signal-amber is RESERVED exclusively for confidence/caution
+     indicators (e.g. "70% Hire", "Limited evidence" badges). NEVER use amber
+     for decoration, icons, or category coloring. */
+  --signal-amber: 38 92% 50%;    /* #F59E0B  confidence/caution indicators only */
+
+  /* Framework semantic tokens — all derived from the design tokens above. */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --border: var(--line);
+
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --card-border: var(--line);
+
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-border: 220 20% 88%;
+  --sidebar-primary: 210 72% 72%;
+  --sidebar-primary-foreground: 220 50% 8%;
+  --sidebar-accent: 214 32% 91%;
+  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-ring: 210 72% 72%;
+
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --popover-border: var(--line);
+
+  --primary: 210 75% 37%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 40% 96%;
+  --secondary-foreground: var(--ink);
+
+  /* subtle muted background surface (bg-muted). Secondary/readable text is
+     Tier 2 (--body #475569); Tier 3 (--faint #94A3B8) is reserved for
+     placeholders/keyboard hints/count chips only. */
+  --muted-bg: 210 40% 96%;
+  --muted-foreground: var(--body);
+  --faint: var(--muted);
+
+  /* framework "accent" = subtle hover/active surface → tinted with accent-soft */
+  --hover: var(--accent-soft);
+  --hover-foreground: var(--ink);
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --input: var(--line);
+  --ring: var(--accent);
+
+  --chart-1: var(--accent);
+  --chart-2: 199 89% 48%;
+  --chart-3: 316 73% 52%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+
+  --radius: 0.625rem;
+
+  /* Elevation hierarchy is expressed ONLY via the three tiers below
+     (.cmd-center-frame = Tier 1, .elevated = Tier 2, plain border = Tier 3).
+     Every generic Tailwind shadow utility is neutralised to `none` so no
+     stray drop-shadow can introduce a fourth elevation level. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-bg-border: hsl(from hsl(var(--muted-bg)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --hover-border: hsl(from hsl(var(--hover)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ── Dark / Futuristic theme ───────────────────────────────────────────────── */
+.dark {
+  --button-outline: rgba(255,255,255, .08);
+  --badge-outline: rgba(255,255,255, .04);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .03);
+  --elevate-2: rgba(255,255,255, .07);
+
+  /* Deep space backgrounds */
+  --background:   220 50% 4%;   /* #050c18 — near-black navy */
+  --foreground:   210 40% 95%;
+
+  --border:       220 38% 19%;  /* crisper blue-grey border  */
+
+  --card:         220 45% 7%;   /* dark card surface         */
+  --card-foreground: 210 40% 96%;
+  --card-border:  220 38% 19%;
+
+  /* section panel — one step lighter than canvas (4%), cards (7%) sit above it */
+  --panel:        220 47% 5%;
+
+  /* Sidebar — even deeper */
+  --sidebar:      220 55% 3%;
+  --sidebar-foreground: 210 40% 92%;
+  --sidebar-border: 220 40% 10%;
+  --sidebar-primary: 210 72% 72%;
+  --sidebar-primary-foreground: 220 50% 8%;
+  --sidebar-accent: 220 45% 9%;
+  --sidebar-accent-foreground: 210 40% 95%;
+  --sidebar-ring: 210 72% 72%;
+
+  --popover:      220 45% 6%;
+  --popover-foreground: 210 40% 95%;
+  --popover-border: 220 40% 13%;
+
+  /* Brand blue primary */
+  --primary:      210 72% 72%;
+  --primary-foreground: 220 50% 8%;
+
+  --secondary:    220 40% 11%;
+  --secondary-foreground: 210 40% 90%;
+
+  --muted-bg:     220 40% 10%;
+  --muted-foreground: 215 24% 70%;
+  --faint:        215 24% 70%;   /* dark Tier 3 == dark secondary (unchanged) */
+
+  --hover:        210 55% 14%;
+  --hover-foreground: 210 72% 75%;
+
+  --destructive:  0 72% 45%;
+  --destructive-foreground: 210 40% 98%;
+
+  --input:        220 40% 11%;
+  --ring:         210 72% 72%;
+
+  --chart-1: 210 71% 54%;
+  --chart-2: 210 72% 72%;
+  --chart-3: 316 73% 60%;
+  --chart-4: 43 74% 60%;
+  --chart-5: 27 87% 62%;
+
+  /* Dark theme keeps the same three-tier elevation model — all generic
+     shadow utilities are `none`; depth comes only from the tier classes. */
+  --shadow-2xs: none;
+  --shadow-xs:  none;
+  --shadow-sm:  none;
+  --shadow:     none;
+  --shadow-md:  none;
+  --shadow-lg:  none;
+  --shadow-xl:  none;
+  --shadow-2xl: none;
+
+  --primary-border:       hsl(from hsl(var(--primary))       h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border:     hsl(from hsl(var(--secondary))     h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-bg-border:      hsl(from hsl(var(--muted-bg))      h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --hover-border:         hsl(from hsl(var(--hover))         h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border:   hsl(from hsl(var(--destructive))   h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border:  hsl(from hsl(var(--sidebar-accent))  h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-size: 20px;
+  }
+  body {
+    @apply font-sans antialiased text-foreground;
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 38%, rgba(24, 95, 165, 0.06) 0%, rgba(55, 138, 221, 0.04) 50%, transparent 75%),
+      #f6f8fb;
+    background-attachment: fixed;
+  }
+  .dark body {
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 38%, rgba(55, 138, 221, 0.22) 0%, rgba(24, 95, 165, 0.10) 50%, transparent 75%),
+      #050e18;
+    background-attachment: fixed;
+  }
+
+  /* Tier 2 elevation — stat cards & the pipeline funnel. Pairs with the
+     element's own 1px border token. A single fixed drop-shadow (no hover
+     escalation, identical in light & dark) so it stays one discrete level. */
+  .elevated {
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1),
+                border-color 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  /* Soft pastel banner for hero/command sections (lavender → white → blush). */
+  .hero-band {
+    background: linear-gradient(135deg, #eaeefb 0%, #f5f8fd 46%, #fbeef5 100%);
+  }
+  .dark .hero-band {
+    background: linear-gradient(135deg, rgba(55,138,221,0.05) 0%, rgba(0,0,0,0) 60%, rgba(139,92,246,0.04) 100%);
+  }
+
+  /* AI Command Center — animated gradient border "hero" frame.
+     Outer frame is a 1px gradient border via the padding trick; inner panel
+     sits on the card surface (dark-safe equivalent of --surface). */
+  .cmd-center-frame {
+    padding: 1px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #378ADD, #185FA5, #378ADD);
+    background-size: 200% 200%;
+    /* Tier 1 elevation — reserved for the Command Center hero only. */
+    box-shadow: 0 8px 30px rgba(55,138,221,0.08);
+  }
+  .cmd-center-panel {
+    border-radius: 16px;
+    background: hsl(var(--card));
+  }
+  /* Command input focus glow. */
+  .cmd-input-wrap:focus-within {
+    border-color: hsl(var(--accent));
+    box-shadow: 0 0 0 4px hsl(var(--accent-soft));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cmd-center-frame {
+      animation: cmdBorderShift 6s ease-in-out infinite;
+    }
+    /* Shimmer sweep across the input every 5s. */
+    .cmd-input-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%);
+      background-size: 220% 100%;
+      background-repeat: no-repeat;
+      animation: cmdInputShimmer 5s ease-in-out infinite;
+    }
+  }
+  @keyframes cmdBorderShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes cmdInputShimmer {
+    0%        { background-position: -60% 0; }
+    45%, 100% { background-position: 260% 0; }
+  }
+
+  /* Status dot — small colored dot with an optional expanding pulse ring. */
+  .status-dot {
+    position: relative;
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+  .status-dot--green { background: hsl(var(--signal-green)); }
+  .status-dot--gray  { background: hsl(var(--muted)); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .status-dot--pulse::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: inherit;
+      animation: statusDotPulse 2s ease-out infinite;
+    }
+  }
+  @keyframes statusDotPulse {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  /* Stat card typography. --ink/--muted surfaced via dark-safe foreground tokens
+     (foreground == --ink in light; muted-foreground == --muted in light). */
+  .stat-number {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: hsl(var(--foreground));
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.2;
+  }
+  /* Page-level title — top of the type hierarchy. Big gap vs. body/labels is
+     intentional (confident, high-contrast scale). Sits above .stat-number in
+     weight terms but below it in size. */
+  .page-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  /* Shimmering skeleton bar — used for empty-state "will stream here" hints. */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted-foreground) / 0.12) 25%,
+      hsl(var(--muted-foreground) / 0.24) 50%,
+      hsl(var(--muted-foreground) / 0.12) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.6s ease-in-out infinite;
+  }
+  @keyframes skeletonShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer { animation: none; }
+  }
+
+  /* Floating empty-state "preview chips" fade in and rise 6px on load. Each
+     chip's resting transform (rotate/translateY) is supplied via --chip-to; the
+     start frame adds a 6px downward offset via --chip-from. Purely decorative —
+     only runs when the user hasn't asked to reduce motion. */
+  /* Chip surface is theme-aware: white in light mode; in dark mode an elevated
+     surface (lighter than the card behind it) with light text. These colors live
+     in CSS (not inline) so the .dark override can win. */
+  .preview-chip {
+    background-color: hsl(var(--surface));
+    color: hsl(var(--ink));
+    border-color: hsl(var(--line));
+  }
+  .dark .preview-chip {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--card-foreground));
+    border-color: hsl(var(--card-border));
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .preview-chip {
+      opacity: 0;
+      animation: previewChipIn 350ms ease-out both;
+    }
+    @keyframes previewChipIn {
+      from { opacity: 0; transform: var(--chip-from); }
+      to   { opacity: 1; transform: var(--chip-to); }
+    }
+  }
+  /* Live run view — each step row fades + rises 6px on mount (rows only mount
+     when their step_started event arrives, so the CSS animation runs once per
+     new row). Purely presentational; skipped when the user reduces motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .run-row-in {
+      animation: runRowIn 300ms ease-out both;
+    }
+    @keyframes runRowIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-bold;
+  }
+  /* Tailwind v4 defaults buttons to cursor:default — restore pointer for all
+     interactive controls so the mouse indicates clickability. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* ── Glassmorphism ─────────────────────────────────────────────────────────── */
+.glass {
+  @apply bg-background/60 backdrop-blur-xl border-b border-white/5;
+}
+
+/* ── Frosted-glass shell material (theme-following) ─────────────────────────
+   Signature translucent surface for the top nav, sticky toolbars and the left
+   rail. Follows the active theme — light frost in light mode, dark frost in
+   dark mode — and degrades to a solid, fully-opaque surface where
+   backdrop-filter is unsupported. */
+.frosted-nav {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.dark .frosted-nav {
+  background: rgba(15, 23, 42, 0.72);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.frosted-rail {
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+.dark .frosted-rail {
+  background: rgba(15, 23, 42, 0.72);
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(20px)) or (backdrop-filter: blur(20px))) {
+  .frosted-nav { background: rgb(255, 255, 255); }
+  .dark .frosted-nav { background: rgb(15, 23, 42); }
+  .frosted-rail { background: rgb(255, 255, 255); }
+  .dark .frosted-rail { background: rgb(15, 23, 42); }
+}
+
+/* ── Card depth — shadow-based separation (light), border on the dark surface ─
+   In light mode cards float off the gray canvas with a soft layered shadow and
+   NO visible border. Dark mode keeps the existing lighter-surface + subtle
+   border treatment (shadows read poorly on dark). Both modes lift 2px on hover.
+   Applied by the <Card> primitive; the border itself stays a Tailwind utility
+   so per-card colored (accent) borders still win. */
+.card-elevate {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  transition: all 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.card-elevate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 16px 40px rgba(0, 0, 0, 0.10);
+}
+.dark .card-elevate {
+  box-shadow: none;
+}
+.dark .card-elevate:hover {
+  transform: translateY(-2px);
+  /* Slightly lighter surface on hover via an inset tint — non-destructive, so a
+     gradient/bg-image card keeps its background (dark stays visually unchanged). */
+  box-shadow: inset 0 0 0 100vmax rgba(255, 255, 255, 0.05);
+}
+
+/* Light-mode only: neutralise the redundant NEUTRAL separation borders that
+   many card call-sites still declare (border-border*, border-white*), so the
+   shadow does the separating instead. Accent/coloured borders (border-primary,
+   border-amber, border-l-*, hover:border-*) are NOT matched, so intentional
+   borders survive. Scoped to :root:not(.dark) so dark mode is untouched. */
+:root:not(.dark) .card-elevate.border-border,
+:root:not(.dark) .card-elevate[class*="border-border/"],
+:root:not(.dark) .card-elevate[class*="border-white/"] {
+  border-color: transparent;
+}
+
+/* ── Segmented control (Apple-style status filter) ─────────────────────────
+   One rounded track holding all options; a single absolutely-positioned puck
+   slides behind the selected option. Track tint + puck surface are theme-aware;
+   the slide animation is gated on prefers-reduced-motion. */
+.seg-control {
+  background: rgba(0, 0, 0, 0.05);
+}
+.dark .seg-control {
+  background: rgba(255, 255, 255, 0.06);
+}
+.seg-puck {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.dark .seg-puck {
+  /* elevated surface: lighter than the track so the puck reads as raised */
+  background: hsl(220 33% 18%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .seg-puck {
+    transition:
+      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      width 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+/* ── Physical press state ──────────────────────────────────────────────────
+   All buttons and clickable pills scale down slightly on :active for a tactile
+   press, and settle back on the 200ms brand curve. Gated on reduced-motion so
+   the scale (real motion) is skipped when the user prefers no motion. */
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  [role="button"],
+  a.hover-elevate {
+    transition-property: transform, color, background-color, border-color,
+      box-shadow, opacity, filter;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a.hover-elevate:active {
+    transform: scale(0.97);
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+  }
+}
+
+/* ── Global keyboard focus ring ────────────────────────────────────────────
+   Every interactive element gets a visible 2px brand-accent outline with a
+   2px offset on keyboard focus (accessibility). Primitives that previously
+   suppressed the outline (button, input) were updated to allow it through. */
+:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+.glass-card {
+  @apply bg-card/80 backdrop-blur-lg border border-white/6;
+}
+
+/* ── Futuristic card — used on key stat/highlight cards ──────────────────── */
+.cyber-card {
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 45% 8%) 100%);
+  border: 1px solid rgba(55, 138, 221, 0.22);
+  border-radius: 1rem; /* 16px — card tier */
+}
+
+/* ── Neon glow text ───────────────────────────────────────────────────────── */
+.neon-text {
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.6), 0 0 40px hsl(var(--primary) / 0.3);
+}
+
+/* ── Glowing primary button ──────────────────────────────────────────────── */
+.dark .btn-glow {
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.4);
+}
+
+/* ── Active nav glow ──────────────────────────────────────────────────────── */
+.nav-active-glow {
+  box-shadow: inset 0 0 0 1px hsl(var(--sidebar-primary) / 0.25);
+}
+
+/* ── Subtle grid overlay on cards (optional) ─────────────────────────────── */
+.grid-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(55,138,221,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(55,138,221,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+.dark ::-webkit-scrollbar       { width: 6px; height: 6px; }
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: hsl(220 40% 16%); border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: hsl(210 71% 40%); }
+
+/* ── App shell background ──────────────────────────────────────────────────
+   Theme-aware page backdrop for the AppLayout shells. Light mode gets an airy
+   near-white canvas with a faint accent wash; dark mode keeps the original
+   deep-space navy gradient. */
+.app-bg {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 32%, hsl(var(--primary) / 0.07) 0%, transparent 70%),
+    hsl(var(--background));
+  background-attachment: fixed;
+}
+.dark .app-bg {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(55, 138, 221, 0.22) 0%, rgba(24, 95, 165, 0.10) 50%, transparent 75%),
+    #050e18;
+  background-attachment: fixed;
+}
+
+/* ── Kanban board horizontal scrollbar (larger, easier to grab) ───────────── */
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(220 40% 26%) transparent;
+  scroll-behavior: smooth;
+}
+.kanban-scroll::-webkit-scrollbar        { height: 12px; }
+.kanban-scroll::-webkit-scrollbar-track  {
+  background: hsl(220 40% 12% / 0.5);
+  border-radius: 9999px;
+  margin: 0 4px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb  {
+  background: hsl(220 40% 30%);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-width: 48px;
+}
+.kanban-scroll::-webkit-scrollbar-thumb:hover  { background: hsl(210 71% 42%); background-clip: padding-box; }
+.kanban-scroll::-webkit-scrollbar-thumb:active { background: hsl(210 71% 50%); background-clip: padding-box; }
+
+/* ── Hover / active elevation helpers ────────────────────────────────────── */
+@layer utilities {
+  /* ── Typography refinement ──────────────────────────────────────────────
+     Applied to large text only, keyed off Tailwind's font-size utilities.
+     Only affects tracking / weight / numeric-figures — never size or color. */
+
+  /* Tight tracking on large display text (page titles, stat numbers).
+     Wrapped in :where() so these act as gentle size-driven defaults — any
+     explicit Tailwind `tracking-*` / numeric utility on the element still wins. */
+  :where(.text-3xl, .text-4xl, .text-5xl, .text-6xl, .text-7xl, .text-8xl, .text-9xl) {
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Slightly tight tracking on card-title / section-header scale text. */
+  :where(.text-lg, .text-xl, .text-2xl) {
+    letter-spacing: -0.01em;
+  }
+  /* Tabular figures on stat-scale sizes so numeric data stays aligned. */
+  :where(.text-2xl) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Weight normalization → only 400 / 500 / 600 / 700 remain.
+     800/900 collapse to 700 everywhere. */
+  .font-extrabold, .font-black { font-weight: 700; }
+  /* 700+ weights on text smaller than 20px (text-lg = 18px and below) → 600. */
+  .text-xs.font-bold,  .text-sm.font-bold,  .text-base.font-bold,  .text-lg.font-bold,
+  .text-xs.font-extrabold, .text-sm.font-extrabold, .text-base.font-extrabold, .text-lg.font-extrabold,
+  .text-xs.font-black, .text-sm.font-black, .text-base.font-black, .text-lg.font-black {
+    font-weight: 600;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button { @apply hidden; }
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--faint));
+    pointer-events: none;
+  }
+
+  .toggle-elevate::before, .toggle-elevate-2::before {
+    content: ""; pointer-events: none; position: absolute; inset: 0px;
+    border-radius: inherit; z-index: -1;
+  }
+  .toggle-elevate.toggle-elevated::before { background-color: var(--elevate-2); }
+  .border.toggle-elevate::before { inset: -1px; }
+
+  .hover-elevate:not(.no-default-hover-elevate), .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate), .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative; z-index: 0;
+  }
+  .hover-elevate:not(.no-default-hover-elevate)::after, .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after, .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: ""; pointer-events: none; position: absolute; inset: 0px;
+    border-radius: inherit; z-index: 999;
+  }
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after, .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after, .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+@keyframes lexyTourPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(55, 138, 221, 0.55), 0 0 24px 6px rgba(55, 138, 221, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(55, 138, 221, 0.75), 0 0 44px 14px rgba(55, 138, 221, 0.6);
+  }
+}

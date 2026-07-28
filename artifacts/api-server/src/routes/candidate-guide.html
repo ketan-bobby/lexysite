@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>L3xy AI — Candidate Platform Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cyan: #00d4ff;
+    --cyan-light: #e0f9ff;
+    --cyan-mid: #b3f0ff;
+    --dark: #0a0f1a;
+    --ink: #1a2035;
+    --slate: #4a5568;
+    --mid: #718096;
+    --light: #f7fafc;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --violet: #7c3aed;
+    --step-1: #00d4ff;
+    --step-2: #06b6d4;
+    --step-3: #7c3aed;
+    --step-4: #10b981;
+    --step-5: #f59e0b;
+    --step-6: #ef4444;
+    --step-7: #8b5cf6;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background: var(--white);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  /* ── Print ── */
+  @media print {
+    .no-print { display: none; }
+    body { font-size: 13px; }
+    .page-break { page-break-before: always; }
+    .card { break-inside: avoid; }
+    .step-card { break-inside: avoid; }
+
+    /* Force all backgrounds and colours to print exactly as shown on screen */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    /* Re-assert key dark backgrounds explicitly so they survive print stripping */
+    .cover {
+      background: linear-gradient(135deg, #0a0f1a 0%, #0d1b36 50%, #0a1628 100%) !important;
+      color: #ffffff !important;
+    }
+    .ai-card {
+      background: linear-gradient(135deg, #0d1b36, #0a0f1a) !important;
+      color: #ffffff !important;
+    }
+    .footer {
+      background: #0a0f1a !important;
+      color: rgba(255,255,255,0.4) !important;
+    }
+    .honesty-card.real { background: #f0fdf4 !important; }
+    .honesty-card.honest { background: #fffbeb !important; }
+    .privacy-box { background: #f8f9ff !important; }
+    .detail-box, .overview-card, .feature-item { background: #f7fafc !important; }
+    .ai-card h4 { color: #00d4ff !important; }
+    .ai-card p { color: rgba(255,255,255,0.65) !important; }
+    .cover h1, .cover .subtitle, .cover-meta { color: rgba(255,255,255,0.9) !important; }
+    .section-label { color: #00d4ff !important; }
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 32px; }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, var(--dark) 0%, #0d1b36 50%, #0a1628 100%);
+    color: var(--white);
+    padding: 80px 32px 64px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .logo-icon {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--cyan), #0099bb);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: var(--dark);
+    letter-spacing: -1px;
+  }
+  .logo-text {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--cyan); }
+  .cover h1 {
+    font-size: 42px; font-weight: 800; line-height: 1.15;
+    letter-spacing: -1.5px; margin-bottom: 20px;
+  }
+  .cover h1 em { font-style: normal; color: var(--cyan); }
+  .cover .subtitle {
+    font-size: 18px; color: rgba(255,255,255,0.65);
+    max-width: 560px; margin: 0 auto 40px;
+    font-weight: 400;
+  }
+  .cover-meta {
+    display: flex; align-items: center; justify-content: center; gap: 32px;
+    font-size: 13px; color: rgba(255,255,255,0.45);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 24px; margin-top: 8px;
+  }
+  .cover-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Section headers ── */
+  .section {
+    padding: 56px 0 40px;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--cyan); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 30px; font-weight: 800; letter-spacing: -0.8px;
+    color: var(--ink); margin-bottom: 12px; line-height: 1.2;
+  }
+  .section .lead {
+    font-size: 16px; color: var(--slate); max-width: 680px;
+    line-height: 1.7;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ── Platform overview cards ── */
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; margin-top: 32px;
+  }
+  .overview-card {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px 20px;
+  }
+  .overview-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 14px;
+  }
+  .overview-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .overview-card p { font-size: 13px; color: var(--slate); line-height: 1.55; }
+
+  /* ── Journey storyboard ── */
+  .storyboard { margin-top: 40px; }
+  .step-card {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 0 24px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .step-card:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 35px; top: 72px; bottom: -32px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--step-color, var(--cyan)) 0%, transparent 100%);
+    opacity: 0.3;
+  }
+  .step-num-col { display: flex; flex-direction: column; align-items: center; }
+  .step-bubble {
+    width: 72px; height: 72px;
+    border-radius: 20px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    border: 2px solid;
+    position: relative; z-index: 1;
+  }
+  .step-bubble .step-n {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; margin-top: 2px;
+    opacity: 0.7;
+  }
+  .step-content { padding-top: 4px; }
+  .step-content h3 {
+    font-size: 18px; font-weight: 700; margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+  .step-content .step-subtitle {
+    font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 10px; opacity: 0.6;
+  }
+  .step-content p {
+    font-size: 14px; color: var(--slate); line-height: 1.65;
+    margin-bottom: 12px;
+  }
+  .step-detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-top: 14px;
+  }
+  .detail-box {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .detail-box .label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .detail-box p { font-size: 13px; color: var(--slate); line-height: 1.5; margin: 0; }
+
+  .step-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 20px; border: 1px solid;
+  }
+
+  /* Step colour themes */
+  .step-1 .step-bubble { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.4); color: var(--step-1); }
+  .step-1 h3, .step-1 .step-subtitle { color: var(--step-1); }
+  .step-1 { --step-color: var(--step-1); }
+
+  .step-2 .step-bubble { background: rgba(6,182,212,0.08); border-color: rgba(6,182,212,0.4); color: var(--step-2); }
+  .step-2 h3, .step-2 .step-subtitle { color: var(--step-2); }
+  .step-2 { --step-color: var(--step-2); }
+
+  .step-3 .step-bubble { background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.4); color: var(--step-3); }
+  .step-3 h3, .step-3 .step-subtitle { color: var(--step-3); }
+  .step-3 { --step-color: var(--step-3); }
+
+  .step-4 .step-bubble { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.4); color: var(--step-4); }
+  .step-4 h3, .step-4 .step-subtitle { color: var(--step-4); }
+  .step-4 { --step-color: var(--step-4); }
+
+  .step-5 .step-bubble { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.4); color: var(--step-5); }
+  .step-5 h3, .step-5 .step-subtitle { color: var(--step-5); }
+  .step-5 { --step-color: var(--step-5); }
+
+  .step-6 .step-bubble { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.4); color: var(--step-6); }
+  .step-6 h3, .step-6 .step-subtitle { color: var(--step-6); }
+  .step-6 { --step-color: var(--step-6); }
+
+  .step-7 .step-bubble { background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.4); color: var(--step-7); }
+  .step-7 h3, .step-7 .step-subtitle { color: var(--step-7); }
+  .step-7 { --step-color: var(--step-7); }
+
+  /* ── Feature deep-dives ── */
+  .feature-list { margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
+  .feature-item {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 20px; align-items: start;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+  }
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+  }
+  .feature-item h4 { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+  .feature-item .what { font-size: 13px; font-weight: 600; color: var(--cyan); margin-bottom: 6px; }
+  .feature-item p { font-size: 13px; color: var(--slate); line-height: 1.6; }
+
+  /* ── Data honesty section ── */
+  .honesty-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-top: 28px;
+  }
+  .honesty-card {
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .honesty-card.real { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .honesty-card.honest { background: #fffbeb; border: 1px solid #fde68a; }
+  .honesty-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap-6px; }
+  .honesty-card h4.green { color: #065f46; }
+  .honesty-card h4.amber { color: #92400e; }
+  .honesty-card ul { list-style: none; }
+  .honesty-card ul li {
+    font-size: 13px; color: var(--slate); line-height: 1.5;
+    padding: 4px 0; display: flex; gap: 8px;
+  }
+  .honesty-card ul li::before { content: ''; flex-shrink: 0; }
+  .tick { color: #10b981; font-weight: 700; }
+  .note { color: #d97706; font-weight: 700; }
+
+  /* ── AI section ── */
+  .ai-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 16px; margin-top: 28px;
+  }
+  .ai-card {
+    border-radius: 12px; padding: 20px;
+    background: linear-gradient(135deg, #0d1b36, #0a0f1a);
+    color: white; border: 1px solid rgba(0,212,255,0.15);
+  }
+  .ai-card .ai-icon { font-size: 26px; margin-bottom: 10px; }
+  .ai-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--cyan); }
+  .ai-card p { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+
+  /* ── Privacy section ── */
+  .privacy-box {
+    background: #f8f9ff; border: 1px solid #c7d2fe;
+    border-radius: 14px; padding: 28px; margin-top: 28px;
+  }
+  .privacy-box h3 { font-size: 17px; font-weight: 700; color: var(--violet); margin-bottom: 14px; }
+  .privacy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .privacy-item { text-align: center; }
+  .privacy-item .pi { font-size: 28px; margin-bottom: 6px; }
+  .privacy-item h5 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .privacy-item p { font-size: 12px; color: var(--slate); line-height: 1.5; }
+
+  /* ── Footer ── */
+  .footer {
+    background: var(--dark); color: rgba(255,255,255,0.4);
+    padding: 40px 32px; text-align: center;
+    font-size: 13px; line-height: 1.8;
+    margin-top: 64px;
+  }
+  .footer strong { color: rgba(255,255,255,0.7); }
+  .footer .cyan { color: var(--cyan); }
+
+  /* ── Print button ── */
+  .print-bar {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 100;
+  }
+  .print-btn {
+    background: var(--dark);
+    color: var(--cyan);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 12px; padding: 12px 20px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .print-btn:hover { background: #111827; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+</style>
+</head>
+<body>
+
+<!-- Print button -->
+<div class="print-bar no-print">
+  <button class="print-btn" onclick="window.print()">
+    ⬇ Save as PDF
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════ COVER ══ -->
+<div class="cover">
+  <div class="container">
+    <div class="logo-mark">
+      <div class="logo-icon">L3</div>
+      <div class="logo-text">L3<span>xy</span> AI</div>
+    </div>
+    <h1>From Conversation<br>to <em>Career Clarity</em></h1>
+    <p class="subtitle">
+      How L3xy AI maps your background, surfaces your potential, and prepares you
+      for every step of what comes next.
+    </p>
+    <div class="cover-meta">
+      <span>📄 Platform Description &amp; Storyboard</span>
+      <span>🗓 April 2026</span>
+      <span>🔒 Confidential</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ WHAT IS L3XY? ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-label">Platform Overview</div>
+    <h2>What is L3xy AI?</h2>
+    <p class="lead">
+      L3xy AI is a hiring platform that uses artificial intelligence to help job seekers understand
+      themselves better, prepare for interviews, and get found by the right employers — all through
+      natural conversation rather than forms and checklists.
+    </p>
+    <p class="lead" style="margin-top: 12px;">
+      Instead of submitting a CV and waiting in silence, candidates on L3xy have an AI career
+      partner that maps their background, identifies their strengths and skill gaps, suggests
+      career paths that actually fit them, and gets them ready to interview with confidence.
+    </p>
+
+    <div class="overview-grid">
+      <div class="overview-card">
+        <div class="icon" style="background:#e0f9ff;">🎙️</div>
+        <h3>Conversation, not paperwork</h3>
+        <p>L3xy builds a complete picture of who you are through natural dialogue — not forms. The AI listens, adapts to what you share, and draws out the depth of your experience without a single checkbox.</p>
+      </div>
+      <div class="overview-card">
+        <div class="icon" style="background:#f0fdf4;">🗺️</div>
+        <h3>Intelligence-led career guidance</h3>
+        <p>Rather than generic suggestions, L3xy maps your background and aspirations to opportunities with genuine alignment — surfacing directions grounded in what you have actually done and where you genuinely want to go.</p>
+      </div>
+      <div class="overview-card">
+        <div class="icon" style="background:#faf5ff;">🏋️</div>
+        <h3>Preparation that builds real confidence</h3>
+        <p>The AI practice engine simulates the rigour of actual interviews, coaches you on both the substance and delivery of your answers, and gives you a measurable view of how your readiness is improving session by session.</p>
+      </div>
+      <div class="overview-card">
+        <div class="icon" style="background:#fffbeb;">🔍</div>
+        <h3>Visibility that works for you</h3>
+        <p>A fully built profile puts you in front of the right recruiters without the effort of active searching. The stronger your profile, the more relevant opportunities come to you — passively and continuously.</p>
+      </div>
+      <div class="overview-card">
+        <div class="icon" style="background:#fff1f2;">🌏</div>
+        <h3>Interview in your strongest language</h3>
+        <p>L3xy supports interviews across multiple languages, so candidates can articulate their experience and ambitions with the nuance, precision, and confidence that only comes from speaking in the language they think in.</p>
+      </div>
+      <div class="overview-card">
+        <div class="icon" style="background:#f0fff4;">📊</div>
+        <h3>Every number earned, not estimated</h3>
+        <p>Your readiness score, profile strength, and career analysis are derived exclusively from your real data. No manufactured benchmarks, no fabricated averages. What you see reflects where you actually stand.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ══════════════════════════════════ CANDIDATE JOURNEY ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-label">Candidate Journey Storyboard</div>
+    <h2>The Candidate Experience, Step by Step</h2>
+    <p class="lead">
+      Here is exactly what a candidate sees and does from the moment they join L3xy AI
+      to the point where they are interview-ready and visible to employers.
+    </p>
+
+    <div class="storyboard">
+
+      <!-- STEP 1 -->
+      <div class="step-card step-1">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            🚀
+            <span class="step-n">Step 1</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Arrival</div>
+          <h3>Sign Up &amp; First Impressions</h3>
+          <p>
+            A candidate arrives on the L3xy candidate portal — either by clicking a link sent by a recruiter,
+            or by registering directly. The interface is dark, modern, and immediately communicates that this
+            is not a typical job board.
+          </p>
+          <p>
+            If they were invited by a recruiter for a specific role, their onboarding is pre-linked to that
+            opportunity. Otherwise, they join the open talent pool and start with a general career assessment.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-1);">What they see</div>
+              <p>A welcome screen with their name, a brief explanation of what comes next, and a single clear call to action: start the career interview.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-1);">What happens behind the scenes</div>
+              <p>L3xy creates their candidate profile in the database and, if they came from a recruiter link, tags their account to that specific role and company.</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-1); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05);">Sign-up</span>
+            <span class="tag" style="color: var(--step-1); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05);">Recruiter invite or self-register</span>
+            <span class="tag" style="color: var(--step-1); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.05);">Multi-language ready from day 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-card step-2">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            📄
+            <span class="step-n">Step 2</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Profile Setup</div>
+          <h3>Upload a CV or Build from Scratch</h3>
+          <p>
+            Before the AI interview, L3xy gives candidates the option to upload their existing CV.
+            If they do, the AI reads it automatically and pre-fills their work history, skills, education,
+            and current role — so they don't have to type it all out again.
+          </p>
+          <p>
+            If they don't have a CV ready, they can skip this and let the AI interview build their
+            profile from the conversation alone. Nothing is blocked; they can always add a CV later.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-2);">CV upload</div>
+              <p>Drag and drop a PDF or Word document. The AI extracts your job history, skills, qualifications, and experience automatically.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-2);">No CV? No problem</div>
+              <p>Skip it and start the interview. The AI builds your profile from the conversation. You can upload a CV at any time from your Settings page.</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-2); border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.05);">PDF &amp; Word supported</span>
+            <span class="tag" style="color: var(--step-2); border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.05);">AI reads your CV automatically</span>
+            <span class="tag" style="color: var(--step-2); border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.05);">Fully optional at this stage</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-card step-3">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            🎙️
+            <span class="step-n">Step 3</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Core Experience</div>
+          <h3>The Baseline Career Interview</h3>
+          <p>
+            This is the heart of L3xy. An AI called Lexy conducts a friendly, spoken conversation —
+            approximately 10 minutes — asking about the candidate's background, what they enjoy doing,
+            what they're looking for next, where they want to be in their career, and what matters most to them.
+          </p>
+          <p>
+            It does not feel like a test. Lexy listens, follows up naturally, and adapts its questions
+            based on what the candidate shares. The candidate can speak in English, Hindi, Tamil, Telugu,
+            or several other Indian languages — Lexy responds in the same language.
+          </p>
+          <p>
+            <strong>After the interview is complete</strong>, L3xy's AI analyses the full conversation
+            and produces a detailed written profile: a summary of the candidate's background, their
+            identified strengths, areas for growth, communication style, and career readiness.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-3);">What the AI asks about</div>
+              <p>Current role and experience · Career goals (1, 3, 5 years) · What kinds of work energise them · Where they feel less confident · What they want from a new role</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-3);">What the AI produces</div>
+              <p>A written profile summary · Identified strength areas · Growth areas (skill gaps) · Communication style assessment · An initial readiness score</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-3); border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05);">~10 minutes</span>
+            <span class="tag" style="color: var(--step-3); border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05);">Spoken or typed — candidate's choice</span>
+            <span class="tag" style="color: var(--step-3); border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05);">8 Indian languages supported</span>
+            <span class="tag" style="color: var(--step-3); border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05);">Full transcript saved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-card step-4">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            🗺️
+            <span class="step-n">Step 4</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Career Intelligence</div>
+          <h3>Your Career Hub — Everything in One Place</h3>
+          <p>
+            After the baseline interview, the candidate enters their Career Hub — a personal dashboard
+            that becomes their home on L3xy. This is where they see everything about where they stand
+            and what to do next.
+          </p>
+
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Readiness Score</div>
+              <p>A 0–100 score showing how interview-ready you are. It updates every time you practise, improve your profile, or do another interview session. The score is computed from your actual activity — not an estimate.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Career Paths</div>
+              <p>3–5 suggested career directions based on your background and goals. Each path shows what the role looks like, what skills you already have, and what you'd need to develop to get there.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Skill Gaps</div>
+              <p>Specific skills identified from your interview where you have room to grow. These are high-impact skills for the roles you're targeting — not generic recommendations.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Strengths</div>
+              <p>The things you are already good at, identified from your answers. These are shown so you can lead with them in interviews and applications.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Next Best Actions</div>
+              <p>A prioritised list of the 2–3 most valuable things you can do today to move your career forward. Always computed from your actual gaps — never generic advice.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-4);">Progress Tracking</div>
+              <p>A week-by-week view of how your readiness and profile strength are improving. You can see exactly how much progress you've made since your last session.</p>
+            </div>
+          </div>
+
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-4); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">All data from your profile &amp; interview</span>
+            <span class="tag" style="color: var(--step-4); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">Updates in real time</span>
+            <span class="tag" style="color: var(--step-4); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">No fake averages or estimates</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step-card step-5">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            🏋️
+            <span class="step-n">Step 5</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Preparation</div>
+          <h3>AI Practice Sessions</h3>
+          <p>
+            Once the candidate knows their strengths and gaps, they can enter the Practice Engine —
+            an AI-powered interview simulator. They pick a mode (quick warm-up, full interview, behavioural,
+            technical, or a mock interview for a specific job) and start practising.
+          </p>
+          <p>
+            The AI asks realistic interview questions relevant to their target role and level.
+            After each session, they can review coaching tips that help them understand how to answer
+            questions more effectively. Over time, their readiness score reflects the improvement.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-5);">Practice modes</div>
+              <p>Quick warm-up (5 questions) · Full practice interview (10–15 questions) · Behavioural focus · Technical focus · Mock interview for a specific role</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-5);">After each session</div>
+              <p>See your transcript · Read general coaching guidance on interview technique · Track your streak (how many days in a row you've practised) · Watch your readiness score climb</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-5); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05);">5 interview modes</span>
+            <span class="tag" style="color: var(--step-5); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05);">Coaching tips after every session</span>
+            <span class="tag" style="color: var(--step-5); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05);">Daily streak tracking</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 6 -->
+      <div class="step-card step-6">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            🔍
+            <span class="step-n">Step 6</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Discovery</div>
+          <h3>Matched Opportunities</h3>
+          <p>
+            As the candidate builds their profile, L3xy automatically matches them against live job openings
+            from companies using the platform. The candidate doesn't have to search — relevant roles
+            surface in their Career Hub based on how well they match the job requirements.
+          </p>
+          <p>
+            Each job shows their seniority level, department, location, work type, and salary range where available.
+            High-relevance matches are labelled "Strong match". They click through to see the full role
+            and apply directly.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-6);">How matching works</div>
+              <p>L3xy compares the candidate's skills, experience, and career goals against the job requirements. Only roles that are genuinely relevant appear — not everything on the platform.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-6);">Urgency signals</div>
+              <p>Some roles are flagged as "Closing soon", "New this week", or "High demand" so candidates know which opportunities to prioritise.</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-6); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05);">Live job matching</span>
+            <span class="tag" style="color: var(--step-6); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05);">No cold searching required</span>
+            <span class="tag" style="color: var(--step-6); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05);">Relevance-ranked results</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7 -->
+      <div class="step-card step-7">
+        <div class="step-num-col">
+          <div class="step-bubble">
+            📈
+            <span class="step-n">Step 7</span>
+          </div>
+        </div>
+        <div class="step-content">
+          <div class="step-subtitle">Ongoing Growth</div>
+          <h3>Continuous Development &amp; Visibility</h3>
+          <p>
+            L3xy is not a one-time application tool. Candidates who return regularly build a stronger
+            profile over time. Each practice session, each profile update, and each completed interview
+            raises their readiness score and their visibility to recruiters.
+          </p>
+          <p>
+            The platform tracks streaks (consecutive days of activity), flags when someone has been
+            inactive for more than five days, and always surfaces the single most important action to
+            take next — so candidates always know where to focus their energy.
+          </p>
+          <div class="step-detail-grid">
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-7);">Recruiter Visibility Score</div>
+              <p>A score (0–100) showing how discoverable your profile is to recruiters. It rises as you complete your interview, add skills, set career goals, and strengthen your profile. The score is honest — it reflects your actual profile signals, not invented activity data.</p>
+            </div>
+            <div class="detail-box">
+              <div class="label" style="color: var(--step-7);">Career Analysis (unlockable)</div>
+              <p>After completing practice sessions, candidates can unlock a deeper view of their interview performance — including communication style feedback, areas for growth, and a detailed breakdown from their AI career analysis.</p>
+            </div>
+          </div>
+          <div class="step-tags">
+            <span class="tag" style="color: var(--step-7); border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.05);">Streak &amp; activity tracking</span>
+            <span class="tag" style="color: var(--step-7); border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.05);">Profile visibility to recruiters</span>
+            <span class="tag" style="color: var(--step-7); border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.05);">Unlockable deeper analysis</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ══════════════════════════════════════ FEATURE GUIDE ══ -->
+<div class="container page-break">
+  <div class="section">
+    <div class="section-label">Feature Reference</div>
+    <h2>Every Candidate Feature, Explained Simply</h2>
+    <p class="lead">A plain-English description of every section a candidate will encounter on the platform.</p>
+
+    <div class="feature-list">
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(0,212,255,0.1);">🎙️</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Career Interview (Lexy)</h4>
+          <p>A spoken AI conversation where Lexy — the L3xy platform's AI career guide — asks you about your work history, goals, and what you're looking for. It takes about 10 minutes and feels like talking to a career coach, not filling out a form. The full transcript is saved and used to build everything else on your profile. You can do this in English, Hindi, Tamil, Telugu, Kannada, Bengali, Marathi, or Gujarati.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(16,185,129,0.1);">📊</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Readiness Score</h4>
+          <p>A number from 0 to 100 that shows how prepared you are to interview for roles in your target area. It is calculated from your actual profile — your skills, experience, career goals, whether you have completed your interview, and how much you have practised. The number goes up when you take action. It does not go up automatically over time.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(124,58,237,0.1);">🗺️</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Career Paths</h4>
+          <p>After your interview, L3xy's AI suggests 3–5 career directions that fit your background and goals. Each path shows the job title, what the role involves, what skills you already have that are relevant, and what you would need to develop to be competitive. These are not generic suggestions — they are generated from what you told Lexy during your interview.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(245,158,11,0.1);">🎯</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Skill Gap Panel</h4>
+          <p>A list of specific skills identified from your interview where you have room to improve. For each skill gap, L3xy shows you why that skill matters for your target roles and links you to relevant practice sessions so you can work on it directly. These are called out as high-impact skills for your path — not a comparison to other candidates.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(16,185,129,0.1);">💪</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Strengths</h4>
+          <p>The things you are already good at, identified from your interview and career analysis. Knowing your strengths helps you decide which roles to go for, how to position yourself in applications, and what to lead with in interviews.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(239,68,68,0.1);">⚡</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Next Best Actions</h4>
+          <p>The 2–3 most important things you can do right now to move forward. L3xy prioritises these based on what will have the biggest impact on your readiness and visibility. The top action is always labelled "Most Important Right Now" so you always know where to start. These are driven by your specific gaps — not the same advice given to everyone.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(0,212,255,0.1);">👁️</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Recruiter Visibility Score</h4>
+          <p>A score from 0–100 reflecting how likely your profile is to appear in recruiter searches. It is calculated from four real signals: how complete your profile is, whether you have completed your career interview, how many skills you have listed, and whether you have set career paths. The card explains each signal and shows you exactly what to do to raise your score. It does not show invented stats about recruiter activity.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(139,92,246,0.1);">🏋️</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Practice Engine</h4>
+          <p>An AI interview simulator where you can practise answering questions for your target role. You pick a mode — a quick warm-up, a full interview, a behavioural focus session, a technical session, or a mock interview for a specific job. After each session, you get coaching guidance to help you improve. The platform tracks how many consecutive days you have practised (your streak).</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(245,158,11,0.1);">📝</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Interview Transcript &amp; Analysis</h4>
+          <p>After completing the career interview, the full conversation is saved and shown in your Career Hub. You can read through what Lexy asked and what you said. Once you have completed at least one practice session, you can unlock a deeper view: a section-by-section breakdown of your AI career analysis covering communication style, strengths, growth areas, and interview recommendations — all from your actual answers, not generic text.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(16,185,129,0.1);">🔍</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Matched Opportunities</h4>
+          <p>Live job openings from employers using L3xy that match your skills, experience, and career goals. You do not have to search. Roles that are highly relevant are labelled "Strong match"; moderately relevant ones say "Relevant role". You can click through to view the full job description and apply. Some roles are flagged with urgency signals (closing soon, new this week) to help you prioritise.</p>
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon" style="background: rgba(0,212,255,0.1);">⚙️</div>
+        <div>
+          <div class="what">What it is</div>
+          <h4>Settings &amp; Profile</h4>
+          <p>Your personal settings page where you can update your name, email, location, current role, preferred working style, language preference, and upload or replace your CV. Changes here flow through to your profile and can affect your readiness score and matched opportunities.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ══════════════════════════════════════════ AI AGENTS ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-label">The Technology</div>
+    <h2>The AI Behind the Experience</h2>
+    <p class="lead">
+      L3xy AI is powered by a set of specialised AI agents, each responsible for a specific part
+      of the candidate experience. Here is what each one does in plain language.
+    </p>
+
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-icon">🎙️</div>
+        <h4>Lexy — The Career Interviewer</h4>
+        <p>Conducts the baseline career interview and all practice sessions. Adapts its questions based on what you say, follows up naturally, and converses in the language you choose. It is the conversational front-end for everything on the platform.</p>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon">🧠</div>
+        <h4>Career Analyser</h4>
+        <p>After each interview, this agent reads the full transcript and produces a structured analysis: strengths, growth areas, communication style, readiness assessment, and career path suggestions. This analysis is what powers your Career Hub.</p>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon">📄</div>
+        <h4>CV Reader</h4>
+        <p>When you upload a CV, this agent reads it and extracts your work history, skills, education, and qualifications. It uses this to pre-populate your profile so you don't have to re-enter information you already have on paper.</p>
+      </div>
+      <div class="ai-card">
+        <div class="ai-icon">🗺️</div>
+        <h4>Career Path Engine</h4>
+        <p>Generates personalised career path suggestions based on your interview and profile. For each path, it explains the role, your existing fit, the gaps to close, and what the trajectory looks like. These are created specifically for you — not taken from a generic library.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ══════════════════════════════════════════ DATA HONESTY ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-label">Data Integrity</div>
+    <h2>What is Real and What is Not</h2>
+    <p class="lead">
+      L3xy AI is built on a strict principle: nothing shown to a candidate should be invented.
+      Here is a transparent breakdown of what data is genuinely computed versus what is clearly
+      framed as guidance or estimation.
+    </p>
+
+    <div class="honesty-grid">
+      <div class="honesty-card real">
+        <h4 class="green">✅ Fully Real — Computed from Your Data</h4>
+        <ul>
+          <li><span class="tick">✓</span> Readiness score — your actual profile and activity</li>
+          <li><span class="tick">✓</span> Profile completeness — real fields counted</li>
+          <li><span class="tick">✓</span> Career paths — generated from your interview</li>
+          <li><span class="tick">✓</span> Skill gaps &amp; strengths — from your AI analysis</li>
+          <li><span class="tick">✓</span> Interview transcript — word-for-word</li>
+          <li><span class="tick">✓</span> Career analysis sections — from your own answers</li>
+          <li><span class="tick">✓</span> Practice session count — real activity</li>
+          <li><span class="tick">✓</span> Day streak — real consecutive days</li>
+          <li><span class="tick">✓</span> Matched opportunities — live jobs from DB</li>
+          <li><span class="tick">✓</span> Progress delta — compared to last saved snapshot</li>
+          <li><span class="tick">✓</span> Benchmark data — real aggregates (when 50+ candidates available)</li>
+        </ul>
+      </div>
+      <div class="honesty-card honest">
+        <h4 class="amber">⚠️ Clearly Framed — Guidance, Not Precision</h4>
+        <ul>
+          <li><span class="note">~</span> Visibility score — an estimate from 4 profile signals</li>
+          <li><span class="note">~</span> Interview coaching tips — general best-practice guidance, not personalised answer scoring</li>
+          <li><span class="note">~</span> Skill gap label — "high-impact for your path" (not a cross-candidate comparison)</li>
+          <li><span class="note">~</span> Readiness fallback — heuristic estimate until your first snapshot is saved</li>
+          <li><span class="note">~</span> Benchmark comparison — only shown when sample size is large enough (50+ candidates)</li>
+        </ul>
+        <p style="font-size: 12px; color: var(--slate); margin-top: 14px; line-height: 1.5;">
+          These items are clearly labelled in the UI as estimates, guidance, or general coaching.
+          Nothing is presented as precise fact unless it comes from your real data.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ══════════════════════════════════════════════ PRIVACY ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-label">Privacy &amp; Trust</div>
+    <h2>How Candidate Data is Handled</h2>
+    <p class="lead">
+      Candidates share a lot with L3xy — their career history, their goals, their insecurities, and their ambitions.
+      Here is how that data is protected.
+    </p>
+    <div class="privacy-box">
+      <h3>🔒 Our Commitments to Candidates</h3>
+      <p style="font-size: 14px; color: var(--slate); margin-bottom: 4px;">
+        L3xy AI operates as a multi-tenant platform — each employer organisation is completely isolated.
+        A candidate's data is never shared between employer tenants without their knowledge.
+      </p>
+      <div class="privacy-grid">
+        <div class="privacy-item">
+          <div class="pi">🏢</div>
+          <h5>Tenant Isolation</h5>
+          <p>Each recruiting company sees only candidates who applied to their roles. Your profile is not shared across companies without your consent.</p>
+        </div>
+        <div class="privacy-item">
+          <div class="pi">📊</div>
+          <h5>Anonymised Benchmarks</h5>
+          <p>When benchmark data is shown (comparing your readiness to others), it uses anonymised averages. No individual candidate's data is exposed.</p>
+        </div>
+        <div class="privacy-item">
+          <div class="pi">🔑</div>
+          <h5>Your Data, Your Control</h5>
+          <p>Candidates can update or delete their profile from the Settings page at any time. CV uploads are stored securely and can be replaced or removed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FOOTER ══ -->
+<div class="footer">
+  <div class="container">
+    <p>
+      <strong>L3xy AI</strong> — AI-Powered Hiring Platform<br>
+      Candidate Platform Guide · April 2026<br>
+      <span class="cyan">Confidential — Internal &amp; Partner Use Only</span>
+    </p>
+    <p style="margin-top: 12px; font-size: 12px;">
+      This document describes the candidate experience as built and deployed on the L3xy AI platform.<br>
+      All data displayed to candidates is sourced from real profile and interview data unless explicitly framed as an estimate or general guidance.
+    </p>
+  </div>
+</div>
+
+<script>
+  // Automatically trigger print dialog if ?print=1 in URL
+  if (window.location.search.includes('print=1')) {
+    window.onload = () => setTimeout(() => window.print(), 500);
+  }
+</script>
+
+</body>
+</html>
