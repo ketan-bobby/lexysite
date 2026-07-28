@@ -2,6 +2,7 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@11.17.0",
   "scripts": {
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
@@ -35,17 +36,6 @@
     "*.{js,mjs,cjs,json,css,html,yaml,yml}": [
       "prettier --write"
     ]
-  },
-  "pnpm": {
-    "overrides": {
-      "react": "19.1.0",
-      "react-dom": "19.1.0",
-      "path-to-regexp": "^8.4.2",
-      "@xmldom/xmldom": "^0.8.13",
-      "fast-xml-parser": "^5.7.0",
-      "fast-xml-builder": "^1.2.0",
-      "lodash": "^4.18.1"
-    }
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.5",
