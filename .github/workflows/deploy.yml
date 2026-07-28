@@ -24,8 +24,14 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            chmod 777 compile.sh
+            npm install -g pnpm
 
-            ./compile.sh
+            pnpm install
+
+            pnpm --filter @workspace/api-server run build
+
+            pnpm --filter @workspace/lexy run build
+            
+            pnpm --filter @workspace/lexy-site run build
 
             pm2 restart all
