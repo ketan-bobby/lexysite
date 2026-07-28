@@ -19,12 +19,30 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
+            set -e
+
             cd ${{ secrets.APP_DIR }}
 
             git fetch origin
             git reset --hard origin/main
 
-            npm install -g pnpm
+            export NVM_DIR="$HOME/.nvm"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+              nvm install 22
+              nvm use 22
+            fi
+
+            if command -v corepack >/dev/null 2>&1; then
+              corepack enable
+              corepack prepare pnpm@10.19.0 --activate
+            else
+              npm install --global --prefix "$HOME/.local" pnpm@10.19.0
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+
+            node -v
+            pnpm -v
 
             pnpm install
 
