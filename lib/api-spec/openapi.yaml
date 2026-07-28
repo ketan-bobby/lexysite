@@ -1,0 +1,3043 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Lexy AI Hiring Platform API
+servers:
+  - url: /api
+    description: Base API path
+
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: tenants
+    description: Tenant management
+  - name: users
+    description: User management
+  - name: jobs
+    description: Job management
+  - name: Storage
+    description: Object storage upload and serving endpoints.
+  - name: icp
+    description: Ideal Candidate Profile
+  - name: candidates
+    description: Candidate management
+  - name: applications
+    description: Applications
+  - name: interviews
+    description: AI Interviews
+  - name: prep
+    description: Interview Prep Engine
+  - name: coordinator
+    description: Interview Coordination
+  - name: verify
+    description: Candidate Verification
+  - name: talent-match
+    description: Talent Matching
+  - name: resume-screen
+    description: Resume Screening
+  - name: sourcing
+    description: Sourcing Engine
+  - name: outreach
+    description: Outreach Campaigns
+  - name: communication
+    description: Communication Engine
+  - name: analytics
+    description: Analytics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/candidate-login:
+    post:
+      operationId: candidateLogin
+      tags: [auth]
+      summary: Candidate login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # TENANTS
+  /tenants:
+    get:
+      operationId: listTenants
+      tags: [tenants]
+      summary: List all tenants
+      responses:
+        "200":
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tenant"
+    post:
+      operationId: createTenant
+      tags: [tenants]
+      summary: Create tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTenantRequest"
+      responses:
+        "201":
+          description: Tenant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+  /tenants/{tenantId}:
+    get:
+      operationId: getTenant
+      tags: [tenants]
+      summary: Get tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+    put:
+      operationId: updateTenant
+      tags: [tenants]
+      summary: Update tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantRequest"
+      responses:
+        "200":
+          description: Tenant updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+  # USERS
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # JOBS
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List jobs
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Jobs list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobsListResponse"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    put:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Update job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJobRequest"
+      responses:
+        "200":
+          description: Job updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Delete job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ICP
+  /jobs/{jobId}/icp:
+    get:
+      operationId: getJobIcp
+      tags: [icp]
+      summary: Get ICP for job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ICP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdeaCandiateProfile"
+    post:
+      operationId: generateIcp
+      tags: [icp]
+      summary: Generate ICP from JD
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateIcpRequest"
+      responses:
+        "200":
+          description: Generated ICP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdeaCandiateProfile"
+
+  /jobs/{jobId}/icp/versions:
+    get:
+      operationId: listIcpVersions
+      tags: [icp]
+      summary: List ICP versions
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ICP versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IdeaCandiateProfile"
+
+  # CANDIDATES
+  /candidates:
+    get:
+      operationId: listCandidates
+      tags: [candidates]
+      summary: List candidates
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+        - name: stage
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidatesListResponse"
+    post:
+      operationId: createCandidate
+      tags: [candidates]
+      summary: Create candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCandidateRequest"
+      responses:
+        "201":
+          description: Candidate created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+  /candidates/{candidateId}:
+    get:
+      operationId: getCandidate
+      tags: [candidates]
+      summary: Get candidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+    put:
+      operationId: updateCandidate
+      tags: [candidates]
+      summary: Update candidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCandidateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+  # APPLICATIONS
+  /applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: List applications
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+        - name: candidateId
+          in: query
+          schema:
+            type: string
+        - name: stage
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Create application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{applicationId}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+    put:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update application stage
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  # AI INTERVIEWS
+  /interviews:
+    get:
+      operationId: listInterviews
+      tags: [interviews]
+      summary: List interviews
+      parameters:
+        - name: applicationId
+          in: query
+          schema:
+            type: string
+        - name: candidateId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Interviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InterviewSession"
+
+  /interviews/plans:
+    post:
+      operationId: createInterviewPlan
+      tags: [interviews]
+      summary: Create interview plan from JD + ICP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInterviewPlanRequest"
+      responses:
+        "201":
+          description: Interview plan created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewPlan"
+
+  /interviews/start:
+    post:
+      operationId: startInterview
+      tags: [interviews]
+      summary: Start an interview session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartInterviewRequest"
+      responses:
+        "201":
+          description: Interview started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSession"
+
+  /interviews/{interviewId}:
+    get:
+      operationId: getInterview
+      tags: [interviews]
+      summary: Get interview
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Interview session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSession"
+
+  /interviews/{interviewId}/answer:
+    post:
+      operationId: submitInterviewAnswer
+      tags: [interviews]
+      summary: Submit an answer
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerRequest"
+      responses:
+        "200":
+          description: Next question or completion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+
+  /interviews/{interviewId}/end:
+    post:
+      operationId: endInterview
+      tags: [interviews]
+      summary: End interview
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Interview ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSummary"
+
+  /interviews/{interviewId}/summary:
+    get:
+      operationId: getInterviewSummary
+      tags: [interviews]
+      summary: Get interview summary
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSummary"
+
+  # CANDIDATE PREP
+  /prep/generate:
+    post:
+      operationId: generatePrepPlan
+      tags: [prep]
+      summary: Generate prep plan for candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratePrepRequest"
+      responses:
+        "200":
+          description: Prep plan generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepPlan"
+
+  /prep/sessions:
+    get:
+      operationId: listPrepSessions
+      tags: [prep]
+      summary: List prep sessions
+      parameters:
+        - name: candidateId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prep sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PrepSession"
+    post:
+      operationId: startPrepSession
+      tags: [prep]
+      summary: Start prep session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartPrepSessionRequest"
+      responses:
+        "201":
+          description: Prep session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepSession"
+
+  /prep/sessions/{sessionId}/answer:
+    post:
+      operationId: submitPrepAnswer
+      tags: [prep]
+      summary: Submit prep answer
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnswerRequest"
+      responses:
+        "200":
+          description: Feedback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrepFeedback"
+
+  # COORDINATOR
+  /coordinator/schedules:
+    get:
+      operationId: listSchedules
+      tags: [coordinator]
+      summary: List interview schedules
+      parameters:
+        - name: applicationId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Schedules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InterviewSchedule"
+    post:
+      operationId: createSchedule
+      tags: [coordinator]
+      summary: Create schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduleRequest"
+      responses:
+        "201":
+          description: Schedule created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSchedule"
+
+  /coordinator/schedules/{scheduleId}:
+    put:
+      operationId: updateSchedule
+      tags: [coordinator]
+      summary: Update/reschedule
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateScheduleRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewSchedule"
+
+  # VERIFY
+  /verify/{candidateId}:
+    get:
+      operationId: getVerificationStatus
+      tags: [verify]
+      summary: Get verification status
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationStatus"
+    post:
+      operationId: runVerification
+      tags: [verify]
+      summary: Run verification checks
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationStatus"
+
+  # TALENT MATCH
+  /talent-match:
+    post:
+      operationId: matchCandidateToIcp
+      tags: [talent-match]
+      summary: Match candidate to ICP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TalentMatchRequest"
+      responses:
+        "200":
+          description: Match result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TalentMatch"
+
+  /talent-match/rediscover:
+    post:
+      operationId: rediscoverCandidates
+      tags: [talent-match]
+      summary: Rediscover ATS candidates for a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RediscoverRequest"
+      responses:
+        "200":
+          description: Rediscovered candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TalentMatch"
+
+  # RESUME SCREENS
+  /resume-screens:
+    post:
+      operationId: screenResume
+      tags: [resume-screen]
+      summary: Screen a resume against ICP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScreenResumeRequest"
+      responses:
+        "200":
+          description: Screening result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeScreen"
+
+  /resume-screens/{candidateId}:
+    get:
+      operationId: getResumeScreen
+      tags: [resume-screen]
+      summary: Get resume screen for candidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resume screen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeScreen"
+
+  # SOURCING
+  /sourcing/candidates:
+    get:
+      operationId: listSourcedCandidates
+      tags: [sourcing]
+      summary: List sourced candidates
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+        - name: source
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sourced candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SourcedCandidate"
+
+  /sourcing/ingest:
+    post:
+      operationId: ingestProfile
+      tags: [sourcing]
+      summary: Ingest a public profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestProfileRequest"
+      responses:
+        "200":
+          description: Ingested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourcedCandidate"
+
+  /sourcing/merge:
+    post:
+      operationId: mergeIdentities
+      tags: [sourcing]
+      summary: Merge candidate identities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MergeIdentitiesRequest"
+      responses:
+        "200":
+          description: Merged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # OUTREACH
+  /outreach/campaigns:
+    get:
+      operationId: listOutreachCampaigns
+      tags: [outreach]
+      summary: List outreach campaigns
+      responses:
+        "200":
+          description: Campaigns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutreachCampaign"
+    post:
+      operationId: createOutreachCampaign
+      tags: [outreach]
+      summary: Create outreach campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCampaignRequest"
+      responses:
+        "201":
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachCampaign"
+
+  /outreach/campaigns/{campaignId}:
+    get:
+      operationId: getOutreachCampaign
+      tags: [outreach]
+      summary: Get campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachCampaign"
+
+  /outreach/campaigns/{campaignId}/enroll:
+    post:
+      operationId: enrollCandidates
+      tags: [outreach]
+      summary: Enroll candidates in campaign
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnrollCandidatesRequest"
+      responses:
+        "200":
+          description: Enrolled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /outreach/campaigns/{campaignId}/autopilot:
+    post:
+      operationId: toggleAutopilot
+      tags: [outreach]
+      summary: Start/pause/stop autopilot
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutopilotToggleRequest"
+      responses:
+        "200":
+          description: Autopilot updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachCampaign"
+
+  /outreach/inbox:
+    get:
+      operationId: getRecruiterInbox
+      tags: [outreach]
+      summary: Get recruiter inbox items
+      responses:
+        "200":
+          description: Inbox items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecruiterInboxItem"
+
+  /outreach/inbox/{id}/reply:
+    post:
+      operationId: replyToInboxItem
+      tags: [outreach]
+      summary: Send an email reply to a candidate from a recruiter inbox item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                subject:
+                  type: string
+                  description: 'Optional subject override; defaults to "Re: <inbox subject>"'
+                body:
+                  type: string
+                  description: Plain-text body of the reply email
+      responses:
+        "200":
+          description: Reply sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  simulated: { type: boolean }
+                  messageId: { type: string, nullable: true }
+        "400":
+          description: Invalid body or missing candidate email
+        "404":
+          description: Inbox item not found
+
+  # COMMUNICATION
+  /communication/events:
+    get:
+      operationId: listCommunicationEvents
+      tags: [communication]
+      summary: List communication events
+      parameters:
+        - name: candidateId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunicationEvent"
+    post:
+      operationId: sendCommunication
+      tags: [communication]
+      summary: Send a communication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendCommunicationRequest"
+      responses:
+        "200":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunicationEvent"
+
+  /communication/ghosting-risks:
+    get:
+      operationId: listGhostingRisks
+      tags: [communication]
+      summary: List candidates at ghosting risk
+      responses:
+        "200":
+          description: Ghosting risks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GhostingRisk"
+
+  # CANDIDATE PORTAL
+  /portal/dashboard:
+    get:
+      operationId: getCandidateDashboard
+      tags: [candidates]
+      summary: Get candidate portal dashboard
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateDashboard"
+
+  /portal/notifications:
+    get:
+      operationId: listCandidateNotifications
+      tags: [candidates]
+      summary: Get candidate notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CandidateNotification"
+
+  # ANALYTICS
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      tags: [analytics]
+      summary: Get analytics overview
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsOverview"
+
+  /analytics/funnel:
+    get:
+      operationId: getHiringFunnel
+      tags: [analytics]
+      summary: Get hiring funnel data
+      parameters:
+        - name: jobId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Funnel data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HiringFunnel"
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestUploadUrlBody'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestUploadUrlResponse'
+        '400':
+          description: Missing or invalid required fields.
+        '500':
+          description: Failed to generate upload URL.
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an object entity from PRIVATE_OBJECT_DIR
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object content streamed.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Object not found.
+        '500':
+          description: Failed to serve object.
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: string
+          nullable: true
+        primaryColor:
+          type: string
+          nullable: true
+        plan:
+          type: string
+          enum: [starter, growth, enterprise]
+        status:
+          type: string
+          enum: [active, suspended, trial]
+        jobCount:
+          type: integer
+        candidateCount:
+          type: integer
+        userCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - slug
+        - plan
+        - status
+        - jobCount
+        - candidateCount
+        - userCount
+        - createdAt
+
+    CreateTenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        plan:
+          type: string
+          enum: [starter, growth, enterprise]
+      required:
+        - name
+        - slug
+        - plan
+
+    UpdateTenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: string
+        primaryColor:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [platform_admin, tenant_admin, recruiter_admin, recruiter, hiring_manager, interviewer, candidate]
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - email
+        - name
+        - role
+        - createdAt
+
+    CreateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - name
+        - role
+        - password
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        title:
+          type: string
+        department:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        workType:
+          type: string
+          enum: [remote, hybrid, onsite]
+          nullable: true
+        employmentType:
+          type: string
+          enum: [full_time, part_time, contract, internship]
+          nullable: true
+        salaryMin:
+          type: integer
+          nullable: true
+        salaryMax:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, paused, closed, pending_approval, rejected, published]
+        applicationCount:
+          type: integer
+        workOrderNumber:
+          type: string
+          nullable: true
+        clientWorkOrderNumber:
+          type: string
+          nullable: true
+        isConfidential:
+          type: boolean
+        createdById:
+          type: string
+          nullable: true
+        createdByRole:
+          type: string
+          nullable: true
+        assignedRecruiterId:
+          type: string
+          nullable: true
+        assignedRecruiterName:
+          type: string
+          nullable: true
+        assignedHiringManagerId:
+          type: string
+          nullable: true
+        assignedHiringManagerName:
+          type: string
+          nullable: true
+        approvedById:
+          type: string
+          nullable: true
+        rejectionNote:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - title
+        - description
+        - status
+        - applicationCount
+        - createdAt
+        - updatedAt
+
+    JobsListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - jobs
+        - total
+        - page
+        - limit
+
+    CreateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        department:
+          type: string
+        location:
+          type: string
+        workType:
+          type: string
+        employmentType:
+          type: string
+        salaryMin:
+          type: integer
+        salaryMax:
+          type: integer
+        description:
+          type: string
+      required:
+        - title
+        - description
+
+    UpdateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        department:
+          type: string
+        location:
+          type: string
+        workType:
+          type: string
+        employmentType:
+          type: string
+        salaryMin:
+          type: integer
+        salaryMax:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+
+    IdeaCandiateProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        jobId:
+          type: string
+        version:
+          type: integer
+        jobTitle:
+          type: string
+        roleFamily:
+          type: string
+          nullable: true
+        seniority:
+          type: string
+          nullable: true
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        preferredSkills:
+          type: array
+          items:
+            type: string
+        yearsExperienceMin:
+          type: integer
+          nullable: true
+        yearsExperienceMax:
+          type: integer
+          nullable: true
+        industryBackground:
+          type: array
+          items:
+            type: string
+        educationRequirements:
+          type: string
+          nullable: true
+        mustHaves:
+          type: array
+          items:
+            type: string
+        niceToHaves:
+          type: array
+          items:
+            type: string
+        disqualifiers:
+          type: array
+          items:
+            type: string
+        expandedSkillGraph:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        weightedAttributes:
+          type: object
+          additionalProperties:
+            type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - jobId
+        - version
+        - jobTitle
+        - requiredSkills
+        - preferredSkills
+        - industryBackground
+        - mustHaves
+        - niceToHaves
+        - disqualifiers
+        - expandedSkillGraph
+        - weightedAttributes
+        - createdAt
+
+    GenerateIcpRequest:
+      type: object
+      properties:
+        recruiterNotes:
+          type: string
+        hiringManagerNotes:
+          type: string
+        strongHireExamples:
+          type: string
+      required: []
+
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: string
+        hasPortalAccess:
+          type: boolean
+        tenantId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        currentTitle:
+          type: string
+          nullable: true
+        currentCompany:
+          type: string
+          nullable: true
+        linkedinUrl:
+          type: string
+          nullable: true
+        githubUrl:
+          type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          nullable: true
+        verificationStatus:
+          type: string
+          enum: [unverified, pending, verified, flagged]
+        resumeUrl:
+          type: string
+          nullable: true
+        talentMatchScore:
+          type: number
+          nullable: true
+        resumeScreenScore:
+          type: number
+          nullable: true
+        applicationCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - firstName
+        - lastName
+        - email
+        - skills
+        - verificationStatus
+        - applicationCount
+        - createdAt
+        - updatedAt
+
+    CandidatesListResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candidate"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - candidates
+        - total
+        - page
+        - limit
+
+    CreateCandidateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        location:
+          type: string
+        currentTitle:
+          type: string
+        currentCompany:
+          type: string
+        linkedinUrl:
+          type: string
+        githubUrl:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+      required:
+        - firstName
+        - lastName
+        - email
+
+    UpdateCandidateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        location:
+          type: string
+        currentTitle:
+          type: string
+        currentCompany:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        jobId:
+          type: string
+        candidateId:
+          type: string
+        stage:
+          type: string
+          enum: [sourced, applied, screening, interview, offer, hired, rejected, withdrawn]
+        matchScore:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        job:
+          $ref: "#/components/schemas/Job"
+          nullable: true
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - jobId
+        - candidateId
+        - stage
+        - createdAt
+        - updatedAt
+
+    CreateApplicationRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        candidateId:
+          type: string
+        stage:
+          type: string
+        notes:
+          type: string
+      required:
+        - jobId
+        - candidateId
+
+    UpdateApplicationRequest:
+      type: object
+      properties:
+        stage:
+          type: string
+        notes:
+          type: string
+
+    InterviewPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        jobId:
+          type: string
+        title:
+          type: string
+        interviewType:
+          type: string
+          enum: [technical, behavioral, cultural, competency, general]
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterviewQuestion"
+        estimatedDurationMinutes:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - jobId
+        - title
+        - interviewType
+        - questions
+        - estimatedDurationMinutes
+        - createdAt
+
+    InterviewQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        category:
+          type: string
+        followUpPrompts:
+          type: array
+          items:
+            type: string
+        order:
+          type: integer
+      required:
+        - id
+        - text
+        - category
+        - followUpPrompts
+        - order
+
+    InterviewSession:
+      type: object
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        planId:
+          type: string
+        candidateId:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, in_progress, completed, abandoned]
+        currentQuestionIndex:
+          type: integer
+        totalQuestions:
+          type: integer
+        score:
+          type: number
+          nullable: true
+        startedAt:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          nullable: true
+        recordingUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - applicationId
+        - planId
+        - candidateId
+        - status
+        - currentQuestionIndex
+        - totalQuestions
+        - createdAt
+
+    CreateInterviewPlanRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        interviewType:
+          type: string
+        questionCount:
+          type: integer
+      required:
+        - jobId
+
+    StartInterviewRequest:
+      type: object
+      properties:
+        applicationId:
+          type: string
+        planId:
+          type: string
+      required:
+        - applicationId
+        - planId
+
+    SubmitAnswerRequest:
+      type: object
+      properties:
+        questionId:
+          type: string
+        answerText:
+          type: string
+      required:
+        - questionId
+        - answerText
+
+    AnswerResponse:
+      type: object
+      properties:
+        nextQuestion:
+          $ref: "#/components/schemas/InterviewQuestion"
+          nullable: true
+        isComplete:
+          type: boolean
+        followUpQuestion:
+          type: string
+          nullable: true
+      required:
+        - isComplete
+
+    InterviewSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        interviewSessionId:
+          type: string
+        overallScore:
+          type: number
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        redFlags:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
+          enum: [strong_yes, yes, maybe, no, strong_no]
+        recruiterSummary:
+          type: string
+        transcript:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptEntry"
+        createdAt:
+          type: string
+      required:
+        - id
+        - interviewSessionId
+        - overallScore
+        - strengths
+        - weaknesses
+        - redFlags
+        - recommendation
+        - recruiterSummary
+        - transcript
+        - createdAt
+
+    TranscriptEntry:
+      type: object
+      properties:
+        questionId:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+        score:
+          type: number
+          nullable: true
+      required:
+        - questionId
+        - question
+        - answer
+
+    GeneratePrepRequest:
+      type: object
+      required: [candidateId, jobId]
+      properties:
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        mode:
+          type: string
+    PrepPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        mode:
+          type: string
+          enum: [quick, full, mock_interview, behavioral, technical, competency]
+        likelyQuestions:
+          type: array
+          items:
+            type: string
+        keySkillsToFocus:
+          type: array
+          items:
+            type: string
+        preparationTips:
+          type: array
+          items:
+            type: string
+        estimatedPrepTimeMinutes:
+          type: integer
+        readinessScore:
+          type: number
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - candidateId
+        - jobId
+        - mode
+        - likelyQuestions
+        - keySkillsToFocus
+        - preparationTips
+        - estimatedPrepTimeMinutes
+        - createdAt
+
+    PrepSession:
+      type: object
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        mode:
+          type: string
+        status:
+          type: string
+          enum: [active, completed]
+        questionsAnswered:
+          type: integer
+        totalQuestions:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - candidateId
+        - jobId
+        - mode
+        - status
+        - questionsAnswered
+        - totalQuestions
+        - createdAt
+
+    StartPrepSessionRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        mode:
+          type: string
+          enum: [quick, full, mock_interview, behavioral, technical, competency]
+      required:
+        - jobId
+        - mode
+
+    PrepFeedback:
+      type: object
+      properties:
+        score:
+          type: number
+        feedback:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        sampleAnswer:
+          type: string
+          nullable: true
+        nextQuestion:
+          type: string
+          nullable: true
+        isComplete:
+          type: boolean
+      required:
+        - score
+        - feedback
+        - strengths
+        - improvements
+        - isComplete
+
+    InterviewSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        interviewerId:
+          type: string
+          nullable: true
+        scheduledAt:
+          type: string
+        durationMinutes:
+          type: integer
+        type:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, rescheduled, cancelled, completed]
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - applicationId
+        - scheduledAt
+        - durationMinutes
+        - type
+        - status
+        - createdAt
+
+    CreateScheduleRequest:
+      type: object
+      properties:
+        applicationId:
+          type: string
+        interviewerId:
+          type: string
+        scheduledAt:
+          type: string
+        durationMinutes:
+          type: integer
+        type:
+          type: string
+        notes:
+          type: string
+      required:
+        - applicationId
+        - scheduledAt
+        - durationMinutes
+        - type
+
+    UpdateScheduleRequest:
+      type: object
+      properties:
+        scheduledAt:
+          type: string
+        status:
+          type: string
+        notes:
+          type: string
+
+    VerificationStatus:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        status:
+          type: string
+          enum: [unverified, pending, verified, flagged]
+        riskScore:
+          type: number
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerificationFlag"
+        identityVerified:
+          type: boolean
+        duplicateDetected:
+          type: boolean
+        resumeConsistencyScore:
+          type: number
+          nullable: true
+        reviewedAt:
+          type: string
+          nullable: true
+        reviewNotes:
+          type: string
+          nullable: true
+      required:
+        - candidateId
+        - status
+        - riskScore
+        - flags
+        - identityVerified
+        - duplicateDetected
+
+    VerificationFlag:
+      type: object
+      properties:
+        type:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        detectedAt:
+          type: string
+      required:
+        - type
+        - severity
+        - description
+        - detectedAt
+
+    TalentMatch:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        fitScore:
+          type: number
+        matchExplanation:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        gaps:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - candidateId
+        - jobId
+        - fitScore
+        - matchExplanation
+        - strengths
+        - gaps
+        - recommendation
+        - createdAt
+
+    TalentMatchRequest:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        jobId:
+          type: string
+      required:
+        - candidateId
+        - jobId
+
+    RediscoverRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        limit:
+          type: integer
+      required:
+        - jobId
+
+    ResumeScreen:
+      type: object
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        jobId:
+          type: string
+          nullable: true
+        screeningScore:
+          type: number
+        extractedSkills:
+          type: array
+          items:
+            type: string
+        missingSkills:
+          type: array
+          items:
+            type: string
+        adjacentSkills:
+          type: array
+          items:
+            type: string
+        workHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkHistoryEntry"
+        education:
+          type: array
+          items:
+            type: string
+        recruiterSummary:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - candidateId
+        - screeningScore
+        - extractedSkills
+        - missingSkills
+        - adjacentSkills
+        - workHistory
+        - education
+        - recruiterSummary
+        - createdAt
+
+    WorkHistoryEntry:
+      type: object
+      properties:
+        company:
+          type: string
+        title:
+          type: string
+        startDate:
+          type: string
+          nullable: true
+        endDate:
+          type: string
+          nullable: true
+        current:
+          type: boolean
+      required:
+        - company
+        - title
+        - current
+
+    ScreenResumeRequest:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        jobId:
+          type: string
+        resumeText:
+          type: string
+      required:
+        - candidateId
+        - resumeText
+
+    SourcedCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        source:
+          type: string
+          enum: [pdl, serp, github, linkedin, internal, manual, referral]
+        rawData:
+          type: object
+          additionalProperties: true
+        normalizedProfile:
+          $ref: "#/components/schemas/Candidate"
+          nullable: true
+        mergeConfidence:
+          type: number
+          nullable: true
+        mergedWithCandidateId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - source
+        - rawData
+        - createdAt
+
+    IngestProfileRequest:
+      type: object
+      properties:
+        source:
+          type: string
+        profileUrl:
+          type: string
+        rawData:
+          type: object
+          additionalProperties: true
+      required:
+        - source
+        - rawData
+
+    MergeIdentitiesRequest:
+      type: object
+      properties:
+        primaryCandidateId:
+          type: string
+        duplicateCandidateIds:
+          type: array
+          items:
+            type: string
+      required:
+        - primaryCandidateId
+        - duplicateCandidateIds
+
+    OutreachCampaign:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        jobId:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, paused, completed, stopped]
+        autopilotEnabled:
+          type: boolean
+        targetPositiveReplies:
+          type: integer
+          nullable: true
+        enrollmentThresholdScore:
+          type: number
+          nullable: true
+        enrolledCount:
+          type: integer
+        repliedCount:
+          type: integer
+        positiveRepliesCount:
+          type: integer
+        sentCount:
+          type: integer
+        openRate:
+          type: number
+        replyRate:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - jobId
+        - name
+        - status
+        - autopilotEnabled
+        - enrolledCount
+        - repliedCount
+        - positiveRepliesCount
+        - sentCount
+        - openRate
+        - replyRate
+        - createdAt
+
+    CreateCampaignRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        name:
+          type: string
+        targetPositiveReplies:
+          type: integer
+        enrollmentThresholdScore:
+          type: number
+      required:
+        - jobId
+        - name
+
+    EnrollCandidatesRequest:
+      type: object
+      properties:
+        candidateIds:
+          type: array
+          items:
+            type: string
+      required:
+        - candidateIds
+
+    AutopilotToggleRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, pause, resume, stop]
+      required:
+        - action
+
+    RecruiterInboxItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [positive_reply, question, negative_reply, unsubscribe, needs_followup]
+        candidateId:
+          type: string
+        campaignId:
+          type: string
+        subject:
+          type: string
+        preview:
+          type: string
+        isRead:
+          type: boolean
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        receivedAt:
+          type: string
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+          nullable: true
+      required:
+        - id
+        - type
+        - candidateId
+        - campaignId
+        - subject
+        - preview
+        - isRead
+        - priority
+        - receivedAt
+
+    CommunicationEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        applicationId:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [interview_reminder, scheduling_nudge, follow_up, next_steps, re_engagement, status_update]
+        channel:
+          type: string
+          enum: [email, sms, whatsapp]
+        status:
+          type: string
+          enum: [pending, sent, delivered, opened, failed]
+        subject:
+          type: string
+          nullable: true
+        body:
+          type: string
+        sentAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - candidateId
+        - type
+        - channel
+        - status
+        - body
+        - createdAt
+
+    SendCommunicationRequest:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        applicationId:
+          type: string
+        type:
+          type: string
+        channel:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+      required:
+        - candidateId
+        - type
+        - channel
+        - body
+
+    GhostingRisk:
+      type: object
+      properties:
+        candidateId:
+          type: string
+        applicationId:
+          type: string
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        daysSinceLastContact:
+          type: integer
+        lastContactType:
+          type: string
+          nullable: true
+        nextRequiredAction:
+          type: string
+          nullable: true
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+          nullable: true
+      required:
+        - candidateId
+        - applicationId
+        - riskLevel
+        - daysSinceLastContact
+
+    CandidateDashboard:
+      type: object
+      properties:
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        upcomingInterviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterviewSchedule"
+        completedInterviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterviewSession"
+        activeApplications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        pendingActions:
+          type: array
+          items:
+            type: string
+        prepRecommendations:
+          type: array
+          items:
+            type: string
+        unreadNotificationCount:
+          type: integer
+      required:
+        - candidate
+        - upcomingInterviews
+        - completedInterviews
+        - activeApplications
+        - pendingActions
+        - prepRecommendations
+        - unreadNotificationCount
+
+    CandidateNotification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        actionUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - title
+        - message
+        - isRead
+        - createdAt
+
+    AnalyticsOverview:
+      type: object
+      properties:
+        totalJobs:
+          type: integer
+        activeJobs:
+          type: integer
+        totalCandidates:
+          type: integer
+        totalApplications:
+          type: integer
+        interviewsCompleted:
+          type: integer
+        offersExtended:
+          type: integer
+        hires:
+          type: integer
+        avgTimeToHireDays:
+          type: number
+          nullable: true
+        avgInterviewScore:
+          type: number
+          nullable: true
+        ghostingRatePercent:
+          type: number
+          nullable: true
+        outreachReplyRate:
+          type: number
+          nullable: true
+        topSources:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceStat"
+      required:
+        - totalJobs
+        - activeJobs
+        - totalCandidates
+        - totalApplications
+        - interviewsCompleted
+        - offersExtended
+        - hires
+        - topSources
+
+    SourceStat:
+      type: object
+      properties:
+        source:
+          type: string
+        count:
+          type: integer
+        conversionRate:
+          type: number
+      required:
+        - source
+        - count
+        - conversionRate
+
+    HiringFunnel:
+      type: object
+      properties:
+        jobId:
+          type: string
+          nullable: true
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunnelStage"
+      required:
+        - stages
+
+    FunnelStage:
+      type: object
+      properties:
+        stage:
+          type: string
+        count:
+          type: integer
+        conversionRate:
+          type: number
+          nullable: true
+      required:
+        - stage
+        - count
+
+    RequestUploadUrlBody:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    RequestUploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/RequestUploadUrlBody'

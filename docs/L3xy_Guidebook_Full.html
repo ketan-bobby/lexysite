@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<title>L3xy — Technical Guidebook (NDA)</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    color: #0f172a; line-height: 1.6; font-size: 11pt;
+    margin: 0; padding: 0; background: white;
+  }
+  .page { padding: 18mm 16mm; }
+  h1 { color: #0e7490; font-size: 24pt; border-bottom: 3px solid #06b6d4; padding-bottom: 8px; margin-top: 28px; }
+  h2 { color: #0891b2; font-size: 16pt; margin-top: 30px; border-left: 4px solid #06b6d4; padding-left: 12px; page-break-after: avoid; }
+  h3 { color: #0f172a; font-size: 12.5pt; margin-top: 22px; page-break-after: avoid; }
+  h4 { color: #475569; font-size: 11pt; margin-top: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 10.5pt; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.5pt; page-break-inside: avoid; }
+  th { background: #ecfeff; color: #0e7490; text-align: left; padding: 8px 10px; border-bottom: 2px solid #06b6d4; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  blockquote { background: #f0fdfa; border-left: 4px solid #14b8a6; padding: 12px 16px; color: #134e4a; margin: 16px 0; border-radius: 4px; font-style: italic; }
+  blockquote p { font-size: 11pt; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 9.5pt; color: #0f766e; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 12px 16px; border-radius: 6px; font-size: 9.5pt; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 28px 0; }
+  .figure { width: 100%; height: auto; margin: 18px 0; border-radius: 12px; page-break-inside: avoid; display: block; }
+  .figure-caption { text-align: center; font-size: 9pt; color: #64748b; margin-top: -8px; margin-bottom: 18px; font-style: italic; }
+  .cover { text-align: center; padding: 80px 0 40px; page-break-after: always; }
+  .cover h1 { border: none; font-size: 56pt; color: #06b6d4; margin: 0; letter-spacing: -2px; font-weight: 800; }
+  .cover .subtitle { font-size: 14pt; color: #475569; margin-top: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .cover .tag { display:inline-block; margin-top: 30px; background: #06b6d4; color:white; padding: 8px 20px; border-radius: 999px; font-size: 11pt; font-weight: 600; letter-spacing: 1px; }
+  .cover .tag.dark { background: #0f172a; color: #06b6d4; border: 1px solid #06b6d4; }
+  .cover-svg { max-width: 720px; margin: 50px auto 0; display: block; }
+  .nda { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px 20px; border-radius: 8px; margin: 30px 0; font-size: 10pt; line-height: 1.5; }
+  .nda strong { display: block; margin-bottom: 6px; font-size: 11pt; }
+</style>
+</head><body><div class="page"><div class="cover">
+<h1>L3xy</h1>
+<div class="subtitle">Technical Guidebook · Internal & NDA Partners</div>
+<div class="tag">Confidential · 2026 Edition</div>
+
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" class="cover-svg">
+  <defs>
+    <linearGradient id="cg" x1="0" x2="1">
+      <stop offset="0" stop-color="#06b6d4"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="200" fill="#020617" rx="16"/>
+  
+      <circle cx="60" cy="100" r="22" fill="#8b5cf6" fill-opacity="0.2" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="60" y="105" text-anchor="middle" fill="#8b5cf6" font-size="13" font-weight="700" font-family="Inter,sans-serif">1</text>
+      <line x1="82" y1="100" x2="118" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="140" cy="100" r="22" fill="#3b82f6" fill-opacity="0.2" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="140" y="105" text-anchor="middle" fill="#3b82f6" font-size="13" font-weight="700" font-family="Inter,sans-serif">2</text>
+      <line x1="162" y1="100" x2="198" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="220" cy="100" r="22" fill="#06b6d4" fill-opacity="0.2" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="220" y="105" text-anchor="middle" fill="#06b6d4" font-size="13" font-weight="700" font-family="Inter,sans-serif">3</text>
+      <line x1="242" y1="100" x2="278" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="300" cy="100" r="22" fill="#22c55e" fill-opacity="0.2" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="300" y="105" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="700" font-family="Inter,sans-serif">4</text>
+      <line x1="322" y1="100" x2="358" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="380" cy="100" r="22" fill="#f97316" fill-opacity="0.2" stroke="#f97316" stroke-width="1.5"/>
+      <text x="380" y="105" text-anchor="middle" fill="#f97316" font-size="13" font-weight="700" font-family="Inter,sans-serif">5</text>
+      <line x1="402" y1="100" x2="438" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="460" cy="100" r="22" fill="#6366f1" fill-opacity="0.2" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="460" y="105" text-anchor="middle" fill="#6366f1" font-size="13" font-weight="700" font-family="Inter,sans-serif">6</text>
+      <line x1="482" y1="100" x2="518" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="540" cy="100" r="22" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-width="1.5"/>
+      <text x="540" y="105" text-anchor="middle" fill="#10b981" font-size="13" font-weight="700" font-family="Inter,sans-serif">7</text>
+      <line x1="562" y1="100" x2="598" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="620" cy="100" r="22" fill="#f43f5e" fill-opacity="0.2" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="620" y="105" text-anchor="middle" fill="#f43f5e" font-size="13" font-weight="700" font-family="Inter,sans-serif">8</text>
+      <line x1="642" y1="100" x2="678" y2="100" stroke="url(#cg)" stroke-width="2" opacity="0.5"/>
+    
+      <circle cx="700" cy="100" r="22" fill="#eab308" fill-opacity="0.2" stroke="#eab308" stroke-width="1.5"/>
+      <text x="700" y="105" text-anchor="middle" fill="#eab308" font-size="13" font-weight="700" font-family="Inter,sans-serif">9</text>
+      
+    
+  <text x="400" y="170" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif" letter-spacing="3">NINE AGENTS · ONE PIPELINE · ZERO BUSYWORK</text>
+</svg>
+
+</div>
+<div class="nda">
+<p><strong>CONFIDENTIAL — DISTRIBUTION RESTRICTED.</strong> This document contains the proprietary architecture, scoring models, and agent designs of the L3xy platform. Access is limited to L3xy employees, contractors, and partners who have executed a Mutual Non-Disclosure Agreement. Do not forward, copy, or share without written approval from L3xy Inc.</p>
+</div>
+<hr>
+<h2>1. Executive summary</h2>
+<p>L3xy is a multi-tenant, autonomous AI hiring platform built around a <strong>living candidate graph</strong>. It coordinates a team of nine specialized AI agents through a Bayesian intelligence engine that scores, ranks, and recommends actions for every candidate in real time — and re-scores every candidate against every open role continuously, not just at sourcing time.</p>
+<p>The product replaces the manual recruiter workflow (sourcing → screening → outreach → scheduling → interviewing) with a single self-running pipeline that the recruiter steers rather than executes. Every signal the agents produce flows into a composite scoring model that outputs a hire probability, a “next best action,” and a full decision audit trail.</p>
+<p>The architectural distinction that matters most: <strong>L3xy is not an ATS-on-AI</strong>. ATS systems are write-once databases of historical candidate state. L3xy is a real-time graph where candidate signals decay, refresh, cross-pollinate across roles, and continuously re-rank without recruiter intervention. The talent pool is a <em>compounding asset</em> — every interaction makes the next decision sharper.</p>
+<p>This guidebook documents the architecture, the math, the data sources, the agent designs, and the closed-loop learning system that the public overview deck only references.</p>
+<h3>1.1 The Living Talent Graph (architectural contract)</h3>
+
+<svg viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="core" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0e7490" stop-opacity="0.4"/>
+    </radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="900" height="380" fill="#020617" rx="12"/>
+  <text x="450" y="32" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">The Candidate is the Center</text>
+  <text x="450" y="52" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">A single living profile, continuously enriched by every agent and every interaction</text>
+
+  <!-- Core candidate node -->
+  <circle cx="450" cy="200" r="55" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="450" cy="200" r="48" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4" stroke-width="2"/>
+  <text x="450" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">CANDIDATE</text>
+  <text x="450" y="212" text-anchor="middle" fill="#cffafe" font-size="9" font-family="Inter,sans-serif">live profile</text>
+
+  <!-- Orbiting nodes -->
+  
+    <line x1="200" y1="120" x2="450" y2="200" stroke="#3b82f6" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="200" cy="120" r="6" fill="#3b82f6" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="200" y="108" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="600" font-family="Inter,sans-serif">Sourcing signals</text>
+  
+    <line x1="260" y1="280" x2="450" y2="200" stroke="#06b6d4" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="260" cy="280" r="6" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4" stroke-width="1.5"/>
+    <text x="260" y="268" text-anchor="middle" fill="#06b6d4" font-size="10" font-weight="600" font-family="Inter,sans-serif">Screening history</text>
+  
+    <line x1="160" y1="220" x2="450" y2="200" stroke="#8b5cf6" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="160" cy="220" r="6" fill="#8b5cf6" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="160" y="208" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="600" font-family="Inter,sans-serif">ICP fit (per role)</text>
+  
+    <line x1="730" y1="120" x2="450" y2="200" stroke="#22c55e" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="730" cy="120" r="6" fill="#22c55e" fill-opacity="0.3" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="730" y="108" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="600" font-family="Inter,sans-serif">Verify trust</text>
+  
+    <line x1="760" y1="230" x2="450" y2="200" stroke="#f97316" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="760" cy="230" r="6" fill="#f97316" fill-opacity="0.3" stroke="#f97316" stroke-width="1.5"/>
+    <text x="760" y="218" text-anchor="middle" fill="#f97316" font-size="10" font-weight="600" font-family="Inter,sans-serif">Outreach replies</text>
+  
+    <line x1="680" y1="310" x2="450" y2="200" stroke="#10b981" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="680" cy="310" r="6" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.5"/>
+    <text x="680" y="298" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600" font-family="Inter,sans-serif">Interview scores</text>
+  
+    <line x1="380" y1="75" x2="450" y2="200" stroke="#ec4899" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="380" cy="75" r="6" fill="#ec4899" fill-opacity="0.3" stroke="#ec4899" stroke-width="1.5"/>
+    <text x="380" y="63" text-anchor="middle" fill="#ec4899" font-size="10" font-weight="600" font-family="Inter,sans-serif">Engagement timeline</text>
+  
+    <line x1="520" y1="75" x2="450" y2="200" stroke="#a855f7" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="520" cy="75" r="6" fill="#a855f7" fill-opacity="0.3" stroke="#a855f7" stroke-width="1.5"/>
+    <text x="520" y="63" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="600" font-family="Inter,sans-serif">Connection strength</text>
+  
+    <line x1="380" y1="330" x2="450" y2="200" stroke="#eab308" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="380" cy="330" r="6" fill="#eab308" fill-opacity="0.3" stroke="#eab308" stroke-width="1.5"/>
+    <text x="380" y="318" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600" font-family="Inter,sans-serif">Conversation history</text>
+  
+    <line x1="520" y1="330" x2="450" y2="200" stroke="#f43f5e" stroke-width="0.8" opacity="0.45"/>
+    <circle cx="520" cy="330" r="6" fill="#f43f5e" fill-opacity="0.3" stroke="#f43f5e" stroke-width="1.5"/>
+    <text x="520" y="318" text-anchor="middle" fill="#f43f5e" font-size="10" font-weight="600" font-family="Inter,sans-serif">Cross-role rankings</text>
+  
+
+  <text x="450" y="365" text-anchor="middle" fill="#475569" font-size="10" font-family="Inter,sans-serif">Signals append. They never overwrite. The graph grows. The candidate stays warm — for every role, forever.</text>
+</svg>
+<div class="figure-caption">The Living Talent Graph — every candidate is a node that grows richer over time</div>
+<p>Every candidate row in <code>candidates</code> is the root node of a graph that includes:</p>
+<ul>
+<li><strong>Signal vector</strong> (<code>signalsJson</code>): append-only log of every agent output, each tagged with <code>agentId</code>, <code>producedAt</code>, <code>confidence</code>, and decay class (§4.2).</li>
+<li><strong>Engagement timeline</strong> (<code>connection_events</code>): every reply, no-show, schedule change, voluntary action — feeds the Connection Strength engine (§5).</li>
+<li><strong>Role-fit cache</strong>: per-job ICP match scores, recomputed on (a) new agent signal arrival, (b) job ICP change, © policy update, or (d) decay-threshold crossing.</li>
+<li><strong>Conversation history</strong> across all channels, indexed by candidate, not by job.</li>
+</ul>
+<p>Three architectural rules enforce the “living” property:</p>
+<ol>
+<li><strong>No destructive writes.</strong> Agents append; they never overwrite. A re-screen six months later doesn’t erase the original screening — it adds a new signal with its own timestamp, and the engine decides which dominates based on freshness × confidence.</li>
+<li><strong>Decay is read-time, not write-time.</strong> Signals are stored at full strength; their effective weight is computed when the score is read. This means a tenant that adjusts decay constants doesn’t have to backfill — the next read is correct.</li>
+<li><strong>Cross-role re-evaluation is automatic.</strong> When a new job’s ICP is published, the role-fit cache invalidates and the next pipeline launch re-ranks every candidate in the tenant’s pool against the new ICP — without re-sourcing them externally. This is the operational definition of “warm pool.”</li>
+</ol>
+<hr>
+<h2>2. System architecture</h2>
+<h3>2.1 High-level topology</h3>
+<p>L3xy is a pnpm monorepo with the following deployable artifacts:</p>
+<table>
+<thead>
+<tr>
+<th>Artifact</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>artifacts/lexy</code></td>
+<td>Recruiter web app (React + Vite, cyan/dark <code>#06b6d4 / #050a0f</code> theme)</td>
+</tr>
+<tr>
+<td><code>artifacts/lexy-site</code></td>
+<td>Public marketing site</td>
+</tr>
+<tr>
+<td><code>artifacts/lexy-demo</code></td>
+<td>Sandboxed demo tenant for prospects</td>
+</tr>
+<tr>
+<td><code>artifacts/api-server</code></td>
+<td>Express API server, agent orchestrator, intelligence engine</td>
+</tr>
+<tr>
+<td><code>lib/db</code></td>
+<td>Drizzle ORM schema + Postgres migrations (shared)</td>
+</tr>
+</tbody>
+</table>
+<h3>2.2 Multi-tenant model</h3>
+<ul>
+<li>Every row in every business table carries <code>tenant_id</code>.</li>
+<li><code>resolveUser</code> middleware enforces tenant isolation on every request.</li>
+<li>Roles: <code>platform_admin</code>, <code>tenant_admin</code>, <code>recruiter</code>, <code>hiring_manager</code>.</li>
+<li>Tenant-level policy objects govern automation thresholds (see §6).</li>
+</ul>
+<h3>2.3 Data layer</h3>
+<p>Postgres with Drizzle ORM. Notable schema decisions:</p>
+<ul>
+<li><code>candidates.email</code> is <code>NOT NULL</code> with a partial unique index on <code>(tenant_id, lower(email)) WHERE email IS NOT NULL</code> to allow placeholder emails for resume-only candidates while still enforcing dedup on real ones.</li>
+<li><code>pipeline_runs</code> is the source of truth for agent execution; every stage transition is appended as a row in <code>pipeline_run_stages</code> with <code>status</code>, <code>startedAt</code>, <code>completedAt</code>, and <code>outputJson</code>.</li>
+<li>The intelligence engine reads agent outputs through <code>signalsJson</code> columns rather than re-running expensive AI calls.</li>
+</ul>
+<hr>
+<h2>3. Agent inventory and execution order</h2>
+<p>The orchestrator (<code>artifacts/api-server/src/lib/agents/orchestrator.ts</code>) coordinates nine production agents in canonical execution order.</p>
+
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#020617"/><stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#06b6d4"/>
+    </marker>
+  </defs>
+  <rect width="900" height="320" fill="url(#bg)" rx="12"/>
+
+  <!-- Top row -->
+  
+      <g transform="translate(40,60)">
+        <rect width="130" height="80" rx="14" fill="#8b5cf6" fill-opacity="0.15" stroke="#8b5cf6" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="700" font-family="Inter,sans-serif">1</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">ICP</text>
+      </g>
+    
+      <g transform="translate(210,60)">
+        <rect width="130" height="80" rx="14" fill="#3b82f6" fill-opacity="0.15" stroke="#3b82f6" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700" font-family="Inter,sans-serif">2</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Sourcing</text>
+      </g>
+    
+      <g transform="translate(380,60)">
+        <rect width="130" height="80" rx="14" fill="#06b6d4" fill-opacity="0.15" stroke="#06b6d4" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#06b6d4" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#06b6d4" font-size="11" font-weight="700" font-family="Inter,sans-serif">3</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Screening</text>
+      </g>
+    
+      <g transform="translate(550,60)">
+        <rect width="130" height="80" rx="14" fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700" font-family="Inter,sans-serif">4</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Verify</text>
+      </g>
+    
+      <g transform="translate(720,60)">
+        <rect width="130" height="80" rx="14" fill="#f97316" fill-opacity="0.15" stroke="#f97316" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#f97316" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#f97316" font-size="11" font-weight="700" font-family="Inter,sans-serif">5</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Outreach</text>
+      </g>
+    
+
+  <!-- Top arrows -->
+  <line x1="172" y1="100" x2="208" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="342" y1="100" x2="378" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="512" y1="100" x2="548" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="682" y1="100" x2="718" y2="100" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/>
+
+  <!-- Down connector from Outreach to Schedule -->
+  <path d="M 855 140 Q 875 140 875 175 L 875 195 Q 875 220 850 220" stroke="#06b6d4" stroke-width="1.5" fill="none" marker-end="url(#arr)" opacity="0.7"/>
+
+  <!-- Bottom row reversed: Schedule, Interview, Proctoring, Anti-Ghost (right to left) -->
+  
+      <g transform="translate(720,200)">
+        <rect width="130" height="80" rx="14" fill="#6366f1" fill-opacity="0.15" stroke="#6366f1" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#6366f1" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#6366f1" font-size="11" font-weight="700" font-family="Inter,sans-serif">6</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Schedule</text>
+      </g>
+    
+      <g transform="translate(550,200)">
+        <rect width="130" height="80" rx="14" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#10b981" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" font-family="Inter,sans-serif">7</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Interview</text>
+      </g>
+    
+      <g transform="translate(380,200)">
+        <rect width="130" height="80" rx="14" fill="#f43f5e" fill-opacity="0.15" stroke="#f43f5e" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#f43f5e" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="700" font-family="Inter,sans-serif">8</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Proctoring</text>
+      </g>
+    
+      <g transform="translate(210,200)">
+        <rect width="130" height="80" rx="14" fill="#eab308" fill-opacity="0.15" stroke="#eab308" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="11" fill="#1e293b" stroke="#eab308" stroke-width="1"/>
+        <text x="20" y="24" text-anchor="middle" fill="#eab308" font-size="11" font-weight="700" font-family="Inter,sans-serif">9</text>
+        <text x="65" y="50" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600" font-family="Inter,sans-serif">Anti-Ghost</text>
+      </g>
+    
+
+  <!-- Bottom arrows (right to left) -->
+  <line x1="718" y1="240" x2="682" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="548" y1="240" x2="512" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/><line x1="378" y1="240" x2="342" y2="240" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/>
+
+  <text x="450" y="305" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif">L3xy 9-Stage Autonomous Hiring Pipeline</text>
+</svg>
+<div class="figure-caption">Figure 1 — The L3xy 9-stage autonomous hiring pipeline</div>
+<h3>3.1 Canonical AGENT_ORDER</h3>
+<pre><code>icp(1) → sourcing(2) → screening(3) → verification(4) → outreach(5)
+       → scheduling(6) → interview(7) → proctoring(8) → anti-ghosting(9)
+</code></pre>
+<p><code>analytics</code> exists as a registered agent (order 99) but is intentionally not part of the runnable pipeline — it is a results dashboard surfaced under the Intelligence tab. Legacy configs that include it are stripped on load.</p>
+<h3>3.2 Dependency graph (UI enforcement)</h3>
+<p>The frontend <code>WorkflowCanvas</code> enforces this DAG when the recruiter toggles agents on/off; selecting any downstream agent automatically pulls in its prerequisites with a toast notification, and disabling an upstream agent cascades to its dependents.</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sourcing</td>
+<td>icp</td>
+</tr>
+<tr>
+<td>screening</td>
+<td>sourcing</td>
+</tr>
+<tr>
+<td>verification</td>
+<td>screening</td>
+</tr>
+<tr>
+<td>outreach</td>
+<td>screening</td>
+</tr>
+<tr>
+<td>scheduling</td>
+<td>outreach</td>
+</tr>
+<tr>
+<td>interview</td>
+<td>scheduling</td>
+</tr>
+<tr>
+<td>proctoring</td>
+<td>interview</td>
+</tr>
+<tr>
+<td>anti-ghosting</td>
+<td>outreach</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3 Per-agent design</h3>
+<h4>ICP Agent</h4>
+<p>Parses the job description into a structured <code>IdealCandidateProfile</code>: required skills, preferred skills, seniority band, industry domain, and weighted attributes. Output is canonical input for sourcing and screening. Uses an LLM with a strict JSON schema and a deterministic temperature.</p>
+<h4>Sourcing Agent</h4>
+<p>The Sourcing agent is <strong>pool-first, external-last</strong>. This is the operational expression of the Living Talent Graph: every external API call is the most expensive thing the platform can do, and most of the time it’s unnecessary because the right candidate is already inside L3xy.</p>
+<p>Sourcing executes a strict three-tier waterfall. Each tier must complete and fail to satisfy the target candidate count before the next tier is invoked.</p>
+<p><strong>Tier 1 — Tenant Talent Pool (zero cost, zero latency)</strong></p>
+<p>The first query goes to the tenant’s own <code>candidates</code> table, ranked against the new job’s ICP via the role-fit cache (§1.1). The Talent Match service (<code>talent-match.ts</code>) runs the new ICP vector against every candidate in the tenant — including those previously evaluated for other roles, those who responded “not now,” and those at any stage of any prior pipeline.</p>
+<p>For each tenant-pool match, the engine:</p>
+<ul>
+<li>Recomputes role-fit using the <em>current</em> ICP (not the cached score from the original role)</li>
+<li>Applies decay weighting to all stored signals (§4.2) — fresh signals dominate</li>
+<li>Surfaces the candidate’s prior conversation history, prior outreach state, and DNC flags</li>
+<li>Carries forward verification status and trust signals (no need to re-verify)</li>
+</ul>
+<p>If Tier 1 produces enough qualified candidates above the ICP threshold to satisfy the work order’s target count, <strong>the pipeline stops sourcing here</strong>. No external API is called. The recruiter sees a fully populated pipeline of warm, pre-known humans within seconds.</p>
+<p><strong>Tier 2 — Platform Talent Pool (zero external cost, opt-in)</strong></p>
+<p>If Tier 1 is short, the agent queries the cross-tenant <strong>Platform Pool</strong> — the federated index of candidates across all tenants who have explicitly opted into platform-wide visibility (or whose tenant has enabled the cross-org talent network). Governance rules:</p>
+<ul>
+<li>A candidate’s identity, contact data, and conversation history are <strong>never</strong> exposed cross-tenant. Tier 2 surfaces a <em>fit profile</em> — skills, experience, anonymized signal summary — and produces an introduction request that the candidate must approve before identity is unblinded to the requesting tenant.</li>
+<li>Tenant policy (<code>platform_pool_share</code>, <code>platform_pool_consume</code>) controls participation in each direction independently.</li>
+<li>Candidates who opt out at the candidate level are excluded from Tier 2 results regardless of tenant settings.</li>
+<li>Every Tier 2 surface is logged with the consent record that authorized it (auditable).</li>
+</ul>
+<p>The platform pool gets larger and more useful with every tenant on the network — the classic two-sided talent flywheel. The first tenant to integrate gets the smallest pool. The hundredth tenant gets a pool that no external provider can match.</p>
+<p><strong>Tier 3 — External Discovery (paid, last resort)</strong></p>
+<p>Only if Tiers 1 and 2 <em>combined</em> fall short of the target does the agent reach for paid external sources. Tier 3 itself is a two-phase architecture:</p>
+<ul>
+<li><strong>Phase 3a (parallel discovery):</strong> GitHub API, People Data Labs (PDL), and SerpAPI are queried concurrently. PDL queries use Elasticsearch DSL; SerpAPI queries use boolean LinkedIn search strings; GitHub queries hit <code>/search/users</code> filtered by language, followers, repo count.</li>
+<li><strong>Phase 3b (enrichment):</strong> EnrichLayer ingests Phase-3a LinkedIn URLs and resolves them into deep profile records (titles, companies, skills). The enrichment cap is applied on the <strong>output</strong> side, not the input side, to avoid wasting budget on profiles that fail enrichment.</li>
+</ul>
+<p>PDL profiles are flattened (<code>skills.name</code> → <code>skills</code> field) before scoring. <code>enrichOneProfile</code> logs every failure with the upstream URL for debuggability.</p>
+<p><strong>Why this matters architecturally</strong></p>
+<p>Every Tier 3 candidate that passes screening is <em>immediately</em> added to the tenant’s pool (Tier 1) and — if tenant policy allows — to the platform pool (Tier 2). The platform’s marginal sourcing cost approaches zero over time. By design, a tenant that has been on L3xy for 12 months should be servicing 60-80% of new role demand from Tiers 1 and 2 alone. The external API budget is reserved for genuinely novel skills and emerging markets.</p>
+<p>This is the inversion of every other “AI sourcing” tool: they spend more on external APIs every quarter as their tenant grows. L3xy spends <em>less</em>.</p>
+<h4>Screening Agent</h4>
+<p>Resume + profile + ICP → match percentage, gap analysis, structured recruiter summary. Two-pass LLM: first pass extracts structured experience, second pass scores against the ICP using a deterministic rubric. Outputs feed both the candidate Intelligence Card and the bulk pipeline view.</p>
+<h4>Verify Agent</h4>
+<p>Cross-checks identity using:</p>
+<ul>
+<li>LinkedIn URL match (canonical handle vs. resume handle)</li>
+<li>Resume-to-profile consistency check (employer overlap, date overlap)</li>
+<li>Disposable email and burner phone detection (regex + provider lookup)</li>
+<li>Optional ID-document upload review (manual escalation path)</li>
+</ul>
+<p>The orchestrator gate refuses to run Verify if Screening hasn’t produced eligible candidates (“No candidates in screening stage ready for verification”).</p>
+<h4>Outreach Agent</h4>
+<p>Multi-step sequence engine. For each candidate:</p>
+<ul>
+<li>Generates personalized first-touch copy using ICP fit reasons</li>
+<li>Selects optimal send time per recipient timezone</li>
+<li>Maintains conversation state across replies</li>
+<li>Hands off to Anti-Ghost when silence thresholds are crossed</li>
+</ul>
+<h4>Schedule Agent</h4>
+<p>Calendar invite generation, reminder scheduling, timezone normalization. Issues unique interview-room URLs per session. Integrates with the Anti-Ghost agent for reminder cadence.</p>
+<h4>Interview Agent</h4>
+<p>Conducts AI-led video interviews. Four sub-types share a base agent with track-specific question banks:</p>
+<ul>
+<li><strong>Behavioral</strong> — STAR-method evaluation</li>
+<li><strong>Cultural</strong> — tenant-supplied cultural document grounds the questions</li>
+<li><strong>Technical</strong> — adaptive difficulty (easy / medium / hard / mixed)</li>
+<li><strong>Programming</strong> — language-aware coding rounds</li>
+</ul>
+<p>Eligibility gate (Gate 2 inside <code>_runInterview</code>) rejects manual candidates whose <code>verification_status</code> is not <code>&quot;verified&quot;</code> — enforced because manual uploads can include unvetted profiles.</p>
+<h4>Proctoring Agent</h4>
+<p>Real-time vision pipeline during the interview session:</p>
+<ul>
+<li>Multi-face detection</li>
+<li>Gaze-direction estimation (off-screen %)</li>
+<li>Tab/visibility-change instrumentation</li>
+<li>Background audio anomaly flags</li>
+</ul>
+<p>Outputs an integrity score that feeds the Trust composite.</p>
+<h4>Anti-Ghost Agent</h4>
+<p>Implemented in <code>anti-ghost-engine.ts</code> and driven by <code>anti-ghost-scheduler.ts</code>. Runs <strong>four parallel detectors every 30 minutes</strong> plus a <strong>nurture cycle every 6 hours</strong>:</p>
+<p><strong>Detectors (every 30 min):</strong></p>
+<ol>
+<li><code>detectInterviewNoShows</code> — interviews past their scheduled time with no completion signal</li>
+<li><code>detectOutreachDropouts</code> — candidates who replied earlier in a sequence then went silent</li>
+<li><code>detectStalePipeline</code> — applications stuck in early stages for 21+ days</li>
+<li><code>detectOfferLimbo</code> — offers pending for 7+ days without acceptance</li>
+</ol>
+<p><strong>Tiered re-engagement (within active pipelines):</strong></p>
+<ol>
+<li>Auto-friendly nudge (24h silence)</li>
+<li>Value-add follow-up (72h)</li>
+<li>Recruiter escalation with one-click handoff (&gt;5 days)</li>
+</ol>
+<p><strong>Nurture cycle (every 6h)</strong> — <code>processNurtureCycle()</code> moves flagged candidates into the <code>nurture_pool</code> table and generates AI re-engagement emails via <code>generateReEngagementEmail()</code> with configurable tone (warm / professional / brief). The nurture pool is the conveyor belt that returns dormant candidates to active engagement without losing them.</p>
+<p>Decay-aware throughout so the agent doesn’t pester candidates who responded recently on another channel.</p>
+<hr>
+<h3>3.4 The Living Pool — always-on background operations</h3>
+<p>The agents above run <em>on demand</em> when a recruiter launches a pipeline. The Living Pool runs <em>continuously</em> in the background, regardless of whether anyone is using the product. This is what makes the talent graph <em>alive</em> rather than archival.</p>
+
+<svg viewBox="0 0 900 410" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <defs>
+    <radialGradient id="pulse" cx="0.5" cy="0.5">
+      <stop offset="0" stop-color="#06b6d4" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="410" fill="#020617" rx="12"/>
+  <text x="450" y="28" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" font-family="Inter,sans-serif">The Always-On Pool</text>
+  <text x="450" y="48" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Six background workers run continuously — even when the recruiter sleeps</text>
+
+  <!-- Center pool -->
+  <circle cx="450" cy="200" r="100" fill="url(#pulse)"/>
+  <circle cx="450" cy="200" r="62" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="2"/>
+  <text x="450" y="195" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">TALENT</text>
+  <text x="450" y="212" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="Inter,sans-serif">POOL</text>
+
+  <!-- Schedulers around the pool -->
+  
+    <line x1="160" y1="100" x2="450" y2="200" stroke="#f97316" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="70" y="74" width="180" height="52" rx="8" fill="#f97316" fill-opacity="0.12" stroke="#f97316" stroke-width="1.5"/>
+    <text x="160" y="91" text-anchor="middle" fill="#f97316" font-size="11" font-weight="700" font-family="Inter,sans-serif">Outreach Autopilot</text>
+    <text x="160" y="105" text-anchor="middle" fill="#f97316" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 15 min</text>
+    <text x="160" y="118" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Advances campaign sequences</text>
+  
+    <line x1="740" y1="100" x2="450" y2="200" stroke="#ef4444" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="650" y="74" width="180" height="52" rx="8" fill="#ef4444" fill-opacity="0.12" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="740" y="91" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700" font-family="Inter,sans-serif">Ghosting Detectors</text>
+    <text x="740" y="105" text-anchor="middle" fill="#ef4444" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 30 min</text>
+    <text x="740" y="118" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">4 detectors scan continuously</text>
+  
+    <line x1="110" y1="240" x2="450" y2="200" stroke="#ec4899" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="20" y="214" width="180" height="52" rx="8" fill="#ec4899" fill-opacity="0.12" stroke="#ec4899" stroke-width="1.5"/>
+    <text x="110" y="231" text-anchor="middle" fill="#ec4899" font-size="11" font-weight="700" font-family="Inter,sans-serif">Nurture Cycle</text>
+    <text x="110" y="245" text-anchor="middle" fill="#ec4899" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 6 hours</text>
+    <text x="110" y="258" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">AI re-engagement emails</text>
+  
+    <line x1="790" y1="240" x2="450" y2="200" stroke="#22c55e" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="700" y="214" width="180" height="52" rx="8" fill="#22c55e" fill-opacity="0.12" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="790" y="231" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700" font-family="Inter,sans-serif">Pool Revival</text>
+    <text x="790" y="245" text-anchor="middle" fill="#22c55e" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="790" y="258" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Wakes Passive 30-89d / Inactive 90+d</text>
+  
+    <line x1="280" y1="345" x2="450" y2="200" stroke="#8b5cf6" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="190" y="319" width="180" height="52" rx="8" fill="#8b5cf6" fill-opacity="0.12" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="280" y="336" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="700" font-family="Inter,sans-serif">Cross-Role Re-Scan</text>
+    <text x="280" y="350" text-anchor="middle" fill="#8b5cf6" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="280" y="363" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Every candidate × every open role</text>
+  
+    <line x1="620" y1="345" x2="450" y2="200" stroke="#0ea5e9" stroke-width="0.8" opacity="0.4" stroke-dasharray="3 3"/>
+    <rect x="530" y="319" width="180" height="52" rx="8" fill="#0ea5e9" fill-opacity="0.12" stroke="#0ea5e9" stroke-width="1.5"/>
+    <text x="620" y="336" text-anchor="middle" fill="#0ea5e9" font-size="11" font-weight="700" font-family="Inter,sans-serif">LinkedIn Drift Monitor</text>
+    <text x="620" y="350" text-anchor="middle" fill="#0ea5e9" font-size="9" font-family="Inter,sans-serif" opacity="0.85">every 24 hours</text>
+    <text x="620" y="363" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter,sans-serif">Detects job changes after 180d quiet</text>
+  
+</svg>
+<div class="figure-caption">Six always-on background workers keep the pool alive 24/7</div>
+<p>Six scheduled workers run permanently inside the api-server (<code>src/index.ts</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Scheduler</th>
+<th>File</th>
+<th>Cadence</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Outreach Scheduler</strong></td>
+<td><code>outreach-scheduler.ts</code></td>
+<td>every 15 min</td>
+<td>Drives multi-step campaign sequences; sends the next nudge when reply windows lapse</td>
+</tr>
+<tr>
+<td><strong>Anti-Ghost Detectors</strong></td>
+<td><code>anti-ghost-scheduler.ts</code></td>
+<td>every 30 min</td>
+<td>Runs the four detectors; flags new ghosting risks for the nurture cycle</td>
+</tr>
+<tr>
+<td><strong>Anti-Ghost Nurture Cycle</strong></td>
+<td><code>anti-ghost-scheduler.ts</code></td>
+<td>every 6 h</td>
+<td>Processes the nurture pool; generates and sends AI re-engagement emails</td>
+</tr>
+<tr>
+<td><strong>Candidate Re-engagement</strong></td>
+<td><code>candidate-reengagement-scheduler.ts</code></td>
+<td>every 24 h</td>
+<td>Scans the entire tenant pool; categorizes candidates by inactivity (Passive 30-89d / Inactive 90+d) and sends “are you still looking?” mailers</td>
+</tr>
+<tr>
+<td><strong>Platform Recommendation Scan</strong></td>
+<td><code>platform-recommendation-scheduler.ts</code></td>
+<td>every 24 h</td>
+<td>Re-evaluates every platform-pool candidate against every open work order across all tenants (cross-role re-ranking); strong matches (≥75) trigger a candidate-facing notification</td>
+</tr>
+<tr>
+<td><strong>LinkedIn Drift Monitor</strong></td>
+<td><code>linkedin-profile-monitor.ts</code></td>
+<td>every 24 h</td>
+<td>For any candidate whose Lexy profile is 180+ days old, fetches live LinkedIn data via Enrich Layer, runs <code>detectJobChange()</code> against <code>currentTitle</code>/<code>currentCompany</code>, and sends either a job-change congratulations email or a 6-month wellness check-in fallback</td>
+</tr>
+</tbody>
+</table>
+<h4>Re-engagement categorization</h4>
+<p>The 24-hour <code>candidate-reengagement-scheduler</code> reads from <code>candidates</code> and bins each one by last activity timestamp:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Last activity</th>
+<th>Treatment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Active</strong></td>
+<td>&lt;30 days</td>
+<td>No action — they’re already in a live conversation or pipeline</td>
+</tr>
+<tr>
+<td><strong>Passive</strong></td>
+<td>30-89 days</td>
+<td><code>buildPassiveEmail()</code> — soft, value-add re-engagement</td>
+</tr>
+<tr>
+<td><strong>Inactive</strong></td>
+<td>90+ days</td>
+<td><code>buildInactiveEmail()</code> — explicit “are you still open to opportunities?” check-in</td>
+</tr>
+<tr>
+<td><strong>DNC</strong></td>
+<td>any</td>
+<td>Excluded — Do Not Contact flag is honored cross-role and forever</td>
+</tr>
+</tbody>
+</table>
+<p>Each send writes a new event to <code>connection_events</code>, which feeds back into the Connection Strength engine (§5) — so even a “no thanks” reply becomes a fresh signal that updates the candidate’s engagement profile.</p>
+<h4>Cross-role re-ranking (the auto-promotion loop)</h4>
+<p><code>platform-recommendation-engine.ts → runPlatformRecommendationScan()</code> runs every 24 hours and:</p>
+<ol>
+<li>Loads every open work order across the platform pool tenants where <code>platformRecommendationsEnabled</code> is true.</li>
+<li>For each candidate in the pool, runs an LLM-driven fit evaluation against every open job (GPT-4o rubric).</li>
+<li>Materializes high-confidence matches (above the per-tenant <code>recommendation_threshold</code>) into the recruiter’s Recommended Actions queue.</li>
+<li><strong>Reverse-pitches the candidate.</strong> When the score crosses ≥ 75, <code>sendMatchNotificationEmail()</code> automatically emails the candidate: <em>“A company has shown interest in your profile — our AI matching engine identified you as a strong fit for a [Job Title] role.”</em> Cooldowns and DNC are honored.</li>
+<li>Logs the match decision with the policy snapshot and the ICP version that produced it (auditable).</li>
+</ol>
+<p>This is the operational mechanism behind the Living Talent Graph promise: a candidate who said “not now” in March doesn’t disappear — within 24 hours of a fitting role being opened, the recruiter sees them as a Recommended Action <em>and</em> the candidate gets a heads-up email asking if they want the intro. <strong>The platform sells opportunities to the candidate, not just candidates to the recruiter.</strong></p>
+<h4>LinkedIn drift detection (the 6-month wellness loop)</h4>
+<p><code>linkedin-profile-monitor.ts → runLinkedInProfileMonitor()</code> is the answer to “how do you know if a candidate changed jobs and never told you?” It runs every 24 hours and operates as follows:</p>
+<ol>
+<li>Selects platform-pool candidates whose Lexy profile is older than <code>STALE_THRESHOLD_DAYS = 180</code>.</li>
+<li>Honors a 90-day per-candidate cooldown (read from <code>communicationEventsTable</code>) to prevent over-contact.</li>
+<li>For each eligible candidate, calls <code>fetchLinkedInViaEnrichLayer()</code> to retrieve their current LinkedIn profile (if a <code>linkedinUrl</code> is on file).</li>
+<li><code>detectJobChange()</code> compares the live <code>experience[0]</code> title + company against <code>candidates.currentTitle</code> / <code>currentCompany</code>.</li>
+<li><strong>Branch:</strong>
+<ul>
+<li>If a job change is detected → <code>buildJobChangeEmail()</code> sends a personalized “congrats on the new role at [Company] — want to update your Lexy profile?” mailer.</li>
+<li>If no change (or Enrich Layer data isn’t available) → <code>buildCheckInEmail()</code> sends the calendar-based wellness check: <em>“Has something exciting happened lately? New job, promotion, relocation, certification?”</em></li>
+</ul>
+</li>
+<li>All sends are written to <code>communicationEventsTable</code> with the appropriate <code>re_engagement</code> / <code>follow_up</code> event type, which both updates the engagement score and resets the cooldown.</li>
+</ol>
+<p>The result: a candidate who got promoted six months ago and forgot about Lexy gets a friendly congratulations email, an effortless one-click profile refresh path, and the recruiter gets a re-scored, up-to-date profile without lifting a finger.</p>
+<h4>Why this is the <em>real</em> moat (operationalized)</h4>
+<p>A static ATS can claim “we keep your candidates.” A pipeline tool can claim “we send sequences.” Neither runs the loop that closes ghosting risk → nurture revival → cross-role re-evaluation → automatic re-surface, all on independent cadences, all without a human in the loop.</p>
+<p>L3xy’s pool stays warm because the system never sleeps — even when the recruiter does.</p>
+<hr>
+<h2>4. The Intelligence Engine</h2>
+<p>Lives in <code>artifacts/api-server/src/lib/intelligence.ts</code>. This is the core of the platform.</p>
+
+<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="280" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">From Signals to Decision</text>
+
+  <!-- Agents column -->
+  
+      <rect x="40" y="58" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="71" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">ICP</text>
+    
+      <rect x="40" y="80" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="93" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Sourcing</text>
+    
+      <rect x="40" y="102" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="115" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Screening</text>
+    
+      <rect x="40" y="124" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="137" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Verify</text>
+    
+      <rect x="40" y="146" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="159" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Outreach</text>
+    
+      <rect x="40" y="168" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="181" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Schedule</text>
+    
+      <rect x="40" y="190" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="203" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Interview</text>
+    
+      <rect x="40" y="212" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="225" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Proctoring</text>
+    
+      <rect x="40" y="234" width="150" height="18" rx="4" fill="#0e7490" fill-opacity="0.25" stroke="#06b6d4" stroke-opacity="0.4"/>
+      <text x="115" y="247" text-anchor="middle" fill="#cffafe" font-size="11" font-family="Inter,sans-serif">Anti-Ghost</text>
+    
+
+  <!-- Engine box -->
+  <rect x="380" y="80" width="220" height="130" rx="14" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="2"/>
+  <text x="490" y="115" text-anchor="middle" fill="#06b6d4" font-size="16" font-weight="700" font-family="Inter,sans-serif">Intelligence</text>
+  <text x="490" y="135" text-anchor="middle" fill="#06b6d4" font-size="16" font-weight="700" font-family="Inter,sans-serif">Engine</text>
+  <text x="490" y="160" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Bayesian merge · decay</text>
+  <text x="490" y="174" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">policy gating · tenant β</text>
+  <text x="490" y="192" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">closed-loop learning</text>
+
+  <!-- Output column -->
+  
+      <rect x="700" y="77" width="170" height="22" rx="5" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-opacity="0.6"/>
+      <text x="785" y="92" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="600" font-family="Inter,sans-serif">Hire Probability</text>
+    
+      <rect x="700" y="105" width="170" height="22" rx="5" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-opacity="0.6"/>
+      <text x="785" y="120" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600" font-family="Inter,sans-serif">Next Best Action</text>
+    
+      <rect x="700" y="133" width="170" height="22" rx="5" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-opacity="0.6"/>
+      <text x="785" y="148" text-anchor="middle" fill="#06b6d4" font-size="11" font-weight="600" font-family="Inter,sans-serif">Strengths & Risks</text>
+    
+      <rect x="700" y="161" width="170" height="22" rx="5" fill="#ec4899" fill-opacity="0.18" stroke="#ec4899" stroke-opacity="0.6"/>
+      <text x="785" y="176" text-anchor="middle" fill="#ec4899" font-size="11" font-weight="600" font-family="Inter,sans-serif">Stage Forecasts</text>
+    
+      <rect x="700" y="189" width="170" height="22" rx="5" fill="#a855f7" fill-opacity="0.18" stroke="#a855f7" stroke-opacity="0.6"/>
+      <text x="785" y="204" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="600" font-family="Inter,sans-serif">Decision Audit</text>
+    
+
+  <!-- Connecting lines -->
+  <line x1="195" y1="70" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="114" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="158" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="202" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="195" y1="246" x2="378" y2="145" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/>
+  <line x1="602" y1="145" x2="698" y2="90" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="602" y1="145" x2="698" y2="202" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/><line x1="602" y1="145" x2="698" y2="314" stroke="#06b6d4" stroke-width="0.6" opacity="0.4"/>
+
+  <text x="115" y="50" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif" font-weight="600">9 Specialist Agents</text>
+  <text x="785" y="50" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif" font-weight="600">Recruiter Surface</text>
+</svg>
+<div class="figure-caption">Figure 4 — Signal flow from agents through the Intelligence Engine to recruiter outputs</div>
+<h3>4.1 Composite score formula</h3>
+
+<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="280" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">Hire Probability — Composite Score Stack</text>
+  <text x="450" y="56" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter,sans-serif">Bayesian posterior over four weighted composites, decay-adjusted per signal</text>
+
+  
+      <g>
+        <text x="50" y="108" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Fit</text>
+        <rect x="140" y="90" width="490" height="26" rx="4" fill="#06b6d4" fill-opacity="0.85"/>
+        <text x="635" y="108" fill="#06b6d4" font-size="13" font-weight="700" font-family="Inter,sans-serif">35%</text>
+        <text x="50" y="124" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Skills 45% · Experience 30% · ICP 25%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="150" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Quality</text>
+        <rect x="140" y="132" width="350" height="26" rx="4" fill="#22c55e" fill-opacity="0.85"/>
+        <text x="495" y="150" fill="#22c55e" font-size="13" font-weight="700" font-family="Inter,sans-serif">25%</text>
+        <text x="50" y="166" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Screening 40-60% · Interview 40% · Sourcing 20-40%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="192" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Trust</text>
+        <rect x="140" y="174" width="280" height="26" rx="4" fill="#f59e0b" fill-opacity="0.85"/>
+        <text x="425" y="192" fill="#f59e0b" font-size="13" font-weight="700" font-family="Inter,sans-serif">20%</text>
+        <text x="50" y="208" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Verification 50% · Proctoring 30% · Fraud 20%</text>
+      </g>
+    
+      <g>
+        <text x="50" y="234" fill="#e2e8f0" font-size="13" font-weight="600" font-family="Inter,sans-serif">Conversion</text>
+        <rect x="140" y="216" width="280" height="26" rx="4" fill="#ec4899" fill-opacity="0.85"/>
+        <text x="425" y="234" fill="#ec4899" font-size="13" font-weight="700" font-family="Inter,sans-serif">20%</text>
+        <text x="50" y="250" fill="#64748b" font-size="9" font-family="Inter,sans-serif">Engagement 30% · Anti-ghost 30% · Scheduling 40%</text>
+      </g>
+    
+</svg>
+<div class="figure-caption">Figure 2 — Composite score weights feeding the Hire Probability gauge</div>
+<p>For every candidate, the engine produces four sub-scores and a single Hire Probability:</p>
+<table>
+<thead>
+<tr>
+<th>Composite</th>
+<th>Weight</th>
+<th>Sub-weights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Fit Score</strong></td>
+<td>35%</td>
+<td>Skill match 45% · Experience 30% · ICP pattern 25%</td>
+</tr>
+<tr>
+<td><strong>Quality Score</strong></td>
+<td>25%</td>
+<td>Screening 40-60% · Interview 40% · Sourcing 20-40%</td>
+</tr>
+<tr>
+<td><strong>Trust Score</strong></td>
+<td>20%</td>
+<td>Verification 50% · Proctoring integrity 30% · Fraud risk 20%</td>
+</tr>
+<tr>
+<td><strong>Conversion Score</strong></td>
+<td>20%</td>
+<td>Outreach engagement 30% · Ghosting resistance 30% · Scheduling efficiency 40%</td>
+</tr>
+</tbody>
+</table>
+<p>Sub-weights are dynamic: when a contributing agent hasn’t run yet, its weight is redistributed to the remaining contributors so the score is never penalized for missing data — it’s simply less confident (see §4.3).</p>
+<h3>4.2 Temporal decay</h3>
+<p>Every signal carries a timestamp. At read time it is decayed by an exponential half-life:</p>
+<pre><code>weight = 0.5 ^ (ageHours / halfLifeHours)
+</code></pre>
+<p>Half-lives are tuned per signal class:</p>
+<table>
+<thead>
+<tr>
+<th>Signal class</th>
+<th>Half-life</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Anti-Ghost (engagement freshness)</td>
+<td>24 hours</td>
+</tr>
+<tr>
+<td>Outreach reply velocity</td>
+<td>48 hours</td>
+</tr>
+<tr>
+<td>Interview performance</td>
+<td>7 days</td>
+</tr>
+<tr>
+<td>Screening / Sourcing match</td>
+<td>30 days</td>
+</tr>
+<tr>
+<td>ICP alignment</td>
+<td>90 days</td>
+</tr>
+</tbody>
+</table>
+<p>This means a hot candidate who replied yesterday outranks an identically-qualified candidate who replied last quarter — without us having to re-screen anyone.</p>
+<h3>4.3 Confidence breakdown</h3>
+<p>Every score ships with a confidence number computed from three factors:</p>
+<pre><code>confidence = 0.4 * completeness + 0.3 * freshness + 0.3 * criticalCoverage
+</code></pre>
+<ul>
+<li><strong>Completeness:</strong> fraction of expected agent signals present</li>
+<li><strong>Freshness:</strong> weighted-average decay factor across all contributing signals</li>
+<li><strong>Critical coverage:</strong> fraction of high-leverage signals (verification, interview, screening) that are present</li>
+</ul>
+<p>Recruiters see confidence as a small badge next to each score. Low-confidence high-probability candidates surface a “needs more signal” tooltip.</p>
+<h3>4.4 Hire Probability — Bayesian formulation</h3>
+<p>The hire gauge is the posterior probability:</p>
+<pre><code>P(hire | signals) ∝ P(signals | hire) * P(hire)
+</code></pre>
+<p>Implemented as a logistic combiner over the four composites with tenant-trained coefficients:</p>
+<pre><code>logit(p) = β0 + β_fit * fit + β_quality * quality
+            + β_trust * trust + β_conversion * conversion
+</code></pre>
+<p>The <code>β</code> coefficients start at the platform-trained defaults and update per tenant via the closed-loop learning system (§7).</p>
+<h3>4.5 Stage-transition forecasts</h3>
+<p>Beyond hire probability, the engine emits three secondary forecasts:</p>
+<ul>
+<li><code>nextStageSuccess</code> — probability the candidate clears the next pipeline stage</li>
+<li><code>offerAcceptance</code> — probability they accept an offer if extended</li>
+<li><code>dropoffProbability</code> — probability they ghost in the next 7 days</li>
+</ul>
+<p>These power the “Lexy Candidate Prediction” plain-language summary on the candidate card.</p>
+<h3>4.6 Next Best Action waterfall</h3>
+
+<svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" class="figure">
+  <rect width="900" height="220" fill="#020617" rx="12"/>
+  <text x="450" y="34" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700" font-family="Inter,sans-serif">Next Best Action — Decision Waterfall</text>
+
+  
+      <g transform="translate(50,80)">
+        <rect width="160" height="60" rx="10" fill="#f59e0b" fill-opacity="0.18" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#f59e0b" font-size="15" font-weight="700" font-family="Inter,sans-serif">Verify</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Trust score below policy floor</text>
+      </g>
+    
+      <g transform="translate(220,80)">
+        <rect width="160" height="60" rx="10" fill="#ec4899" fill-opacity="0.18" stroke="#ec4899" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#ec4899" font-size="15" font-weight="700" font-family="Inter,sans-serif">Re-engage</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Dropoff probability > ghosting alert</text>
+      </g>
+    
+      <g transform="translate(390,80)">
+        <rect width="160" height="60" rx="10" fill="#22c55e" fill-opacity="0.18" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#22c55e" font-size="15" font-weight="700" font-family="Inter,sans-serif">Advance</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Hire probability ≥ advance threshold</text>
+      </g>
+    
+      <g transform="translate(560,80)">
+        <rect width="160" height="60" rx="10" fill="#ef4444" fill-opacity="0.18" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#ef4444" font-size="15" font-weight="700" font-family="Inter,sans-serif">Reject</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Quality below floor & screening complete</text>
+      </g>
+    
+      <g transform="translate(730,80)">
+        <rect width="160" height="60" rx="10" fill="#06b6d4" fill-opacity="0.18" stroke="#06b6d4" stroke-width="1.5"/>
+        <text x="80" y="28" text-anchor="middle" fill="#06b6d4" font-size="15" font-weight="700" font-family="Inter,sans-serif">Schedule</text>
+        <text x="80" y="46" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="Inter,sans-serif">Default action — keep moving</text>
+      </g>
+    
+
+  <line x1="212" y1="110" x2="218" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="382" y1="110" x2="388" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="552" y1="110" x2="558" y2="110" stroke="#475569" stroke-width="1.5"/><line x1="722" y1="110" x2="728" y2="110" stroke="#475569" stroke-width="1.5"/>
+
+  <text x="450" y="180" text-anchor="middle" fill="#64748b" font-size="11" font-family="Inter,sans-serif">First matching condition wins. Tenant policy defines all thresholds.</text>
+  <text x="450" y="200" text-anchor="middle" fill="#475569" font-size="10" font-family="Inter,sans-serif">Every NBA records a snapshot of the policy that produced it — fully auditable.</text>
+</svg>
+<div class="figure-caption">Figure 3 — Next Best Action waterfall (first match wins)</div>
+<p>The recommendation engine is a deterministic waterfall over the scores and the tenant policy:</p>
+<pre><code>if trust &lt; tenantPolicy.lowTrustThreshold
+    → &quot;Verify&quot;
+else if dropoffProbability &gt; tenantPolicy.ghostingAlert
+    → &quot;Re-engage&quot;
+else if hireProbability &gt;= tenantPolicy.advanceThreshold
+    → &quot;Advance&quot;
+else if quality &lt; tenantPolicy.qualityFloor and screening_done
+    → &quot;Reject&quot;
+else
+    → &quot;Schedule&quot;
+</code></pre>
+<p>The waterfall order is intentional: integrity issues short-circuit anything else, ghosting risk preempts advancement, and rejections require completed screening to avoid premature negative decisions.</p>
+<hr>
+<h2>5. The Connection Strength Engine</h2>
+<p>A separate engine (<code>lib/connectionEngine.ts</code>) tracks behavioral engagement signals distinct from fit:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Δ Connection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reply within 24h</td>
+<td>+15</td>
+</tr>
+<tr>
+<td>Schedules interview voluntarily</td>
+<td>+20</td>
+</tr>
+<tr>
+<td>Completes interview</td>
+<td>+25</td>
+</tr>
+<tr>
+<td>Asks a question back</td>
+<td>+5</td>
+</tr>
+<tr>
+<td>No-show</td>
+<td>-25</td>
+</tr>
+<tr>
+<td>Cancels &lt; 2h before</td>
+<td>-15</td>
+</tr>
+<tr>
+<td>Goes silent &gt; 5 days</td>
+<td>-10</td>
+</tr>
+</tbody>
+</table>
+<p>Connection strength feeds the Conversion composite and powers the Anti-Ghost tier-escalation logic. It’s exposed as a signal on the candidate card so recruiters can see <em>why</em> a hot candidate has a high conversion score even if their fit is mid-tier.</p>
+<hr>
+<h2>6. Tenant decision policies</h2>
+<p>Every tenant configures a <code>DecisionPolicy</code> document (<code>lib/policies.ts</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>advanceThreshold</code></td>
+<td>80</td>
+<td>Minimum hire probability to auto-advance</td>
+</tr>
+<tr>
+<td><code>qualityFloor</code></td>
+<td>40</td>
+<td>Below this, suggest reject after screening</td>
+</tr>
+<tr>
+<td><code>lowTrustThreshold</code></td>
+<td>50</td>
+<td>Force verification before any advance</td>
+</tr>
+<tr>
+<td><code>ghostingAlert</code></td>
+<td>60</td>
+<td>Trigger re-engage NBA</td>
+</tr>
+<tr>
+<td><code>requireRecruiterApproval</code></td>
+<td>true</td>
+<td>All advances must be human-confirmed</td>
+</tr>
+<tr>
+<td><code>lowTrustAction</code></td>
+<td><code>&quot;manual_verification&quot;</code></td>
+<td>What to do on integrity flags</td>
+</tr>
+<tr>
+<td><code>autoRunAgents</code></td>
+<td><code>[]</code></td>
+<td>Agents allowed to fire without recruiter trigger</td>
+</tr>
+</tbody>
+</table>
+<p>Policies are versioned and every NBA decision records the policy snapshot that produced it, so the audit trail is reproducible even after a policy change.</p>
+<hr>
+<h2>7. Closed-loop learning</h2>
+<p>L3xy is not a static scoring model. Every recruiter override and every hiring outcome feeds back into the system.</p>
+<h3>7.1 Override capture</h3>
+<p>When a recruiter accepts, modifies, or rejects an NBA, the decision is appended to <code>overridesJson</code> on the candidate row with:</p>
+<ul>
+<li>The recommended action</li>
+<li>The recruiter’s actual action</li>
+<li>The composite scores at decision time</li>
+<li>The policy snapshot</li>
+<li>Free-text reason (optional)</li>
+</ul>
+<h3>7.2 Outcome correlation</h3>
+<p><code>routes/learning.ts</code> periodically computes per-tenant precision and recall metrics:</p>
+<pre><code>precision = hires_predicted_correctly / total_advance_recommendations
+recall    = hires_predicted_correctly / total_hires
+</code></pre>
+<p>It also computes <strong>Agent Coverage Impact</strong> — hire rate for candidates who passed through each agent vs. hire rate for those who skipped it — which surfaces in the Analytics tab as recommendations like <em>“Lower your advance threshold to reduce manual review overhead.”</em></p>
+<h3>7.3 Coefficient updates</h3>
+<p>The logistic <code>β</code> coefficients in §4.4 are re-fit per tenant nightly using the candidate population that has reached a terminal outcome (Hired or Rejected). This produces a tenant-specific scoring model without retraining the underlying LLMs.</p>
+<h3>7.4 Drift detection</h3>
+<p><code>Override Rate</code> (recruiter disagreement %) is monitored continuously. A sustained spike triggers a calibration alert in the Analytics tab indicating the model has drifted relative to the tenant’s actual hiring behavior.</p>
+<hr>
+<h2>8. Data sources — the full waterfall</h2>
+<p>Sourcing is a strict three-tier waterfall. Tiers 1 and 2 are first-party and zero-cost. Tier 3 is external and paid, invoked only when the warm pools fall short.</p>
+<h3>8.1 Tier 1 — Tenant Talent Pool (always first)</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>candidates</code> table</strong></td>
+<td>Tenant’s own historical pool</td>
+<td>Re-scored against current ICP; signals decay-weighted</td>
+</tr>
+<tr>
+<td><strong><code>role_fit_cache</code></strong></td>
+<td>Per-job ICP match cache</td>
+<td>Invalidated on ICP change, signal arrival, or policy update</td>
+</tr>
+<tr>
+<td><strong><code>connection_events</code></strong></td>
+<td>Engagement &amp; conversation history</td>
+<td>Carries forward — no need to re-warm</td>
+</tr>
+<tr>
+<td><strong>Verification cache</strong></td>
+<td>Prior trust signals</td>
+<td>Re-used; no re-verification cost</td>
+</tr>
+</tbody>
+</table>
+<p>Cost: <strong>$0</strong>. Latency: <strong>&lt;200ms</strong>. Should satisfy the majority of mature-tenant sourcing demand.</p>
+<h3>8.2 Tier 2 — Platform Talent Pool (cross-tenant, consented)</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Platform federated index</strong></td>
+<td>Cross-tenant warm pool</td>
+<td>Fit profiles only — no PII until candidate consent</td>
+</tr>
+<tr>
+<td><strong>Consent ledger</strong></td>
+<td>Per-candidate, per-tenant authorization</td>
+<td>Append-only, fully auditable</td>
+</tr>
+<tr>
+<td><strong>Tenant policy</strong> (<code>platform_pool_share</code> / <code>_consume</code>)</td>
+<td>Participation gates</td>
+<td>Independent control per direction</td>
+</tr>
+</tbody>
+</table>
+<p>Cost: <strong>$0</strong> in API spend; introduction-request infrastructure required. Powers the two-sided talent flywheel that compounds with every new tenant.</p>
+<h3>8.3 Tier 3 — External Discovery (paid, last resort)</h3>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>People Data Labs (PDL)</strong></td>
+<td>Primary 500M+ profile database</td>
+<td>Elasticsearch DSL queries; <code>skills.name</code> flattening required</td>
+</tr>
+<tr>
+<td><strong>EnrichLayer</strong></td>
+<td>Phase-3b LinkedIn URL enricher</td>
+<td>Output-side cap, per-URL failure logging</td>
+</tr>
+<tr>
+<td><strong>SerpAPI</strong></td>
+<td>Boolean LinkedIn discovery</td>
+<td>Used when PDL coverage is sparse</td>
+</tr>
+<tr>
+<td><strong>GitHub API</strong></td>
+<td>Engineering-role discovery</td>
+<td><code>/search/users</code> with language + repo + follower filters</td>
+</tr>
+<tr>
+<td><strong>OpenAI / Anthropic</strong></td>
+<td>LLM inference (all tiers)</td>
+<td>Routed through Replit-managed AI integrations</td>
+</tr>
+</tbody>
+</table>
+<p>Within Tier 3, budget is spent in this priority order: GitHub (free) → SerpAPI → PDL → EnrichLayer (most expensive, applied to top candidates only).</p>
+<h3>8.4 Compounding economics</h3>
+<p>Every Tier 3 candidate that survives Screening is automatically promoted into Tier 1 (and, if policy allows, Tier 2). Sourcing cost-per-hire trends <em>down</em> as the tenant matures — the inverse of every conventional sourcing tool. Twelve-month mature tenants should be filling 60-80% of pipelines from Tiers 1+2 alone, with external spend reserved for genuinely novel skill gaps and emerging markets.</p>
+<hr>
+<h2>9. Recruiter UX surfaces</h2>
+<h3>9.1 Job dashboard</h3>
+<ul>
+<li>WorkflowCanvas with the 9-stage agent strip in canonical order</li>
+<li>Real-time pipeline status, viable count, target progress</li>
+<li>Auto-run toggle for unattended pipelines</li>
+</ul>
+<h3>9.2 Candidate profile</h3>
+<ul>
+<li>Intelligence Card (scores, gauge, NBA, strengths/risks, prediction)</li>
+<li>Decision Audit Trail with every signal and policy snapshot</li>
+<li>Stage-transition forecasts</li>
+<li>Conversation history across all channels</li>
+</ul>
+<h3>9.3 Outreach inbox</h3>
+<ul>
+<li>Unified thread view across email/LinkedIn/SMS</li>
+<li>AI-drafted replies with sentiment analysis</li>
+<li>Connection strength inline per thread</li>
+</ul>
+<h3>9.4 Interview room</h3>
+<ul>
+<li>Live AI interviewer with adaptive question selection</li>
+<li>Real-time transcript and STAR evaluation</li>
+<li>Proctoring integrity flags as they happen</li>
+<li>Recording + transcript stored against the candidate</li>
+</ul>
+<h3>9.5 Decision Queue</h3>
+<ul>
+<li>Recruiter approval surface for “Advance” recommendations</li>
+<li>One-click accept / modify / reject with reason capture</li>
+<li>Bulk-action support for high-confidence batches</li>
+</ul>
+<h3>9.6 Analytics dashboard</h3>
+<ul>
+<li>Funnel breakdown across all 9 stages</li>
+<li>Bottleneck detection (median time per stage)</li>
+<li>Calibration: precision/recall/override rate</li>
+<li>Agent Coverage Impact</li>
+<li>Learning Recommendations</li>
+</ul>
+<hr>
+<h2>10. Engineering “secret sauce”</h2>
+<p>A short list of design choices that distinguish L3xy from the competition:</p>
+<ol>
+<li>
+<p><strong>Two-phase sourcing with output-side cap.</strong> Most competitors enrich every profile they discover, blowing the budget on dead-ends. L3xy only spends enrichment dollars on profiles that survive Phase-1 ranking.</p>
+</li>
+<li>
+<p><strong>Additive signal merging, not replacement.</strong> Each agent appends to a candidate’s signal vector — none overwrite prior signals. This means any agent can fire independently without losing historical context, and the engine can score a candidate even when only 3 of 9 agents have run.</p>
+</li>
+<li>
+<p><strong>Decay-weighted confidence, not just decay-weighted scores.</strong> Stale signals lose weight in the <em>score</em>, but they also lower the <em>confidence</em>, so recruiters see a real “this needs more data” signal rather than a deceptively crisp number.</p>
+</li>
+<li>
+<p><strong>Dependency-graph pipeline builder.</strong> The recruiter cannot construct an invalid pipeline (e.g. Verify without Screening). The UI auto-pulls prerequisites and persists the healed config — fixing not just the next run, but every legacy config saved before the rule existed.</p>
+</li>
+<li>
+<p><strong>Per-tenant logistic coefficients.</strong> The hire-probability model is platform-trained but tenant-calibrated. Two tenants hiring the same role can get different hire probabilities for the same candidate because their bar is different.</p>
+</li>
+<li>
+<p><strong>NBA waterfall with policy snapshotting.</strong> Every recommendation is reproducible from the snapshot — auditors and compliance teams can trace any decision to the exact policy state that produced it.</p>
+</li>
+<li>
+<p><strong>Connection Strength as a first-class engine.</strong> Behavioral signals (replies, no-shows, voluntary scheduling) are tracked separately from fit and feed the Conversion composite explicitly — making the difference between “qualified but cold” and “qualified and engaged” visible.</p>
+</li>
+<li>
+<p><strong>Closed-loop coefficient updates without LLM retraining.</strong> Nightly logistic re-fit is cheap, fast, and lets the system improve daily without paying for fine-tuning.</p>
+</li>
+</ol>
+<hr>
+<h2>11. Roadmap (NDA partners)</h2>
+<ul>
+<li><strong>Q3:</strong> Greenhouse + Lever ATS bidirectional sync</li>
+<li><strong>Q3:</strong> Native Google / Microsoft / Apple calendar</li>
+<li><strong>Q4:</strong> Mobile recruiter app (Expo)</li>
+<li><strong>Q4:</strong> Custom-agent SDK for tenant-supplied evaluators</li>
+<li><strong>Q4:</strong> Take-home and system-design interview formats</li>
+<li><strong>Early next year:</strong> Tenant-trained ICP foundation model (replacing per-job ICP prompt) for sub-second pipeline launch</li>
+</ul>
+<hr>
+<h2>12. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ICP</strong></td>
+<td>Ideal Candidate Profile — structured spec extracted from a JD</td>
+</tr>
+<tr>
+<td><strong>NBA</strong></td>
+<td>Next Best Action — engine’s recommended action for a candidate</td>
+</tr>
+<tr>
+<td><strong>Composite Score</strong></td>
+<td>One of Fit / Quality / Trust / Conversion</td>
+</tr>
+<tr>
+<td><strong>Hire Probability</strong></td>
+<td>Bayesian posterior $P(\text{hire} \mid \text{signals})$</td>
+</tr>
+<tr>
+<td><strong>Connection Strength</strong></td>
+<td>Behavioral engagement score, distinct from Fit</td>
+</tr>
+<tr>
+<td><strong>Decision Audit Trail</strong></td>
+<td>Reproducible log of signals + policy → decision</td>
+</tr>
+<tr>
+<td><strong>Override</strong></td>
+<td>Recruiter accept/modify/reject of an NBA</td>
+</tr>
+<tr>
+<td><strong>Calibration Drift</strong></td>
+<td>Sustained increase in Override Rate signaling model staleness</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<blockquote>
+<p><strong>L3xy Inc. — Confidential.</strong> Distribution restricted to NDA signatories.
+Questions: <a href="mailto:engineering@l3xy.io">engineering@l3xy.io</a> · <a href="mailto:founders@l3xy.io">founders@l3xy.io</a></p>
+</blockquote>
+</div></body></html>

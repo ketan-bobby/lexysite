@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0891b2"/>
+      <stop offset="0.55" stop-color="#0e2a44"/>
+      <stop offset="1" stop-color="#050e18"/>
+    </linearGradient>
+    <linearGradient id="three" x1="150" y1="70" x2="200" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38e0ff"/>
+      <stop offset="1" stop-color="#2f6bff"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <rect x="3" y="3" width="250" height="250" rx="53" fill="none" stroke="#38e0ff" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="60" y="182" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="150" font-weight="700" fill="#ffffff" text-anchor="middle">L</text>
+  <text x="158" y="182" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="150" font-weight="700" fill="url(#three)" text-anchor="middle">3</text>
+</svg>
