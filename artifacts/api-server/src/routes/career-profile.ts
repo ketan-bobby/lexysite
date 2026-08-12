@@ -3241,6 +3241,54 @@ router.get("/portal/interviews", async (req: any, res) => {
       }
     }
 
+    /* Upcoming AI interviews (interview_sessions not yet taken). Recruiters
+     * launch these directly — there is no interview_schedules row — so without
+     * this block a candidate with a pending AI interview sees an empty
+     * "Upcoming" tab. The Join button links to /interviews/:id/room, which is
+     * gated server-side (session cookie mint + job-approval gate), so listing
+     * the session here grants nothing extra. Expired sessions are skipped. */
+    const PENDING_SESSION_STATUSES = ["scheduled", "invited", "opened", "verified", "active", "paused", "in_progress"] as const;
+    const now = Date.now();
+    const pendingSessions = await db
+      .select()
+      .from(interviewSessionsTable)
+      .where(and(
+        eq(interviewSessionsTable.candidateId, candidateId),
+        inArray(interviewSessionsTable.status, PENDING_SESSION_STATUSES as unknown as string[])
+      ))
+      .orderBy(desc(interviewSessionsTable.createdAt));
+
+    for (const s of pendingSessions) {
+      const expiry = (s as any).expiresAt ?? s.inviteExpiresAt;
+      if (expiry && new Date(expiry).getTime() < now) continue;
+      let jobTitle = "Screening Interview";
+      let department: string | null = null;
+      if (s.applicationId) {
+        const [app] = await db.select({ jobId: applicationsTable.jobId })
+          .from(applicationsTable).where(eq(applicationsTable.id, s.applicationId)).limit(1);
+        if (app) {
+          const [job] = await db.select({ title: jobsTable.title, department: jobsTable.department })
+            .from(jobsTable).where(eq(jobsTable.id, app.jobId)).limit(1);
+          if (job) { jobTitle = job.title; department = job.department; }
+        }
+      }
+      scheduled.push({
+        id: s.id,
+        jobTitle,
+        department,
+        location: null,
+        type: "ai_interview",
+        /* The frontend treats "pending"/"confirmed" as upcoming regardless of
+         * date, so map every pre-completion session status to "pending". */
+        status: "pending",
+        scheduledAt: (s.inviteSentAt ?? s.createdAt).toISOString(),
+        duration: null,
+        score: null,
+        feedback: null,
+        source: "session",
+      });
+    }
+
     /* Completed interviews shown to the candidate.
      *
      * Two kinds appear, with different visibility rules:

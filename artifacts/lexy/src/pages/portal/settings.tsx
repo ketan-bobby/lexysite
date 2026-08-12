@@ -414,10 +414,12 @@ export default function PortalSettings() {
                   placeholder="acme.com"
                   value={privacy.currentEmployerDomain}
                   onChange={e => { setSaved(false); setPrivacy(p => ({ ...p, currentEmployerDomain: e.target.value })); }}
-                  disabled={!privacy.hideFromCurrentEmployer}
                   className="h-9"
                 />
-                <p className="text-[11px] text-muted-foreground/70">e.g. <code>acme.com</code> — we match recruiter tenants by website &amp; email domain.</p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  e.g. <code>acme.com</code> — we match recruiter tenants by website &amp; email domain.
+                  {!privacy.hideFromCurrentEmployer && " Hiding is off — turn on the toggle above to hide your profile from this employer."}
+                </p>
               </div>
 
               {/* Per-company opt-out blocklist */}

@@ -24,6 +24,31 @@ import { Loader2, Shield, Eye, EyeOff, Zap } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/* Mirror the server's password policy (api-server/src/lib/password-policy.ts)
+   so the user gets instant, friendly feedback before a round-trip. */
+function passwordProblem(pw: string): string | null {
+  if (pw.length < 12) return "Password must be at least 12 characters.";
+  if (pw.length > 128) return "Password must be no more than 128 characters.";
+  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+  if (!/[0-9]/.test(pw)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol (e.g. ! @ # $ %).";
+  return null;
+}
+
+/* The API returns machine codes in `error` (e.g. PASSWORD_TOO_SHORT) alongside
+   a human `message`. Prefer the message; fall back to this map so an ALL_CAPS
+   code is never rendered. */
+const PASSWORD_ERROR_MESSAGES: Record<string, string> = {
+  PASSWORD_TOO_SHORT: "Password must be at least 12 characters.",
+  PASSWORD_TOO_LONG: "That password is too long.",
+  PASSWORD_MISSING_UPPERCASE: "Password must include an uppercase letter.",
+  PASSWORD_MISSING_LOWERCASE: "Password must include a lowercase letter.",
+  PASSWORD_MISSING_DIGIT: "Password must include a number.",
+  PASSWORD_MISSING_SYMBOL: "Password must include a symbol (e.g. ! @ # $ %).",
+  PASSWORD_TOO_COMMON: "That password is too common — please choose something less guessable.",
+};
+
 type LoadState =
   | { kind: "loading" }
   | { kind: "ready"; email: string; name: string; company: string }
@@ -72,7 +97,8 @@ export default function TrialSetup() {
     e.preventDefault();
     setSubmitError("");
 
-    if (password.length < 8) { setSubmitError("Password must be at least 8 characters."); return; }
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) { setSubmitError(pwProblem); return; }
     if (password !== confirm) { setSubmitError("Passwords don't match."); return; }
 
     const params = new URLSearchParams(window.location.search);
@@ -92,7 +118,13 @@ export default function TrialSetup() {
           setState({ kind: "error", message: "This trial setup link is no longer valid. It may have expired or already been used. Request a fresh one." });
           return;
         }
-        throw new Error(data.message || data.error || `Setup failed (${res.status})`);
+        // Prefer the server's human sentence; never surface a raw ALL_CAPS code.
+        const friendly =
+          data.message ||
+          (data.error && PASSWORD_ERROR_MESSAGES[data.error]) ||
+          (data.error && !/^[A-Z0-9_]+$/.test(String(data.error)) ? data.error : null) ||
+          `Setup failed (${res.status})`;
+        throw new Error(friendly);
       }
       const data = await res.json();
       login(data.user, data.token);
@@ -165,9 +197,9 @@ export default function TrialSetup() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
+                    placeholder="At least 12 characters"
                     autoComplete="new-password"
-                    minLength={8}
+                    minLength={12}
                     required
                     className="w-full px-3 py-2.5 pr-10 rounded-lg bg-background border border-white/15 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary"
                   />
@@ -180,6 +212,9 @@ export default function TrialSetup() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  At least 12 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.
+                </p>
               </div>
 
               <div>
@@ -193,7 +228,7 @@ export default function TrialSetup() {
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Re-enter your password"
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={12}
                   required
                   className="w-full px-3 py-2.5 rounded-lg bg-background border border-white/15 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary"
                 />

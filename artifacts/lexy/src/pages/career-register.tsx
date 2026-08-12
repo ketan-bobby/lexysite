@@ -98,7 +98,7 @@ export default function CareerRegister() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Could not send reset link. Please try again.");
+        setError(friendlyApiError(data) || "Could not send reset link. Please try again.");
         return;
       }
       setResetSent(true);
@@ -110,6 +110,18 @@ export default function CareerRegister() {
     }
   }
 
+  /* Mirror the server's password policy so the user gets instant, friendly
+     feedback instead of a round-trip. The server remains the authority. */
+  function passwordProblem(pw: string): string | null {
+    if (pw.length < 12) return "Password must be at least 12 characters.";
+    if (pw.length > 128) return "Password must be no more than 128 characters.";
+    if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+    if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+    if (!/[0-9]/.test(pw)) return "Password must include a number.";
+    if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol (e.g. ! @ # $ %).";
+    return null;
+  }
+
   function validate() {
     if (!firstName.trim() || !email.trim()) {
       setError("Please fill in your name and email.");
@@ -119,11 +131,35 @@ export default function CareerRegister() {
       setError("Please enter a valid email address.");
       return false;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) {
+      setError(pwProblem);
       return false;
     }
     return true;
+  }
+
+  /* The API returns machine codes in `error` (e.g. PASSWORD_TOO_SHORT) with a
+     human sentence in `message`. Never show a raw code to the user. */
+  const ERROR_CODE_MESSAGES: Record<string, string> = {
+    PASSWORD_TOO_SHORT: "Password must be at least 12 characters.",
+    PASSWORD_TOO_LONG: "That password is too long.",
+    PASSWORD_MISSING_UPPERCASE: "Password must include an uppercase letter.",
+    PASSWORD_MISSING_LOWERCASE: "Password must include a lowercase letter.",
+    PASSWORD_MISSING_DIGIT: "Password must include a number.",
+    PASSWORD_MISSING_SYMBOL: "Password must include a symbol (e.g. ! @ # $ %).",
+    PASSWORD_TOO_COMMON: "That password is too common — please choose something less guessable.",
+  };
+
+  function friendlyApiError(data: { error?: string; message?: string }): string {
+    const isCode = (s: string) => /^[A-Z0-9_]+$/.test(s);
+    for (const raw of [data.message, data.error]) {
+      if (!raw) continue;
+      if (ERROR_CODE_MESSAGES[raw]) return ERROR_CODE_MESSAGES[raw];
+      if (!isCode(raw)) return raw; // a real human sentence
+    }
+    // Only machine codes (or nothing) available — never show them verbatim.
+    return "Something went wrong. Please check your details and try again.";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -172,7 +208,7 @@ export default function CareerRegister() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(friendlyApiError(data));
         return;
       }
 
@@ -345,7 +381,7 @@ export default function CareerRegister() {
                       <Input
                         id="password"
                         type={showPass ? "text" : "password"}
-                        placeholder="Min 8 characters"
+                        placeholder="Min 12 characters"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         disabled={loading}
@@ -361,6 +397,9 @@ export default function CareerRegister() {
                         {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      At least 12 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.
+                    </p>
                   </div>
 
                   {/* LinkedIn URL — optional but encouraged */}

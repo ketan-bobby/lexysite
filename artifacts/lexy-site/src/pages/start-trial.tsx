@@ -13,7 +13,6 @@ import { Link } from "wouter";
 import { Loader2, CheckCircle2, ArrowRight, Mail, Shield } from "lucide-react";
 
 const API = "";
-const MAIN_APP = import.meta.env.VITE_MAIN_APP_URL || "https://app.l3xy.ai";
 
 function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
@@ -312,7 +311,7 @@ export default function StartTrial() {
 
                   <p className="text-xs text-muted-foreground text-center">
                     Already have an account?{" "}
-                    <a href={`${MAIN_APP}/login`} className="text-primary hover:underline">
+                    <a href="/login" className="text-primary hover:underline">
                       Sign in
                     </a>
                   </p>

@@ -86,6 +86,10 @@ export interface SearchContext {
   domain: string | null;             // "Healthcare", "Software", etc.
   roleFamily: string | null;         // e.g. "Clinical Informatics"
   seniority: string | null;
+  /* Structured language requirements (e.g. ["Spanish", "English"] for a
+   * bilingual role). Fed to provider queries as additional match signal and to
+   * the LLM scorer as a HARD requirement. Empty array = no language constraint. */
+  languages: string[];
   location: string;
   // Work arrangement from the JOB record (jobs.work_type enum). Remote roles must
   // NOT be pinned to a physical location during sourcing — that is correctness,
@@ -335,6 +339,14 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
     )).slice(0, 10);
     if (tokens.length) should.push({ terms: { "skills": tokens } });
   }
+  /* Languages ride as skill tokens (PDL profiles commonly list "spanish",
+   * "english" as skills). Deliberately a `should`, not a `must`: many real
+   * profiles omit languages entirely, so a hard filter would zero out the
+   * search — the LLM scorer enforces the language requirement instead. */
+  if (ctx.languages.length) {
+    const langTokens = ctx.languages.map(l => l.toLowerCase().trim()).filter(l => l.length >= 3).slice(0, 6);
+    if (langTokens.length) should.push({ terms: { "skills": langTokens } });
+  }
 
   const must_not: any[] = [];
   if (ctx.negativeKeywords.length) {
@@ -356,7 +368,8 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
     const locStr = tier === "remote" || tier === "global"
       ? "(none)"
       : (tier === "country" ? loc.country : tier === "region" ? loc.region : loc.city) || ctx.location;
-    const queryStr = `PDL[${tier}]: titles=[${titles.join(", ")}] skills=[${ctx.requiredSkills.slice(0, 5).join(", ")}] loc=${locStr}`;
+    const langStr = ctx.languages.length ? ` langs=[${ctx.languages.join(", ")}]` : "";
+    const queryStr = `PDL[${tier}]: titles=[${titles.join(", ")}] skills=[${ctx.requiredSkills.slice(0, 5).join(", ")}]${langStr} loc=${locStr}`;
     lastQueryStr = queryStr;
 
     try {
@@ -438,7 +451,13 @@ export async function searchSerp(ctx: SearchContext): Promise<AdapterResult> {
   const SERP_KEY = process.env.SERP_API_KEY || process.env.SERPAPI_KEY;
   const boolean = buildBooleanQuery(ctx);
   const locClause = ctx.location ? ` "${ctx.location.split(",")[0].trim()}"` : "";
-  const fullQuery = `site:linkedin.com/in ${boolean}${locClause}`;
+  // Language requirements as an explicit AND clause — LinkedIn profiles of
+  // bilingual candidates typically name their languages, so this is a strong
+  // public-web signal (unlike PDL where it must stay soft).
+  const langClause = ctx.languages.length
+    ? ` (${ctx.languages.slice(0, 4).map(l => `"${l.trim()}"`).join(" OR ")})`
+    : "";
+  const fullQuery = `site:linkedin.com/in ${boolean}${langClause}${locClause}`;
   const queryStr = `SERP: ${fullQuery}`;
 
   if (!SERP_KEY) {
@@ -450,6 +469,7 @@ Domain: ${ctx.domain || "Unknown"}
 Job Title: ${ctx.jobTitle}
 Alternate titles: ${ctx.alternateTitles.join(", ")}
 Required skills: ${ctx.requiredSkills.join(", ")}
+Required languages: ${ctx.languages.join(", ") || "not specified"}
 Required certifications: ${ctx.requiredCertifications.join(", ")}
 Tools & systems: ${ctx.toolsAndSystems.join(", ")}
 Location: ${ctx.location}
@@ -495,6 +515,7 @@ Return JSON: { "candidates": [{ "firstName": string, "lastName": string, "curren
       ...ctx.preferredSkills,
       ...ctx.requiredCertifications,
       ...ctx.toolsAndSystems,
+      ...ctx.languages,
     ];
 
     const candidates = (organic || []).map((r: any, i: number) => {
@@ -762,6 +783,7 @@ export async function scoreExternalCandidates(
     disqualifiers?: string[];
     negativeKeywords?: string[];
     location?: string | null;
+    languages?: string[];
   },
 ): Promise<ExternalCandidate[]> {
   if (candidates.length === 0) return [];
@@ -777,6 +799,7 @@ export async function scoreExternalCandidates(
     disqualifiers: icp.disqualifiers,
     negativeKeywords: icp.negativeKeywords,
     location: icp.location ?? null,
+    languages: icp.languages ?? [],
   };
 
   const candPayload = candidates.map(c => ({
@@ -804,6 +827,8 @@ Penalize heavily if:
 - Candidate is from a wrong domain
 
 Judge the substance and relevance of experience, NOT the prestige/brand of the employer/company, follower counts, or repository counts (popularity is not competence).
+
+LANGUAGES: If the ICP's "languages" array is non-empty, EVERY listed language is a HARD requirement (e.g. a bilingual Spanish+English role needs evidence of BOTH — one is not enough). Score 0-25 for a candidate whose profile shows no evidence of one or more required languages (language listed in skills, bio, work history in that language's market, or education). Do not assume fluency from a name or country alone; treat plausible-but-unstated as a moderate penalty, and clear contrary evidence as disqualifying.
 
 LOCATION: The ICP's target location is in the "location" field. Favor candidates in that region or within ~100 miles of it, but do NOT zero out an otherwise-strong candidate solely for being outside it. Apply at most a small adjustment for location; skills and domain fit dominate.
 

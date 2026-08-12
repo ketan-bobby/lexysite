@@ -2,8 +2,9 @@
 
 set -e  # stop script on first error
 
-echo "Step 1: Install pnpn"
-npm install -g pnpm
+echo "Step 1: Install pnpm (pinned via corepack)"
+corepack enable
+corepack prepare --activate
 
 echo "Step 2: Install dependencies"
 pnpm install

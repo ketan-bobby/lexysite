@@ -1,7 +1,8 @@
 @echo off
 
-echo Step 1: Install pnpn
-call npm install -g pnpm
+echo Step 1: Install pnpm (pinned via corepack)
+call corepack enable
+call corepack prepare --activate
 
 echo Step 2: Install dependencies
 call pnpm install

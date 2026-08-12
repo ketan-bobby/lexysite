@@ -50,8 +50,12 @@ export default function ResetPassword() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token) return;
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters.");
+      return;
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError("Password must include an uppercase letter, a lowercase letter, a number, and a symbol.");
       return;
     }
     if (password !== confirm) {
@@ -68,7 +72,11 @@ export default function ResetPassword() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Could not reset your password.");
+        // Server sends machine codes in `error` (e.g. PASSWORD_TOO_SHORT) with
+        // the human sentence in `message` — never show a raw code.
+        const isCode = (s: unknown) => typeof s !== "string" || /^[A-Z0-9_]+$/.test(s);
+        const human = [data.message, data.error].find(v => v && !isCode(v));
+        setError(human ?? "Could not reset your password.");
         return;
       }
       // Auto-login on success
@@ -121,7 +129,7 @@ export default function ResetPassword() {
                     type={showPass ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
+                    placeholder="At least 12 characters"
                     autoComplete="new-password"
                     disabled={loading || !token}
                   />

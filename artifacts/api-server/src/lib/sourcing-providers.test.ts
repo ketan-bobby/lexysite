@@ -41,7 +41,9 @@ const CTX: SearchContext = {
   domain: null,
   roleFamily: null,
   seniority: null,
+  languages: [],
   location: "",
+  workType: null,
   booleanSearchString: null,
   maxResults: 10,
 };

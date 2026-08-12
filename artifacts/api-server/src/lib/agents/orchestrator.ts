@@ -605,6 +605,8 @@ class AgentOrchestrator {
       domain: (icp as any)?.domain ?? null,
       roleFamily: icp?.roleFamily ?? null,
       seniority: icp?.seniority ?? null,
+      // Language requirements are not an ICP column yet — pass through if present.
+      languages: (icp as any)?.languages ?? [],
       // First-class ICP location: honor it verbatim when an ICP exists (cleared
       // → "no location preference"); only seed from job.location when no ICP row.
       location: icp ? ((icp as any).location || "") : (job.location || ""),

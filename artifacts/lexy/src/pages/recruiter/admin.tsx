@@ -53,6 +53,30 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 }
 
+/* Mirrors the server's password policy (api-server lib/password-policy.ts):
+   12+ chars with upper/lower/number/symbol. Same helper as trial-setup.tsx. */
+function passwordProblem(pw: string): string | null {
+  if (pw.length < 12) return "Password must be at least 12 characters.";
+  if (pw.length > 128) return "Password must be no more than 128 characters.";
+  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+  if (!/[0-9]/.test(pw)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol (e.g. ! @ # $ %).";
+  return null;
+}
+
+/* Server policy failures come back as { error: CODE, message: human }. The
+   generated client's ApiError exposes the parsed body as `data` — prefer its
+   human `message` so an ALL_CAPS code (or "HTTP 400 …"-prefixed string) is
+   never shown to the admin. */
+function createUserErrorMessage(e: any): string {
+  const data = e?.data;
+  if (typeof data?.message === "string" && data.message) return data.message;
+  const err = data?.error;
+  if (typeof err === "string" && err && !/^[A-Z0-9_]+$/.test(err)) return err;
+  return e?.message ?? "Unknown error";
+}
+
 export default function Admin() {
   const { user } = useAuth() as any;
   const isPlatformAdmin = user?.role === "platform_admin";
@@ -131,7 +155,7 @@ export default function Admin() {
         setAddUserOpen(false);
         setNewUser({ email: "", name: "", role: "recruiter", password: "", tenantId: "" });
       },
-      onError: (e: any) => toast({ title: "Failed to create user", description: e?.message ?? "Unknown error", variant: "destructive" }),
+      onError: (e: any) => toast({ title: "Failed to create user", description: createUserErrorMessage(e), variant: "destructive" }),
     },
   });
 
@@ -177,8 +201,9 @@ export default function Admin() {
       toast({ title: "Email, name, and password are required", variant: "destructive" });
       return;
     }
-    if (newUser.password.length < 8) {
-      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+    const pwProblem = passwordProblem(newUser.password);
+    if (pwProblem) {
+      toast({ title: pwProblem, variant: "destructive" });
       return;
     }
     createUser.mutate({
@@ -521,7 +546,10 @@ export default function Admin() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="u-password">Temporary password</Label>
-              <Input id="u-password" type="password" value={newUser.password} onChange={(e) => setNewUser((s) => ({ ...s, password: e.target.value }))} placeholder="At least 8 characters" />
+              <Input id="u-password" type="password" minLength={12} value={newUser.password} onChange={(e) => setNewUser((s) => ({ ...s, password: e.target.value }))} placeholder="At least 12 characters" />
+              <p className="text-xs text-muted-foreground">
+                At least 12 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

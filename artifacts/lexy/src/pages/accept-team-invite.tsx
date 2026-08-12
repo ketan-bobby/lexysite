@@ -48,6 +48,28 @@ const roleRedirects: Record<string, string> = {
   interviewer:    "/interviewer/interviews",
 };
 
+/* Mirrors the server's password policy (api-server lib/password-policy.ts):
+   12+ chars with upper/lower/number/symbol. Same helper as trial-setup.tsx. */
+function passwordProblem(pw: string): string | null {
+  if (pw.length < 12) return "Password must be at least 12 characters.";
+  if (pw.length > 128) return "Password must be no more than 128 characters.";
+  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+  if (!/[0-9]/.test(pw)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol (e.g. ! @ # $ %).";
+  return null;
+}
+
+/* The API returns a machine code in `error` (e.g. PASSWORD_TOO_SHORT) alongside
+   a human `message` for policy failures. Prefer the message; never render an
+   ALL_CAPS code. */
+function humanError(data: any, fallback: string): string {
+  if (typeof data?.message === "string" && data.message) return data.message;
+  const err = data?.error;
+  if (typeof err === "string" && err && !/^[A-Z0-9_]+$/.test(err)) return err;
+  return fallback;
+}
+
 type State = "loading" | "valid" | "invalid" | "submitting" | "done" | "error";
 
 export default function AcceptTeamInvite() {
@@ -80,8 +102,9 @@ export default function AcceptTeamInvite() {
 
   const handleAccept = async () => {
     if (!token) return;
-    if (password.length < 8) {
-      setErrorMsg("Password must be at least 8 characters.");
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) {
+      setErrorMsg(pwProblem);
       return;
     }
     if (password !== confirm) {
@@ -97,7 +120,7 @@ export default function AcceptTeamInvite() {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (!res.ok) { setState("error"); setErrorMsg(data.error ?? "Failed to accept invite."); return; }
+      if (!res.ok) { setState("error"); setErrorMsg(humanError(data, "Failed to accept invite.")); return; }
       login(data.user, data.token);
       setState("done");
       setTimeout(() => {
@@ -168,7 +191,8 @@ export default function AcceptTeamInvite() {
                     <Input
                       id="password"
                       type={showPw ? "text" : "password"}
-                      placeholder="At least 8 characters"
+                      placeholder="At least 12 characters"
+                      minLength={12}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pr-10"
@@ -181,6 +205,9 @@ export default function AcceptTeamInvite() {
                       {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    At least 12 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="confirm" className="mb-1.5 block">Confirm password</Label>

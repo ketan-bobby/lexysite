@@ -51,7 +51,7 @@ import { interviewPlansTable, interviewSessionsTable, interviewSummariesTable, i
 import { resolveCandidateIntro } from "../lib/recruiter-intro-video";
 import { eq, desc, inArray, or, and, sql } from "drizzle-orm";
 import { resolveUser } from "../middlewares/resolveUser";
-import { getAllowedTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
+import { getAllowedTenantIds, getRecruiterAssignedJobIds, getDataScopeTenantIds } from "../lib/tenantUtils";
 import { recruiterOwnsResource } from "../lib/ownership";
 import { usersTable } from "@workspace/db";
 import OpenAI from "openai";
@@ -848,13 +848,34 @@ router.get("/interviews", async (req: any, res) => {
     if (!allowed || allowed.length === 0) { res.json([]); return; }
     sessions = sessions.filter(s => allowed.includes(s.tenantId));
 
-    // Hiring managers only see interviews for jobs assigned to them
-    if (caller.role === "hiring_manager") {
-      const myJobs = await db.select({ id: jobsTable.id })
-        .from(jobsTable)
-        .where(eq(jobsTable.assignedHiringManagerId, caller.id));
-      const myJobIds = new Set(myJobs.map(j => j.id));
-      // Sessions don't store jobId directly — resolve it via plan_id → plans.job_id
+    /* recruiter_admin: narrow the tenant ceiling from the full agency subtree
+       to the data scope (assigned clients ∪ managed recruiters' job tenants ∪
+       own staffed-job tenants). Mirrors GET /jobs. */
+    if (caller.role === "recruiter_admin") {
+      const dataScope = await getDataScopeTenantIds(caller);
+      if (dataScope !== null) {
+        if (dataScope.length === 0) { res.json([]); return; }
+        const scopeSet = new Set(dataScope);
+        sessions = sessions.filter(s => scopeSet.has(s.tenantId));
+      }
+    }
+
+    /* Job-level ownership ceilings. Sessions don't store jobId directly —
+       resolve via plan_id → plans.job_id, then keep only sessions whose job
+       the caller owns. Sessions with no plan/job (e.g. career/baseline flows)
+       fail closed for these roles. */
+    if (caller.role === "hiring_manager" || caller.role === "recruiter") {
+      let myJobIds: Set<string>;
+      if (caller.role === "hiring_manager") {
+        const myJobs = await db.select({ id: jobsTable.id })
+          .from(jobsTable)
+          .where(eq(jobsTable.assignedHiringManagerId, caller.id));
+        myJobIds = new Set(myJobs.map(j => j.id));
+      } else {
+        // Plain recruiter: only reqs they're staffed on (primary or roster).
+        myJobIds = new Set(await getRecruiterAssignedJobIds(caller as any));
+      }
+      if (myJobIds.size === 0) { res.json([]); return; }
       const planIds = Array.from(new Set(sessions.map(s => s.planId).filter(Boolean) as string[]));
       const planRows = planIds.length
         ? await db.select({ id: interviewPlansTable.id, jobId: interviewPlansTable.jobId })
@@ -2186,6 +2207,42 @@ router.post("/interviews/:interviewId/step-up/verify",
  * (pre-completion) session. */
 const INTERVIEW_STAFF_ROLES = ["platform_admin", "tenant_admin", "recruiter", "recruiter_admin", "hiring_manager", "interviewer"];
 
+/* Role-based session read scope — the single rule for every staff by-id
+ * interview read (detail, summary, proctor report, recruiter comments).
+ * Mirrors the GET /interviews list scoping exactly:
+ *   platform_admin  → everything
+ *   tenant_admin / interviewer → tenant subtree
+ *   recruiter_admin → data scope (assigned clients ∪ managed recruiters' job
+ *                     tenants ∪ own staffed-job tenants)
+ *   recruiter       → only sessions whose plan→job they're staffed on
+ *   hiring_manager  → only sessions whose plan→job is assigned to them
+ * Sessions with no plan/job fail closed for recruiter & hiring_manager. */
+async function staffCanReadInterviewSession(caller: any, session: any): Promise<boolean> {
+  if (caller.role === "platform_admin") return true;
+  const allowed = await getAllowedTenantIds(caller);
+  if (!allowed || !allowed.includes(session.tenantId ?? "")) return false;
+  if (caller.role === "recruiter_admin") {
+    const scope = await getDataScopeTenantIds(caller);
+    return scope === null || scope.includes(session.tenantId ?? "");
+  }
+  if (caller.role === "recruiter" || caller.role === "hiring_manager") {
+    const planId = (session as any).planId as string | null;
+    if (!planId) return false;
+    const [plan] = await db.select({ jobId: interviewPlansTable.jobId })
+      .from(interviewPlansTable).where(eq(interviewPlansTable.id, planId)).limit(1);
+    const jobId = plan?.jobId ?? null;
+    if (!jobId) return false;
+    if (caller.role === "recruiter") {
+      const assigned = await getRecruiterAssignedJobIds(caller);
+      return assigned.includes(jobId);
+    }
+    const [job] = await db.select({ hm: jobsTable.assignedHiringManagerId })
+      .from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
+    return job?.hm === caller.id;
+  }
+  return true; // tenant_admin, interviewer — subtree scope already enforced
+}
+
 async function gateInterviewRead(req: any, res: any, next: any): Promise<void> {
   try {
     const userId = getAuthUserId(req);
@@ -2195,9 +2252,7 @@ async function gateInterviewRead(req: any, res: any, next: any): Promise<void> {
         const [session] = await db.select().from(interviewSessionsTable)
           .where(eq(interviewSessionsTable.id, req.params.interviewId)).limit(1);
         if (!session) { res.status(404).json({ error: "Not found" }); return; }
-        if (caller.role === "platform_admin") { req.interviewSession = session; req.interviewStaffRead = true; next(); return; }
-        const allowed = await getAllowedTenantIds(caller as any);
-        if (allowed && allowed.includes(session.tenantId)) {
+        if (await staffCanReadInterviewSession(caller, session)) {
           req.interviewSession = session;
           req.interviewStaffRead = true;
           next();
@@ -2536,11 +2591,8 @@ router.get("/interviews/:interviewId/proctor-report", async (req: any, res) => {
   const [session] = await db.select().from(interviewSessionsTable)
     .where(eq(interviewSessionsTable.id, req.params.interviewId)).limit(1);
   if (!session) { res.status(404).json({ error: "Not found" }); return; }
-  if (caller.role !== "platform_admin") {
-    const allowed = await getAllowedTenantIds(caller as any);
-    if (!allowed || !allowed.includes(session.tenantId ?? "")) {
-      res.status(404).json({ error: "Not found" }); return;
-    }
+  if (!(await staffCanReadInterviewSession(caller, session))) {
+    res.status(404).json({ error: "Not found" }); return;
   }
 
   const events = (session.proctoring_events as any[]) ?? [];
@@ -3153,16 +3205,12 @@ router.get("/interviews/:interviewId/summary", async (req: any, res) => {
      candidate-role users — so getAllowedTenantIds alone would let a tenant-scoped
      candidate read the recruiter AI assessment + recruiterComments. Gate on an
      explicit staff allowlist first (mirrors the recruiter-comments PATCH). */
-  const STAFF_ROLES = ["platform_admin", "tenant_admin", "recruiter", "hiring_manager", "interviewer"];
-  if (!STAFF_ROLES.includes(caller.role)) { res.status(404).json({ error: "Summary not found" }); return; }
+  if (!INTERVIEW_STAFF_ROLES.includes(caller.role)) { res.status(404).json({ error: "Summary not found" }); return; }
   const [session] = await db.select().from(interviewSessionsTable)
     .where(eq(interviewSessionsTable.id, req.params.interviewId)).limit(1);
   if (!session) { res.status(404).json({ error: "Summary not found" }); return; }
-  if (caller.role !== "platform_admin") {
-    const allowed = await getAllowedTenantIds(caller as any);
-    if (!allowed || !allowed.includes(session.tenantId ?? "")) {
-      res.status(404).json({ error: "Summary not found" }); return;
-    }
+  if (!(await staffCanReadInterviewSession(caller, session))) {
+    res.status(404).json({ error: "Summary not found" }); return;
   }
   const [summary] = await db.select().from(interviewSummariesTable).where(eq(interviewSummariesTable.interviewSessionId, req.params.interviewId)).orderBy(desc(interviewSummariesTable.createdAt)).limit(1);
   if (!summary) { res.status(404).json({ error: "Summary not found" }); return; }
@@ -3180,16 +3228,12 @@ router.patch("/interviews/:interviewId/recruiter-comments", validate({ body: Rec
   /* Staff-only write. `users.tenantId` is NOT NULL for every account — including
      candidate-role users — so getAllowedTenantIds alone would let a tenant-scoped
      candidate edit recruiter comments. Gate on an explicit staff allowlist first. */
-  const STAFF_ROLES = ["platform_admin", "tenant_admin", "recruiter", "hiring_manager", "interviewer"];
-  if (!STAFF_ROLES.includes(caller.role)) { res.status(404).json({ error: "Summary not found" }); return; }
+  if (!INTERVIEW_STAFF_ROLES.includes(caller.role)) { res.status(404).json({ error: "Summary not found" }); return; }
   const [session] = await db.select().from(interviewSessionsTable)
     .where(eq(interviewSessionsTable.id, req.params.interviewId)).limit(1);
   if (!session) { res.status(404).json({ error: "Summary not found" }); return; }
-  if (caller.role !== "platform_admin") {
-    const allowed = await getAllowedTenantIds(caller as any);
-    if (!allowed || !allowed.includes(session.tenantId ?? "")) {
-      res.status(404).json({ error: "Summary not found" }); return;
-    }
+  if (!(await staffCanReadInterviewSession(caller, session))) {
+    res.status(404).json({ error: "Summary not found" }); return;
   }
   const comments = (req.body.comments ?? "").trim();
   const [updated] = await db.update(interviewSummariesTable)

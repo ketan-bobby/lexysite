@@ -105,6 +105,9 @@ function buildSearchContext(job: any, icp: any | null, maxPerSource: number): Se
     domain: icp?.domain ?? null,
     roleFamily: icp?.roleFamily ?? null,
     seniority: icp?.seniority ?? null,
+    // Language requirements are not an ICP column (yet) — populated by the
+    // NL-search path from the recruiter's brief; ICP-driven searches pass [].
+    languages: (icp as any)?.languages ?? [],
     // Location is now a first-class ICP field. When an ICP row exists we honor
     // its location verbatim — a recruiter who CLEARS it (null/empty) means "no
     // location preference", so we must NOT silently fall back to job.location.
@@ -215,7 +218,9 @@ async function searchInternalDatabase(
     isNull((candidatesTable as any).dataErasedAt),
   ));
 
-  const icpSkills = ctx.requiredSkills.map(s => s.toLowerCase());
+  // Languages count as match signal for internal candidates too — bench rows
+  // often list "Spanish"/"English" in their skills array.
+  const icpSkills = [...ctx.requiredSkills, ...ctx.languages].map(s => s.toLowerCase());
   const titles = [ctx.jobTitle, ...ctx.alternateTitles].map(t => t.toLowerCase()).filter(Boolean);
 
   const scored = all.map(c => {
@@ -767,9 +772,18 @@ router.post("/sourcing/nl-search", validate({ body: NlSourcingBody }), async (re
       alternateTitles: string[];
       requiredSkills: string[];
       preferredSkills: string[];
+      /* Structured language requirements ("bilingual Spanish/English" →
+       * ["Spanish","English"]). Carried into SearchContext and enforced as a
+       * hard requirement during LLM scoring. */
+      languages: string[];
       location: string;
       seniority: string | null;
       minYearsExperience: number | null;
+      /* Strategic-brief fields: parsed and echoed to the UI so the recruiter
+       * sees they were understood, but NOT yet enforced as search filters
+       * (volume planning and salary-cap enforcement are follow-up work). */
+      headcountTarget: number | null;
+      salaryCap: { amount: number; currency: string; period: "hour" | "month" | "year" } | null;
       keywords: string[];
       interpretation: string;
     };
@@ -783,15 +797,43 @@ Return JSON with these fields:
 - alternateTitles: string[] — equivalent titles a recruiter would also accept (e.g. for "Java Developer" → ["Java Engineer", "Backend Engineer (Java)", "Software Engineer - Java"]). Generate 2-5.
 - requiredSkills: string[] — must-have technical skills explicitly mentioned (e.g. ["Java", "Spring"]). Do not invent; extract only what's implied.
 - preferredSkills: string[] — nice-to-have skills that are commonly paired with the role.
+- languages: string[] — spoken/written human languages required for the role (e.g. "bilingual" customer service in Colombia → ["Spanish", "English"]; "German-speaking support" → ["German"]). Expand "bilingual"/"multilingual" using the location's dominant language plus English when that is the obvious intent. Empty array if no language requirement. Do NOT put programming languages here.
 - location: string — city, region, or country mentioned. Empty string if remote/anywhere.
 - seniority: "junior" | "mid" | "senior" | "staff" | "principal" | null — derive from years mentioned: <3 junior, 3-5 mid, 5-8 senior, 8-12 staff, 12+ principal. null if not stated.
 - minYearsExperience: number | null — if a years floor is mentioned ("8 years", "8+", "at least 5"), put the integer. null otherwise.
+- headcountTarget: number | null — if the recruiter states how many people they need to HIRE ("80 reps", "need 5 engineers"), put the integer. null if not stated.
+- salaryCap: { amount: number, currency: string (ISO code like "USD"), period: "hour" | "month" | "year" } | null — if a pay ceiling is mentioned ("under 2000", "max $50k/year"). Infer the period from magnitude and role context when unstated (e.g. 2000 for a full-time rep = per month). Default currency USD unless another is implied. null if no budget mentioned.
 - keywords: string[] — other relevant search terms (industries, tools, certifications) not captured above.
-- interpretation: string — one sentence starting with "Searching for…" that mirrors back what you understood. This is shown to the recruiter so they can verify.
+- interpretation: string — one sentence starting with "Searching for…" that mirrors back what you understood, including any language, headcount, and budget constraints. This is shown to the recruiter so they can verify.
 
 Only include items actually implied by the query. Empty arrays are fine.`,
-      { jobTitle: "", alternateTitles: [], requiredSkills: [], preferredSkills: [], location: "", seniority: null, minYearsExperience: null, keywords: [], interpretation: "Searching for matching candidates." }
-    );
+      "You parse recruiter sourcing queries into structured JSON. Respond with valid JSON only — no markdown fences, no commentary.",
+    ).catch((): Parsed => ({
+      /* Parser failure must not kill the search — fall back to using the raw
+       * query text as the title clause so providers still search for the
+       * recruiter's actual ask instead of running an unconstrained scan. */
+      jobTitle: query.slice(0, 120), alternateTitles: [], requiredSkills: [], preferredSkills: [], languages: [],
+      location: "", seniority: null, minYearsExperience: null, headcountTarget: null, salaryCap: null,
+      keywords: [], interpretation: `Searching for: ${query.slice(0, 160)}`,
+    }));
+    /* The model may omit fields — normalize so downstream code never sees
+     * undefined (validate() only guards the request body, not AI output). */
+    parsed.alternateTitles = Array.isArray(parsed.alternateTitles) ? parsed.alternateTitles : [];
+    parsed.requiredSkills  = Array.isArray(parsed.requiredSkills)  ? parsed.requiredSkills  : [];
+    parsed.preferredSkills = Array.isArray(parsed.preferredSkills) ? parsed.preferredSkills : [];
+    parsed.languages       = Array.isArray(parsed.languages)       ? parsed.languages       : [];
+    parsed.keywords        = Array.isArray(parsed.keywords)        ? parsed.keywords        : [];
+    parsed.headcountTarget = typeof parsed.headcountTarget === "number" && parsed.headcountTarget > 0
+      ? Math.round(parsed.headcountTarget) : null;
+    parsed.salaryCap = parsed.salaryCap && typeof parsed.salaryCap.amount === "number" && parsed.salaryCap.amount > 0
+      ? {
+          amount: parsed.salaryCap.amount,
+          currency: typeof parsed.salaryCap.currency === "string" && /^[A-Za-z]{3}$/.test(parsed.salaryCap.currency)
+            ? parsed.salaryCap.currency.toUpperCase() : "USD",
+          period: (["hour", "month", "year"] as const).includes(parsed.salaryCap.period as any)
+            ? parsed.salaryCap.period : "month",
+        }
+      : null;
 
     /* Step 2: if a jobId is supplied, layer the job's ICP on top so we
      * inherit certifications, tools, domain, and the negative-keyword
@@ -842,7 +884,9 @@ Only include items actually implied by the query. Empty arrays are fine.`,
       domain:                 icp?.domain ?? null,
       roleFamily:             icp?.roleFamily ?? null,
       seniority:              parsed.seniority ?? icp?.seniority ?? null,
+      languages:              Array.isArray(parsed.languages) ? parsed.languages.filter(Boolean) : [],
       location:               parsed.location || job?.location || "",
+      workType:               (job?.workType as SearchContext["workType"]) ?? null,
       booleanSearchString:    icp?.booleanSearchString ?? null,
       maxResults:             maxPerSource,
     };
@@ -862,9 +906,26 @@ Only include items actually implied by the query. Empty arrays are fine.`,
     /* Re-score using the ICP if we have one, otherwise leave the per-adapter
      * scores in place — scoreExternalCandidates needs a real ICP row to
      * work, so synthesising one from `parsed` would just degrade quality. */
-    const externalScored = icp ? await scoreExternalCandidates(externalAll, icp as any) : externalAll;
-    const internalFinal = icp && internalRes.candidates.length > 0
-      ? (await scoreExternalCandidates(internalRes.candidates as any[], icp as any)).map((s: any) => {
+    /* Recruiter-stated language requirements are layered onto the ICP for
+     * scoring — the scorer treats them as a hard requirement. Without an ICP
+     * we normally leave adapter scores in place (synthesising a full ICP from
+     * prose degrades quality), but when the recruiter stated LANGUAGES we must
+     * still enforce them — so we build a minimal criteria object from the
+     * parsed brief for that one purpose. */
+    const scoringIcp = icp
+      ? { ...(icp as any), languages: ctx.languages }
+      : ctx.languages.length
+        ? {
+            jobTitle: ctx.jobTitle,
+            requiredSkills: ctx.requiredSkills,
+            seniority: ctx.seniority,
+            location: ctx.location || null,
+            languages: ctx.languages,
+          }
+        : null;
+    const externalScored = scoringIcp ? await scoreExternalCandidates(externalAll, scoringIcp) : externalAll;
+    const internalFinal = scoringIcp && internalRes.candidates.length > 0
+      ? (await scoreExternalCandidates(internalRes.candidates as any[], scoringIcp)).map((s: any) => {
           const orig = internalRes.candidates.find((c: any) => c.id === s.id);
           return { ...s, candidateId: (orig as any)?.candidateId ?? (s as any).candidateId };
         })
