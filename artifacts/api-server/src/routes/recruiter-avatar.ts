@@ -26,23 +26,50 @@ import { getAuthUserId } from "../lib/auth-token";
 import { getDataScopeTenantIds } from "../lib/tenantUtils";
 import { storageServingUrl, type IntroScriptContext } from "../lib/recruiter-intro-core";
 import { generateIntroScript } from "../lib/recruiter-intro-script";
-import { ensureIntroVideoJob, pollIntroVideoJob, getCandidateIntro } from "../lib/recruiter-intro-video";
+import {
+  ensureIntroVideoJob,
+  pollIntroVideoJob,
+  getCandidateIntro,
+} from "../lib/recruiter-intro-video";
 import { logCandidateEvent } from "../lib/candidate-event-logger";
 import { type CandidateEventType } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const STAFF_ROLES = ["platform_admin", "tenant_admin", "recruiter", "hiring_manager", "interviewer"];
+/* recruiter_admin included: working managers record intro videos too. Their
+ * tenant ceiling is already the restricted getDataScopeTenantIds in
+ * resolveStaff below (never the whole agency subtree). */
+const STAFF_ROLES = [
+  "platform_admin",
+  "tenant_admin",
+  "recruiter",
+  "recruiter_admin",
+  "hiring_manager",
+  "interviewer",
+];
 
 async function resolveStaff(
   req: any,
   res: any,
 ): Promise<{ caller: any; allowedTenants: string[] | null } | null> {
   const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  const [caller] = await controlDb.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!caller) { res.status(401).json({ error: "Unauthorized" }); return null; }
-  if (!STAFF_ROLES.includes(caller.role)) { res.status(403).json({ error: "Forbidden" }); return null; }
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  const [caller] = await controlDb
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  if (!caller) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+  if (!STAFF_ROLES.includes(caller.role)) {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
   if (caller.role === "platform_admin") return { caller, allowedTenants: null };
   const allowedTenants = await getDataScopeTenantIds(caller as any);
   if (!allowedTenants || allowedTenants.length === 0) return { caller, allowedTenants: [] };
@@ -51,13 +78,20 @@ async function resolveStaff(
 
 async function getCompanyName(tenantId: string | null): Promise<string> {
   if (!tenantId) return "our team";
-  const [t] = await controlDb.select().from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+  const [t] = await controlDb
+    .select()
+    .from(tenantsTable)
+    .where(eq(tenantsTable.id, tenantId))
+    .limit(1);
   return ((t as any)?.name as string | undefined) ?? "our team";
 }
 
 function buildCtx(caller: any, companyName: string, b: any): IntroScriptContext {
   return {
-    recruiterName: typeof b.recruiterName === "string" && b.recruiterName ? b.recruiterName : (caller.name ?? "your recruiter"),
+    recruiterName:
+      typeof b.recruiterName === "string" && b.recruiterName
+        ? b.recruiterName
+        : (caller.name ?? "your recruiter"),
     recruiterTitle: typeof b.recruiterTitle === "string" ? b.recruiterTitle : null,
     companyName: typeof b.companyName === "string" && b.companyName ? b.companyName : companyName,
     roleTitle: typeof b.roleTitle === "string" ? b.roleTitle : null,
@@ -115,7 +149,30 @@ router.post("/recruiter-avatar/profile", async (req: any, res) => {
   const b = req.body ?? {};
 
   const consent = b.consentConfirmed === true;
-  const avatarImageObjectPath = typeof b.avatarImageObjectPath === "string" ? b.avatarImageObjectPath : null;
+  const avatarImageObjectPath =
+    typeof b.avatarImageObjectPath === "string" ? b.avatarImageObjectPath : null;
+
+  /* The photo pointer doubles as a read grant (storage.ts avatar fallback),
+   * so the claim must be validated: only paths from the dedicated
+   * recruiter-avatars upload namespace are accepted (a caller-supplied
+   * generic /objects/uploads/… path could otherwise claim-and-read a foreign
+   * private object, e.g. a resume), and a path already pinned to ANOTHER
+   * recruiter's profile can't be re-claimed. */
+  if (avatarImageObjectPath) {
+    if (!avatarImageObjectPath.startsWith("/objects/recruiter-avatars/")) {
+      res.status(400).json({ error: "Invalid photo path — please re-upload your photo" });
+      return;
+    }
+    const claimed = await dbAdmin
+      .select({ recruiterUserId: recruiterAvatarProfilesTable.recruiterUserId })
+      .from(recruiterAvatarProfilesTable)
+      .where(eq(recruiterAvatarProfilesTable.avatarImageObjectPath, avatarImageObjectPath))
+      .limit(2);
+    if (claimed.some((c) => c.recruiterUserId !== caller.id)) {
+      res.status(409).json({ error: "This photo is already in use" });
+      return;
+    }
+  }
 
   const [existing] = await dbAdmin
     .select()
@@ -125,14 +182,22 @@ router.post("/recruiter-avatar/profile", async (req: any, res) => {
 
   const effectiveConsent = consent || (existing?.consentConfirmed ?? false);
   const effectiveImage = avatarImageObjectPath ?? existing?.avatarImageObjectPath ?? null;
-  const status = b.disabled === true ? "disabled" : (effectiveConsent && effectiveImage ? "ready" : "draft");
+  const status =
+    b.disabled === true ? "disabled" : effectiveConsent && effectiveImage ? "ready" : "draft";
 
   const common = {
     avatarImageObjectPath: effectiveImage,
-    selectedVoiceId: typeof b.selectedVoiceId === "string" ? b.selectedVoiceId : existing?.selectedVoiceId ?? null,
-    voiceGender: typeof b.voiceGender === "string" ? b.voiceGender : existing?.voiceGender ?? "female",
-    primaryLanguage: typeof b.primaryLanguage === "string" ? b.primaryLanguage : existing?.primaryLanguage ?? "en-US",
-    tone: typeof b.tone === "string" ? b.tone : existing?.tone ?? "warm_professional",
+    selectedVoiceId:
+      typeof b.selectedVoiceId === "string"
+        ? b.selectedVoiceId
+        : (existing?.selectedVoiceId ?? null),
+    voiceGender:
+      typeof b.voiceGender === "string" ? b.voiceGender : (existing?.voiceGender ?? "female"),
+    primaryLanguage:
+      typeof b.primaryLanguage === "string"
+        ? b.primaryLanguage
+        : (existing?.primaryLanguage ?? "en-US"),
+    tone: typeof b.tone === "string" ? b.tone : (existing?.tone ?? "warm_professional"),
     consentConfirmed: effectiveConsent,
     status: status as any,
     updatedAt: new Date(),
@@ -181,7 +246,10 @@ router.get("/recruiter-avatar/profile", async (req: any, res) => {
     .where(eq(recruiterAvatarProfilesTable.recruiterUserId, auth.caller.id))
     .limit(1);
   const serialized = serializeProfile(row);
-  if (!serialized) { res.json(null); return; }
+  if (!serialized) {
+    res.json(null);
+    return;
+  }
 
   /* Re-attach the most recent completed render so the recruiter still sees
      their saved intro video after a page reload — the completed MP4 lives in
@@ -190,10 +258,12 @@ router.get("/recruiter-avatar/profile", async (req: any, res) => {
   const [latest] = await dbAdmin
     .select()
     .from(recruiterAvatarVideoJobsTable)
-    .where(and(
-      eq(recruiterAvatarVideoJobsTable.recruiterAvatarProfileId, row.id),
-      eq(recruiterAvatarVideoJobsTable.status, "completed"),
-    ))
+    .where(
+      and(
+        eq(recruiterAvatarVideoJobsTable.recruiterAvatarProfileId, row.id),
+        eq(recruiterAvatarVideoJobsTable.status, "completed"),
+      ),
+    )
     .orderBy(desc(recruiterAvatarVideoJobsTable.createdAt))
     .limit(1);
 
@@ -212,7 +282,11 @@ router.post("/recruiter-avatar/script/preview", async (req: any, res) => {
   }
   const companyName = await getCompanyName(auth.caller.tenantId);
   const ctx = buildCtx(auth.caller, companyName, b);
-  const gen = await generateIntroScript(ctx, "preview", typeof b.jobId === "string" ? b.jobId : null);
+  const gen = await generateIntroScript(
+    ctx,
+    "preview",
+    typeof b.jobId === "string" ? b.jobId : null,
+  );
   res.json({ scriptText: gen.scriptText, scriptHash: gen.scriptHash, language: gen.language });
 });
 
@@ -239,7 +313,12 @@ router.post("/recruiter-avatar/video-jobs", async (req: any, res) => {
     ctx,
   });
   if (!result.ok) {
-    const code = result.reason === "disabled" ? 503 : result.reason === "no_avatar" || result.reason === "no_profile" ? 409 : 502;
+    const code =
+      result.reason === "disabled"
+        ? 503
+        : result.reason === "no_avatar" || result.reason === "no_profile"
+          ? 409
+          : 502;
     res.status(code).json({ ok: false, reason: result.reason });
     return;
   }
@@ -254,12 +333,33 @@ router.get("/recruiter-avatar/video-jobs/:id", async (req: any, res) => {
   const { allowedTenants } = auth;
 
   const [job] = await dbAdmin
-    .select({ id: recruiterAvatarVideoJobsTable.id, tenantId: recruiterAvatarVideoJobsTable.tenantId })
+    .select({
+      id: recruiterAvatarVideoJobsTable.id,
+      tenantId: recruiterAvatarVideoJobsTable.tenantId,
+      profileRecruiterUserId: recruiterAvatarProfilesTable.recruiterUserId,
+    })
     .from(recruiterAvatarVideoJobsTable)
+    .leftJoin(
+      recruiterAvatarProfilesTable,
+      eq(recruiterAvatarProfilesTable.id, recruiterAvatarVideoJobsTable.recruiterAvatarProfileId),
+    )
     .where(eq(recruiterAvatarVideoJobsTable.id, req.params.id))
     .limit(1);
-  if (!job) { res.status(404).json({ error: "Not found" }); return; }
-  if (allowedTenants !== null && (!job.tenantId || !allowedTenants.includes(job.tenantId))) {
+  if (!job) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  /* Ownership wins: the recruiter who owns the avatar profile can always poll
+   * their own render. Without this, a recruiter_admin whose data scope covers
+   * client tenants but NOT their own agency tenant (where the job row lives)
+   * 404s on the job they just created — the UI shows "processing" forever and
+   * the finished video is never persisted. */
+  const isOwner = job.profileRecruiterUserId === auth.caller.id;
+  if (
+    !isOwner &&
+    allowedTenants !== null &&
+    (!job.tenantId || !allowedTenants.includes(job.tenantId))
+  ) {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -281,7 +381,8 @@ router.get("/recruiter-avatar/intro", async (req: any, res) => {
     res.status(400).json({ error: "jobId and language are required" });
     return;
   }
-  const recruiterUserId = typeof req.query.recruiterUserId === "string" ? req.query.recruiterUserId : auth.caller.id;
+  const recruiterUserId =
+    typeof req.query.recruiterUserId === "string" ? req.query.recruiterUserId : auth.caller.id;
   // Authorize: a non-self recruiter target must live in the caller's tenant subtree.
   if (recruiterUserId !== auth.caller.id && auth.allowedTenants !== null) {
     const [target] = await controlDb
@@ -310,7 +411,10 @@ router.post("/recruiter-avatar/intro/event", async (req: any, res) => {
   if (!auth) return;
   const b = req.body ?? {};
   const eventType = EVENT_MAP[String(b.event)];
-  if (!eventType) { res.status(400).json({ error: "invalid event" }); return; }
+  if (!eventType) {
+    res.status(400).json({ error: "invalid event" });
+    return;
+  }
   if (typeof b.candidateId !== "string" || typeof b.jobId !== "string") {
     res.status(400).json({ error: "candidateId and jobId are required" });
     return;

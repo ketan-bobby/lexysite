@@ -36,12 +36,21 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
-import { sourcedCandidatesTable, icpTable, jobsTable, candidatesTable, usersTable, applicationsTable, jobPipelinesTable } from "@workspace/db";
+import {
+  sourcedCandidatesTable,
+  icpTable,
+  jobsTable,
+  candidatesTable,
+  usersTable,
+  applicationsTable,
+  jobPipelinesTable,
+} from "@workspace/db";
 import { eq, desc, and, or, isNull, ne, inArray, sql } from "drizzle-orm";
 import {
   scoreExternalCandidates,
   classifyLocationMatches,
-  type SearchContext, type AdapterResult,
+  type SearchContext,
+  type AdapterResult,
 } from "../lib/external-sourcing.js";
 import { runSourcingProviders, getProviderStatus } from "../lib/sourcing-providers.js";
 import { validate } from "../middlewares/validate";
@@ -49,34 +58,49 @@ import { MAX_PAGE_SIZE } from "../lib/query-limits";
 import { assertJobApproved } from "../lib/job-approval-gate";
 import { generateJSON } from "../lib/ai";
 import { getAuthUserId } from "../lib/auth-token";
-import { getAllowedTenantIds, getDataScopeTenantIds, recruiterIsAssignedToJob, TALENT_REDISCOVERY, SOURCED_POOL_VISIBILITY, readScopeExemption } from "../lib/tenantUtils";
+import {
+  getAllowedTenantIds,
+  getDataScopeTenantIds,
+  recruiterIsAssignedToJob,
+  TALENT_REDISCOVERY,
+  SOURCED_POOL_VISIBILITY,
+  readScopeExemption,
+} from "../lib/tenantUtils";
 import { recruiterOwnsResource } from "../lib/ownership";
 import { findExistingCandidate } from "../lib/candidate-dedup.js";
 import { DEFAULT_PIPELINE_AGENTS } from "../lib/pipeline-defaults.js";
 import { logger } from "../lib/logger";
 import { originFields } from "../lib/sourcing-origin";
 
-const SourcingSearchBody = z.object({
-  jobId: z.string().min(1),
-  sources: z.array(z.string()).optional(),
-  maxPerSource: z.number().optional(),
-}).passthrough();
+const SourcingSearchBody = z
+  .object({
+    jobId: z.string().min(1),
+    sources: z.array(z.string()).optional(),
+    maxPerSource: z.number().optional(),
+  })
+  .passthrough();
 
-const SourcingInternalBody = z.object({
-  jobId: z.string().min(1),
-  maxPerSource: z.number().int().min(1).max(50).optional(),
-}).passthrough();
+const SourcingInternalBody = z
+  .object({
+    jobId: z.string().min(1),
+    maxPerSource: z.number().int().min(1).max(50).optional(),
+  })
+  .passthrough();
 
-const SourcingIngestBody = z.object({
-  source: z.string().min(1),
-  profileUrl: z.string().optional(),
-  rawData: z.record(z.unknown()).optional(),
-}).passthrough();
+const SourcingIngestBody = z
+  .object({
+    source: z.string().min(1),
+    profileUrl: z.string().optional(),
+    rawData: z.record(z.unknown()).optional(),
+  })
+  .passthrough();
 
-const SourcingMergeBody = z.object({
-  primaryCandidateId: z.string().min(1),
-  duplicateCandidateIds: z.array(z.string().min(1)),
-}).passthrough();
+const SourcingMergeBody = z
+  .object({
+    primaryCandidateId: z.string().min(1),
+    duplicateCandidateIds: z.array(z.string().min(1)),
+  })
+  .passthrough();
 
 const NlSourcingBody = z.object({
   query: z.string().min(3).max(2000),
@@ -92,7 +116,10 @@ const NlSourcingBody = z.object({
 const router: IRouter = Router();
 
 /* ── Build a SearchContext from the job + (optional) ICP ──────────────── */
-function buildSearchContext(job: any, icp: any | null, maxPerSource: number): SearchContext {
+/* Exported: the work-order agent run (lib/agent-runs/run-real.ts) builds its
+ * context through the SAME function so run-sourced scores can never drift from
+ * the /sourcing/search semantics (ICP location first-class, workType from job). */
+export function buildSearchContext(job: any, icp: any | null, maxPerSource: number): SearchContext {
   return {
     jobTitle: icp?.jobTitle || job?.title || "",
     alternateTitles: icp?.alternateTitles || [],
@@ -112,7 +139,7 @@ function buildSearchContext(job: any, icp: any | null, maxPerSource: number): Se
     // its location verbatim — a recruiter who CLEARS it (null/empty) means "no
     // location preference", so we must NOT silently fall back to job.location.
     // Only when there is no ICP row at all do we seed from the job's location.
-    location: icp ? (icp.location || "") : (job?.location || ""),
+    location: icp ? icp.location || "" : job?.location || "",
     // Work arrangement is a JOB attribute (not on the ICP) — a remote role must
     // never be pinned to a city during sourcing regardless of a stray ICP location.
     workType: (job?.workType as SearchContext["workType"]) ?? null,
@@ -141,9 +168,14 @@ interface InternalReviewMarker {
   matchCount: number;
 }
 
-async function getInternalReview(jobId: string): Promise<InternalReviewMarker | null> {
-  const [row] = await db.select({ agentConfig: jobPipelinesTable.agentConfig })
-    .from(jobPipelinesTable).where(eq(jobPipelinesTable.jobId, jobId)).limit(1);
+/* Exported: routes/agent-runs.ts enforces the same internal-first gate before
+ * starting a REAL sourcing run (a new external-spend entrypoint). */
+export async function getInternalReview(jobId: string): Promise<InternalReviewMarker | null> {
+  const [row] = await db
+    .select({ agentConfig: jobPipelinesTable.agentConfig })
+    .from(jobPipelinesTable)
+    .where(eq(jobPipelinesTable.jobId, jobId))
+    .limit(1);
   const marker = (row?.agentConfig as any)?.[INTERNAL_REVIEW_KEY];
   return marker && typeof marker === "object" ? (marker as InternalReviewMarker) : null;
 }
@@ -158,8 +190,11 @@ async function recordInternalReview(
     reviewedByUserId: meta.reviewedByUserId,
     matchCount: meta.matchCount,
   };
-  const [existing] = await db.select({ agentConfig: jobPipelinesTable.agentConfig })
-    .from(jobPipelinesTable).where(eq(jobPipelinesTable.jobId, jobId)).limit(1);
+  const [existing] = await db
+    .select({ agentConfig: jobPipelinesTable.agentConfig })
+    .from(jobPipelinesTable)
+    .where(eq(jobPipelinesTable.jobId, jobId))
+    .limit(1);
   if (!existing) {
     await db.insert(jobPipelinesTable).values({
       jobId,
@@ -173,64 +208,76 @@ async function recordInternalReview(
     } as any);
   } else {
     const nextConfig = { ...((existing.agentConfig as any) ?? {}), [INTERNAL_REVIEW_KEY]: marker };
-    await db.update(jobPipelinesTable)
+    await db
+      .update(jobPipelinesTable)
       .set({ agentConfig: nextConfig, updatedAt: new Date() } as any)
       .where(eq(jobPipelinesTable.jobId, jobId));
   }
 }
 
 /* ── Internal DB search ──────────────────────────────────────────────── */
-async function searchInternalDatabase(
+/* Exported for lib/agent-runs/run-real.ts (work-order agent runs). This stays
+ * THE internal-first discovery chokepoint (see
+ * scripts/check-internal-search-tenant-scope.mjs) — do not fork a second copy.
+ * `dbc` lets the fire-and-forget agent run pass dbAdmin explicitly. */
+export async function searchInternalDatabase(
   ctx: SearchContext,
   tenantScope: string | string[] | null,
+  dbc: typeof db = db,
 ): Promise<AdapterResult> {
   // Subtree scope: an array searches the full descendant tenant tree; null =
   // platform_admin (no tenant restriction). `and()` drops undefined conditions.
-  const tenantCond = tenantScope === null
-    ? undefined
-    : Array.isArray(tenantScope)
-      ? inArray(candidatesTable.tenantId, tenantScope)
-      : eq(candidatesTable.tenantId, tenantScope);
-  const all = await db.select().from(candidatesTable).where(and(
-    tenantCond,
-    /* PURE FIREWALL (thesis A): internal search must read ONLY tenant-owned
-     * records (current employees + previously-saved/applied candidates), and
-     * NEVER a personal platform-pool job-seeker profile. Tenant-owned rows are
-     * pool='tenant'; personal profiles are pool='platform' (or the transitional
-     * 'pending_profile'). Filtering on tenantId ALONE is not enough: it would
-     * rely on platform rows always carrying a sentinel tenantId ("platform" /
-     * the super-admin tenant) that never collides with a customer tenant — an
-     * incidental guarantee, not an enforced one. The explicit pool='tenant'
-     * predicate makes the firewall real: a platform profile can never surface
-     * here regardless of any tenant-id coincidence. There is no join to the
-     * platform pool anywhere in this query, and the saved-candidate path stores
-     * a distinct employer-owned copy (candidate-import: tenantId=employer,
-     * pool='tenant') rather than referencing the personal profile, so "saved
-     * candidates" is not a bridge back into personal/job-seeking scope. */
-    eq(candidatesTable.pool, "tenant"),
-    or(
-      isNull((candidatesTable as any).doNotContact),
-      ne((candidatesTable as any).doNotContact, true),
-    ),
-    /* GDPR: erased candidate rows must never surface in any sourcing
-     * result, even if they still match on title/skill. Same rule as the
-     * candidates list endpoint. */
-    isNull((candidatesTable as any).dataErasedAt),
-  ));
+  const tenantCond =
+    tenantScope === null
+      ? undefined
+      : Array.isArray(tenantScope)
+        ? inArray(candidatesTable.tenantId, tenantScope)
+        : eq(candidatesTable.tenantId, tenantScope);
+  const all = await dbc
+    .select()
+    .from(candidatesTable)
+    .where(
+      and(
+        tenantCond,
+        /* PURE FIREWALL (thesis A): internal search must read ONLY tenant-owned
+         * records (current employees + previously-saved/applied candidates), and
+         * NEVER a personal platform-pool job-seeker profile. Tenant-owned rows are
+         * pool='tenant'; personal profiles are pool='platform' (or the transitional
+         * 'pending_profile'). Filtering on tenantId ALONE is not enough: it would
+         * rely on platform rows always carrying a sentinel tenantId ("platform" /
+         * the super-admin tenant) that never collides with a customer tenant — an
+         * incidental guarantee, not an enforced one. The explicit pool='tenant'
+         * predicate makes the firewall real: a platform profile can never surface
+         * here regardless of any tenant-id coincidence. There is no join to the
+         * platform pool anywhere in this query, and the saved-candidate path stores
+         * a distinct employer-owned copy (candidate-import: tenantId=employer,
+         * pool='tenant') rather than referencing the personal profile, so "saved
+         * candidates" is not a bridge back into personal/job-seeking scope. */
+        eq(candidatesTable.pool, "tenant"),
+        or(
+          isNull((candidatesTable as any).doNotContact),
+          ne((candidatesTable as any).doNotContact, true),
+        ),
+        /* GDPR: erased candidate rows must never surface in any sourcing
+         * result, even if they still match on title/skill. Same rule as the
+         * candidates list endpoint. */
+        isNull((candidatesTable as any).dataErasedAt),
+      ),
+    );
 
   // Languages count as match signal for internal candidates too — bench rows
   // often list "Spanish"/"English" in their skills array.
-  const icpSkills = [...ctx.requiredSkills, ...ctx.languages].map(s => s.toLowerCase());
-  const titles = [ctx.jobTitle, ...ctx.alternateTitles].map(t => t.toLowerCase()).filter(Boolean);
+  const icpSkills = [...ctx.requiredSkills, ...ctx.languages].map((s) => s.toLowerCase());
+  const titles = [ctx.jobTitle, ...ctx.alternateTitles].map((t) => t.toLowerCase()).filter(Boolean);
 
-  const scored = all.map(c => {
-    const cSkills = (c.skills || []).map(s => s.toLowerCase());
-    const overlap = icpSkills.filter(s => cSkills.some(cs => cs.includes(s) || s.includes(cs)));
-    const skillScore = icpSkills.length > 0 ? (overlap.length / icpSkills.length) : 0.5;
+  const scored = all.map((c) => {
+    const cSkills = (c.skills || []).map((s) => s.toLowerCase());
+    const overlap = icpSkills.filter((s) => cSkills.some((cs) => cs.includes(s) || s.includes(cs)));
+    const skillScore = icpSkills.length > 0 ? overlap.length / icpSkills.length : 0.5;
 
     // Title match also matters — prevents skill-stuffed candidates from a wrong domain
     const cTitle = (c.currentTitle || "").toLowerCase();
-    const titleHit = titles.some(t => t && cTitle.includes(t));
+    const titleHit = titles.some((t) => t && cTitle.includes(t));
     const titleScore = titleHit ? 1 : 0.4;
 
     const finalScore = Math.round((skillScore * 0.6 + titleScore * 0.4) * 100);
@@ -260,11 +307,13 @@ async function searchInternalDatabase(
      the downstream LLM scoring batch), then fill the remainder with the
      highest-scoring non-employees. */
   const EMPLOYEE_CAP = Math.max(25, Math.ceil(ctx.maxResults * 1.5));
-  const employees    = scored.filter(c => c.isCurrentEmployee)
-                              .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
-                              .slice(0, EMPLOYEE_CAP);
-  const nonEmployees = scored.filter(c => !c.isCurrentEmployee)
-                              .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+  const employees = scored
+    .filter((c) => c.isCurrentEmployee)
+    .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+    .slice(0, EMPLOYEE_CAP);
+  const nonEmployees = scored
+    .filter((c) => !c.isCurrentEmployee)
+    .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
   const remainingSlots = Math.max(0, ctx.maxResults - employees.length);
   const top = [...employees, ...nonEmployees.slice(0, remainingSlots)];
 
@@ -282,26 +331,48 @@ async function searchInternalDatabase(
  * marker that unlocks external sourcing spend for this requisition. */
 router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), async (req, res) => {
   const { jobId, maxPerSource = 15 } = req.body;
-  if (!jobId) { res.status(400).json({ error: "jobId required" }); return; }
+  if (!jobId) {
+    res.status(400).json({ error: "jobId required" });
+    return;
+  }
 
   const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  const [icp] = await db.select().from(icpTable).where(eq(icpTable.jobId, jobId)).orderBy(desc(icpTable.version)).limit(1);
-  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  const [icp] = await db
+    .select()
+    .from(icpTable)
+    .where(eq(icpTable.jobId, jobId))
+    .orderBy(desc(icpTable.version))
+    .limit(1);
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
 
   // Same authz as /sourcing/search: the caller must belong to the job's tenant
   // (or an ancestor); a plain recruiter must be assigned to the requisition
   // (this route WRITES the review marker onto the job's pipeline row).
   const callerId = getAuthUserId(req);
-  if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [caller] = await db.select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
-    .from(usersTable).where(eq(usersTable.id, callerId)).limit(1);
-  if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!callerId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [caller] = await db
+    .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
+  if (!caller) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const callerAllowed = await getDataScopeTenantIds(caller);
   if (callerAllowed !== null && (!job.tenantId || !callerAllowed.includes(job.tenantId))) {
-    res.status(403).json({ error: "Forbidden — job is outside your tenant scope." }); return;
+    res.status(403).json({ error: "Forbidden — job is outside your tenant scope." });
+    return;
   }
   if (caller.role === "recruiter" && !(await recruiterIsAssignedToJob(callerId, job))) {
-    res.status(403).json({ error: "Forbidden — you are not assigned to this requisition." }); return;
+    res.status(403).json({ error: "Forbidden — you are not assigned to this requisition." });
+    return;
   }
   if (!assertJobApproved(res, job.status)) return;
 
@@ -312,9 +383,10 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
   // tenant and never reads the platform pool, so personal/job-seeking profiles
   // are never linked to the employer.
   const internalRes = await searchInternalDatabase(ctx, tenantId);
-  const internalScored = icp && internalRes.candidates.length > 0
-    ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
-    : internalRes.candidates;
+  const internalScored =
+    icp && internalRes.candidates.length > 0
+      ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
+      : internalRes.candidates;
   const internalFinal = internalScored.map((s: any) => {
     const orig = internalRes.candidates.find((c: any) => c.id === s.id);
     return { ...s, candidateId: (orig as any)?.candidateId ?? (s as any).candidateId };
@@ -331,7 +403,10 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
   });
 
   // Record the review marker — THIS is what unlocks external sourcing spend.
-  await recordInternalReview(jobId, tenantId, { reviewedByUserId: callerId, matchCount: flagged.length });
+  await recordInternalReview(jobId, tenantId, {
+    reviewedByUserId: callerId,
+    matchCount: flagged.length,
+  });
 
   res.json({
     total: flagged.length,
@@ -340,7 +415,8 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
     icpMissing: !icp,
     internalReviewedAt: new Date().toISOString(),
     candidates: flagged.sort((a: any, b: any) => {
-      const empDiff = (((b as any).isCurrentEmployee ? 1 : 0) - ((a as any).isCurrentEmployee ? 1 : 0));
+      const empDiff =
+        ((b as any).isCurrentEmployee ? 1 : 0) - ((a as any).isCurrentEmployee ? 1 : 0);
       if (empDiff !== 0) return empDiff;
       return ((b as any).matchScore ?? 0) - ((a as any).matchScore ?? 0);
     }),
@@ -349,25 +425,50 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
 
 /* ── POST /sourcing/search — trigger external sourcing for a job ───── */
 router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (req, res) => {
-  const { jobId, sources = ["internal", "github", "pdl", "serp", "enrichlayer"], maxPerSource = 15 } = req.body;
-  if (!jobId) { res.status(400).json({ error: "jobId required" }); return; }
+  const {
+    jobId,
+    sources = ["internal", "github", "pdl", "serp", "enrichlayer"],
+    maxPerSource = 15,
+  } = req.body;
+  if (!jobId) {
+    res.status(400).json({ error: "jobId required" });
+    return;
+  }
 
   const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  const [icp] = await db.select().from(icpTable).where(eq(icpTable.jobId, jobId)).orderBy(desc(icpTable.version)).limit(1);
-  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  const [icp] = await db
+    .select()
+    .from(icpTable)
+    .where(eq(icpTable.jobId, jobId))
+    .orderBy(desc(icpTable.version))
+    .limit(1);
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
 
   /* Tenant-membership gate. This route reads the tenant's private pool/DNC list
    * AND now writes sourced-stage application rows for `jobId`, so a bare jobId can
    * no longer be trusted: the caller must belong to the job's tenant (or an
    * ancestor). allowed === null = platform_admin (no filter). */
   const callerId = getAuthUserId(req);
-  if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [caller] = await db.select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
-    .from(usersTable).where(eq(usersTable.id, callerId)).limit(1);
-  if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!callerId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [caller] = await db
+    .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
+  if (!caller) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const callerAllowed = await getDataScopeTenantIds(caller);
   if (callerAllowed !== null && (!job.tenantId || !callerAllowed.includes(job.tenantId))) {
-    res.status(403).json({ error: "Forbidden — job is outside your tenant scope." }); return;
+    res.status(403).json({ error: "Forbidden — job is outside your tenant scope." });
+    return;
   }
   /* WRITE gate: /sourcing/search attaches sourced-stage application rows to
    * `jobId`. Read-only recommendation scans (/sourcing/nl-search) stay
@@ -375,25 +476,17 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
    * requisition requires assignment for a plain recruiter. Admin-class roles
    * already cleared the tenant-scope gate above. */
   if (caller.role === "recruiter" && !(await recruiterIsAssignedToJob(callerId, job))) {
-    res.status(403).json({ error: "Forbidden — you are not assigned to this requisition." }); return;
+    res.status(403).json({ error: "Forbidden — you are not assigned to this requisition." });
+    return;
   }
 
   // Sourcing for a requisition is blocked until it has cleared approval.
   if (!assertJobApproved(res, job.status)) return;
 
-  /* ENFORCED internal-first: external sourcing spends money (external provider
-   * API calls) and must not run until the recruiter has reviewed this
-   * requisition's OWN internal talent pool via POST /sourcing/internal. The
-   * marker is durable (job_pipelines.agent_config.__internalReview) so the gate
-   * survives refreshes and is enforced server-side, not just in the UI. */
-  const internalReviewed = await getInternalReview(jobId);
-  if (!internalReviewed) {
-    res.status(409).json({
-      error: "Review your own internal talent for this role before sourcing externally.",
-      code: "INTERNAL_REVIEW_REQUIRED",
-    });
-    return;
-  }
+  /* ADVISORY internal-first (2026-08-12, per product owner): reviewing the
+   * requisition's own internal talent before spending on external providers is
+   * a recommendation surfaced in the UI, not a server-side blocker. The
+   * internal pool is always searched as part of this fan-out anyway. */
 
   const tenantId = job.tenantId || "";
   const ctx = buildSearchContext(job, icp || null, maxPerSource);
@@ -411,17 +504,23 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
     searchInternalDatabase(ctx, tenantId),
     runSourcingProviders(ctx, { requested: sources }),
   ]);
-  const ghRes   = providerResults.github;
-  const pdlRes  = providerResults.pdl;
+  const ghRes = providerResults.github;
+  const pdlRes = providerResults.pdl;
   const serpRes = providerResults.serp;
-  const elRes   = providerResults.enrichlayer;
+  const elRes = providerResults.enrichlayer;
 
-  const externalAll = [...ghRes.candidates, ...pdlRes.candidates, ...serpRes.candidates, ...elRes.candidates];
+  const externalAll = [
+    ...ghRes.candidates,
+    ...pdlRes.candidates,
+    ...serpRes.candidates,
+    ...elRes.candidates,
+  ];
   const externalScored = icp ? await scoreExternalCandidates(externalAll, icp as any) : externalAll;
 
-  const internalScored = icp && internalRes.candidates.length > 0
-    ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
-    : internalRes.candidates;
+  const internalScored =
+    icp && internalRes.candidates.length > 0
+      ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
+      : internalRes.candidates;
 
   const internalFinal = internalScored.map((s: any) => {
     const orig = internalRes.candidates.find((c: any) => c.id === s.id);
@@ -429,18 +528,20 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
   });
 
   // DNC filter for external candidates
-  const dncRows = await db.select({ email: candidatesTable.email })
+  const dncRows = await db
+    .select({ email: candidatesTable.email })
     .from(candidatesTable)
-    .where(and(
-      eq(candidatesTable.tenantId, tenantId),
-      eq((candidatesTable as any).doNotContact, true),
-    ));
-  const dncEmails = new Set(dncRows.map(r => (r.email ?? "").trim().toLowerCase()).filter(Boolean));
+    .where(
+      and(eq(candidatesTable.tenantId, tenantId), eq((candidatesTable as any).doNotContact, true)),
+    );
+  const dncEmails = new Set(
+    dncRows.map((r) => (r.email ?? "").trim().toLowerCase()).filter(Boolean),
+  );
   const isDnc = (c: any) => {
     const e = (c?.email ?? "").trim().toLowerCase();
     return e !== "" && dncEmails.has(e);
   };
-  const externalNonDnc = externalScored.filter(c => !isDnc(c));
+  const externalNonDnc = externalScored.filter((c) => !isDnc(c));
 
   /* Geo flag: keep every candidate but mark those clearly outside the ICP's
      target location. A candidate is a match if they are in the target region OR
@@ -473,18 +574,26 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
   // tenant_id, which must match the job's tenant — not the caller's).
   let jobTenantId: string | null = null;
   try {
-    const [jr] = await db.select({ tenantId: jobsTable.tenantId })
-      .from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
+    const [jr] = await db
+      .select({ tenantId: jobsTable.tenantId })
+      .from(jobsTable)
+      .where(eq(jobsTable.id, jobId))
+      .limit(1);
     jobTenantId = jr?.tenantId ?? null;
-  } catch { jobTenantId = null; }
+  } catch {
+    jobTenantId = null;
+  }
   for (const c of externalFlagged as any[]) {
     try {
       let normalizedId: string = c.id;
       const tid = tenantId || "acme";
-      const realEmail = typeof c.email === "string" && c.email.trim()
-        && !c.email.trim().toLowerCase().endsWith("@unknown.local")
-        && !c.email.trim().toLowerCase().endsWith("@import.local")
-        ? c.email.trim().toLowerCase() : "";
+      const realEmail =
+        typeof c.email === "string" &&
+        c.email.trim() &&
+        !c.email.trim().toLowerCase().endsWith("@unknown.local") &&
+        !c.email.trim().toLowerCase().endsWith("@import.local")
+          ? c.email.trim().toLowerCase()
+          : "";
 
       // Reuse the existing candidate when we've seen this person before. Uses the
       // shared resolver so sourcing and import agree on identity (LinkedIn →
@@ -504,25 +613,34 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
       if (existingCand) {
         normalizedId = existingCand.id;
       } else {
-        const [inserted] = await db.insert(candidatesTable).values({
-          tenantId: tid,
-          firstName: c.firstName || "Unknown",
-          lastName: c.lastName || "",
-          // email is NOT NULL — mint a placeholder when the source had none.
-          email: realEmail || `sourced-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@unknown.local`,
-          location: c.location || null,
-          currentTitle: c.currentTitle || null,
-          currentCompany: c.currentCompany || null,
-          linkedinUrl: c.linkedinUrl || null,
-          githubUrl: c.githubProfile || null,
-          skills: c.skills || [],
-          source: c.source || "serp",
-        }).returning({ id: candidatesTable.id }).catch(() => [null as any]);
+        const [inserted] = await db
+          .insert(candidatesTable)
+          .values({
+            tenantId: tid,
+            firstName: c.firstName || "Unknown",
+            lastName: c.lastName || "",
+            // email is NOT NULL — mint a placeholder when the source had none.
+            email:
+              realEmail ||
+              `sourced-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@unknown.local`,
+            location: c.location || null,
+            currentTitle: c.currentTitle || null,
+            currentCompany: c.currentCompany || null,
+            linkedinUrl: c.linkedinUrl || null,
+            githubUrl: c.githubProfile || null,
+            skills: c.skills || [],
+            source: c.source || "serp",
+          })
+          .returning({ id: candidatesTable.id })
+          .catch(() => [null as any]);
         if (inserted?.id) normalizedId = inserted.id;
       }
 
-      const existing = await db.select().from(sourcedCandidatesTable)
-        .where(eq(sourcedCandidatesTable.normalizedCandidateId, normalizedId)).limit(1);
+      const existing = await db
+        .select()
+        .from(sourcedCandidatesTable)
+        .where(eq(sourcedCandidatesTable.normalizedCandidateId, normalizedId))
+        .limit(1);
       if (existing.length === 0) {
         await db.insert(sourcedCandidatesTable).values({
           tenantId: tenantId || "acme",
@@ -545,12 +663,16 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
       // so no AI credits are consumed. Best-effort — never blocks sourcing.
       if (jobTenantId && normalizedId) {
         try {
-          const existingApp = await db.select({ id: applicationsTable.id })
+          const existingApp = await db
+            .select({ id: applicationsTable.id })
             .from(applicationsTable)
-            .where(and(
-              eq(applicationsTable.candidateId, normalizedId),
-              eq(applicationsTable.jobId, jobId),
-            )).limit(1);
+            .where(
+              and(
+                eq(applicationsTable.candidateId, normalizedId),
+                eq(applicationsTable.jobId, jobId),
+              ),
+            )
+            .limit(1);
           if (existingApp.length === 0) {
             await db.insert(applicationsTable).values({
               tenantId: jobTenantId,
@@ -564,38 +686,44 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
               ),
             });
           }
-        } catch { /* best-effort: never block sourcing on app-row creation */ }
+        } catch {
+          /* best-effort: never block sourcing on app-row creation */
+        }
       }
-    } catch { /* skip duplicates */ }
+    } catch {
+      /* skip duplicates */
+    }
   }
 
   res.json({
     total: all.length,
     saved,
     bySource: {
-      internal:    internalRes.candidates.length,
-      github:      ghRes.candidates.length,
-      pdl:         pdlRes.candidates.length,
-      serp:        serpRes.candidates.length,
+      internal: internalRes.candidates.length,
+      github: ghRes.candidates.length,
+      pdl: pdlRes.candidates.length,
+      serp: serpRes.candidates.length,
       enrichlayer: elRes.candidates.length,
     },
     queries: {
-      internal:    { query: internalRes.query,    skipped: internalRes.skipped },
-      github:      { query: ghRes.query,          skipped: ghRes.skipped },
-      pdl:         { query: pdlRes.query,         skipped: pdlRes.skipped },
-      serp:        { query: serpRes.query,        skipped: serpRes.skipped },
-      enrichlayer: { query: elRes.query,          skipped: elRes.skipped },
+      internal: { query: internalRes.query, skipped: internalRes.skipped },
+      github: { query: ghRes.query, skipped: ghRes.skipped },
+      pdl: { query: pdlRes.query, skipped: pdlRes.skipped },
+      serp: { query: serpRes.query, skipped: serpRes.skipped },
+      enrichlayer: { query: elRes.query, skipped: elRes.skipped },
     },
-    icpUsed: icp ? {
-      domain: (icp as any).domain,
-      subSpecialty: (icp as any).subSpecialty,
-      roleFamily: (icp as any).roleFamily,
-      booleanSearchString: (icp as any).booleanSearchString,
-      alternateTitles: (icp as any).alternateTitles,
-      requiredCertifications: (icp as any).requiredCertifications,
-      toolsAndSystems: (icp as any).toolsAndSystems,
-      negativeKeywords: (icp as any).negativeKeywords,
-    } : null,
+    icpUsed: icp
+      ? {
+          domain: (icp as any).domain,
+          subSpecialty: (icp as any).subSpecialty,
+          roleFamily: (icp as any).roleFamily,
+          booleanSearchString: (icp as any).booleanSearchString,
+          alternateTitles: (icp as any).alternateTitles,
+          requiredCertifications: (icp as any).requiredCertifications,
+          toolsAndSystems: (icp as any).toolsAndSystems,
+          negativeKeywords: (icp as any).negativeKeywords,
+        }
+      : null,
     icpMissing: !icp,
     pdlAvailable: !!process.env.PDL_API_KEY,
     serpAvailable: !!(process.env.SERP_API_KEY || process.env.SERPAPI_KEY),
@@ -608,7 +736,8 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
        searchInternalDatabase so the always-include guarantee survives the
        final merge with external sources. */
     candidates: all.sort((a, b) => {
-      const empDiff = (((b as any).isCurrentEmployee ? 1 : 0) - ((a as any).isCurrentEmployee ? 1 : 0));
+      const empDiff =
+        ((b as any).isCurrentEmployee ? 1 : 0) - ((a as any).isCurrentEmployee ? 1 : 0);
       if (empDiff !== 0) return empDiff;
       return ((b as any).matchScore ?? 0) - ((a as any).matchScore ?? 0);
     }),
@@ -622,15 +751,24 @@ router.get("/sourcing/status", async (_req, res) => {
   // runs. `internal` (a DB search, not a provider) and `linkedin` (placeholder)
   // are not part of the registry and stay defined here.
   const ps = getProviderStatus();
-  const connector = (p: typeof ps[keyof typeof ps]) => ({ available: p.available, apiKey: p.apiKey, note: p.note });
+  const connector = (p: (typeof ps)[keyof typeof ps]) => ({
+    available: p.available,
+    apiKey: p.apiKey,
+    note: p.note,
+  });
   res.json({
     connectors: {
-      internal:    { available: true, apiKey: false, note: "Always on — your talent pool + current employees", alwaysOn: true },
-      github:      connector(ps.github),
-      pdl:         connector(ps.pdl),
-      serp:        connector(ps.serp),
+      internal: {
+        available: true,
+        apiKey: false,
+        note: "Always on — your talent pool + current employees",
+        alwaysOn: true,
+      },
+      github: connector(ps.github),
+      pdl: connector(ps.pdl),
+      serp: connector(ps.serp),
       enrichlayer: connector(ps.enrichlayer),
-      linkedin:    { available: false, apiKey: false, note: "Coming soon" },
+      linkedin: { available: false, apiKey: false, note: "Coming soon" },
     },
   });
 });
@@ -641,11 +779,23 @@ router.get("/sourcing/candidates", async (req, res) => {
    * tenant-private. One tenant marking someone Do Not Contact must NOT affect
    * another tenant, and one tenant must never see another's sourced pool. */
   const userId = getAuthUserId(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [user] = await db.select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
-    .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-  if (!user.tenantId && user.role !== "platform_admin") { res.status(403).json({ error: "No tenant context" }); return; }
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [user] = await db
+    .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!user.tenantId && user.role !== "platform_admin") {
+    res.status(403).json({ error: "No tenant context" });
+    return;
+  }
   // Data scope: platform_admin = no filter (null); recruiter_admin = assigned
   // client tenants only (intersected with the agency subtree); everyone else =
   // full subtree via getAllowedTenantIds. The read-scope exemption below widens
@@ -662,27 +812,35 @@ router.get("/sourcing/candidates", async (req, res) => {
   readScopeExemption(SOURCED_POOL_VISIBILITY);
 
   // Defensive cap: see lib/query-limits.ts.
-  const sourced = await db.select().from(sourcedCandidatesTable)
+  const sourced = await db
+    .select()
+    .from(sourcedCandidatesTable)
     .where(allowed === null ? undefined : inArray(sourcedCandidatesTable.tenantId, allowed))
-    .orderBy(desc(sourcedCandidatesTable.createdAt)).limit(MAX_PAGE_SIZE);
+    .orderBy(desc(sourcedCandidatesTable.createdAt))
+    .limit(MAX_PAGE_SIZE);
 
   /* DNC filter — a candidate sourced BEFORE being marked Do Not Contact would
    * otherwise linger in this saved list and risk being re-contacted. Mirror the
    * search-path filter: drop any sourced row whose linked candidate id is on the
    * DNC list, or whose raw email matches a DNC email. Scoped to THIS tenant. */
-  const dncRows = await db.select({
-    id: candidatesTable.id,
-    email: candidatesTable.email,
-  })
+  const dncRows = await db
+    .select({
+      id: candidatesTable.id,
+      email: candidatesTable.email,
+    })
     .from(candidatesTable)
-    .where(and(
-      allowed === null ? undefined : inArray(candidatesTable.tenantId, allowed),
-      eq((candidatesTable as any).doNotContact, true),
-    ));
-  const dncIds = new Set(dncRows.map(r => r.id).filter(Boolean));
-  const dncEmails = new Set(dncRows.map(r => (r.email ?? "").trim().toLowerCase()).filter(Boolean));
+    .where(
+      and(
+        allowed === null ? undefined : inArray(candidatesTable.tenantId, allowed),
+        eq((candidatesTable as any).doNotContact, true),
+      ),
+    );
+  const dncIds = new Set(dncRows.map((r) => r.id).filter(Boolean));
+  const dncEmails = new Set(
+    dncRows.map((r) => (r.email ?? "").trim().toLowerCase()).filter(Boolean),
+  );
 
-  const visible = sourced.filter(s => {
+  const visible = sourced.filter((s) => {
     // Check BOTH id forms — a merged row can carry normalizedCandidateId AND
     // mergedWithCandidateId, and either may point at the DNC candidate.
     const normId = (s as any).normalizedCandidateId;
@@ -694,7 +852,7 @@ router.get("/sourcing/candidates", async (req, res) => {
     return true;
   });
 
-  res.json(visible.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
+  res.json(visible.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() })));
 });
 
 /* ── POST /sourcing/ingest ────────────────────────────────────────── */
@@ -706,18 +864,33 @@ router.post("/sourcing/ingest", validate({ body: SourcingIngestBody }), async (r
    * (Previously hardcoded tenantId:"acme", which corrupted every other tenant's
    * pool and let any anonymous caller write.) */
   const callerId = getAuthUserId(req);
-  if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [caller] = await db.select({ tenantId: usersTable.tenantId, role: usersTable.role })
-    .from(usersTable).where(eq(usersTable.id, callerId)).limit(1);
-  if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
-  if (!caller.tenantId) { res.status(403).json({ error: "No tenant context" }); return; }
+  if (!callerId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [caller] = await db
+    .select({ tenantId: usersTable.tenantId, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
+  if (!caller) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!caller.tenantId) {
+    res.status(403).json({ error: "No tenant context" });
+    return;
+  }
 
-  const [sourced] = await db.insert(sourcedCandidatesTable).values({
-    tenantId: caller.tenantId,
-    source,
-    rawData: { ...rawData, profileUrl },
-    mergeConfidence: null,
-  }).returning();
+  const [sourced] = await db
+    .insert(sourcedCandidatesTable)
+    .values({
+      tenantId: caller.tenantId,
+      source,
+      rawData: { ...rawData, profileUrl },
+      mergeConfidence: null,
+    })
+    .returning();
   res.json({ ...sourced, createdAt: sourced.createdAt.toISOString() });
 });
 
@@ -743,11 +916,23 @@ router.post("/sourcing/nl-search", validate({ body: NlSourcingBody }), async (re
      * have a jobId to lean on, so we must authenticate. Pre-existing
      * project-wide auth pattern: token → userId → users row. */
     const userId = getAuthUserId(req);
-    if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
-    const [user] = await db.select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
-      .from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-    if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-    if (!user.tenantId && user.role !== "platform_admin") { res.status(403).json({ error: "No tenant context" }); return; }
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const [user] = await db
+      .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!user.tenantId && user.role !== "platform_admin") {
+      res.status(403).json({ error: "No tenant context" });
+      return;
+    }
     // Data scope: recruiter_admin is narrowed to assigned client tenants;
     // platform_admin = null (no filter); other roles keep subtree scope. The
     // read-scope exemption below applies to plain recruiters (req-assignment
@@ -758,8 +943,16 @@ router.post("/sourcing/nl-search", validate({ body: NlSourcingBody }), async (re
     // agency-wide by design. The attach step that writes to a req is gated.
     readScopeExemption(TALENT_REDISCOVERY);
 
-    const { query, jobId, sources = ["internal", "github", "pdl", "serp", "enrichlayer"], maxPerSource = 15 } = req.body as {
-      query: string; jobId?: string; sources?: string[]; maxPerSource?: number;
+    const {
+      query,
+      jobId,
+      sources = ["internal", "github", "pdl", "serp", "enrichlayer"],
+      maxPerSource = 15,
+    } = req.body as {
+      query: string;
+      jobId?: string;
+      sources?: string[];
+      maxPerSource?: number;
     };
 
     /* Step 1: NL → structured criteria via GPT. We keep the schema small
@@ -808,32 +1001,50 @@ Return JSON with these fields:
 
 Only include items actually implied by the query. Empty arrays are fine.`,
       "You parse recruiter sourcing queries into structured JSON. Respond with valid JSON only — no markdown fences, no commentary.",
-    ).catch((): Parsed => ({
-      /* Parser failure must not kill the search — fall back to using the raw
-       * query text as the title clause so providers still search for the
-       * recruiter's actual ask instead of running an unconstrained scan. */
-      jobTitle: query.slice(0, 120), alternateTitles: [], requiredSkills: [], preferredSkills: [], languages: [],
-      location: "", seniority: null, minYearsExperience: null, headcountTarget: null, salaryCap: null,
-      keywords: [], interpretation: `Searching for: ${query.slice(0, 160)}`,
-    }));
+    ).catch(
+      (): Parsed => ({
+        /* Parser failure must not kill the search — fall back to using the raw
+         * query text as the title clause so providers still search for the
+         * recruiter's actual ask instead of running an unconstrained scan. */
+        jobTitle: query.slice(0, 120),
+        alternateTitles: [],
+        requiredSkills: [],
+        preferredSkills: [],
+        languages: [],
+        location: "",
+        seniority: null,
+        minYearsExperience: null,
+        headcountTarget: null,
+        salaryCap: null,
+        keywords: [],
+        interpretation: `Searching for: ${query.slice(0, 160)}`,
+      }),
+    );
     /* The model may omit fields — normalize so downstream code never sees
      * undefined (validate() only guards the request body, not AI output). */
     parsed.alternateTitles = Array.isArray(parsed.alternateTitles) ? parsed.alternateTitles : [];
-    parsed.requiredSkills  = Array.isArray(parsed.requiredSkills)  ? parsed.requiredSkills  : [];
+    parsed.requiredSkills = Array.isArray(parsed.requiredSkills) ? parsed.requiredSkills : [];
     parsed.preferredSkills = Array.isArray(parsed.preferredSkills) ? parsed.preferredSkills : [];
-    parsed.languages       = Array.isArray(parsed.languages)       ? parsed.languages       : [];
-    parsed.keywords        = Array.isArray(parsed.keywords)        ? parsed.keywords        : [];
-    parsed.headcountTarget = typeof parsed.headcountTarget === "number" && parsed.headcountTarget > 0
-      ? Math.round(parsed.headcountTarget) : null;
-    parsed.salaryCap = parsed.salaryCap && typeof parsed.salaryCap.amount === "number" && parsed.salaryCap.amount > 0
-      ? {
-          amount: parsed.salaryCap.amount,
-          currency: typeof parsed.salaryCap.currency === "string" && /^[A-Za-z]{3}$/.test(parsed.salaryCap.currency)
-            ? parsed.salaryCap.currency.toUpperCase() : "USD",
-          period: (["hour", "month", "year"] as const).includes(parsed.salaryCap.period as any)
-            ? parsed.salaryCap.period : "month",
-        }
-      : null;
+    parsed.languages = Array.isArray(parsed.languages) ? parsed.languages : [];
+    parsed.keywords = Array.isArray(parsed.keywords) ? parsed.keywords : [];
+    parsed.headcountTarget =
+      typeof parsed.headcountTarget === "number" && parsed.headcountTarget > 0
+        ? Math.round(parsed.headcountTarget)
+        : null;
+    parsed.salaryCap =
+      parsed.salaryCap && typeof parsed.salaryCap.amount === "number" && parsed.salaryCap.amount > 0
+        ? {
+            amount: parsed.salaryCap.amount,
+            currency:
+              typeof parsed.salaryCap.currency === "string" &&
+              /^[A-Za-z]{3}$/.test(parsed.salaryCap.currency)
+                ? parsed.salaryCap.currency.toUpperCase()
+                : "USD",
+            period: (["hour", "month", "year"] as const).includes(parsed.salaryCap.period as any)
+              ? parsed.salaryCap.period
+              : "month",
+          }
+        : null;
 
     /* Step 2: if a jobId is supplied, layer the job's ICP on top so we
      * inherit certifications, tools, domain, and the negative-keyword
@@ -852,43 +1063,43 @@ Only include items actually implied by the query. Empty arrays are fine.`,
       const [j] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
       // Subtree scope: a parent admin may enrich with a descendant tenant's job ICP.
       if (!j || (allowed && !allowed.includes(j.tenantId ?? ""))) {
-        res.status(404).json({ error: "Job not found" }); return;
-      }
-      job = j;
-      const [ic] = await db.select().from(icpTable).where(eq(icpTable.jobId, jobId)).orderBy(desc(icpTable.version)).limit(1);
-      icp = ic ?? null;
-
-      /* ENFORCED internal-first: when the NL search is tied to a requisition it
-       * fans out to external providers (spend), so the recruiter must have
-       * reviewed that req's own internal talent first (POST /sourcing/internal).
-       * The jobId-less exploratory path is left open. */
-      const internalReviewed = await getInternalReview(jobId);
-      if (!internalReviewed) {
-        res.status(409).json({
-          error: "Review your own internal talent for this role before sourcing externally.",
-          code: "INTERNAL_REVIEW_REQUIRED",
-        });
+        res.status(404).json({ error: "Job not found" });
         return;
       }
+      job = j;
+      const [ic] = await db
+        .select()
+        .from(icpTable)
+        .where(eq(icpTable.jobId, jobId))
+        .orderBy(desc(icpTable.version))
+        .limit(1);
+      icp = ic ?? null;
+
+      /* ADVISORY internal-first (2026-08-12, per product owner): no longer a
+       * blocking gate — internal results are included in the fan-out below and
+       * the UI nudges recruiters to review them first. */
     }
 
     const ctx: SearchContext = {
-      jobTitle:               parsed.jobTitle || icp?.jobTitle || job?.title || "",
-      alternateTitles:        parsed.alternateTitles.length > 0 ? parsed.alternateTitles : (icp?.alternateTitles ?? []),
-      requiredSkills:         parsed.requiredSkills.length > 0 ? parsed.requiredSkills : (icp?.requiredSkills ?? []),
-      preferredSkills:        parsed.preferredSkills.length > 0 ? parsed.preferredSkills : (icp?.preferredSkills ?? []),
+      jobTitle: parsed.jobTitle || icp?.jobTitle || job?.title || "",
+      alternateTitles:
+        parsed.alternateTitles.length > 0 ? parsed.alternateTitles : (icp?.alternateTitles ?? []),
+      requiredSkills:
+        parsed.requiredSkills.length > 0 ? parsed.requiredSkills : (icp?.requiredSkills ?? []),
+      preferredSkills:
+        parsed.preferredSkills.length > 0 ? parsed.preferredSkills : (icp?.preferredSkills ?? []),
       requiredCertifications: icp?.requiredCertifications ?? [],
-      toolsAndSystems:        icp?.toolsAndSystems ?? [],
-      compliance:             icp?.compliance ?? [],
-      negativeKeywords:       icp?.negativeKeywords ?? [],
-      domain:                 icp?.domain ?? null,
-      roleFamily:             icp?.roleFamily ?? null,
-      seniority:              parsed.seniority ?? icp?.seniority ?? null,
-      languages:              Array.isArray(parsed.languages) ? parsed.languages.filter(Boolean) : [],
-      location:               parsed.location || job?.location || "",
-      workType:               (job?.workType as SearchContext["workType"]) ?? null,
-      booleanSearchString:    icp?.booleanSearchString ?? null,
-      maxResults:             maxPerSource,
+      toolsAndSystems: icp?.toolsAndSystems ?? [],
+      compliance: icp?.compliance ?? [],
+      negativeKeywords: icp?.negativeKeywords ?? [],
+      domain: icp?.domain ?? null,
+      roleFamily: icp?.roleFamily ?? null,
+      seniority: parsed.seniority ?? icp?.seniority ?? null,
+      languages: Array.isArray(parsed.languages) ? parsed.languages.filter(Boolean) : [],
+      location: parsed.location || job?.location || "",
+      workType: (job?.workType as SearchContext["workType"]) ?? null,
+      booleanSearchString: icp?.booleanSearchString ?? null,
+      maxResults: maxPerSource,
     };
 
     /* Step 3: same fan-out as /sourcing/search. Internal is always on; the
@@ -897,12 +1108,17 @@ Only include items actually implied by the query. Empty arrays are fine.`,
       searchInternalDatabase(ctx, allowed),
       runSourcingProviders(ctx, { requested: sources }),
     ]);
-    const ghRes   = providerResults.github;
-    const pdlRes  = providerResults.pdl;
+    const ghRes = providerResults.github;
+    const pdlRes = providerResults.pdl;
     const serpRes = providerResults.serp;
-    const elRes   = providerResults.enrichlayer;
+    const elRes = providerResults.enrichlayer;
 
-    const externalAll = [...ghRes.candidates, ...pdlRes.candidates, ...serpRes.candidates, ...elRes.candidates];
+    const externalAll = [
+      ...ghRes.candidates,
+      ...pdlRes.candidates,
+      ...serpRes.candidates,
+      ...elRes.candidates,
+    ];
     /* Re-score using the ICP if we have one, otherwise leave the per-adapter
      * scores in place — scoreExternalCandidates needs a real ICP row to
      * work, so synthesising one from `parsed` would just degrade quality. */
@@ -923,22 +1139,32 @@ Only include items actually implied by the query. Empty arrays are fine.`,
             languages: ctx.languages,
           }
         : null;
-    const externalScored = scoringIcp ? await scoreExternalCandidates(externalAll, scoringIcp) : externalAll;
-    const internalFinal = scoringIcp && internalRes.candidates.length > 0
-      ? (await scoreExternalCandidates(internalRes.candidates as any[], scoringIcp)).map((s: any) => {
-          const orig = internalRes.candidates.find((c: any) => c.id === s.id);
-          return { ...s, candidateId: (orig as any)?.candidateId ?? (s as any).candidateId };
-        })
-      : internalRes.candidates;
+    const externalScored = scoringIcp
+      ? await scoreExternalCandidates(externalAll, scoringIcp)
+      : externalAll;
+    const internalFinal =
+      scoringIcp && internalRes.candidates.length > 0
+        ? (await scoreExternalCandidates(internalRes.candidates as any[], scoringIcp)).map(
+            (s: any) => {
+              const orig = internalRes.candidates.find((c: any) => c.id === s.id);
+              return { ...s, candidateId: (orig as any)?.candidateId ?? (s as any).candidateId };
+            },
+          )
+        : internalRes.candidates;
 
     /* DNC filter — must mirror /sourcing/search exactly. */
-    const dncRows = await db.select({ email: candidatesTable.email })
+    const dncRows = await db
+      .select({ email: candidatesTable.email })
       .from(candidatesTable)
-      .where(and(
-        allowed === null ? undefined : inArray(candidatesTable.tenantId, allowed),
-        eq((candidatesTable as any).doNotContact, true),
-      ));
-    const dncEmails = new Set(dncRows.map(r => (r.email ?? "").trim().toLowerCase()).filter(Boolean));
+      .where(
+        and(
+          allowed === null ? undefined : inArray(candidatesTable.tenantId, allowed),
+          eq((candidatesTable as any).doNotContact, true),
+        ),
+      );
+    const dncEmails = new Set(
+      dncRows.map((r) => (r.email ?? "").trim().toLowerCase()).filter(Boolean),
+    );
     const externalNonDnc = externalScored.filter((c: any) => {
       const e = (c?.email ?? "").trim().toLowerCase();
       return e === "" || !dncEmails.has(e);
@@ -950,34 +1176,36 @@ Only include items actually implied by the query. Empty arrays are fine.`,
       mode: "nl",
       query,
       interpretation: parsed.interpretation,
-      parsed,                              // raw structured criteria for the UI to display
-      jobId: jobId ?? null,                // echoed back so the UI can pre-fill the attach picker
+      parsed, // raw structured criteria for the UI to display
+      jobId: jobId ?? null, // echoed back so the UI can pre-fill the attach picker
       total: all.length,
-      saved: 0,                            // NL search doesn't persist — call /sourcing/save explicitly if needed
+      saved: 0, // NL search doesn't persist — call /sourcing/save explicitly if needed
       bySource: {
-        internal:    internalRes.candidates.length,
-        github:      ghRes.candidates.length,
-        pdl:         pdlRes.candidates.length,
-        serp:        serpRes.candidates.length,
+        internal: internalRes.candidates.length,
+        github: ghRes.candidates.length,
+        pdl: pdlRes.candidates.length,
+        serp: serpRes.candidates.length,
         enrichlayer: elRes.candidates.length,
       },
       queries: {
-        internal:    { query: internalRes.query, skipped: internalRes.skipped },
-        github:      { query: ghRes.query,       skipped: ghRes.skipped },
-        pdl:         { query: pdlRes.query,      skipped: pdlRes.skipped },
-        serp:        { query: serpRes.query,     skipped: serpRes.skipped },
-        enrichlayer: { query: elRes.query,       skipped: elRes.skipped },
+        internal: { query: internalRes.query, skipped: internalRes.skipped },
+        github: { query: ghRes.query, skipped: ghRes.skipped },
+        pdl: { query: pdlRes.query, skipped: pdlRes.skipped },
+        serp: { query: serpRes.query, skipped: serpRes.skipped },
+        enrichlayer: { query: elRes.query, skipped: elRes.skipped },
       },
-      icpUsed: icp ? {
-        domain: (icp as any).domain,
-        roleFamily: (icp as any).roleFamily,
-        booleanSearchString: (icp as any).booleanSearchString,
-      } : null,
+      icpUsed: icp
+        ? {
+            domain: (icp as any).domain,
+            roleFamily: (icp as any).roleFamily,
+            booleanSearchString: (icp as any).booleanSearchString,
+          }
+        : null,
       icpMissing: !icp,
       candidates: all.sort((a: any, b: any) => {
-        const empDiff = ((b.isCurrentEmployee ? 1 : 0) - (a.isCurrentEmployee ? 1 : 0));
+        const empDiff = (b.isCurrentEmployee ? 1 : 0) - (a.isCurrentEmployee ? 1 : 0);
         if (empDiff !== 0) return empDiff;
-        return ((b.matchScore ?? 0) - (a.matchScore ?? 0));
+        return (b.matchScore ?? 0) - (a.matchScore ?? 0);
       }),
     });
   } catch (err: any) {
@@ -993,12 +1221,22 @@ router.post("/sourcing/merge", validate({ body: SourcingMergeBody }), async (req
   /* Interim role gate — recruiter-class only (recruiter-OWNERSHIP arrives with
    * the Tier 2 middleware). */
   const callerId = getAuthUserId(req);
-  if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [caller] = await db.select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
-    .from(usersTable).where(eq(usersTable.id, callerId)).limit(1);
-  if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!callerId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const [caller] = await db
+    .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
+  if (!caller) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   if (!["platform_admin", "tenant_admin", "recruiter_admin", "recruiter"].includes(caller.role)) {
-    res.status(403).json({ error: "Forbidden" }); return;
+    res.status(403).json({ error: "Forbidden" });
+    return;
   }
 
   /* Data-integrity gate — the merge pointer is written verbatim from the
@@ -1006,15 +1244,22 @@ router.post("/sourcing/merge", validate({ body: SourcingMergeBody }), async (req
    * duplicates at a candidate that doesn't exist or lives in another tenant.
    * Require the primary candidate to exist AND be inside the caller's subtree
    * (allowed === null = platform_admin, no filter). */
-  const [primary] = await db.select({ tenantId: candidatesTable.tenantId })
-    .from(candidatesTable).where(eq(candidatesTable.id, primaryCandidateId)).limit(1);
-  if (!primary) { res.status(404).json({ error: "Not found" }); return; }
+  const [primary] = await db
+    .select({ tenantId: candidatesTable.tenantId })
+    .from(candidatesTable)
+    .where(eq(candidatesTable.id, primaryCandidateId))
+    .limit(1);
+  if (!primary) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
   const callerAllowed = await getDataScopeTenantIds(caller);
   if (callerAllowed !== null && (!primary.tenantId || !callerAllowed.includes(primary.tenantId))) {
     // 404 (not 403): an out-of-scope primary is indistinguishable from a
     // non-existent one, so a caller can't probe candidate existence across
     // tenants. Same existence-hiding convention as the ownership ceiling below.
-    res.status(404).json({ error: "Not found" }); return;
+    res.status(404).json({ error: "Not found" });
+    return;
   }
 
   /* Recruiter OWNERSHIP ceiling (ratified). Merging REWRITES candidate identity —
@@ -1028,15 +1273,24 @@ router.post("/sourcing/merge", validate({ body: SourcingMergeBody }), async (req
   if (caller.role === "recruiter") {
     for (const cid of [primaryCandidateId, ...duplicateCandidateIds]) {
       if (!(await recruiterOwnsResource(caller, { kind: "candidateId", value: cid }))) {
-        res.status(404).json({ error: "Not found" }); return;
+        res.status(404).json({ error: "Not found" });
+        return;
       }
     }
   }
 
-  await Promise.all(duplicateCandidateIds.map((dupId: string) =>
-    db.update(sourcedCandidatesTable).set({ mergedWithCandidateId: primaryCandidateId }).where(eq(sourcedCandidatesTable.normalizedCandidateId, dupId))
-  ));
-  res.json({ success: true, message: `Merged ${duplicateCandidateIds.length} profiles into primary candidate` });
+  await Promise.all(
+    duplicateCandidateIds.map((dupId: string) =>
+      db
+        .update(sourcedCandidatesTable)
+        .set({ mergedWithCandidateId: primaryCandidateId })
+        .where(eq(sourcedCandidatesTable.normalizedCandidateId, dupId)),
+    ),
+  );
+  res.json({
+    success: true,
+    message: `Merged ${duplicateCandidateIds.length} profiles into primary candidate`,
+  });
 });
 
 export default router;

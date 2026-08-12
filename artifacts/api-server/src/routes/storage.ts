@@ -49,10 +49,7 @@ import {
   AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
 import { z } from "zod";
-import {
-  RequestUploadUrlBody,
-  RequestUploadUrlResponse,
-} from "@workspace/api-zod";
+import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
 
 /* Multipart upload chunk + part endpoints accept a small set of form-data
  * fields alongside the file. Validate inline (post-multer) for the same
@@ -64,26 +61,52 @@ import {
  * the raw value be a non-empty string of digits BEFORE coercing, which is
  * the only way to fail-closed on missing/empty multipart fields. */
 const intStringField = (min: number, max: number) =>
-  z.string().regex(/^\d+$/, "must be a non-empty integer string")
+  z
+    .string()
+    .regex(/^\d+$/, "must be a non-empty integer string")
     .transform((s) => Number(s))
     .pipe(z.number().int().min(min).max(max));
 
-const ChunkFields = z.object({
-  uploadId: z.string().trim().min(1).max(200),
-  chunkIndex: intStringField(0, 99_999),
-  totalChunks: intStringField(1, 100_000),
-  /* Optional: lets the multipart completion attach the recording pointer to the
+const ChunkFields = z
+  .object({
+    uploadId: z.string().trim().min(1).max(200),
+    chunkIndex: intStringField(0, 99_999),
+    totalChunks: intStringField(1, 100_000),
+    /* Optional: lets the multipart completion attach the recording pointer to the
      interview session in-request, mirroring POST /storage/uploads/recording. */
-  sessionId: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "sessionId must be a UUID").optional(),
-}).strict();
+    sessionId: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        "sessionId must be a UUID",
+      )
+      .optional(),
+  })
+  .strict();
 
-const PartFields = z.object({
-  sessionId: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "sessionId must be a UUID"),
-  partNumber: intStringField(1, 9999),
-}).strict();
+const PartFields = z
+  .object({
+    sessionId: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        "sessionId must be a UUID",
+      ),
+    partNumber: intStringField(1, 9999),
+  })
+  .strict();
 import { ObjectStorageService, ObjectNotFoundError, s3Client } from "../lib/objectStorage";
 import { ObjectPermission, getObjectAclPolicy } from "../lib/objectAcl";
-import { controlDb, db, usersTable, interviewSessionsTable, candidatesTable, candidateCareerProfilesTable } from "@workspace/db";
+import {
+  controlDb,
+  db,
+  usersTable,
+  interviewSessionsTable,
+  candidatesTable,
+  candidateCareerProfilesTable,
+  recruiterAvatarVideoJobsTable,
+  recruiterAvatarProfilesTable,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { resolveCandidateId } from "../lib/portal-auth";
 import { getAuthUserId } from "../lib/auth-token";
@@ -104,15 +127,31 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * S3 write, whose object key is derived from the caller-supplied sessionId and
  * therefore MUST be ownership-checked before any storage I/O.
  */
-async function isCallerAuthorizedForSession(callerId: string, sessionId: string, req: Request): Promise<boolean> {
-  const [session] = await db.select().from(interviewSessionsTable).where(eq(interviewSessionsTable.id, sessionId)).limit(1);
+async function isCallerAuthorizedForSession(
+  callerId: string,
+  sessionId: string,
+  req: Request,
+): Promise<boolean> {
+  const [session] = await db
+    .select()
+    .from(interviewSessionsTable)
+    .where(eq(interviewSessionsTable.id, sessionId))
+    .limit(1);
   if (!session) return false;
-  const [callerUser] = await controlDb.select().from(usersTable).where(eq(usersTable.id, callerId)).limit(1);
+  const [callerUser] = await controlDb
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
 
   if (callerUser?.role === "platform_admin") return true;
   /* Candidate-owner: match the session's candidate by FK, never by email. */
   if (session.candidateId) {
-    const [cand] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, session.candidateId)).limit(1);
+    const [cand] = await db
+      .select()
+      .from(candidatesTable)
+      .where(eq(candidatesTable.id, session.candidateId))
+      .limit(1);
     if (cand?.userId && cand.userId === callerId) return true;
   }
   /* Tenant recruiter/admin fallback (e.g. a recruiter re-uploading). */
@@ -137,13 +176,24 @@ async function isCallerAuthorizedForSession(callerId: string, sessionId: string,
  * email) or a tenant recruiter/admin — closes that gap without weakening the
  * standalone PATCH. Returns true when the pointer was written.
  */
-async function attachRecordingToSession(callerId: string, sessionId: string, objectPath: string, req: Request): Promise<boolean> {
+async function attachRecordingToSession(
+  callerId: string,
+  sessionId: string,
+  objectPath: string,
+  req: Request,
+): Promise<boolean> {
   const authorized = await isCallerAuthorizedForSession(callerId, sessionId, req);
   if (!authorized) {
-    req.log.warn({ sessionId, callerId }, "[storage] recording not attached — caller not authorized for session");
+    req.log.warn(
+      { sessionId, callerId },
+      "[storage] recording not attached — caller not authorized for session",
+    );
     return false;
   }
-  await db.update(interviewSessionsTable).set({ recordingUrl: objectPath }).where(eq(interviewSessionsTable.id, sessionId));
+  await db
+    .update(interviewSessionsTable)
+    .set({ recordingUrl: objectPath })
+    .where(eq(interviewSessionsTable.id, sessionId));
   return true;
 }
 
@@ -224,7 +274,7 @@ const partUpload = multer({
 interface MultipartEntry {
   s3UploadId: string;
   s3Key: string;
-  etags: Map<number, string>;   // partNumber (1-based) → ETag
+  etags: Map<number, string>; // partNumber (1-based) → ETag
   totalChunks: number;
   mimeType: string;
   timer: ReturnType<typeof setTimeout>;
@@ -245,12 +295,16 @@ async function evictMultipartEntry(uploadId: string) {
   multipartStore.delete(uploadId);
   /* Abort so S3 doesn't keep billing for orphaned parts */
   try {
-    await s3Client.send(new AbortMultipartUploadCommand({
-      Bucket: objectStorageService.getBucket(),
-      Key: entry.s3Key,
-      UploadId: entry.s3UploadId,
-    }));
-  } catch { /* best-effort */ }
+    await s3Client.send(
+      new AbortMultipartUploadCommand({
+        Bucket: objectStorageService.getBucket(),
+        Key: entry.s3Key,
+        UploadId: entry.s3UploadId,
+      }),
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 const ALLOWED_RESUME_TYPES = [
@@ -259,20 +313,9 @@ const ALLOWED_RESUME_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-const ALLOWED_IMAGE_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-];
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
-const ALLOWED_RECORDING_TYPES = [
-  "video/webm",
-  "video/mp4",
-  "audio/webm",
-  "audio/mp4",
-  "audio/ogg",
-];
+const ALLOWED_RECORDING_TYPES = ["video/webm", "video/mp4", "audio/webm", "audio/mp4", "audio/ogg"];
 
 /**
  * POST /storage/uploads/file
@@ -292,7 +335,9 @@ router.post(
       return;
     }
     if (!ALLOWED_RESUME_TYPES.includes(file.mimetype)) {
-      res.status(400).json({ error: "Only PDF and Word documents (.pdf, .doc, .docx) are accepted" });
+      res
+        .status(400)
+        .json({ error: "Only PDF and Word documents (.pdf, .doc, .docx) are accepted" });
       return;
     }
     try {
@@ -302,7 +347,7 @@ router.post(
       req.log.error({ err }, "Server-side file upload failed");
       res.status(500).json({ error: "Failed to upload file" });
     }
-  }
+  },
 );
 
 /**
@@ -327,13 +372,22 @@ router.post(
       return;
     }
     try {
-      const objectPath = await objectStorageService.uploadBuffer(file.buffer, file.mimetype);
+      /* Dedicated namespace: avatar photos must NOT share the generic
+       * "uploads" folder (resumes etc.) — the avatar read-fallback in
+       * canCallerReadObject is prefix-gated to recruiter-avatars/, so an
+       * avatar-profile pointer can never be used to claim/read a foreign
+       * generic upload (cross-tenant IDOR). */
+      const objectPath = await objectStorageService.uploadBuffer(
+        file.buffer,
+        file.mimetype,
+        "recruiter-avatars",
+      );
       res.json({ objectPath });
     } catch (err) {
       req.log.error({ err }, "Server-side image upload failed");
       res.status(500).json({ error: "Failed to upload image" });
     }
-  }
+  },
 );
 
 /**
@@ -366,8 +420,8 @@ router.post(
       if (sid && UUID_RE.test(sid)) {
         const [capSess] = await db
           .select({
-            status:       interviewSessionsTable.status,
-            completedAt:  interviewSessionsTable.completedAt,
+            status: interviewSessionsTable.status,
+            completedAt: interviewSessionsTable.completedAt,
             recordingUrl: interviewSessionsTable.recordingUrl,
           })
           .from(interviewSessionsTable)
@@ -380,7 +434,10 @@ router.post(
 
         if (capSess?.status === "completed" && !capSess.recordingUrl && ageMs < 30 * 60 * 1000) {
           sessionCapabilityId = sid;
-          req.log.info({ sessionId: sid, ageMs }, "[storage] recording upload auth via session capability");
+          req.log.info(
+            { sessionId: sid, ageMs },
+            "[storage] recording upload auth via session capability",
+          );
         }
       }
       if (!sessionCapabilityId) {
@@ -410,7 +467,9 @@ router.post(
     })();
     const effectiveMime = ALLOWED_RECORDING_TYPES.includes(baseMime)
       ? baseMime
-      : (ALLOWED_RECORDING_TYPES.includes(extMime) ? extMime : "");
+      : ALLOWED_RECORDING_TYPES.includes(extMime)
+        ? extMime
+        : "";
     if (!effectiveMime) {
       req.log.warn(
         { receivedMime: file.mimetype, baseMime, originalname: file.originalname, size: file.size },
@@ -420,8 +479,15 @@ router.post(
       return;
     }
     try {
-      const objectPath = await objectStorageService.uploadBuffer(file.buffer, effectiveMime, "recordings");
-      req.log.info({ size: file.size, mime: effectiveMime, rawMime: file.mimetype, objectPath }, "Interview recording uploaded");
+      const objectPath = await objectStorageService.uploadBuffer(
+        file.buffer,
+        effectiveMime,
+        "recordings",
+      );
+      req.log.info(
+        { size: file.size, mime: effectiveMime, rawMime: file.mimetype, objectPath },
+        "Interview recording uploaded",
+      );
       /* Attach to the session in this same authenticated request when a valid
        * sessionId is supplied — the candidate can't reliably hit the separate
        * tenant-gated PATCH after /end. Best-effort: a failure here still returns
@@ -438,7 +504,10 @@ router.post(
               .set({ recordingUrl: objectPath })
               .where(eq(interviewSessionsTable.id, sessionCapabilityId));
             attached = true;
-            req.log.info({ sessionId: sessionCapabilityId, objectPath }, "[storage] recording attached via session capability");
+            req.log.info(
+              { sessionId: sessionCapabilityId, objectPath },
+              "[storage] recording attached via session capability",
+            );
           } else {
             attached = await attachRecordingToSession(caller!.id, sessionId, objectPath, req);
           }
@@ -493,8 +562,8 @@ router.post(
         if (sid && UUID_RE.test(sid)) {
           const [capSess] = await db
             .select({
-              status:       interviewSessionsTable.status,
-              completedAt:  interviewSessionsTable.completedAt,
+              status: interviewSessionsTable.status,
+              completedAt: interviewSessionsTable.completedAt,
               recordingUrl: interviewSessionsTable.recordingUrl,
             })
             .from(interviewSessionsTable)
@@ -508,11 +577,17 @@ router.post(
           }
         }
       }
-      if (!sessionCapabilityId) { res.status(401).json({ error: "Authentication required" }); return; }
+      if (!sessionCapabilityId) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
     }
 
     const file = (req as any).file as Express.Multer.File | undefined;
-    if (!file) { res.status(400).json({ error: "No chunk provided" }); return; }
+    if (!file) {
+      res.status(400).json({ error: "No chunk provided" });
+      return;
+    }
 
     const parsed = ChunkFields.safeParse(req.body ?? {});
     if (!parsed.success) {
@@ -531,8 +606,8 @@ router.post(
       return;
     }
 
-    const bucket         = objectStorageService.getBucket();
-    const privatePrefix  = objectStorageService.getPrivatePrefix();
+    const bucket = objectStorageService.getBucket();
+    const privatePrefix = objectStorageService.getPrivatePrefix();
 
     let entry = multipartStore.get(uploadId);
 
@@ -540,7 +615,11 @@ router.post(
        client re-sent it. The upload already completed — return the cached result
        instead of re-completing (the S3 multipart session is gone) or 401-ing. */
     if (entry?.completed) {
-      res.json({ done: true, objectPath: entry.completed.objectPath, attached: entry.completed.attached });
+      res.json({
+        done: true,
+        objectPath: entry.completed.objectPath,
+        attached: entry.completed.attached,
+      });
       return;
     }
 
@@ -552,32 +631,44 @@ router.post(
 
     /* Get or initiate the S3 multipart upload session */
     if (!entry) {
-      const baseMime  = (file.mimetype || "video/webm").split(";")[0].trim().toLowerCase();
-      const mimeType  = ALLOWED_RECORDING_TYPES.includes(baseMime) ? baseMime : "video/webm";
-      const s3Key     = `${privatePrefix}/uploads/${randomUUID()}`;
+      const baseMime = (file.mimetype || "video/webm").split(";")[0].trim().toLowerCase();
+      const mimeType = ALLOWED_RECORDING_TYPES.includes(baseMime) ? baseMime : "video/webm";
+      const s3Key = `${privatePrefix}/uploads/${randomUUID()}`;
 
-      const initResult = await s3Client.send(new CreateMultipartUploadCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        ContentType: mimeType,
-      }));
+      const initResult = await s3Client.send(
+        new CreateMultipartUploadCommand({
+          Bucket: bucket,
+          Key: s3Key,
+          ContentType: mimeType,
+        }),
+      );
 
       /* Auto-abort after 30 min to avoid orphaned-part costs */
       const timer = setTimeout(() => evictMultipartEntry(uploadId), 30 * 60 * 1000);
-      entry = { s3UploadId: initResult.UploadId!, s3Key, etags: new Map(), totalChunks, mimeType, timer, capabilitySessionId: sessionCapabilityId };
+      entry = {
+        s3UploadId: initResult.UploadId!,
+        s3Key,
+        etags: new Map(),
+        totalChunks,
+        mimeType,
+        timer,
+        capabilitySessionId: sessionCapabilityId,
+      };
       multipartStore.set(uploadId, entry);
     }
 
     /* Upload this chunk as a multipart part (S3 part numbers are 1-based) */
     const partNumber = chunkIndex + 1;
-    const partResult = await s3Client.send(new UploadPartCommand({
-      Bucket: bucket,
-      Key: entry.s3Key,
-      UploadId: entry.s3UploadId,
-      PartNumber: partNumber,
-      Body: file.buffer,
-      ContentLength: file.buffer.length,
-    }));
+    const partResult = await s3Client.send(
+      new UploadPartCommand({
+        Bucket: bucket,
+        Key: entry.s3Key,
+        UploadId: entry.s3UploadId,
+        PartNumber: partNumber,
+        Body: file.buffer,
+        ContentLength: file.buffer.length,
+      }),
+    );
     entry.etags.set(partNumber, partResult.ETag!);
 
     req.log.info(
@@ -601,16 +692,21 @@ router.post(
         .sort(([a], [b]) => a - b)
         .map(([PartNumber, ETag]) => ({ PartNumber, ETag }));
 
-      await s3Client.send(new CompleteMultipartUploadCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        UploadId: s3UploadId,
-        MultipartUpload: { Parts: parts },
-      }));
+      await s3Client.send(
+        new CompleteMultipartUploadCommand({
+          Bucket: bucket,
+          Key: s3Key,
+          UploadId: s3UploadId,
+          MultipartUpload: { Parts: parts },
+        }),
+      );
 
       /* Return objectPath in the same /objects/... shape as uploadBuffer() */
       const objectPath = `/objects/${s3Key.slice(privatePrefix.length + 1)}`;
-      req.log.info({ uploadId, s3Key, parts: parts.length, mimeType, objectPath }, "Multipart recording completed");
+      req.log.info(
+        { uploadId, s3Key, parts: parts.length, mimeType, objectPath },
+        "Multipart recording completed",
+      );
       /* Attach the pointer to the session in this same authenticated request —
          mirrors POST /storage/uploads/recording so a portal-less candidate (who
          can't reach the tenant-gated PATCH after /end) still gets the recording
@@ -628,7 +724,10 @@ router.post(
             attached = await attachRecordingToSession(caller.id, bodySessionId, objectPath, req);
           }
         } catch (e: any) {
-          req.log.error({ err: e?.message, sessionId: bodySessionId }, "[storage] multipart recording attach failed");
+          req.log.error(
+            { err: e?.message, sessionId: bodySessionId },
+            "[storage] multipart recording attach failed",
+          );
         }
       }
       /* Keep the entry briefly (parts freed) so a retried final chunk whose
@@ -646,7 +745,9 @@ router.post(
          leaked) after 30 min. */
       entry.timer = setTimeout(() => evictMultipartEntry(uploadId), 30 * 60 * 1000);
       req.log.error({ err: err?.message }, "Multipart recording completion failed");
-      res.status(500).json({ error: err?.message || "Failed to complete multipart recording upload" });
+      res
+        .status(500)
+        .json({ error: err?.message || "Failed to complete multipart recording upload" });
     }
   },
 );
@@ -675,10 +776,16 @@ router.post(
   partUpload.single("file"),
   async (req: Request, res: Response) => {
     const caller = await resolveCaller(req);
-    if (!caller) { res.status(401).json({ error: "Authentication required" }); return; }
+    if (!caller) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
 
     const file = (req as any).file as Express.Multer.File | undefined;
-    if (!file) { res.status(400).json({ error: "No file provided" }); return; }
+    if (!file) {
+      res.status(400).json({ error: "No file provided" });
+      return;
+    }
 
     /* sessionId UUID check + partNumber range are inside the schema so
      * the path-traversal guard can't accidentally be removed in a later
@@ -703,29 +810,37 @@ router.post(
      * session that does not exist — gets a 404 so ownership can't be probed. */
     const authorized = await isCallerAuthorizedForSession(caller.id, sessionId, req);
     if (!authorized) {
-      req.log.warn({ sessionId, callerId: caller.id }, "[storage] recording part rejected — caller not authorized for session");
+      req.log.warn(
+        { sessionId, callerId: caller.id },
+        "[storage] recording part rejected — caller not authorized for session",
+      );
       res.status(404).json({ error: "Session not found" });
       return;
     }
 
-    const bucket       = objectStorageService.getBucket();
+    const bucket = objectStorageService.getBucket();
     const privatePrefix = objectStorageService.getPrivatePrefix();
-    const pad          = String(partNumber).padStart(4, "0");
-    const baseMime     = (file.mimetype || "video/webm").split(";")[0].trim().toLowerCase();
-    const mimeType     = ALLOWED_RECORDING_TYPES.includes(baseMime) ? baseMime : "video/webm";
-    const ext          = mimeType.includes("mp4") ? "mp4" : "webm";
-    const s3Key        = `${privatePrefix}/recordings/${sessionId}/part_${pad}.${ext}`;
+    const pad = String(partNumber).padStart(4, "0");
+    const baseMime = (file.mimetype || "video/webm").split(";")[0].trim().toLowerCase();
+    const mimeType = ALLOWED_RECORDING_TYPES.includes(baseMime) ? baseMime : "video/webm";
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    const s3Key = `${privatePrefix}/recordings/${sessionId}/part_${pad}.${ext}`;
 
     try {
-      await s3Client.send(new PutObjectCommand({
-        Bucket: bucket,
-        Key: s3Key,
-        Body: file.buffer,
-        ContentType: mimeType,
-      }));
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: s3Key,
+          Body: file.buffer,
+          ContentType: mimeType,
+        }),
+      );
 
       const objectPath = `/objects/recordings/${sessionId}/part_${pad}.${ext}`;
-      req.log.info({ sessionId, partNumber, size: file.size, objectPath }, "Screen recording part saved");
+      req.log.info(
+        { sessionId, partNumber, size: file.size, objectPath },
+        "Screen recording part saved",
+      );
 
       /* On the FIRST successfully-uploaded chunk, write the recording pointer
        * to the candidate's career profile. This makes the footage findable even
@@ -740,14 +855,25 @@ router.post(
           if (candidateId) {
             await db
               .insert(candidateCareerProfilesTable)
-              .values({ candidateId, recordingUrl: `/recordings/${sessionId}/`, recordingStatus: null })
+              .values({
+                candidateId,
+                recordingUrl: `/recordings/${sessionId}/`,
+                recordingStatus: null,
+              })
               .onConflictDoUpdate({
                 target: candidateCareerProfilesTable.candidateId,
-                set: { recordingUrl: `/recordings/${sessionId}/`, recordingStatus: null, updatedAt: new Date() },
+                set: {
+                  recordingUrl: `/recordings/${sessionId}/`,
+                  recordingStatus: null,
+                  updatedAt: new Date(),
+                },
               });
           }
         } catch (ptrErr: any) {
-          req.log.warn({ err: ptrErr?.message, sessionId }, "Failed to write recording pointer on first chunk (non-fatal)");
+          req.log.warn(
+            { err: ptrErr?.message, sessionId },
+            "Failed to write recording pointer on first chunk (non-fatal)",
+          );
         }
       }
 
@@ -839,82 +965,206 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
  * URL endpoint (GET /storage/object-url/*). Standard ACL check first, then the
  * interview-recording fallback documented inline below.
  */
+/* Staff read policy for recruiter-avatar assets (intro photo + intro video),
+ * shared by the two fallbacks in canCallerReadObject. Mirrors the
+ * recruiter-avatar routes' STAFF_ROLES. recruiter_admin uses its restricted
+ * data scope (assigned clients / managed recruiters), NOT the whole agency
+ * subtree — the generic subtree check would leak sibling clients' assets. */
+async function staffCanReadAvatarAsset(
+  callerId: string,
+  assetTenantId: string | null,
+): Promise<boolean> {
+  const [callerUser] = await controlDb
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, callerId))
+    .limit(1);
+  if (!callerUser) return false;
+  const role = (callerUser as any).role as string | undefined;
+  if (role === "recruiter_admin") {
+    const { getDataScopeTenantIds } = await import("../lib/tenantUtils");
+    const scope = await getDataScopeTenantIds(callerUser as any);
+    return scope === null || (!!assetTenantId && scope.includes(assetTenantId));
+  }
+  const STAFF = ["platform_admin", "tenant_admin", "recruiter", "hiring_manager", "interviewer"];
+  if (!role || !STAFF.includes(role)) return false;
+  const allowed = await getAllowedTenantIds(callerUser as any);
+  return allowed === null || (!!assetTenantId && allowed.includes(assetTenantId));
+}
+
 async function canCallerReadObject(
   callerId: string,
   objectPath: string,
   objectFile: Awaited<ReturnType<typeof objectStorageService.getObjectEntityFile>>,
   req: Request,
 ): Promise<boolean> {
-    let canAccess = await objectStorageService.canAccessObjectEntity({
-      userId: callerId,
-      objectFile,
-      requestedPermission: ObjectPermission.READ,
-    });
-    /* Interview-recording fallback: the ACL tag names the CANDIDATE as owner
-     * (or is missing entirely — uploadBuffer() never tags), so a recruiter
-     * streaming a recording always fails the plain owner check. If this object
-     * is the recording of an interview session, defer to the canonical session
-     * authorization (candidate-owner FK, tenant-subtree recruiter/admin, or
-     * platform admin) — the same rule that gates recording writes.
-     *
-     * IDOR seal — a tenant user can repoint recording_url via the PATCH, so
-     * session authorization alone would let them exfiltrate ANY private
-     * object. The fallback therefore additionally requires:
-     *   (a) the object is A/V media (recordings are video/audio; resumes and
-     *       other private docs are not), and
-     *   (b) the ACL owner, when a policy exists, is consistent with the
-     *       session — the session's own candidate user or the caller. A
-     *       missing policy is allowed (legacy uploadBuffer recordings).
-     *
-     * KNOWN GAP (accepted): an UNTAGGED, UNCLAIMED A/V object could still be
-     * bound to a session via the (tenant-gated, A/V-checked, 409-on-claimed)
-     * PATCH and then read here. Exploitation requires leaking the object's
-     * random-UUID path AND tenant credentials; full closure needs upload-time
-     * provenance binding, which is out of proportion to that threat. */
-    if (!canAccess) {
-      /* Fail-closed on ambiguous bindings: a recording must map to exactly ONE
-       * session. Two sessions claiming the same object means someone repointed
-       * a recording_url at another session's file — deny and log rather than
-       * authorize via whichever row happened to come back first. */
-      const recSessions = await db
-        .select({ id: interviewSessionsTable.id, candidateId: interviewSessionsTable.candidateId })
-        .from(interviewSessionsTable)
-        .where(eq(interviewSessionsTable.recordingUrl, objectPath))
-        .limit(2);
-      if (recSessions.length > 1) {
-        req.log.warn({ objectPath }, "[storage] recording fallback denied — object referenced by multiple sessions");
+  let canAccess = await objectStorageService.canAccessObjectEntity({
+    userId: callerId,
+    objectFile,
+    requestedPermission: ObjectPermission.READ,
+  });
+  /* Interview-recording fallback: the ACL tag names the CANDIDATE as owner
+   * (or is missing entirely — uploadBuffer() never tags), so a recruiter
+   * streaming a recording always fails the plain owner check. If this object
+   * is the recording of an interview session, defer to the canonical session
+   * authorization (candidate-owner FK, tenant-subtree recruiter/admin, or
+   * platform admin) — the same rule that gates recording writes.
+   *
+   * IDOR seal — a tenant user can repoint recording_url via the PATCH, so
+   * session authorization alone would let them exfiltrate ANY private
+   * object. The fallback therefore additionally requires:
+   *   (a) the object is A/V media (recordings are video/audio; resumes and
+   *       other private docs are not), and
+   *   (b) the ACL owner, when a policy exists, is consistent with the
+   *       session — the session's own candidate user or the caller. A
+   *       missing policy is allowed (legacy uploadBuffer recordings).
+   *
+   * KNOWN GAP (accepted): an UNTAGGED, UNCLAIMED A/V object could still be
+   * bound to a session via the (tenant-gated, A/V-checked, 409-on-claimed)
+   * PATCH and then read here. Exploitation requires leaking the object's
+   * random-UUID path AND tenant credentials; full closure needs upload-time
+   * provenance binding, which is out of proportion to that threat. */
+  if (!canAccess) {
+    /* Fail-closed on ambiguous bindings: a recording must map to exactly ONE
+     * session. Two sessions claiming the same object means someone repointed
+     * a recording_url at another session's file — deny and log rather than
+     * authorize via whichever row happened to come back first. */
+    const recSessions = await db
+      .select({ id: interviewSessionsTable.id, candidateId: interviewSessionsTable.candidateId })
+      .from(interviewSessionsTable)
+      .where(eq(interviewSessionsTable.recordingUrl, objectPath))
+      .limit(2);
+    if (recSessions.length > 1) {
+      req.log.warn(
+        { objectPath },
+        "[storage] recording fallback denied — object referenced by multiple sessions",
+      );
+    }
+    const recSession = recSessions.length === 1 ? recSessions[0] : null;
+    /* Presigned browser PUTs (the legacy /objects/uploads/… flow) often store
+     * recordings with no ContentType or application/octet-stream, so treat
+     * those as acceptable alongside real A/V types. Documents uploaded
+     * server-side (resumes etc.) DO carry their real mime type and stay
+     * excluded; the octet-stream allowance folds into the KNOWN GAP above. */
+    const ct = (objectFile.contentType ?? "").toLowerCase();
+    const isAvMedia =
+      /^(video|audio)\//.test(ct) ||
+      ct === "" ||
+      ct === "application/octet-stream" ||
+      ct === "binary/octet-stream";
+    if (
+      recSession &&
+      isAvMedia &&
+      (await isCallerAuthorizedForSession(callerId, recSession.id, req))
+    ) {
+      const policy = await getObjectAclPolicy(objectFile).catch(() => null);
+      if (!policy || policy.owner === callerId) {
+        canAccess = true;
+      } else if (recSession.candidateId) {
+        const [cand] = await db
+          .select({ userId: candidatesTable.userId })
+          .from(candidatesTable)
+          .where(eq(candidatesTable.id, recSession.candidateId))
+          .limit(1);
+        canAccess = !!cand?.userId && policy.owner === cand.userId;
       }
-      const recSession = recSessions.length === 1 ? recSessions[0] : null;
-      /* Presigned browser PUTs (the legacy /objects/uploads/… flow) often store
-       * recordings with no ContentType or application/octet-stream, so treat
-       * those as acceptable alongside real A/V types. Documents uploaded
-       * server-side (resumes etc.) DO carry their real mime type and stay
-       * excluded; the octet-stream allowance folds into the KNOWN GAP above. */
-      const ct = (objectFile.contentType ?? "").toLowerCase();
-      const isAvMedia = /^(video|audio)\//.test(ct) || ct === "" || ct === "application/octet-stream" || ct === "binary/octet-stream";
-      if (recSession && isAvMedia && (await isCallerAuthorizedForSession(callerId, recSession.id, req))) {
-        const policy = await getObjectAclPolicy(objectFile).catch(() => null);
-        if (!policy || policy.owner === callerId) {
-          canAccess = true;
-        } else if (recSession.candidateId) {
-          const [cand] = await db
-            .select({ userId: candidatesTable.userId })
-            .from(candidatesTable)
-            .where(eq(candidatesTable.id, recSession.candidateId))
-            .limit(1);
-          canAccess = !!cand?.userId && policy.owner === cand.userId;
-        }
-        if (!canAccess) {
-          req.log.warn({ objectPath, sessionId: recSession.id }, "[storage] recording fallback denied — ACL owner inconsistent with session");
-        }
-      } else if (!canAccess) {
+      if (!canAccess) {
         req.log.warn(
-          { objectPath, sessionMatches: recSessions.length, contentType: objectFile.contentType ?? null },
-          "[storage] recording fallback denied — no unique session match, non-A/V object, or caller not authorized for session",
+          { objectPath, sessionId: recSession.id },
+          "[storage] recording fallback denied — ACL owner inconsistent with session",
         );
       }
+    } else if (!canAccess) {
+      req.log.warn(
+        {
+          objectPath,
+          sessionMatches: recSessions.length,
+          contentType: objectFile.contentType ?? null,
+        },
+        "[storage] recording fallback denied — no unique session match, non-A/V object, or caller not authorized for session",
+      );
     }
-    return canAccess;
+  }
+  /* Recruiter-intro fallback: intro MP4s are uploaded server-side via
+   * uploadBuffer(), which writes no ACL tag, so the plain owner check above
+   * always denies them. Authorize instead from the database row that owns
+   * the object: the recruiter_avatar_video_jobs row whose
+   * output_video_object_path IS this object. Allowed callers are the avatar
+   * profile's own recruiter, or staff whose tenant subtree contains the
+   * video's tenant (platform admins have allowed === null). Scoped strictly
+   * to the recruiter-intros/ namespace so this cannot widen access to any
+   * other private object. */
+  /* Recruiter-avatar PHOTO fallback: the intro-avatar photo is uploaded via
+   * the image proxy into the DEDICATED recruiter-avatars/ namespace (no ACL
+   * tag), then pinned to exactly one recruiter_avatar_profiles row. Prefix
+   * gate is load-bearing: it must never widen to the generic uploads/
+   * namespace or a profile pointer could claim/read foreign objects. Same
+   * shape as the intro-video fallback below: exact-path DB match, owner or
+   * tenant-scoped staff, fail closed on 0 or >1 owning rows. */
+  if (!canAccess && objectPath.startsWith("/objects/recruiter-avatars/")) {
+    const photoRows = await db
+      .select({
+        tenantId: recruiterAvatarProfilesTable.tenantId,
+        recruiterUserId: recruiterAvatarProfilesTable.recruiterUserId,
+      })
+      .from(recruiterAvatarProfilesTable)
+      .where(eq(recruiterAvatarProfilesTable.avatarImageObjectPath, objectPath))
+      .limit(2);
+    if (photoRows.length === 1) {
+      const photo = photoRows[0];
+      if (photo.recruiterUserId === callerId) {
+        canAccess = true;
+      } else {
+        canAccess = await staffCanReadAvatarAsset(callerId, photo.tenantId);
+      }
+    } else if (photoRows.length > 1) {
+      req.log.warn(
+        { objectPath },
+        "[storage] avatar-photo fallback denied — object claimed by multiple avatar profiles",
+      );
+    }
+  }
+  if (!canAccess && objectPath.startsWith("/objects/recruiter-intros/")) {
+    /* output_video_object_path has no uniqueness constraint — if two rows
+     * ever claim the same object, fail closed rather than authorize via
+     * whichever row came back first (mirrors the recording fallback). */
+    const vidRows = await db
+      .select({
+        tenantId: recruiterAvatarVideoJobsTable.tenantId,
+        profileId: recruiterAvatarVideoJobsTable.recruiterAvatarProfileId,
+      })
+      .from(recruiterAvatarVideoJobsTable)
+      .where(eq(recruiterAvatarVideoJobsTable.outputVideoObjectPath, objectPath))
+      .limit(2);
+    const vid = vidRows.length === 1 ? vidRows[0] : null;
+    if (vidRows.length > 1) {
+      req.log.warn(
+        { objectPath },
+        "[storage] recruiter-intro fallback denied — object claimed by multiple video jobs",
+      );
+    }
+    if (vid) {
+      const [profile] = vid.profileId
+        ? await db
+            .select({ recruiterUserId: recruiterAvatarProfilesTable.recruiterUserId })
+            .from(recruiterAvatarProfilesTable)
+            .where(eq(recruiterAvatarProfilesTable.id, vid.profileId))
+            .limit(1)
+        : [];
+      if (profile?.recruiterUserId === callerId) {
+        canAccess = true;
+      } else {
+        canAccess = await staffCanReadAvatarAsset(callerId, vid.tenantId);
+      }
+    }
+    if (!canAccess) {
+      req.log.warn(
+        { objectPath },
+        "[storage] recruiter-intro fallback denied — no matching video job or caller outside tenant scope",
+      );
+    }
+  }
+  return canAccess;
 }
 
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {

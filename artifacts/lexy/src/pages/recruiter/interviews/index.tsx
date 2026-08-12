@@ -223,10 +223,29 @@ export default function InterviewsDashboard() {
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
-  /* Filters */
-  const inProgress = interviews?.filter(i => i.status === "in_progress") || [];
-  const scheduled  = interviews?.filter(i => i.status === "scheduled")   || [];
-  const completed  = interviews?.filter(i => i.status === "completed")   || [];
+  /* Filters — client (tenant) and work order dropdowns narrow every tab and
+   * the stat cards. Options derive from the visible (already server-scoped)
+   * sessions, so each user only sees their own clients/work orders. */
+  const [clientFilter, setClientFilter] = useState("all");
+  const [jobFilter, setJobFilter] = useState("all");
+  const clientOptions = Array.from(
+    new Map((interviews ?? []).filter((i: any) => i.tenantId && i.clientName).map((i: any) => [i.tenantId, i.clientName])).entries(),
+  ).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  const jobOptions = Array.from(
+    new Map(
+      (interviews ?? [])
+        .filter((i: any) => i.jobId && i.jobTitle && (clientFilter === "all" || i.tenantId === clientFilter))
+        .map((i: any) => [i.jobId, i.jobTitle]),
+    ).entries(),
+  ).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  const visible = (interviews ?? []).filter(
+    (i: any) =>
+      (clientFilter === "all" || i.tenantId === clientFilter) &&
+      (jobFilter === "all" || i.jobId === jobFilter),
+  );
+  const inProgress = visible.filter(i => i.status === "in_progress");
+  const scheduled  = visible.filter(i => i.status === "scheduled");
+  const completed  = visible.filter(i => i.status === "completed");
 
   /* Interview card */
   const renderCard = (interview: any) => {
@@ -361,7 +380,7 @@ export default function InterviewsDashboard() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total Sessions", value: interviews?.length || 0, color: "text-primary"    },
+          { label: "Total Sessions", value: visible.length, color: "text-primary"    },
           { label: "In Progress",    value: inProgress.length,       color: "text-blue-500"   },
           { label: "Scheduled",      value: scheduled.length,        color: "text-yellow-500" },
           { label: "Completed",      value: completed.length,        color: "text-green-500"  },
@@ -381,17 +400,43 @@ export default function InterviewsDashboard() {
         </div>
       ) : (
         <Tabs defaultValue="all">
-          <TabsList className="mb-6 bg-muted/50 p-1">
-            <TabsTrigger value="all">All ({interviews?.length || 0})</TabsTrigger>
-            <TabsTrigger value="active" className="text-blue-400 data-[state=active]:text-blue-500">Live ({inProgress.length})</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled ({scheduled.length})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
+            <TabsList className="bg-muted/50 p-1">
+              <TabsTrigger value="all">All ({visible.length})</TabsTrigger>
+              <TabsTrigger value="active" className="text-blue-400 data-[state=active]:text-blue-500">Live ({inProgress.length})</TabsTrigger>
+              <TabsTrigger value="scheduled">Scheduled ({scheduled.length})</TabsTrigger>
+              <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-2 md:ml-auto">
+              <Select value={clientFilter} onValueChange={(v) => { setClientFilter(v); setJobFilter("all"); }}>
+                <SelectTrigger className="w-[190px] h-9">
+                  <SelectValue placeholder="All clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All clients</SelectItem>
+                  {clientOptions.map(([id, name]) => (
+                    <SelectItem key={String(id)} value={String(id)}>{String(name)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={jobFilter} onValueChange={setJobFilter}>
+                <SelectTrigger className="w-[210px] h-9">
+                  <SelectValue placeholder="All work orders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All work orders</SelectItem>
+                  {jobOptions.map(([id, title]) => (
+                    <SelectItem key={String(id)} value={String(id)}>{String(title)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <TabsContent value="all">
-            {interviews?.length
-              ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{interviews.map(renderCard)}</div>
-              : <EmptyState msg="No interviews yet — schedule your first one." />}
+            {visible.length
+              ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{visible.map(renderCard)}</div>
+              : <EmptyState msg={clientFilter !== "all" || jobFilter !== "all" ? "No interviews match these filters." : "No interviews yet — schedule your first one."} />}
           </TabsContent>
           <TabsContent value="active">
             {inProgress.length

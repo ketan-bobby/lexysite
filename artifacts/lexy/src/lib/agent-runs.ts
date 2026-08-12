@@ -60,12 +60,18 @@ export interface StartRunResult {
 }
 
 /**
- * Start a sourcing run for a work order. Handles the backend's duplicate-run
- * guard (409 `run_in_progress`) by returning the existing run's id with
- * `alreadyRunning: true` rather than throwing — so callers can just open it.
- * Other errors (e.g. `not_approved`) throw with the server message.
+ * Start a sourcing run for a work order. By default this is a REAL run (the
+ * server sources from live providers and scores against the ICP); pass
+ * `simulated: true` for an explicit demo run with persona data ("Demo run"
+ * badge). Handles the backend's duplicate-run guard (409 `run_in_progress`) by
+ * returning the existing run's id with `alreadyRunning: true` rather than
+ * throwing — so callers can just open it. Other errors (e.g. `not_approved`,
+ * `INTERNAL_REVIEW_REQUIRED`) throw with the server message.
  */
-export async function startSourcingRun(workOrderId: string, shortlistSize?: number): Promise<StartRunResult> {
+export async function startSourcingRun(
+  workOrderId: string,
+  opts?: { shortlistSize?: number; simulated?: boolean },
+): Promise<StartRunResult> {
   const res = await fetch(`${BASE}/api/agent-runs/simulate`, {
     method: "POST",
     credentials: "include",
@@ -73,14 +79,20 @@ export async function startSourcingRun(workOrderId: string, shortlistSize?: numb
       "Content-Type": "application/json",
       ...authHeaders(),
     },
-    body: JSON.stringify({ workOrderId, ...(shortlistSize ? { shortlistSize } : {}) }),
+    body: JSON.stringify({
+      workOrderId,
+      ...(opts?.shortlistSize ? { shortlistSize: opts.shortlistSize } : {}),
+      ...(opts?.simulated ? { simulated: true } : {}),
+    }),
   });
   if (res.status === 409) {
-    const body = await res.json().catch(() => ({} as any));
+    const body = await res.json().catch(() => ({}) as any);
     if (body?.code === "run_in_progress" && body?.runId) {
       return { runId: body.runId, alreadyRunning: true };
     }
-    throw new Error(body?.error || "Could not start sourcing run");
+    const err = new Error(body?.error || "Could not start sourcing run");
+    (err as any).code = body?.code;
+    throw err;
   }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -90,15 +102,20 @@ export async function startSourcingRun(workOrderId: string, shortlistSize?: numb
   return { runId: data.runId, alreadyRunning: false };
 }
 
-/** Start a simulated sourcing run for a work order; returns the run id to poll. */
-export async function startSimulatedRun(workOrderId: string, shortlistSize?: number): Promise<string> {
-  const { runId } = await startSourcingRun(workOrderId, shortlistSize);
+/** Start an EXPLICITLY simulated (demo) sourcing run; returns the run id to poll. */
+export async function startSimulatedRun(
+  workOrderId: string,
+  shortlistSize?: number,
+): Promise<string> {
+  const { runId } = await startSourcingRun(workOrderId, { shortlistSize, simulated: true });
   return runId;
 }
 
 /** Cancel an in-flight run. Idempotent server-side; returns the resulting status. */
 export async function cancelRun(runId: string): Promise<AgentRunStatus> {
-  const data = await api<{ status: AgentRunStatus }>(`/agent-runs/${runId}/cancel`, { method: "POST" });
+  const data = await api<{ status: AgentRunStatus }>(`/agent-runs/${runId}/cancel`, {
+    method: "POST",
+  });
   return data.status;
 }
 
@@ -162,11 +179,24 @@ export function useSourcingTrigger() {
             description: "Opening the run that's already underway.",
           });
         } else {
-          toast({ title: "Sourcing run started", description: "Watch the candidates come in live." });
+          toast({
+            title: "Sourcing run started",
+            description: "Watch the candidates come in live.",
+          });
         }
         if (opts?.navigateToRun !== false) navigate(`/runs/${runId}`);
         return runId;
       } catch (err: any) {
+        /* Legacy safety net — the server no longer blocks on internal review
+         * (advisory since 2026-08-12), so surface it as a tip, not an error. */
+        if (err?.code === "INTERNAL_REVIEW_REQUIRED") {
+          toast({
+            title: "Tip: check your internal talent too",
+            description:
+              "The internal search on the Sourcing page is free and may already have a fit.",
+          });
+          return null;
+        }
         toast({
           title: "Couldn't start sourcing run",
           description: err?.message || "Please try again.",
@@ -193,15 +223,15 @@ export function useSourcingTrigger() {
 export function invalidateRunAffectedQueries(qc: QueryClient) {
   const keys: readonly (readonly unknown[])[] = [
     ["agent-run-detail"],
-    ["agent-runs"],            // run-history lists
+    ["agent-runs"], // run-history lists
     ["dashboard-summary"],
     ["dashboard-activity"],
-    ["dashboard-actions"],     // Recommended Actions panel
-    ["analytics-funnel"],      // dashboard pipeline funnel
-    ["intelligence"],          // decision queue + dashboard intelligence
-    ["pipeline-stages"],       // work-order pipeline board
+    ["dashboard-actions"], // Recommended Actions panel
+    ["analytics-funnel"], // dashboard pipeline funnel
+    ["intelligence"], // decision queue + dashboard intelligence
+    ["pipeline-stages"], // work-order pipeline board
     ["/api/analytics/overview"], // KPI stat cards (codegen key)
-    ["/api/candidates"],       // candidate lists (codegen key)
+    ["/api/candidates"], // candidate lists (codegen key)
   ];
   for (const key of keys) qc.invalidateQueries({ queryKey: key as unknown[] });
   // Jobs family: list (`/api/jobs`), detail (`/api/jobs/:id`), icp, etc. all use
@@ -276,9 +306,11 @@ export function useAgentRun(runId: string | null, onDone?: () => void): UseAgent
 
     const poll = async () => {
       try {
-        const data = await api<{ status: AgentRunStatus; summary: Record<string, any>; events: RunEvent[] }>(
-          `/agent-runs/${runId}/events?after=${lastSeq.current}`,
-        );
+        const data = await api<{
+          status: AgentRunStatus;
+          summary: Record<string, any>;
+          events: RunEvent[];
+        }>(`/agent-runs/${runId}/events?after=${lastSeq.current}`);
         if (!active) return;
         if (data.events.length > 0) {
           lastSeq.current = data.events[data.events.length - 1].seq;

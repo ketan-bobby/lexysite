@@ -83,8 +83,8 @@ export interface SearchContext {
   toolsAndSystems: string[];
   compliance: string[];
   negativeKeywords: string[];
-  domain: string | null;             // "Healthcare", "Software", etc.
-  roleFamily: string | null;         // e.g. "Clinical Informatics"
+  domain: string | null; // "Healthcare", "Software", etc.
+  roleFamily: string | null; // e.g. "Clinical Informatics"
   seniority: string | null;
   /* Structured language requirements (e.g. ["Spanish", "English"] for a
    * bilingual role). Fed to provider queries as additional match signal and to
@@ -102,8 +102,8 @@ export interface SearchContext {
 /** Returned by adapters so the UI can show what was actually queried. */
 export interface AdapterResult {
   candidates: ExternalCandidate[];
-  query: string;                  // human-readable query string for UI
-  skipped?: string;               // reason this source was skipped, if any
+  query: string; // human-readable query string for UI
+  skipped?: string; // reason this source was skipped, if any
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -111,18 +111,34 @@ export interface AdapterResult {
 /** Run a SerpAPI Google search and return organic_results, or [] on failure. */
 async function runSerp(query: string, apiKey: string, num: number): Promise<any[]> {
   try {
-    const res = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&num=${num}&api_key=${apiKey}`);
+    const res = await fetch(
+      `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&num=${num}&api_key=${apiKey}`,
+    );
     const text = await res.text();
     if (!res.ok) {
-      logger.warn({ status: res.status, body: text.slice(0, 300), query }, "[serp] non-OK response");
+      logger.warn(
+        { status: res.status, body: text.slice(0, 300), query },
+        "[serp] non-OK response",
+      );
       return [];
     }
     let json: any = {};
-    try { json = JSON.parse(text); } catch { logger.warn({ body: text.slice(0, 300) }, "[serp] non-JSON response"); return []; }
-    if (json.error) { logger.warn({ error: json.error, query }, "[serp] API returned error"); return []; }
+    try {
+      json = JSON.parse(text);
+    } catch {
+      logger.warn({ body: text.slice(0, 300) }, "[serp] non-JSON response");
+      return [];
+    }
+    if (json.error) {
+      logger.warn({ error: json.error, query }, "[serp] API returned error");
+      return [];
+    }
     const organic = Array.isArray(json?.organic_results) ? json.organic_results : [];
     if (organic.length === 0) {
-      logger.info({ query, search_information: json.search_information }, "[serp] zero organic_results");
+      logger.info(
+        { query, search_information: json.search_information },
+        "[serp] zero organic_results",
+      );
     }
     return organic;
   } catch (err: any) {
@@ -131,22 +147,25 @@ async function runSerp(query: string, apiKey: string, num: number): Promise<any[
   }
 }
 
-const PROGRAMMING_LANGUAGES = /^(java|python|typescript|javascript|node|go|golang|rust|ruby|kotlin|swift|scala|php|c\+\+|c#|elixir|erlang|haskell|clojure|dart|r|perl|lua|ocaml|f#|julia|crystal|nim|zig)$/i;
+const PROGRAMMING_LANGUAGES =
+  /^(java|python|typescript|javascript|node|go|golang|rust|ruby|kotlin|swift|scala|php|c\+\+|c#|elixir|erlang|haskell|clojure|dart|r|perl|lua|ocaml|f#|julia|crystal|nim|zig)$/i;
 
-const ENGINEERING_FAMILIES = /software|engineer|developer|backend|frontend|fullstack|devops|sre|platform|infrastructure|data engineer|machine learning|ml|ai engineer|mobile|ios|android|qa|test|security engineer|cloud engineer/i;
+const ENGINEERING_FAMILIES =
+  /software|engineer|developer|backend|frontend|fullstack|devops|sre|platform|infrastructure|data engineer|machine learning|ml|ai engineer|mobile|ios|android|qa|test|security engineer|cloud engineer/i;
 
 function isEngineeringRole(ctx: SearchContext): boolean {
-  const haystack = [
-    ctx.domain ?? "",
-    ctx.roleFamily ?? "",
-    ctx.jobTitle,
-    ...ctx.alternateTitles,
-  ].join(" ").toLowerCase();
-  if (/\b(software|engineering|developer|programmer|backend|frontend|devops|sre|infrastructure|data engineer|ml|machine learning|cloud engineer|mobile|ios engineer|android engineer)\b/.test(haystack)) {
+  const haystack = [ctx.domain ?? "", ctx.roleFamily ?? "", ctx.jobTitle, ...ctx.alternateTitles]
+    .join(" ")
+    .toLowerCase();
+  if (
+    /\b(software|engineering|developer|programmer|backend|frontend|devops|sre|infrastructure|data engineer|ml|machine learning|cloud engineer|mobile|ios engineer|android engineer)\b/.test(
+      haystack,
+    )
+  ) {
     return true;
   }
   // If any required skill is a programming language, treat as engineering.
-  if (ctx.requiredSkills.some(s => PROGRAMMING_LANGUAGES.test(s.trim()))) return true;
+  if (ctx.requiredSkills.some((s) => PROGRAMMING_LANGUAGES.test(s.trim()))) return true;
   return ENGINEERING_FAMILIES.test(ctx.roleFamily ?? "");
 }
 
@@ -156,17 +175,20 @@ export function buildBooleanQuery(ctx: SearchContext): string {
     return ctx.booleanSearchString.trim();
   }
   const titles = [ctx.jobTitle, ...ctx.alternateTitles].filter(Boolean).slice(0, 5);
-  const titleClause = titles.length ? `(${titles.map(t => `"${t}"`).join(" OR ")})` : "";
+  const titleClause = titles.length ? `(${titles.map((t) => `"${t}"`).join(" OR ")})` : "";
 
   const signal = [
     ...ctx.requiredCertifications.slice(0, 4),
     ...ctx.toolsAndSystems.slice(0, 4),
     ...ctx.requiredSkills.slice(0, 4),
   ].filter(Boolean);
-  const signalClause = signal.length ? `(${signal.map(s => `"${s}"`).join(" OR ")})` : "";
+  const signalClause = signal.length ? `(${signal.map((s) => `"${s}"`).join(" OR ")})` : "";
 
   const negClause = ctx.negativeKeywords.length
-    ? `NOT (${ctx.negativeKeywords.slice(0, 6).map(n => `"${n}"`).join(" OR ")})`
+    ? `NOT (${ctx.negativeKeywords
+        .slice(0, 6)
+        .map((n) => `"${n}"`)
+        .join(" OR ")})`
     : "";
 
   return [titleClause, signalClause, negClause].filter(Boolean).join(" AND ");
@@ -180,35 +202,43 @@ export async function searchGitHub(ctx: SearchContext): Promise<AdapterResult> {
   }
 
   const langs = ctx.requiredSkills
-    .filter(s => PROGRAMMING_LANGUAGES.test(s.trim()))
+    .filter((s) => PROGRAMMING_LANGUAGES.test(s.trim()))
     .slice(0, 2)
-    .map(s => `language:${s.toLowerCase().replace(/\+/g, "%2B")}`)
+    .map((s) => `language:${s.toLowerCase().replace(/\+/g, "%2B")}`)
     .join("+");
-  const locQuery = ctx.location ? `+location:${encodeURIComponent(ctx.location.split(",")[0].trim())}` : "";
+  const locQuery = ctx.location
+    ? `+location:${encodeURIComponent(ctx.location.split(",")[0].trim())}`
+    : "";
   const q = `${langs || "type:user"}${locQuery}`;
   const queryStr = `GitHub: ${q}&sort=followers`;
 
   try {
     const headers: Record<string, string> = {
       "User-Agent": "Lexy-AI-Hiring",
-      "Accept": "application/vnd.github+json",
+      Accept: "application/vnd.github+json",
     };
     if (process.env.GITHUB_TOKEN) headers["Authorization"] = `Bearer ${process.env.GITHUB_TOKEN}`;
 
-    const searchRes = await fetch(`https://api.github.com/search/users?q=${q}&per_page=${ctx.maxResults}&sort=followers`, { headers });
-    if (!searchRes.ok) return { candidates: [], query: queryStr, skipped: `GitHub HTTP ${searchRes.status}` };
-    const { items } = await searchRes.json() as any;
+    const searchRes = await fetch(
+      `https://api.github.com/search/users?q=${q}&per_page=${ctx.maxResults}&sort=followers`,
+      { headers },
+    );
+    if (!searchRes.ok)
+      return { candidates: [], query: queryStr, skipped: `GitHub HTTP ${searchRes.status}` };
+    const { items } = (await searchRes.json()) as any;
 
     const users = (items || []).slice(0, 8);
     const profiles: any[] = [];
     for (const u of users) {
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 150));
       try {
         const pr = await fetch(`https://api.github.com/users/${u.login}`, { headers });
         if (pr.ok) profiles.push(await pr.json());
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
-    const candidates = profiles.map(p => ({
+    const candidates = profiles.map((p) => ({
       id: `gh_${p.id}`,
       firstName: p.name?.split(" ")[0] || p.login,
       lastName: p.name?.split(" ").slice(1).join(" ") || "",
@@ -224,8 +254,14 @@ export async function searchGitHub(ctx: SearchContext): Promise<AdapterResult> {
       publicRepos: p.public_repos,
       followers: p.followers,
       source: "github" as const,
-      skills: ctx.requiredSkills.filter(s => PROGRAMMING_LANGUAGES.test(s)),
-      rawData: { login: p.login, avatar_url: p.avatar_url, bio: p.bio, public_repos: p.public_repos, followers: p.followers },
+      skills: ctx.requiredSkills.filter((s) => PROGRAMMING_LANGUAGES.test(s)),
+      rawData: {
+        login: p.login,
+        avatar_url: p.avatar_url,
+        bio: p.bio,
+        public_repos: p.public_repos,
+        followers: p.followers,
+      },
     }));
     return { candidates, query: queryStr };
   } catch (err: any) {
@@ -263,20 +299,26 @@ export async function searchGitHub(ctx: SearchContext): Promise<AdapterResult> {
  */
 type PdlTier = "remote" | "city" | "region" | "country" | "global";
 
-const PDL_MIN_TIER_RESULTS = Number(process.env.PDL_MIN_TIER_RESULTS) > 0
-  ? Number(process.env.PDL_MIN_TIER_RESULTS)
-  : 3;
+const PDL_MIN_TIER_RESULTS =
+  Number(process.env.PDL_MIN_TIER_RESULTS) > 0 ? Number(process.env.PDL_MIN_TIER_RESULTS) : 3;
 
 type PdlLoc = { city?: string; region?: string; country?: string };
 
 /** Split free-text location ("Hyderabad, Telangana, India") into PDL fields. */
 function parsePdlLocation(location: string): PdlLoc {
-  const parts = (location || "").split(",").map(s => s.trim()).filter(Boolean);
+  const parts = (location || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (parts.length === 0) return {};
   if (parts.length === 1) return { city: parts[0].toLowerCase() };
   if (parts.length === 2) {
     // "Telangana, India" — first token doubles as city+region guess, last = country.
-    return { city: parts[0].toLowerCase(), region: parts[0].toLowerCase(), country: parts[1].toLowerCase() };
+    return {
+      city: parts[0].toLowerCase(),
+      region: parts[0].toLowerCase(),
+      country: parts[1].toLowerCase(),
+    };
   }
   return {
     city: parts[0].toLowerCase(),
@@ -287,25 +329,39 @@ function parsePdlLocation(location: string): PdlLoc {
 
 function pdlTierLabel(tier: PdlTier, loc: PdlLoc): string {
   switch (tier) {
-    case "remote":  return "remote — no location constraint";
-    case "city":    return loc.city ? `exact location (${loc.city})` : "exact location";
-    case "region":  return loc.region ? `region-level match (${loc.region})` : "region-level match";
-    case "country": return loc.country ? `country-level match (${loc.country})` : "country-level match";
-    case "global":  return "global — location not constrained";
+    case "remote":
+      return "remote — no location constraint";
+    case "city":
+      return loc.city ? `exact location (${loc.city})` : "exact location";
+    case "region":
+      return loc.region ? `region-level match (${loc.region})` : "region-level match";
+    case "country":
+      return loc.country ? `country-level match (${loc.country})` : "country-level match";
+    case "global":
+      return "global — location not constrained";
   }
 }
 
 /** Ordered strict→wide tiers for a search context. Remote skips location entirely. */
-function buildPdlTiers(ctx: SearchContext): Array<{ tier: PdlTier; loc: PdlLoc; locationMust: any[] }> {
+function buildPdlTiers(
+  ctx: SearchContext,
+): Array<{ tier: PdlTier; loc: PdlLoc; locationMust: any[] }> {
   // Remote is correctness, not relaxation: never pin a physical location.
   if (ctx.workType === "remote") {
     return [{ tier: "remote", loc: {}, locationMust: [] }];
   }
   const loc = parsePdlLocation(ctx.location || "");
   const tiers: Array<{ tier: PdlTier; loc: PdlLoc; locationMust: any[] }> = [];
-  if (loc.city)    tiers.push({ tier: "city",    loc, locationMust: [{ match: { "location_locality": loc.city } }] });
-  if (loc.region)  tiers.push({ tier: "region",  loc, locationMust: [{ match: { "location_region":  loc.region } }] });
-  if (loc.country) tiers.push({ tier: "country", loc, locationMust: [{ term:  { "location_country": loc.country } }] });
+  if (loc.city)
+    tiers.push({ tier: "city", loc, locationMust: [{ match: { location_locality: loc.city } }] });
+  if (loc.region)
+    tiers.push({ tier: "region", loc, locationMust: [{ match: { location_region: loc.region } }] });
+  if (loc.country)
+    tiers.push({
+      tier: "country",
+      loc,
+      locationMust: [{ term: { location_country: loc.country } }],
+    });
   // Always end unconstrained so a located role never returns nobody purely because
   // its location text was unparseable / too specific — scoring penalises distance.
   tiers.push({ tier: "global", loc, locationMust: [] });
@@ -326,31 +382,38 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
   //   • `location_country` — country name (use `term`)
   // We use `should` for skills so missing skill matches don't kill the query.
   const titleMust: any[] = [];
-  if (titles.length) titleMust.push({ terms: { "job_title": titles.map(t => t.toLowerCase()) } });
+  if (titles.length) titleMust.push({ terms: { job_title: titles.map((t) => t.toLowerCase()) } });
 
   const should: any[] = [];
   if (ctx.requiredSkills.length) {
     // Tokenize skills into individual words/phrases — PDL skills are short
     // canonical strings ("ecmo", "critical care") not long phrases ("ECMO management").
-    const tokens = Array.from(new Set(
-      ctx.requiredSkills
-        .flatMap(s => s.toLowerCase().split(/[\s/,]+/))
-        .filter(s => s.length >= 3),
-    )).slice(0, 10);
-    if (tokens.length) should.push({ terms: { "skills": tokens } });
+    const tokens = Array.from(
+      new Set(
+        ctx.requiredSkills
+          .flatMap((s) => s.toLowerCase().split(/[\s/,]+/))
+          .filter((s) => s.length >= 3),
+      ),
+    ).slice(0, 10);
+    if (tokens.length) should.push({ terms: { skills: tokens } });
   }
   /* Languages ride as skill tokens (PDL profiles commonly list "spanish",
    * "english" as skills). Deliberately a `should`, not a `must`: many real
    * profiles omit languages entirely, so a hard filter would zero out the
    * search — the LLM scorer enforces the language requirement instead. */
   if (ctx.languages.length) {
-    const langTokens = ctx.languages.map(l => l.toLowerCase().trim()).filter(l => l.length >= 3).slice(0, 6);
-    if (langTokens.length) should.push({ terms: { "skills": langTokens } });
+    const langTokens = ctx.languages
+      .map((l) => l.toLowerCase().trim())
+      .filter((l) => l.length >= 3)
+      .slice(0, 6);
+    if (langTokens.length) should.push({ terms: { skills: langTokens } });
   }
 
   const must_not: any[] = [];
   if (ctx.negativeKeywords.length) {
-    must_not.push({ terms: { "job_title": ctx.negativeKeywords.slice(0, 6).map(n => n.toLowerCase()) } });
+    must_not.push({
+      terms: { job_title: ctx.negativeKeywords.slice(0, 6).map((n) => n.toLowerCase()) },
+    });
   }
 
   const tiers = buildPdlTiers(ctx);
@@ -365,9 +428,11 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
     const bool: any = { must: [...titleMust, ...locationMust], must_not };
     if (should.length) bool.should = should;
     const body = { query: { bool }, size: ctx.maxResults };
-    const locStr = tier === "remote" || tier === "global"
-      ? "(none)"
-      : (tier === "country" ? loc.country : tier === "region" ? loc.region : loc.city) || ctx.location;
+    const locStr =
+      tier === "remote" || tier === "global"
+        ? "(none)"
+        : (tier === "country" ? loc.country : tier === "region" ? loc.region : loc.city) ||
+          ctx.location;
     const langStr = ctx.languages.length ? ` langs=[${ctx.languages.join(", ")}]` : "";
     const queryStr = `PDL[${tier}]: titles=[${titles.join(", ")}] skills=[${ctx.requiredSkills.slice(0, 5).join(", ")}]${langStr} loc=${locStr}`;
     lastQueryStr = queryStr;
@@ -380,12 +445,20 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
       });
       if (!res.ok) {
         const errText = await res.text();
-        logger.warn({ status: res.status, tier, body: errText.slice(0, 300), query: queryStr }, "[pdl] non-OK response");
+        logger.warn(
+          { status: res.status, tier, body: errText.slice(0, 300), query: queryStr },
+          "[pdl] non-OK response",
+        );
         attempts.push({ tier, count: 0 });
-        if (isLast) return { candidates: [], query: queryStr, skipped: `PDL HTTP ${res.status}: ${errText.slice(0, 120)}` };
+        if (isLast)
+          return {
+            candidates: [],
+            query: queryStr,
+            skipped: `PDL HTTP ${res.status}: ${errText.slice(0, 120)}`,
+          };
         continue; // widen to the next tier
       }
-      const { data } = await res.json() as any;
+      const { data } = (await res.json()) as any;
       const rows: any[] = Array.isArray(data) ? data : [];
       attempts.push({ tier, count: rows.length });
 
@@ -400,12 +473,16 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
           currentCompany: p.job_company_name || "",
           location: p.location_name || "",
           email: p.work_email || p.personal_emails?.[0] || null,
-          linkedinUrl: p.linkedin_url ? (p.linkedin_url.startsWith("http") ? p.linkedin_url : `https://${p.linkedin_url}`) : null,
+          linkedinUrl: p.linkedin_url
+            ? p.linkedin_url.startsWith("http")
+              ? p.linkedin_url
+              : `https://${p.linkedin_url}`
+            : null,
           githubProfile: p.github_url || null,
           source: "pdl" as const,
           // PDL skills field is a flat array of strings.
           skills: Array.isArray(p.skills)
-            ? p.skills.map((s: any) => typeof s === "string" ? s : s?.name).filter(Boolean)
+            ? p.skills.map((s: any) => (typeof s === "string" ? s : s?.name)).filter(Boolean)
             : [],
           // Grounded tier label — surfaced in the UI so a recruiter knows a
           // candidate came from a relaxed (e.g. country-level) match.
@@ -416,13 +493,22 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
         // SPEND NOTE (known gap: no meter row yet): log the full tier walk so the
         // credit cost of relaxation is observable until a real meter exists.
         logger.info(
-          { tier, count: candidates.length, tiersTried: attempts, minTier: PDL_MIN_TIER_RESULTS, query: queryStr },
+          {
+            tier,
+            count: candidates.length,
+            tiersTried: attempts,
+            minTier: PDL_MIN_TIER_RESULTS,
+            query: queryStr,
+          },
           "[pdl] search returned (tiered)",
         );
         return { candidates, query: `${queryStr} · ${label}` };
       }
 
-      logger.info({ tier, count: rows.length, minTier: PDL_MIN_TIER_RESULTS }, "[pdl] tier below threshold — widening");
+      logger.info(
+        { tier, count: rows.length, minTier: PDL_MIN_TIER_RESULTS },
+        "[pdl] tier below threshold — widening",
+      );
     } catch (err: any) {
       logger.warn({ err: err.message, tier, query: queryStr }, "[pdl] fetch threw");
       attempts.push({ tier, count: 0 });
@@ -431,7 +517,11 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
     }
   }
 
-  return { candidates: [], query: lastQueryStr, skipped: "PDL returned no candidates across all location tiers" };
+  return {
+    candidates: [],
+    query: lastQueryStr,
+    skipped: "PDL returned no candidates across all location tiers",
+  };
 }
 
 /* ── SERP adapter ────────────────────────────────────────────────────────── */
@@ -444,23 +534,48 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
 function extractSkillsFromSnippet(snippet: string, knownPool: string[]): string[] {
   if (!snippet) return [];
   const lower = snippet.toLowerCase();
-  return knownPool.filter(k => k && lower.includes(k.toLowerCase())).slice(0, 8);
+  return knownPool.filter((k) => k && lower.includes(k.toLowerCase())).slice(0, 8);
 }
 
-export async function searchSerp(ctx: SearchContext): Promise<AdapterResult> {
+export async function searchSerp(
+  ctx: SearchContext,
+  opts: {
+    /**
+     * When FALSE and no SERP key is configured, return a skipped/empty result
+     * instead of LLM-simulated profiles. REAL agent runs (spend-authorized,
+     * persisted into the pipeline) must set this to false — fabricated people
+     * must never be persisted on a real work order. Defaults to true for the
+     * interactive /sourcing/search preview path, whose simulated rows are
+     * tagged `rawData.simulated` and clearly labeled in the query string.
+     */
+    allowSimulatedFallback?: boolean;
+  } = {},
+): Promise<AdapterResult> {
   const SERP_KEY = process.env.SERP_API_KEY || process.env.SERPAPI_KEY;
+  const allowSimulatedFallback = opts.allowSimulatedFallback !== false;
   const boolean = buildBooleanQuery(ctx);
   const locClause = ctx.location ? ` "${ctx.location.split(",")[0].trim()}"` : "";
   // Language requirements as an explicit AND clause — LinkedIn profiles of
   // bilingual candidates typically name their languages, so this is a strong
   // public-web signal (unlike PDL where it must stay soft).
   const langClause = ctx.languages.length
-    ? ` (${ctx.languages.slice(0, 4).map(l => `"${l.trim()}"`).join(" OR ")})`
+    ? ` (${ctx.languages
+        .slice(0, 4)
+        .map((l) => `"${l.trim()}"`)
+        .join(" OR ")})`
     : "";
   const fullQuery = `site:linkedin.com/in ${boolean}${langClause}${locClause}`;
   const queryStr = `SERP: ${fullQuery}`;
 
   if (!SERP_KEY) {
+    if (!allowSimulatedFallback) {
+      // Real-run path: never fabricate people. Report the provider as skipped.
+      return {
+        candidates: [],
+        query: queryStr,
+        skipped: "SERP_API_KEY not configured — simulated fallback disabled for real runs",
+      };
+    }
     // No SERP key — produce simulated profiles, but tag clearly as simulated.
     try {
       const result = await generateJSON<any>(
@@ -503,10 +618,13 @@ Return JSON: { "candidates": [{ "firstName": string, "lastName": string, "curren
     if (organic.length === 0) {
       const broadTitles = [ctx.jobTitle, ...ctx.alternateTitles].filter(Boolean).slice(0, 5);
       const titleClause = broadTitles.length
-        ? `(${broadTitles.map(t => `"${t}"`).join(" OR ")})`
+        ? `(${broadTitles.map((t) => `"${t}"`).join(" OR ")})`
         : `"${ctx.jobTitle}"`;
       const broadQuery = `site:linkedin.com/in ${titleClause}${locClause}`;
-      logger.info({ jobId: ctx.jobTitle, fallbackQuery: broadQuery }, "[serp] strict query returned 0, retrying broader");
+      logger.info(
+        { jobId: ctx.jobTitle, fallbackQuery: broadQuery },
+        "[serp] strict query returned 0, retrying broader",
+      );
       organic = await runSerp(broadQuery, SERP_KEY, ctx.maxResults);
     }
 
@@ -540,7 +658,7 @@ Return JSON: { "candidates": [{ "firstName": string, "lastName": string, "curren
         email: null,
         linkedinUrl: r.link,
         source: "serp" as const,
-        skills: realSkills,           // real signal extracted from snippet, not the requested skills
+        skills: realSkills, // real signal extracted from snippet, not the requested skills
         rawData: { snippet, position: r.position, displayed_link: r.displayed_link },
       };
     });
@@ -570,7 +688,10 @@ interface EnrichLayerProfile {
   certifications?: Array<{ name?: string; authority?: string }>;
 }
 
-async function enrichOneProfile(linkedinUrl: string, apiKey: string): Promise<EnrichLayerProfile | null> {
+async function enrichOneProfile(
+  linkedinUrl: string,
+  apiKey: string,
+): Promise<EnrichLayerProfile | null> {
   const url = `https://enrichlayer.com/api/v2/profile?url=${encodeURIComponent(linkedinUrl)}`;
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), 12_000);
@@ -581,10 +702,13 @@ async function enrichOneProfile(linkedinUrl: string, apiKey: string): Promise<En
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      logger.warn({ status: res.status, body: body.slice(0, 200), linkedinUrl }, "[enrichlayer] profile enrich non-OK");
+      logger.warn(
+        { status: res.status, body: body.slice(0, 200), linkedinUrl },
+        "[enrichlayer] profile enrich non-OK",
+      );
       return null;
     }
-    return await res.json() as EnrichLayerProfile;
+    return (await res.json()) as EnrichLayerProfile;
   } catch (err: any) {
     logger.warn({ err: err?.message, linkedinUrl }, "[enrichlayer] profile enrich threw");
     return null;
@@ -606,7 +730,10 @@ async function enrichOneProfile(linkedinUrl: string, apiKey: string): Promise<En
  *
  * If `seedUrls` is empty/omitted, the adapter is a no-op (skipped).
  */
-export async function searchEnrichLayer(ctx: SearchContext, seedUrls: string[] = []): Promise<AdapterResult> {
+export async function searchEnrichLayer(
+  ctx: SearchContext,
+  seedUrls: string[] = [],
+): Promise<AdapterResult> {
   const apiKey = process.env.ENRICH_LAYER_API_KEY;
   const queryStr = `EnrichLayer enrich: ${seedUrls.length} URL(s) from upstream sources`;
 
@@ -628,7 +755,11 @@ export async function searchEnrichLayer(ctx: SearchContext, seedUrls: string[] =
 
   try {
     if (linkedinUrls.length === 0) {
-      return { candidates: [], query: queryStr, skipped: "EnrichLayer skipped — no upstream LinkedIn URLs to enrich" };
+      return {
+        candidates: [],
+        query: queryStr,
+        skipped: "EnrichLayer skipped — no upstream LinkedIn URLs to enrich",
+      };
     }
 
     const enriched: ExternalCandidate[] = [];
@@ -638,9 +769,9 @@ export async function searchEnrichLayer(ctx: SearchContext, seedUrls: string[] =
       if (!p) continue;
       const latest = p.experiences?.[0];
       const skills = (p.skills || [])
-        .map((s: any) => typeof s === "string" ? s : s?.name)
+        .map((s: any) => (typeof s === "string" ? s : s?.name))
         .filter((x: any): x is string => !!x);
-      const certs = (p.certifications || []).map(c => c.name).filter(Boolean) as string[];
+      const certs = (p.certifications || []).map((c) => c.name).filter(Boolean) as string[];
       enriched.push({
         id: `el_${Buffer.from(url).toString("base64").slice(0, 24)}`,
         firstName: p.first_name || p.full_name?.split(" ")[0] || "Unknown",
@@ -652,7 +783,12 @@ export async function searchEnrichLayer(ctx: SearchContext, seedUrls: string[] =
         linkedinUrl: url,
         source: "enrichlayer" as const,
         skills: [...skills, ...certs].slice(0, 20),
-        rawData: { headline: p.headline, occupation: p.occupation, experiences: p.experiences?.slice(0, 3), certifications: certs },
+        rawData: {
+          headline: p.headline,
+          occupation: p.occupation,
+          experiences: p.experiences?.slice(0, 3),
+          certifications: certs,
+        },
       });
     }
 
@@ -682,8 +818,20 @@ export const LOCATION_RADIUS_MILES = 100;
 
 // Generic geo words that must not drive a false region match on their own.
 const GEO_STOPWORDS = new Set([
-  "city", "town", "of", "the", "area", "greater", "region", "metro",
-  "metropolitan", "district", "and", "county", "province", "state",
+  "city",
+  "town",
+  "of",
+  "the",
+  "area",
+  "greater",
+  "region",
+  "metro",
+  "metropolitan",
+  "district",
+  "and",
+  "county",
+  "province",
+  "state",
 ]);
 
 function locTokens(s: string | null | undefined): string[] {
@@ -691,8 +839,8 @@ function locTokens(s: string | null | undefined): string[] {
   return s
     .toLowerCase()
     .split(/[,/|;·•\-–—()]+/)
-    .map(t => t.trim())
-    .filter(t => t.length >= 2 && !GEO_STOPWORDS.has(t));
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2 && !GEO_STOPWORDS.has(t));
 }
 
 /**
@@ -730,7 +878,7 @@ export async function classifyLocationMatches(
       out.set(it.id, { match: "unknown", flag: null }); // no signal → kept, unflagged
       continue;
     }
-    const overlap = cand.some(c => target.some(t => c === t || c.includes(t) || t.includes(c)));
+    const overlap = cand.some((c) => target.some((t) => c === t || c.includes(t) || t.includes(c)));
     if (overlap) out.set(it.id, { match: "region", flag: null });
     else needsRadiusCheck.push({ id: it.id, location: (it.location || "").trim() });
   }
@@ -751,16 +899,19 @@ Return JSON: { "results": [ { "id": string, "withinRadius": boolean } ] }`,
     // leave that candidate unflagged ("unknown") — never guess out-of-area.
     const within = new Map(
       (result?.results || [])
-        .filter(r => r && typeof r.id === "string" && typeof r.withinRadius === "boolean")
-        .map(r => [r.id, r.withinRadius as boolean]),
+        .filter((r) => r && typeof r.id === "string" && typeof r.withinRadius === "boolean")
+        .map((r) => [r.id, r.withinRadius as boolean]),
     );
     for (const it of needsRadiusCheck) {
       if (!within.has(it.id)) {
         out.set(it.id, { match: "unknown", flag: null });
       } else {
-        out.set(it.id, within.get(it.id)
-          ? { match: "near", flag: null }
-          : { match: "out_of_area", flag: OUT_OF_AREA_FLAG });
+        out.set(
+          it.id,
+          within.get(it.id)
+            ? { match: "near", flag: null }
+            : { match: "out_of_area", flag: OUT_OF_AREA_FLAG },
+        );
       }
     }
   } catch {
@@ -802,7 +953,7 @@ export async function scoreExternalCandidates(
     languages: icp.languages ?? [],
   };
 
-  const candPayload = candidates.map(c => ({
+  const candPayload = candidates.map((c) => ({
     id: c.id,
     title: c.currentTitle,
     company: c.currentCompany,
@@ -840,13 +991,16 @@ Return JSON: { "scores": [{ "candidateId": string, "score": number, "reason": st
       `Score candidates against the ICP. Be domain-strict — wrong-domain candidates score very low. JSON only.\n\n${FAIRNESS_DIRECTIVE}`,
     );
     const scoreMap = new Map((result?.scores || []).map((s: any) => [s.candidateId, s]));
-    return candidates.map(c => ({
+    return candidates.map((c) => ({
       ...c,
       matchScore: (scoreMap.get(c.id) as any)?.score ?? 50,
       matchReason: (scoreMap.get(c.id) as any)?.reason ?? "",
     }));
   } catch (err: any) {
-    logger.warn({ err: err.message }, "[scoreExternalCandidates] AI scoring failed; defaulting to 50");
-    return candidates.map(c => ({ ...c, matchScore: 50, matchReason: "AI scoring unavailable" }));
+    logger.warn(
+      { err: err.message },
+      "[scoreExternalCandidates] AI scoring failed; defaulting to 50",
+    );
+    return candidates.map((c) => ({ ...c, matchScore: 50, matchReason: "AI scoring unavailable" }));
   }
 }

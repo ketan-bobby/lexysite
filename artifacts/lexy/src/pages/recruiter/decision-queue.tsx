@@ -30,7 +30,7 @@
  *   - Candidates pending recruiter override
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bandBy } from "@/lib/score-band";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -43,10 +43,27 @@ import { SignalCoveragePanel } from "@/components/intelligence/SignalCoveragePan
 import { Link, useSearch } from "wouter";
 import { useAgentRun, useRunDetail } from "@/lib/agent-runs";
 import {
-  Brain, Lock, Star, AlertTriangle, Zap, ShieldAlert, Clock,
-  Search, RefreshCw, ChevronRight, ArrowUpRight, Filter,
-  CheckCircle2, Inbox, UserCheck, Play, Loader2, TrendingUp,
-  Sparkles, Briefcase, X,
+  Brain,
+  Lock,
+  Star,
+  AlertTriangle,
+  Zap,
+  ShieldAlert,
+  Clock,
+  Search,
+  RefreshCw,
+  ChevronRight,
+  ArrowUpRight,
+  Filter,
+  CheckCircle2,
+  Inbox,
+  UserCheck,
+  Play,
+  Loader2,
+  TrendingUp,
+  Sparkles,
+  Briefcase,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isTrustGated, TRUST_GATE_LABEL } from "@/lib/trust-gate";
@@ -97,10 +114,10 @@ interface Category {
 
 // Triage-lane thresholds — business rules that route records into review lanes,
 // NOT display colour bands. Named so a lane's cutoff can't silently drift.
-const TRUST_EXCEPTION_MAX = 50;        // trust below this = a verification-exception lane
-const HIGH_FIT_TRIAGE_MIN = 70;        // strong fit that still needs human judgement
-const OFFSETTING_RISK_TRUST_MAX = 60;  // trust below this offsets an otherwise high fit
-const LOW_CONFIDENCE_MAX = 55;         // decisions below this lack signal coverage
+const TRUST_EXCEPTION_MAX = 50; // trust below this = a verification-exception lane
+const HIGH_FIT_TRIAGE_MIN = 70; // strong fit that still needs human judgement
+const OFFSETTING_RISK_TRUST_MAX = 60; // trust below this offsets an otherwise high fit
+const LOW_CONFIDENCE_MAX = 55; // decisions below this lack signal coverage
 
 const CATEGORIES: Category[] = [
   {
@@ -110,7 +127,7 @@ const CATEGORIES: Category[] = [
     icon: Lock,
     color: "#facc15",
     urgencyLabel: "Critical",
-    filter: r => !!r.requiresApproval || r.nextBestAction === "recruiter_review",
+    filter: (r) => !!r.requiresApproval || r.nextBestAction === "recruiter_review",
   },
   {
     key: "trust",
@@ -119,7 +136,8 @@ const CATEGORIES: Category[] = [
     icon: ShieldAlert,
     color: "#fb7185",
     urgencyLabel: "High",
-    filter: r => (r.trustScore ?? 100) < TRUST_EXCEPTION_MAX || r.nextBestAction === "manual_verification",
+    filter: (r) =>
+      (r.trustScore ?? 100) < TRUST_EXCEPTION_MAX || r.nextBestAction === "manual_verification",
   },
   {
     key: "high_fit_risk",
@@ -128,7 +146,10 @@ const CATEGORIES: Category[] = [
     icon: Zap,
     color: "#fb923c",
     urgencyLabel: "High",
-    filter: r => (r.fitScore ?? 0) >= HIGH_FIT_TRIAGE_MIN && (r.trustScore ?? 100) < OFFSETTING_RISK_TRUST_MAX && r.nextBestAction !== "reject",
+    filter: (r) =>
+      (r.fitScore ?? 0) >= HIGH_FIT_TRIAGE_MIN &&
+      (r.trustScore ?? 100) < OFFSETTING_RISK_TRUST_MAX &&
+      r.nextBestAction !== "reject",
   },
   {
     key: "review",
@@ -137,7 +158,7 @@ const CATEGORIES: Category[] = [
     icon: Star,
     color: "#a78bfa",
     urgencyLabel: "Medium",
-    filter: r => r.nextBestAction === "recruiter_review",
+    filter: (r) => r.nextBestAction === "recruiter_review",
   },
   {
     key: "low_confidence",
@@ -146,19 +167,19 @@ const CATEGORIES: Category[] = [
     icon: AlertTriangle,
     color: "#94a3b8",
     urgencyLabel: "Low",
-    filter: r => (r.confidence ?? 100) < LOW_CONFIDENCE_MAX && r.nextBestAction !== "reject",
+    filter: (r) => (r.confidence ?? 100) < LOW_CONFIDENCE_MAX && r.nextBestAction !== "reject",
   },
 ];
 
 /* ── Color helpers ──────────────────────────────────────────────────────── */
 const ACTION_CONFIG: Record<string, { label: string; hex: string }> = {
-  advance:             { label: "Advance",    hex: "#4ade80" },
-  schedule:            { label: "Schedule",   hex: "#22d3ee" },
-  recruiter_review:    { label: "Review",     hex: "#facc15" },
-  re_engage:           { label: "Re-engage",  hex: "#fb923c" },
-  manual_verification: { label: "Verify",     hex: "#a78bfa" },
-  reject:              { label: "Reject",     hex: "#fb7185" },
-  hold:                { label: "Hold",       hex: "#94a3b8" },
+  advance: { label: "Advance", hex: "#4ade80" },
+  schedule: { label: "Schedule", hex: "#22d3ee" },
+  recruiter_review: { label: "Review", hex: "#facc15" },
+  re_engage: { label: "Re-engage", hex: "#fb923c" },
+  manual_verification: { label: "Verify", hex: "#a78bfa" },
+  reject: { label: "Reject", hex: "#fb7185" },
+  hold: { label: "Hold", hex: "#94a3b8" },
 };
 
 function scoreHex(score: number | null): string {
@@ -177,7 +198,9 @@ function QueueCard({
   const [overrideOpen, setOverrideOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const name = [record.candidateFirstName, record.candidateLastName].filter(Boolean).join(" ") || "Unknown Candidate";
+  const name =
+    [record.candidateFirstName, record.candidateLastName].filter(Boolean).join(" ") ||
+    "Unknown Candidate";
   const action = record.nextBestAction ? ACTION_CONFIG[record.nextBestAction] : null;
   const hp = record.hireProbability ?? 0;
   const hpHex = scoreHex(hp);
@@ -202,18 +225,27 @@ function QueueCard({
 
   return (
     <Card className="border-border/50 hover:border-primary/30 transition-all duration-200 overflow-hidden">
-      <div className="h-0.5 w-full" style={{ background: categoryColor, boxShadow: `0 0 8px ${categoryColor}55` }} />
+      <div
+        className="h-0.5 w-full"
+        style={{ background: categoryColor, boxShadow: `0 0 8px ${categoryColor}55` }}
+      />
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           {/* Hire Probability — demoted behind the trust gate when unverified */}
           {gated ? (
             <div className="flex-shrink-0 w-20 text-center pt-0.5">
-              <p className="text-[11px] font-black uppercase tracking-wide leading-tight text-amber-400">{TRUST_GATE_LABEL}</p>
-              <p className="text-[10px] text-muted-foreground mt-1 tabular-nums leading-tight">{hp}% if verified</p>
+              <p className="text-[11px] font-black uppercase tracking-wide leading-tight text-amber-400">
+                {TRUST_GATE_LABEL}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1 tabular-nums leading-tight">
+                {hp}% if verified
+              </p>
             </div>
           ) : (
             <div className="flex-shrink-0 w-14 text-center pt-0.5">
-              <p className="text-2xl font-black tabular-nums leading-none" style={{ color: hpHex }}>{hp}%</p>
+              <p className="text-2xl font-black tabular-nums leading-none" style={{ color: hpHex }}>
+                {hp}%
+              </p>
               <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">Hire Prob.</p>
             </div>
           )}
@@ -222,33 +254,49 @@ function QueueCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
               <div>
-                <Link href={`/candidates/${record.candidateId}`} className="font-bold text-sm hover:text-primary transition-colors">
+                <Link
+                  href={`/candidates/${record.candidateId}`}
+                  className="font-bold text-sm hover:text-primary transition-colors"
+                >
                   {name}
                 </Link>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   {record.candidateTitle && (
-                    <span className="text-xs text-muted-foreground truncate">{record.candidateTitle}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {record.candidateTitle}
+                    </span>
                   )}
                   {record.candidateCompany && (
-                    <span className="text-xs text-muted-foreground">· {record.candidateCompany}</span>
+                    <span className="text-xs text-muted-foreground">
+                      · {record.candidateCompany}
+                    </span>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {record.jobTitle && (
-                  <Badge variant="outline" className="text-xs">{record.jobTitle}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {record.jobTitle}
+                  </Badge>
                 )}
                 {action && (
                   <Badge
                     variant="outline"
                     className="text-xs"
-                    style={{ color: action.hex, borderColor: `${action.hex}40`, backgroundColor: `${action.hex}15` }}
+                    style={{
+                      color: action.hex,
+                      borderColor: `${action.hex}40`,
+                      backgroundColor: `${action.hex}15`,
+                    }}
                   >
                     {action.label}
                   </Badge>
                 )}
                 {record.requiresApproval && (
-                  <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30 gap-1">
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-amber-400 border-amber-500/30 gap-1"
+                  >
                     <Lock className="w-2.5 h-2.5" /> Blocked
                   </Badge>
                 )}
@@ -259,14 +307,17 @@ function QueueCard({
             <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
               <div className="flex gap-4">
                 {[
-                  { label: "Fit",     value: record.fitScore,        icon: TrendingUp },
-                  { label: "Quality", value: record.qualityScore,    icon: ArrowUpRight },
-                  { label: "Trust",   value: record.trustScore,      icon: CheckCircle2 },
-                  { label: "Conv.",   value: record.conversionScore, icon: Zap },
+                  { label: "Fit", value: record.fitScore, icon: TrendingUp },
+                  { label: "Quality", value: record.qualityScore, icon: ArrowUpRight },
+                  { label: "Trust", value: record.trustScore, icon: CheckCircle2 },
+                  { label: "Conv.", value: record.conversionScore, icon: Zap },
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label} className="flex items-center gap-1">
                     <span className="text-[9px] text-muted-foreground uppercase">{label}</span>
-                    <span className="text-xs font-bold tabular-nums" style={{ color: scoreHex(value) }}>
+                    <span
+                      className="text-xs font-bold tabular-nums"
+                      style={{ color: scoreHex(value) }}
+                    >
                       {value ?? "—"}
                     </span>
                   </div>
@@ -274,14 +325,33 @@ function QueueCard({
               </div>
               {(() => {
                 const overrides = (() => {
-                  try { return JSON.parse(record.overridesJson ?? "[]"); } catch { return []; }
+                  try {
+                    return JSON.parse(record.overridesJson ?? "[]");
+                  } catch {
+                    return [];
+                  }
                 })();
                 const isUnstable = overrides.length >= 2;
                 const signals = record.signalsJson ?? {};
                 const sf = [
-                  { agent: "screening",    present: !!signals.screening,    decay: null, lastUpdated: null },
-                  { agent: "interview",    present: !!signals.interview,    decay: null, lastUpdated: null },
-                  { agent: "verification", present: !!signals.verification, decay: null, lastUpdated: null },
+                  {
+                    agent: "screening",
+                    present: !!signals.screening,
+                    decay: null,
+                    lastUpdated: null,
+                  },
+                  {
+                    agent: "interview",
+                    present: !!signals.interview,
+                    decay: null,
+                    lastUpdated: null,
+                  },
+                  {
+                    agent: "verification",
+                    present: !!signals.verification,
+                    decay: null,
+                    lastUpdated: null,
+                  },
                 ];
                 return (
                   <div className="flex items-center gap-3">
@@ -313,9 +383,11 @@ function QueueCard({
                 onClick={() => triggerMutation.mutate()}
                 disabled={triggerMutation.isPending}
               >
-                {triggerMutation.isPending
-                  ? <Loader2 className="w-3 h-3 animate-spin" />
-                  : <Play className="w-3 h-3" />}
+                {triggerMutation.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Play className="w-3 h-3" />
+                )}
                 Execute Action
               </Button>
               <Button
@@ -327,7 +399,11 @@ function QueueCard({
                 <UserCheck className="w-3 h-3" /> Override
               </Button>
               <Link href={`/candidates/${record.candidateId}`}>
-                <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs gap-1 text-muted-foreground hover:text-primary"
+                >
                   View Profile <ChevronRight className="w-3 h-3" />
                 </Button>
               </Link>
@@ -361,6 +437,10 @@ export default function DecisionQueue() {
   // shortlist" button: narrows the queue to just that run's new candidates.
   const searchParams = useSearch();
   const runId = useMemo(() => new URLSearchParams(searchParams).get("run"), [searchParams]);
+  // Optional `?job=<id>` deep-link from a work order: a PERMANENT, revisitable
+  // shortlist of every AI-scored candidate on that job (unlike ?run=, which is
+  // scoped to one sourcing run's additions).
+  const jobParam = useMemo(() => new URLSearchParams(searchParams).get("job"), [searchParams]);
   const { events: runEvents, isRunning: runIsRunning } = useAgentRun(runId);
   const runDetail = useRunDetail(runId).data;
   const runCandidateIds = useMemo<Set<string> | null>(() => {
@@ -380,7 +460,9 @@ export default function DecisionQueue() {
   // Until the run's shortlist ids resolve, the run filter is still loading.
   const runShortlistLoading = !!runId && runCandidateIds == null;
 
-  const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useQuery<{ data: IntelligenceRecord[] }>({
+  const { data, isLoading, refetch, isFetching, dataUpdatedAt } = useQuery<{
+    data: IntelligenceRecord[];
+  }>({
     queryKey: ["intelligence", "all"],
     queryFn: async () => {
       const res = await fetch(`${BASE}/api/intelligence`, {
@@ -395,28 +477,74 @@ export default function DecisionQueue() {
 
   const records = useMemo(() => {
     const all = data?.data ?? [];
+    if (jobParam) return all.filter((r) => r.jobId === jobParam);
     if (!runId) return all;
     // Strict: a run deep-link must never fall back to the full queue. Until the
     // shortlist ids resolve, show nothing rather than unrelated candidates.
     if (!runCandidateIds) return [];
     return all.filter((r) => runCandidateIds.has(r.candidateId));
-  }, [data, runId, runCandidateIds]);
+  }, [data, runId, runCandidateIds, jobParam]);
+
+  const jobTitle = jobParam ? (records[0]?.jobTitle ?? null) : null;
 
   // Count each category
-  const categoryCounts = useMemo(() =>
-    Object.fromEntries(CATEGORIES.map(cat => [cat.key, records.filter(cat.filter).length])),
-    [records]
+  // In run view, prepend a "Run Shortlist" tab that shows EVERY candidate the
+  // run added — healthy candidates (nextBestAction "schedule"/"advance") match
+  // none of the attention lanes, so without this tab a successful run renders
+  // as a contradictory "8 candidates … Queue Clear".
+  const visibleCategories = useMemo<Category[]>(
+    () =>
+      runId || jobParam
+        ? [
+            {
+              key: "shortlist" as CategoryKey,
+              label: runId ? "Run Shortlist" : "Full Shortlist",
+              description: runId
+                ? "Every candidate this sourcing run added, with the AI's recommended next step"
+                : "Every AI-scored candidate on this work order, with the AI's recommended next step",
+              icon: Sparkles,
+              color: "#22d3ee",
+              urgencyLabel: "Info",
+              filter: () => true,
+            },
+            ...CATEGORIES,
+          ]
+        : CATEGORIES,
+    [runId, jobParam],
+  );
+
+  // Deep-linking into a run should land on the full shortlist, not an empty
+  // "Needs Approval" lane; leaving run view must drop the run-only tab.
+  useEffect(() => {
+    setActiveCategory(runId || jobParam ? ("shortlist" as CategoryKey) : "approval");
+  }, [runId, jobParam]);
+
+  const categoryCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleCategories.map((cat) => [cat.key, records.filter(cat.filter).length]),
+      ),
+    [records, visibleCategories],
   );
 
   const activeRecords = useMemo(() => {
-    const cat = CATEGORIES.find(c => c.key === activeCategory);
+    const cat = visibleCategories.find((c) => c.key === activeCategory);
     if (!cat) return records;
     let filtered = records.filter(cat.filter);
     if (search) {
       const q = search.toLowerCase();
-      filtered = filtered.filter(r =>
-        [r.candidateFirstName, r.candidateLastName, r.candidateEmail, r.jobTitle, r.candidateTitle, r.candidateCompany]
-          .join(" ").toLowerCase().includes(q)
+      filtered = filtered.filter((r) =>
+        [
+          r.candidateFirstName,
+          r.candidateLastName,
+          r.candidateEmail,
+          r.jobTitle,
+          r.candidateTitle,
+          r.candidateCompany,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
       );
     }
     // Sort by hire probability desc, then requiresApproval first
@@ -428,7 +556,7 @@ export default function DecisionQueue() {
   }, [records, activeCategory, search]);
 
   const totalQueue = CATEGORIES.reduce((s, cat) => s + (categoryCounts[cat.key] ?? 0), 0);
-  const activeCat = CATEGORIES.find(c => c.key === activeCategory)!;
+  const activeCat = visibleCategories.find((c) => c.key === activeCategory) ?? visibleCategories[0];
 
   return (
     <AppLayout>
@@ -440,7 +568,9 @@ export default function DecisionQueue() {
             Decision Queue
           </h1>
           <p className="text-muted-foreground mt-1">
-            {totalQueue === 0 ? "All clear — no candidates need attention right now." : `${totalQueue} candidates need your attention.`}
+            {totalQueue === 0
+              ? "All clear — no candidates need attention right now."
+              : `${totalQueue} candidates need your attention.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -449,7 +579,13 @@ export default function DecisionQueue() {
               Updated {new Date(dataUpdatedAt).toLocaleTimeString()}
             </span>
           )}
-          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="gap-1.5"
+          >
             <RefreshCw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
             Refresh
           </Button>
@@ -464,13 +600,17 @@ export default function DecisionQueue() {
             <p className="text-sm font-semibold text-foreground truncate">
               Showing this run's shortlist
               {runDetail?.jobTitle ? ` for ${runDetail.jobTitle}` : ""}
-              {runCandidateIds ? ` — ${runCandidateIds.size} candidate${runCandidateIds.size === 1 ? "" : "s"}` : ""}
+              {runCandidateIds
+                ? ` — ${runCandidateIds.size} candidate${runCandidateIds.size === 1 ? "" : "s"}`
+                : ""}
             </p>
             <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
               {runShortlistLoading ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-                  {runIsRunning ? "Sourcing is still running — the shortlist will appear here." : "Loading this run's shortlist…"}
+                  {runIsRunning
+                    ? "Sourcing is still running — the shortlist will appear here."
+                    : "Loading this run's shortlist…"}
                 </>
               ) : (
                 "Filtered to the candidates this sourcing run added to your pipeline."
@@ -492,9 +632,36 @@ export default function DecisionQueue() {
         </div>
       )}
 
+      {/* ── Work-order filter banner (permanent, revisitable job shortlist) ── */}
+      {jobParam && !runId && (
+        <div className="flex items-center gap-3 mb-6 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+          <Briefcase className="w-4 h-4 text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground truncate">
+              Work order shortlist{jobTitle ? ` — ${jobTitle}` : ""}
+              {` — ${records.length} candidate${records.length === 1 ? "" : "s"}`}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              Every AI-scored candidate on this work order. Come back anytime — this view doesn't
+              expire.
+            </p>
+          </div>
+          <Link href={`/jobs/${jobParam}?tab=candidates`}>
+            <Button size="sm" variant="outline" className="gap-1.5 shrink-0">
+              <Briefcase className="w-3.5 h-3.5" /> Open work order
+            </Button>
+          </Link>
+          <Link href="/decision-queue">
+            <Button size="sm" variant="ghost" className="gap-1.5 shrink-0">
+              <X className="w-3.5 h-3.5" /> Clear
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* ── Category tabs ───────────────────────────────────────────────── */}
       <div className="flex gap-2 flex-wrap mb-6">
-        {CATEGORIES.map(cat => {
+        {visibleCategories.map((cat) => {
           const count = categoryCounts[cat.key] ?? 0;
           const isActive = activeCategory === cat.key;
           return (
@@ -514,7 +681,10 @@ export default function DecisionQueue() {
               {count > 0 && (
                 <span
                   className="w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center"
-                  style={{ background: isActive ? cat.color : "rgba(255,255,255,0.1)", color: isActive ? "#000" : "inherit" }}
+                  style={{
+                    background: isActive ? cat.color : "rgba(255,255,255,0.1)",
+                    color: isActive ? "#000" : "inherit",
+                  }}
                 >
                   {count}
                 </span>
@@ -532,7 +702,11 @@ export default function DecisionQueue() {
           <Badge
             variant="outline"
             className="text-xs"
-            style={{ color: activeCat.color, borderColor: `${activeCat.color}40`, backgroundColor: `${activeCat.color}15` }}
+            style={{
+              color: activeCat.color,
+              borderColor: `${activeCat.color}40`,
+              backgroundColor: `${activeCat.color}15`,
+            }}
           >
             {activeCat.urgencyLabel}
           </Badge>
@@ -542,7 +716,7 @@ export default function DecisionQueue() {
           <Input
             placeholder="Search candidates…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-8 text-sm w-56"
           />
         </div>
@@ -568,7 +742,7 @@ export default function DecisionQueue() {
         </div>
       ) : (
         <div className="space-y-3">
-          {activeRecords.map(record => (
+          {activeRecords.map((record) => (
             <QueueCard key={record.id} record={record} categoryColor={activeCat.color} />
           ))}
         </div>

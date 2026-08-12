@@ -16,14 +16,23 @@
  * workOrderId is validated against getAllowedTenantIds before use.
  */
 import { Router, type IRouter } from "express";
-import { db, agentRunsTable, agentRunEventsTable, jobsTable, tenantsTable, usersTable } from "@workspace/db";
+import {
+  db,
+  requestDbContext,
+  agentRunsTable,
+  agentRunEventsTable,
+  jobsTable,
+  tenantsTable,
+  usersTable,
+} from "@workspace/db";
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { getAuthUserId } from "../lib/auth-token";
-import { getAllowedTenantIds } from "../lib/tenantUtils";
+import { getAllowedTenantIds, recruiterIsAssignedToJob } from "../lib/tenantUtils";
 import { startGuardedAgentRun, emitRunEvent, completeAgentRun } from "../lib/agent-runs/recorder";
 import { simulateSourcingRun } from "../lib/agent-runs/simulate";
+import { runRealSourcingRun } from "../lib/agent-runs/run-real";
 
 const router: IRouter = Router();
 
@@ -51,7 +60,12 @@ async function resolveCaller(req: any) {
 async function loadAuthorizedJob(user: { tenantId: string | null; role: string }, jobId: string) {
   const allowed = await getAllowedTenantIds(user);
   const [job] = await db
-    .select({ id: jobsTable.id, tenantId: jobsTable.tenantId, status: jobsTable.status })
+    .select({
+      id: jobsTable.id,
+      tenantId: jobsTable.tenantId,
+      status: jobsTable.status,
+      assignedRecruiterId: jobsTable.assignedRecruiterId,
+    })
     .from(jobsTable)
     .where(eq(jobsTable.id, jobId))
     .limit(1);
@@ -63,15 +77,40 @@ async function loadAuthorizedJob(user: { tenantId: string | null; role: string }
 const SimulateBody = z.object({
   workOrderId: z.string().min(1),
   shortlistSize: z.number().int().min(1).max(25).optional(),
+  /** EXPLICIT demo flag. Default (absent/false) runs the REAL sourcing
+   *  pipeline; only `simulated: true` produces demo-labeled persona data. */
+  simulated: z.boolean().optional(),
 });
 
-router.post("/agent-runs/simulate", validate({ body: SimulateBody }), async (req, res) => {
+// Cast note: validate() is typed against zod v3's ZodTypeAny while route
+// schemas use zod/v4 — runtime-compatible (validate only calls safeParse),
+// but the nominal types differ. Cast at the boundary like other callers.
+router.post("/agent-runs/simulate", validate({ body: SimulateBody as never }), async (req, res) => {
   const user = await resolveCaller(req);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
-  const { workOrderId, shortlistSize } = req.body as z.infer<typeof SimulateBody>;
+  const {
+    workOrderId,
+    shortlistSize,
+    simulated = false,
+  } = req.body as z.infer<typeof SimulateBody>;
   const job = await loadAuthorizedJob(user, workOrderId);
-  if (!job) { res.status(404).json({ error: "Work order not found" }); return; }
+  if (!job) {
+    res.status(404).json({ error: "Work order not found" });
+    return;
+  }
+
+  /* Recruiter ownership ceiling: starting a run writes candidates onto (and,
+   * for real runs, spends money against) this requisition, so a plain
+   * recruiter must be on its roster — same gate as POST /sourcing/search.
+   * Admin-class roles already cleared the tenant-scope check above. */
+  if (user.role === "recruiter" && !(await recruiterIsAssignedToJob(user.id, job))) {
+    res.status(403).json({ error: "Forbidden — you are not assigned to this requisition." });
+    return;
+  }
 
   // Approval gate: sourcing creates candidate records, so it may only run on an
   // approved work order (not a draft / pending / rejected requisition).
@@ -83,6 +122,10 @@ router.post("/agent-runs/simulate", validate({ body: SimulateBody }), async (req
     return;
   }
 
+  // ADVISORY internal-first (2026-08-12, per product owner): reviewing the
+  // internal bench before a real (spending) run is a UI recommendation, not a
+  // server-side blocker. Runs search the internal pool as part of the fan-out.
+
   // Concurrency caps, enforced atomically (advisory-locked check+insert) so two
   // parallel starts can't both slip past:
   //   • per work order — only one active sourcing run at a time (409)
@@ -93,7 +136,7 @@ router.post("/agent-runs/simulate", validate({ body: SimulateBody }), async (req
       tenantId: job.tenantId,
       workOrderId: job.id,
       agentType: "sourcing",
-      isSimulated: true,
+      isSimulated: simulated,
       triggeredBy: user.id,
       status: "running",
     },
@@ -116,11 +159,23 @@ router.post("/agent-runs/simulate", validate({ body: SimulateBody }), async (req
   }
   const run = started.run;
 
-  // Fire-and-forget: the run emits events for ~20s after this response.
-  void simulateSourcingRun(
-    { id: run.id, tenantId: run.tenantId, workOrderId: run.workOrderId },
-    { shortlistSize },
-  );
+  // Fire-and-forget: the run keeps emitting events after this response.
+  // Default = the REAL provider pipeline + LLM/ICP scorer; `simulated: true`
+  // is the explicit demo path (persona data, "Demo run" badge via isSimulated).
+  //
+  // The executor MUST run OUTSIDE the request's AsyncLocalStorage frame:
+  // withTenantContext releases the request-scoped PoolClient when the 202
+  // response finishes, so any `db` call inherited into this background work
+  // would hit a released client. `requestDbContext.exit()` empties the store,
+  // making every `db` access inside the run fall through to dbAdmin (the
+  // documented rule for background work) — with explicit tenantId scoping.
+  const executor = simulated ? simulateSourcingRun : runRealSourcingRun;
+  requestDbContext.exit(() => {
+    void executor(
+      { id: run.id, tenantId: run.tenantId, workOrderId: run.workOrderId },
+      { shortlistSize },
+    );
+  });
 
   res.status(202).json({ runId: run.id, run });
 });
@@ -128,13 +183,22 @@ router.post("/agent-runs/simulate", validate({ body: SimulateBody }), async (req
 /** List runs for a work order (the audit log), newest first. */
 router.get("/agent-runs", async (req, res) => {
   const user = await resolveCaller(req);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
   const workOrderId = typeof req.query.workOrderId === "string" ? req.query.workOrderId : "";
-  if (!workOrderId) { res.status(400).json({ error: "workOrderId is required" }); return; }
+  if (!workOrderId) {
+    res.status(400).json({ error: "workOrderId is required" });
+    return;
+  }
 
   const job = await loadAuthorizedJob(user, workOrderId);
-  if (!job) { res.status(404).json({ error: "Work order not found" }); return; }
+  if (!job) {
+    res.status(404).json({ error: "Work order not found" });
+    return;
+  }
 
   const runs = await db
     .select()
@@ -149,7 +213,10 @@ router.get("/agent-runs", async (req, res) => {
 /** A single run plus its full ordered event stream. */
 router.get("/agent-runs/:id", async (req, res) => {
   const user = await resolveCaller(req);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
   // RLS already scopes agent_runs to the caller's tenant subtree.
   const [run] = await db
@@ -157,7 +224,10 @@ router.get("/agent-runs/:id", async (req, res) => {
     .from(agentRunsTable)
     .where(eq(agentRunsTable.id, req.params.id))
     .limit(1);
-  if (!run) { res.status(404).json({ error: "Run not found" }); return; }
+  if (!run) {
+    res.status(404).json({ error: "Run not found" });
+    return;
+  }
 
   const events = await db
     .select()
@@ -199,15 +269,25 @@ router.get("/agent-runs/:id", async (req, res) => {
  */
 router.post("/agent-runs/:id/cancel", async (req, res) => {
   const user = await resolveCaller(req);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
   // RLS already scopes agent_runs to the caller's tenant subtree.
   const [run] = await db
-    .select({ id: agentRunsTable.id, status: agentRunsTable.status, tenantId: agentRunsTable.tenantId })
+    .select({
+      id: agentRunsTable.id,
+      status: agentRunsTable.status,
+      tenantId: agentRunsTable.tenantId,
+    })
     .from(agentRunsTable)
     .where(eq(agentRunsTable.id, req.params.id))
     .limit(1);
-  if (!run) { res.status(404).json({ error: "Run not found" }); return; }
+  if (!run) {
+    res.status(404).json({ error: "Run not found" });
+    return;
+  }
 
   if (!["queued", "running"].includes(run.status)) {
     res.json({ status: run.status });
@@ -225,14 +305,24 @@ router.post("/agent-runs/:id/cancel", async (req, res) => {
 /** Incremental events for a run — the 2s poll target. */
 router.get("/agent-runs/:id/events", async (req, res) => {
   const user = await resolveCaller(req);
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
   const [run] = await db
-    .select({ id: agentRunsTable.id, status: agentRunsTable.status, summary: agentRunsTable.summary })
+    .select({
+      id: agentRunsTable.id,
+      status: agentRunsTable.status,
+      summary: agentRunsTable.summary,
+    })
     .from(agentRunsTable)
     .where(eq(agentRunsTable.id, req.params.id))
     .limit(1);
-  if (!run) { res.status(404).json({ error: "Run not found" }); return; }
+  if (!run) {
+    res.status(404).json({ error: "Run not found" });
+    return;
+  }
 
   const after = Number.parseInt(String(req.query.after ?? "0"), 10) || 0;
   const events = await db

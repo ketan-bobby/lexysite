@@ -30,6 +30,7 @@ import {
   type CreateRunInput,
 } from "./recorder";
 import { logger } from "../logger";
+import { upsertIntelligence } from "../intelligence";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,23 +43,82 @@ class RunCancelledError extends Error {
 }
 
 const FIRST_NAMES = [
-  "Ava", "Liam", "Noah", "Maya", "Ethan", "Zoe", "Kai", "Priya", "Diego", "Lena",
-  "Omar", "Sofia", "Nina", "Marcus", "Yuki", "Aria", "Ravi", "Elena", "Theo", "Isla",
+  "Ava",
+  "Liam",
+  "Noah",
+  "Maya",
+  "Ethan",
+  "Zoe",
+  "Kai",
+  "Priya",
+  "Diego",
+  "Lena",
+  "Omar",
+  "Sofia",
+  "Nina",
+  "Marcus",
+  "Yuki",
+  "Aria",
+  "Ravi",
+  "Elena",
+  "Theo",
+  "Isla",
 ];
 const LAST_NAMES = [
-  "Chen", "Patel", "Okafor", "Rossi", "Kim", "Nguyen", "Silva", "Haddad", "Novak", "Ibrahim",
-  "Torres", "Larsson", "Mensah", "Costa", "Rahman", "Weiss", "Adeyemi", "Kowalski", "Duarte", "Fischer",
+  "Chen",
+  "Patel",
+  "Okafor",
+  "Rossi",
+  "Kim",
+  "Nguyen",
+  "Silva",
+  "Haddad",
+  "Novak",
+  "Ibrahim",
+  "Torres",
+  "Larsson",
+  "Mensah",
+  "Costa",
+  "Rahman",
+  "Weiss",
+  "Adeyemi",
+  "Kowalski",
+  "Duarte",
+  "Fischer",
 ];
 const TITLES = [
-  "Senior Software Engineer", "Full-Stack Engineer", "Backend Engineer", "Frontend Engineer",
-  "Staff Engineer", "Platform Engineer", "Product Engineer", "Engineering Lead",
+  "Senior Software Engineer",
+  "Full-Stack Engineer",
+  "Backend Engineer",
+  "Frontend Engineer",
+  "Staff Engineer",
+  "Platform Engineer",
+  "Product Engineer",
+  "Engineering Lead",
 ];
 const COMPANIES = [
-  "Stripe", "Datadog", "Airbnb", "Shopify", "Cloudflare", "Notion", "Linear", "Vercel",
+  "Stripe",
+  "Datadog",
+  "Airbnb",
+  "Shopify",
+  "Cloudflare",
+  "Notion",
+  "Linear",
+  "Vercel",
 ];
 const SKILL_POOL = [
-  "TypeScript", "React", "Node.js", "PostgreSQL", "GraphQL", "AWS", "Kubernetes",
-  "Python", "Go", "System Design", "Distributed Systems", "CI/CD",
+  "TypeScript",
+  "React",
+  "Node.js",
+  "PostgreSQL",
+  "GraphQL",
+  "AWS",
+  "Kubernetes",
+  "Python",
+  "Go",
+  "System Design",
+  "Distributed Systems",
+  "CI/CD",
 ];
 
 function pick<T>(arr: T[], i: number): T {
@@ -261,10 +321,14 @@ function buildDemoPlan(count: number): DemoSlot[] {
   if (nShortlisted < 0) nShortlisted = 0;
 
   const slots: DemoSlot[] = [];
-  for (let i = 0; i < nScreening; i++) slots.push({ stage: "screening", verified: false, noEmail: false });
-  for (let i = 0; i < nVerification; i++) slots.push({ stage: "verification", verified: false, noEmail: false });
-  for (let i = 0; i < nShortlisted; i++) slots.push({ stage: "shortlisted", verified: true, noEmail: false });
-  for (let i = 0; i < nInterview; i++) slots.push({ stage: "interview", verified: true, noEmail: false });
+  for (let i = 0; i < nScreening; i++)
+    slots.push({ stage: "screening", verified: false, noEmail: false });
+  for (let i = 0; i < nVerification; i++)
+    slots.push({ stage: "verification", verified: false, noEmail: false });
+  for (let i = 0; i < nShortlisted; i++)
+    slots.push({ stage: "shortlisted", verified: true, noEmail: false });
+  for (let i = 0; i < nInterview; i++)
+    slots.push({ stage: "interview", verified: true, noEmail: false });
 
   // Rounding may over/undershoot; pad extras into Outreach Queued, then trim to
   // exactly `count`.
@@ -365,13 +429,40 @@ async function createSimulatedShortlist(args: {
           const existing = await dbAdmin
             .select({ id: applicationsTable.id })
             .from(applicationsTable)
-            .where(and(eq(applicationsTable.jobId, jobId), eq(applicationsTable.candidateId, cand.id)))
+            .where(
+              and(eq(applicationsTable.jobId, jobId), eq(applicationsTable.candidateId, cand.id)),
+            )
             .limit(1)
             .catch(() => []);
           return existing as any;
         });
 
       created.push(cand.id);
+
+      // Seed an intelligence row so the run's shortlist actually surfaces on
+      // the Decision Queue — the queue reads candidate_job_intelligence ONLY,
+      // so an application row alone leaves the run view empty ("Queue Clear"
+      // under an "8 candidates" banner). Best-effort: a scoring failure must
+      // never sink the run.
+      try {
+        await upsertIntelligence(tenantId, jobId, cand.id, {
+          sourcing: {
+            sourceType: "agent_simulated",
+            sourceConfidence: matchScore,
+            profileCompleteness: slot.noEmail ? 60 : 85,
+          },
+          screening: {
+            resumeMatchScore: matchScore,
+            skillMatchScore: matchScore,
+            score: matchScore,
+          },
+        });
+      } catch (err) {
+        logger.warn(
+          { err, candidateId: cand.id },
+          "[agent-runs] shortlist intelligence seed failed",
+        );
+      }
 
       // Record each produced candidate against the run AS it lands, so a Cancel
       // between iterations leaves the partial output attributed to this run
@@ -430,7 +521,7 @@ async function resolveTargetLocation(jobId: string): Promise<string> {
   // First-class ICP semantics: an ICP row is authoritative (a cleared location
   // means "no preference"). Only when there is no ICP row (missing OR its read
   // failed) do we fall back to the job's own location.
-  const target = icpRow ? (icpRow.location || "") : jobLocation;
+  const target = icpRow ? icpRow.location || "" : jobLocation;
   return (target || "").trim();
 }
 

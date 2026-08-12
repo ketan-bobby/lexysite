@@ -2144,7 +2144,10 @@ export default function InterviewRoom() {
             }
           }, 400);
         } else {
-          /* Switch to text input for THIS question only — voice re-arms next question */
+          /* Switch to text input for THIS question only — voice re-arms next question.
+           * Show the same reassurance notice mobile gets, so desktop candidates
+           * aren't left wondering why the mic "gave up" (#15). */
+          setMicFallbackNotice(true);
           enableTextInput("nospeech");
         }
         return;

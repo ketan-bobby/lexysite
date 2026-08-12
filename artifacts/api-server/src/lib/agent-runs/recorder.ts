@@ -129,25 +129,103 @@ export async function emitRunEvent(
   run: { id: string; tenantId: string },
   event: EmitEventInput,
 ): Promise<void> {
+  // seq = MAX(seq)+1 is computed in-statement; CONCURRENT emitters for the same
+  // run can compute the same value and collide on UNIQUE(run_id, seq). Retry on
+  // 23505 (unique_violation) with jittered backoff — the subquery recomputes a
+  // fresh seq each attempt — so no writer's event is ever silently dropped.
+  // (Same pattern as the pipeline_run_events durable stream.)
+  // Under a K-way race only one writer wins each round, so a loser can need up
+  // to ~K attempts. Collisions are cheap (index lookup + retry), so a generous
+  // cap costs nothing in the common case and guarantees no drop under any
+  // realistic fan-out.
+  const MAX_ATTEMPTS = 40;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await dbAdmin.insert(agentRunEventsTable).values({
+        tenantId: run.tenantId,
+        runId: run.id,
+        seq: sql`(SELECT COALESCE(MAX(seq), 0) + 1 FROM agent_run_events WHERE run_id = ${run.id})`,
+        type: event.type,
+        stepName: event.stepName ?? null,
+        message: event.message,
+        count: event.count ?? null,
+        payload: (event.payload as any) ?? null,
+      });
+      break; // inserted
+    } catch (err: any) {
+      const code = err?.code ?? err?.cause?.code;
+      if (code === "23505" && attempt < MAX_ATTEMPTS) {
+        // Small jitter so racing writers don't re-collide in lockstep.
+        await new Promise((r) => setTimeout(r, 10 * attempt + Math.random() * 40));
+        continue;
+      }
+      logger.error({ err, attempt }, "[agent-runs] emitRunEvent failed");
+      return; // best-effort: never throw to the caller
+    }
+  }
   try {
-    await dbAdmin.insert(agentRunEventsTable).values({
-      tenantId: run.tenantId,
-      runId: run.id,
-      // Next seq = max(seq)+1 for this run, computed in-statement (race-safe
-      // enough for the single sequential emitter; the index keeps reads ordered).
-      seq: sql`(SELECT COALESCE(MAX(seq), 0) + 1 FROM agent_run_events WHERE run_id = ${run.id})`,
-      type: event.type,
-      stepName: event.stepName ?? null,
-      message: event.message,
-      count: event.count ?? null,
-      payload: (event.payload as any) ?? null,
-    });
     await dbAdmin
       .update(agentRunsTable)
       .set({ updatedAt: new Date() })
       .where(eq(agentRunsTable.id, run.id));
   } catch (err) {
-    logger.error({ err }, "[agent-runs] emitRunEvent failed");
+    logger.error({ err }, "[agent-runs] emitRunEvent liveness bump failed");
+  }
+}
+
+export interface PruneResult {
+  deleted: number;
+  batches: number;
+  moreRemaining: boolean;
+  error?: string;
+}
+
+/**
+ * Delete non-milestone agent_run_events older than `retentionDays`, in batches
+ * so a large backlog never locks the table. Mirrors prunePipelineRunEvents:
+ * milestone events (run_completed/run_failed + step_completed) define a run's
+ * durable audit shape and are kept forever; step_started/step_progress detail
+ * is only useful while recent. Best-effort: returns {error} rather than throwing.
+ */
+export async function pruneAgentRunEvents(opts: {
+  retentionDays: number;
+  batchSize?: number;
+  maxBatches?: number;
+}): Promise<PruneResult> {
+  const batchSize = opts.batchSize ?? 5_000;
+  const maxBatches = opts.maxBatches ?? 100;
+  const cutoff = new Date(Date.now() - opts.retentionDays * 24 * 60 * 60_000);
+
+  let deleted = 0;
+  let batches = 0;
+  let moreRemaining = false;
+
+  try {
+    for (let i = 0; i < maxBatches; i++) {
+      const res: any = await dbAdmin.execute(sql`
+        WITH doomed AS (
+          SELECT id FROM agent_run_events
+           WHERE "timestamp" < ${cutoff}
+             AND type NOT IN ('run_completed','run_failed','step_completed')
+           LIMIT ${batchSize}
+        )
+        DELETE FROM agent_run_events e
+         USING doomed d
+         WHERE e.id = d.id
+      `);
+      const n = (res?.rowCount ?? res?.count ?? (Array.isArray(res) ? res.length : 0)) as number;
+      deleted += n;
+      batches += 1;
+      if (n < batchSize) break;
+      if (i === maxBatches - 1) moreRemaining = true;
+    }
+    return { deleted, batches, moreRemaining };
+  } catch (err: any) {
+    logger.warn(
+      { err: err?.message, retentionDays: opts.retentionDays },
+      "[agent-runs] pruneAgentRunEvents failed",
+    );
+    return { deleted, batches, moreRemaining, error: err?.message ?? "prune failed" };
   }
 }
 

@@ -151,7 +151,18 @@ async function apiFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
     },
     ...opts,
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    /* Surface the server's human-readable error (e.g. "candidate has opted
+     * out of contact") instead of an opaque status code. */
+    let message = `API ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.error) message = body.error;
+    } catch {
+      /* non-JSON body — keep the status-code message */
+    }
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -807,6 +818,56 @@ export default function JobDetail() {
     refetchOnWindowFocus: true,
     enabled: !!user && !!jobId,
   });
+  /* Candidates already on the pipeline board (application or sourced row) —
+   * used to swap the row's "Move to Pipeline" action for an "In Pipeline"
+   * label. Board rows carry the candidate under `candidate.id` (normalized)
+   * or `candidateId` (application rows). */
+  const onBoardCandidateIds = (() => {
+    const ids = new Set<string>();
+    const stages = (pipelineStages as any)?.stages ?? {};
+    for (const rows of Object.values(stages) as any[][]) {
+      for (const row of rows ?? []) {
+        if (row?.candidate?.id) ids.add(row.candidate.id);
+        if (row?.candidateId) ids.add(row.candidateId);
+      }
+    }
+    return ids;
+  })();
+  const [movingToPipeline, setMovingToPipeline] = useState<Record<string, boolean>>({});
+  const moveToPipeline = async (candidate: any) => {
+    if (!jobId || movingToPipeline[candidate.id]) return;
+    setMovingToPipeline((prev) => ({ ...prev, [candidate.id]: true }));
+    try {
+      /* Manual placement: land the candidate in the Applied lane without
+       * re-firing the create-time screening automation (they were already
+       * screened when linked to this job). */
+      await apiFetch("/applications", {
+        method: "POST",
+        body: JSON.stringify({
+          jobId,
+          candidateId: candidate.id,
+          stage: "applied",
+          skipAutomation: true,
+        }),
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["pipeline-stages", jobId] }),
+        queryClient.invalidateQueries({ queryKey: getListCandidatesQueryKey({ jobId }) }),
+      ]);
+      toast({
+        title: "Moved to pipeline",
+        description: `${candidate.firstName} ${candidate.lastName} is now on the Pipeline board (Applied).`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Could not move to pipeline",
+        description: e?.message ?? "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setMovingToPipeline((prev) => ({ ...prev, [candidate.id]: false }));
+    }
+  };
   // ── Close work order + outcome feedback dialog ───────────────────────
   const [closeLoading, setCloseLoading] = useState(false);
   const [closeResult, setCloseResult] = useState<{
@@ -2409,60 +2470,81 @@ export default function JobDetail() {
       </Dialog>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="w-full overflow-x-auto mb-8">
-          <TabsList
-            data-tour="job-tabs"
-            className="min-w-max h-12 p-1 bg-muted/50 rounded-xl gap-0.5"
-          >
-            <TabsTrigger value="overview" className="rounded-lg px-4" data-tour="tab-overview">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="rounded-lg px-4" data-tour="tab-agents">
-              Workflow
-            </TabsTrigger>
-            <TabsTrigger value="icp" className="rounded-lg px-4" data-tour="tab-icp">
-              ICP (AI)
-            </TabsTrigger>
-            <TabsTrigger
-              value="pipeline"
-              className="rounded-lg px-4 flex items-center gap-1.5"
-              data-tour="tab-pipeline"
+        <div className="w-full mb-8 flex items-center gap-3">
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <TabsList
+              data-tour="job-tabs"
+              className="min-w-max h-12 p-1 bg-muted/50 rounded-xl gap-0.5"
             >
-              <Zap className="w-3.5 h-3.5" /> Pipeline
-            </TabsTrigger>
-            <TabsTrigger value="candidates" className="rounded-lg px-4" data-tour="tab-candidates">
-              Candidates{" "}
-              <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/20">
-                {candidatesData?.candidates?.length ?? 0}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="outreach" className="rounded-lg px-4" data-tour="tab-outreach">
-              Outreach
-            </TabsTrigger>
-            <TabsTrigger value="anti-ghost" className="rounded-lg px-4 flex items-center gap-1.5">
-              <Ghost className="w-3.5 h-3.5" /> Anti-Ghost
-            </TabsTrigger>
-            <TabsTrigger value="executive" className="rounded-lg px-4 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" /> Executive
-            </TabsTrigger>
-            <TabsTrigger value="intelligence" className="rounded-lg px-4 flex items-center gap-1.5">
-              <Brain className="w-3.5 h-3.5" /> Intelligence
-            </TabsTrigger>
-            <TabsTrigger value="ai-context" className="rounded-lg px-4 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> AI Context
-            </TabsTrigger>
-            {import.meta.env.VITE_ENABLE_CONNECTION_ENGINE === "true" && (
-              <TabsTrigger value="engagement" className="rounded-lg px-4 flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5" /> Engagement
+              <TabsTrigger value="overview" className="rounded-lg px-4" data-tour="tab-overview">
+                Overview
               </TabsTrigger>
-            )}
-            <TabsTrigger value="distribute" className="rounded-lg px-4 flex items-center gap-1.5">
-              <Share2 className="w-3.5 h-3.5" /> Distribute
-            </TabsTrigger>
-            <TabsTrigger value="funnel" className="rounded-lg px-4 flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5" /> Funnel
-            </TabsTrigger>
-          </TabsList>
+              <TabsTrigger value="agents" className="rounded-lg px-4" data-tour="tab-agents">
+                Workflow
+              </TabsTrigger>
+              <TabsTrigger value="icp" className="rounded-lg px-4" data-tour="tab-icp">
+                ICP (AI)
+              </TabsTrigger>
+              <TabsTrigger
+                value="pipeline"
+                className="rounded-lg px-4 flex items-center gap-1.5"
+                data-tour="tab-pipeline"
+              >
+                <Zap className="w-3.5 h-3.5" /> Pipeline
+              </TabsTrigger>
+              <TabsTrigger
+                value="candidates"
+                className="rounded-lg px-4"
+                data-tour="tab-candidates"
+              >
+                Candidates{" "}
+                <Badge className="ml-2 bg-primary/20 text-primary hover:bg-primary/20">
+                  {candidatesData?.candidates?.length ?? 0}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="outreach" className="rounded-lg px-4" data-tour="tab-outreach">
+                Outreach
+              </TabsTrigger>
+              <TabsTrigger value="anti-ghost" className="rounded-lg px-4 flex items-center gap-1.5">
+                <Ghost className="w-3.5 h-3.5" /> Anti-Ghost
+              </TabsTrigger>
+              <TabsTrigger value="executive" className="rounded-lg px-4 flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5" /> Executive
+              </TabsTrigger>
+              <TabsTrigger
+                value="intelligence"
+                className="rounded-lg px-4 flex items-center gap-1.5"
+              >
+                <Brain className="w-3.5 h-3.5" /> Intelligence
+              </TabsTrigger>
+              <TabsTrigger value="ai-context" className="rounded-lg px-4 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> AI Context
+              </TabsTrigger>
+              {import.meta.env.VITE_ENABLE_CONNECTION_ENGINE === "true" && (
+                <TabsTrigger
+                  value="engagement"
+                  className="rounded-lg px-4 flex items-center gap-1.5"
+                >
+                  <Activity className="w-3.5 h-3.5" /> Engagement
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="distribute" className="rounded-lg px-4 flex items-center gap-1.5">
+                <Share2 className="w-3.5 h-3.5" /> Distribute
+              </TabsTrigger>
+              <TabsTrigger value="funnel" className="rounded-lg px-4 flex items-center gap-1.5">
+                <TrendingDown className="w-3.5 h-3.5" /> Funnel
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          {/* Permanent, revisitable AI shortlist for THIS work order — the same
+              view a sourcing run's "Review shortlist" banner shows, minus the
+              run scoping, so it never disappears. Lives OUTSIDE the scrollable
+              tab strip so it's always visible. */}
+          <Link href={`/decision-queue?job=${jobId}`}>
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0 h-12 rounded-xl">
+              <Sparkles className="w-3.5 h-3.5 text-primary" /> AI Shortlist
+            </Button>
+          </Link>
         </div>
 
         {/* ── Overview ──────────────────────────────────────────────────────── */}
@@ -3015,6 +3097,23 @@ export default function JobDetail() {
                                   className="text-sm px-3 py-1"
                                 />
                               </div>
+                              {onBoardCandidateIds.has(c.id) ? (
+                                <Badge
+                                  variant="outline"
+                                  className="hidden md:inline-flex text-xs text-muted-foreground"
+                                >
+                                  In Pipeline
+                                </Badge>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!!movingToPipeline[c.id]}
+                                  onClick={() => moveToPipeline(c)}
+                                >
+                                  {movingToPipeline[c.id] ? "Moving…" : "Move to Pipeline"}
+                                </Button>
+                              )}
                               <Link href={`/candidates/${c.id}`}>
                                 <Button
                                   variant="ghost"
