@@ -35,6 +35,9 @@ const SEARCH_DIRS = [join(ROOT, "src")];
  * are relative to api-server/. Add entries here only after a human
  * review — each one is a potential compliance gap. */
 const ALLOWED_FILES = new Set([
+  // Pure-math unit test — "rejected" appears only as literal fixture data for
+  // the 4/5ths calculation; no DB write of any kind in the file.
+  "src/lib/adverse-impact.test.ts",
   "src/lib/governance/decision-enforcement.ts",
   "src/lib/governance/decision-events.ts",
   "src/lib/governance/policy-resolver.ts",

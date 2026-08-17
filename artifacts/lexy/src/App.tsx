@@ -95,6 +95,7 @@ import AedtNotice from "@/pages/portal/aedt-notice";
 import AdminDeletionRequests from "@/pages/admin/deletion-requests";
 import TranscriptionHealth from "@/pages/admin/transcription-health";
 import FairnessDashboard from "@/pages/admin/fairness";
+import NetworkPriorAdmin from "@/pages/admin/network-prior";
 import HirePulse from "@/pages/hire-pulse";
 import AuditPage from "@/pages/recruiter/audit";
 import CareerRegister from "@/pages/career-register";
@@ -232,6 +233,7 @@ function Router() {
       <Route path="/admin/deletion-requests"><ProtectedRoute component={AdminDeletionRequests} roles={["platform_admin"]} /></Route>
       <Route path="/admin/transcription-health"><ProtectedRoute component={TranscriptionHealth} roles={["platform_admin"]} /></Route>
       <Route path="/admin/fairness"><ProtectedRoute component={FairnessDashboard} roles={adminRoles} /></Route>
+      <Route path="/admin/network-prior"><ProtectedRoute component={NetworkPriorAdmin} roles={adminRoles} /></Route>
       <Route path="/hire-pulse/:applicationId"><ProtectedRoute component={HirePulse} roles={[...recruiterRoles, "hiring_manager"]} /></Route>
       <Route path="/activity"><ProtectedRoute component={AuditPage} roles={recruiterRoles} /></Route>
       <Route path="/portal/settings"><ProtectedRoute component={PortalSettings} roles={["candidate"]} /></Route>

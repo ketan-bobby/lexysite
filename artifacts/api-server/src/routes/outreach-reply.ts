@@ -62,7 +62,7 @@ const router: IRouter = Router();
  * `req.body` is intentionally unused. Strict empty-body validation makes the
  * contract explicit and stops any future caller from smuggling a forged
  * `action`/`enrollmentId` field hoping a later refactor picks it up. */
-const OutreachReplyBody = z.object({}).strict();
+const OutreachReplyBody = z.preprocess((v) => v ?? {}, z.object({}).strict());
 
 const QUICK_REPLY_TO_CLASSIFICATION: Record<ReplyAction, ReplyClassification> = {
   interested: "interested",

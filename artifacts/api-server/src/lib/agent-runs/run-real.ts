@@ -181,7 +181,10 @@ export async function runRealSourcingRun(
         })
         .catch((err: unknown) => {
           logger.warn({ err }, "[agent-runs] internal search failed — continuing external-only");
-          emitProgress("searching", "Internal bench search failed — continuing with external sources");
+          emitProgress(
+            "searching",
+            "Internal bench search failed — continuing with external sources",
+          );
           return { candidates: [] as any[], query: "internal: failed" };
         }),
       // allowSimulatedFallback:false — a real run must NEVER persist

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { QuickSearch } from "@/components/layout/QuickSearch";
 import { HelpBot } from "@/components/layout/HelpBot";
 import { apiBase, authHeaders } from "@/lib/api";
 
@@ -828,12 +829,8 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Quick search placeholder (keyboard shortcut: ⌘K) */}
-            <button className="hidden md:flex items-center gap-2 h-9 px-4 rounded-xl bg-foreground/5 border border-foreground/8 text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/8 transition-all">
-              <Search className="w-3.5 h-3.5" />
-              <span>Quick search…</span>
-              <kbd className="ml-2 bg-foreground/10 px-1.5 rounded text-[10px] font-sans text-faint dark:text-inherit">⌘K</kbd>
-            </button>
+            {/* Quick search — ⌘K command palette over candidates/work orders/pages */}
+            <QuickSearch role={user.role} />
 
             {/* AI agent status pill — updates every 10s */}
             <div className={cn(

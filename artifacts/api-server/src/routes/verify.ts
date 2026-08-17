@@ -50,7 +50,7 @@ import { enforceOwnership } from "../lib/ownership.js";
  * real Verification Agent (runCandidateVerification). Strict empty-body
  * blocks a bug where a caller could forge a "verified" record by sending
  * { status: "verified", riskScore: 0 }. */
-const VerifyTriggerBody = z.object({}).strict();
+const VerifyTriggerBody = z.preprocess((v) => v ?? {}, z.object({}).strict());
 
 const router: IRouter = Router();
 

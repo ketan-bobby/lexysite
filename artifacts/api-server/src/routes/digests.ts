@@ -62,7 +62,7 @@ router.get("/digests/pending", async (req: any, res) => {
  * Tenancy is strictly enforced: tenant_admins only drain their own tenant's
  * queue; platform_admins can drain everything (omit tenantId in the call).
  */
-router.post("/digests/run-now", validate({ body: z.object({}).strict() }), async (req: any, res) => {
+router.post("/digests/run-now", validate({ body: z.preprocess((v) => v ?? {}, z.object({}).strict()) }), async (req: any, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (!["platform_admin", "tenant_admin"].includes(user.role)) {

@@ -28,8 +28,10 @@
     "test:self-report": "node --env-file=../../.env tsx --test src/lib/self-report-reengagement.test.ts",
     "test:fairness": "node --env-file=../../.env tsx --test src/lib/fairness-firewall.test.ts",
     "test:learned": "node --env-file=../../.env tsx --test src/lib/learned-scoring.test.ts",
+    "test:learned-e2e": "node --env-file=../../.env tsx --test src/lib/learned-scoring-e2e.test.ts",
     "test:similar": "node --env-file=../../.env tsx --test src/lib/similar-hire.test.ts",
     "test:global": "node --env-file=../../.env tsx --test src/lib/global-prior.test.ts",
+    "test:global-leak": "node --env-file=../../.env tsx --test src/lib/global-prior-leak.test.ts",
     "test:sourcing": "node --env-file=../../.env tsx --test src/lib/sourcing-providers.test.ts",
     "test:run-real": "node --env-file=../../.env tsx --test src/lib/agent-runs/run-real.test.ts src/lib/agent-runs/run-real-no-fabrication.test.ts",
     "test:agent-recorder": "node --env-file=../../.env tsx --test src/lib/agent-runs/recorder.test.ts",
@@ -73,7 +75,8 @@
     "test:fee-eligibility": "node --env-file=../../.env tsx --test src/lib/fee-ledger-eligibility.test.ts",
     "test:lifecycle": "node --env-file=../../.env tsx --test src/lib/subscription-lifecycle.test.ts",
     "test:avatar-claim-seal": "node --env-file=../../.env tsx --test src/routes/recruiter-avatar-claim-seal.test.ts",
-    "test:readiness-quality": "node --env-file=../../.env tsx --test src/lib/readiness-quality.test.ts"
+    "test:readiness-quality": "node --env-file=../../.env tsx --test src/lib/readiness-quality.test.ts",
+    "test:adverse-impact": "node --env-file=../../.env tsx --test src/lib/adverse-impact.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1046.0",

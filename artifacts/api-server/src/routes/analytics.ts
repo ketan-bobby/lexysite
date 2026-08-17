@@ -38,29 +38,69 @@ import { z } from "zod";
 import { logger } from "../lib/logger";
 import { db, controlDb } from "@workspace/db";
 import {
-  jobsTable, candidatesTable, applicationsTable, interviewSessionsTable,
-  pipelineRunsTable, outreachCampaignsTable, ghostingRisksTable,
-  communicationEventsTable, talentPoolSubmissionsTable,
-  candidateDemographicsTable, aiDecisionLogTable, tenantsTable,
-  candidateEventsTable, agentRunsTable, interviewPlansTable,
-  pipelineRunEventsTable, recruiterInboxTable, usersTable,
+  jobsTable,
+  candidatesTable,
+  applicationsTable,
+  interviewSessionsTable,
+  pipelineRunsTable,
+  outreachCampaignsTable,
+  ghostingRisksTable,
+  communicationEventsTable,
+  talentPoolSubmissionsTable,
+  candidateDemographicsTable,
+  aiDecisionLogTable,
+  tenantsTable,
+  candidateEventsTable,
+  agentRunsTable,
+  interviewPlansTable,
+  pipelineRunEventsTable,
+  recruiterInboxTable,
+  usersTable,
 } from "@workspace/db";
-import { count, eq, gte, and, inArray, notInArray, desc, sql, lte, isNull, isNotNull, or, exists } from "drizzle-orm";
+import {
+  count,
+  eq,
+  gte,
+  and,
+  inArray,
+  notInArray,
+  desc,
+  sql,
+  lte,
+  isNull,
+  isNotNull,
+  or,
+  exists,
+} from "drizzle-orm";
 import { resolveUser } from "../middlewares/resolveUser";
 import { validate } from "../middlewares/validate";
 import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
-import { restrictToCompliantCandidates, compliantCandidatePredicate } from "../lib/compliance-scope";
+import {
+  restrictToCompliantCandidates,
+  compliantCandidatePredicate,
+} from "../lib/compliance-scope";
 import { PLATFORM_READ_EXEMPTION, platformReadExemption } from "../lib/platform-pool-read";
 import { PLACEHOLDER_DOMAINS } from "../lib/real-email";
 import { TERMINAL_NEGATIVE_STAGES, TERMINAL_NEGATIVE_STAGE_SET } from "../lib/pipeline-stages";
-import { runLinkedInProfileMonitor, getLastLinkedInScanResult } from "../lib/linkedin-profile-monitor";
+import {
+  runLinkedInProfileMonitor,
+  getLastLinkedInScanResult,
+} from "../lib/linkedin-profile-monitor";
 import { orchestrator } from "../lib/agents/orchestrator";
+import {
+  MIN_GROUP_N,
+  FOUR_FIFTHS,
+  ADVERSE_MILESTONES,
+  buildEventMax,
+  buildUnits,
+  analyzeAllAttributes,
+} from "../lib/adverse-impact";
 
 /* Engagement-trigger routes only kick off internal schedulers; no body
  * fields are consumed. Strict empty-body validation makes that contract
  * explicit and rejects any future caller that smuggles a `tenantId` /
  * `force` flag hoping the handler picks it up. */
-const EmptyEngagementBody = z.object({}).strict();
+const EmptyEngagementBody = z.preprocess((v) => v ?? {}, z.object({}).strict());
 
 const router: IRouter = Router();
 
@@ -97,13 +137,13 @@ async function recruiterScope(req: any): Promise<RecruiterScope> {
     .select({ candidateId: applicationsTable.candidateId })
     .from(applicationsTable)
     .where(inArray(applicationsTable.jobId, jobIds));
-  const candidateIds = [...new Set(apps.map(a => a.candidateId).filter(Boolean))] as string[];
+  const candidateIds = [...new Set(apps.map((a) => a.candidateId).filter(Boolean))] as string[];
   return { jobIds, candidateIds };
 }
 
 /** AND together the truthy conditions; undefined when none apply. */
 function andConds(...conds: Array<any>) {
-  const c = conds.filter(x => x !== undefined && x !== null);
+  const c = conds.filter((x) => x !== undefined && x !== null);
   if (c.length === 0) return undefined;
   if (c.length === 1) return c[0];
   return and(...c);
@@ -128,18 +168,26 @@ function sessionJobScope(jobIds: string[] | null) {
   if (jobIds.length === 0) return sql`false`;
   return or(
     exists(
-      db.select({ one: sql`1` }).from(applicationsTable)
-        .where(and(
-          eq(applicationsTable.id, interviewSessionsTable.applicationId),
-          inArray(applicationsTable.jobId, jobIds),
-        )),
+      db
+        .select({ one: sql`1` })
+        .from(applicationsTable)
+        .where(
+          and(
+            eq(applicationsTable.id, interviewSessionsTable.applicationId),
+            inArray(applicationsTable.jobId, jobIds),
+          ),
+        ),
     ),
     exists(
-      db.select({ one: sql`1` }).from(interviewPlansTable)
-        .where(and(
-          eq(interviewPlansTable.id, interviewSessionsTable.planId),
-          inArray(interviewPlansTable.jobId, jobIds),
-        )),
+      db
+        .select({ one: sql`1` })
+        .from(interviewPlansTable)
+        .where(
+          and(
+            eq(interviewPlansTable.id, interviewSessionsTable.planId),
+            inArray(interviewPlansTable.jobId, jobIds),
+          ),
+        ),
     ),
   );
 }
@@ -165,8 +213,11 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     const user = req.resolvedUser!;
     let hasPlatformAccess = allowed === null; // platform_admin sees the platform pool
     if (allowed && allowed.length > 0 && user?.tenantId) {
-      const [tRow] = await db.select({ a: tenantsTable.candidateDatabaseAccess })
-        .from(tenantsTable).where(eq(tenantsTable.id, user.tenantId)).limit(1);
+      const [tRow] = await db
+        .select({ a: tenantsTable.candidateDatabaseAccess })
+        .from(tenantsTable)
+        .where(eq(tenantsTable.id, user.tenantId))
+        .limit(1);
       hasPlatformAccess = tRow?.a === true;
     }
     const candidateConds: any[] = [
@@ -187,7 +238,9 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
            the per-employer visibility seal is not applied. (Whether paused/hide/
            block/match-only should shrink counts is a Step-2 policy question.) */
         platformReadExemption(PLATFORM_READ_EXEMPTION.AGGREGATE_ANALYTICS_COUNT);
-        candidateConds.push(or(eq(candidatesTable.pool, "platform"), inArray(candidatesTable.tenantId, allowed)));
+        candidateConds.push(
+          or(eq(candidatesTable.pool, "platform"), inArray(candidatesTable.tenantId, allowed)),
+        );
       } else {
         candidateConds.push(inArray(candidatesTable.tenantId, allowed));
         candidateConds.push(sql`${candidatesTable.pool} IS DISTINCT FROM 'platform'`);
@@ -195,43 +248,78 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     }
     const whereCandidates = and(...candidateConds);
 
-    const whereJobs        = andConds(inTenant(jobsTable.tenantId, allowed), inScope(jobsTable.id, rs.jobIds));
-    const whereActiveJobs  = andConds(eq(jobsTable.status, "active"), inTenant(jobsTable.tenantId, allowed), inScope(jobsTable.id, rs.jobIds));
+    const whereJobs = andConds(
+      inTenant(jobsTable.tenantId, allowed),
+      inScope(jobsTable.id, rs.jobIds),
+    );
+    const whereActiveJobs = andConds(
+      eq(jobsTable.status, "active"),
+      inTenant(jobsTable.tenantId, allowed),
+      inScope(jobsTable.id, rs.jobIds),
+    );
     /* "N applications" (the Total Candidates sublabel) must be counted over the
        SAME visible-candidate population as totalCandidates, otherwise an
        application belonging to a hidden candidate (GDPR-erased / do-not-contact /
        pending_profile / hidden platform-pool) inflates the applications number
        while its candidate is not counted — e.g. "1 candidate / 2 applications".
        Restrict applications to those whose candidate passes whereCandidates. */
-    const visibleCandidateIds = db.select({ id: candidatesTable.id }).from(candidatesTable).where(whereCandidates);
+    const visibleCandidateIds = db
+      .select({ id: candidatesTable.id })
+      .from(candidatesTable)
+      .where(whereCandidates);
     const whereApplications = andConds(
       inTenant(applicationsTable.tenantId, allowed),
       inScope(applicationsTable.jobId, rs.jobIds),
       inArray(applicationsTable.candidateId, visibleCandidateIds),
     );
-    const whereInterviews   = andConds(eq(interviewSessionsTable.status, "completed"), inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds), restrictToCompliantCandidates(interviewSessionsTable.candidateId));
+    const whereInterviews = andConds(
+      eq(interviewSessionsTable.status, "completed"),
+      inTenant(interviewSessionsTable.tenantId, allowed),
+      sessionJobScope(rs.jobIds),
+      restrictToCompliantCandidates(interviewSessionsTable.candidateId),
+    );
 
     if (allowed?.length === 0 || (rs.jobIds !== null && rs.jobIds.length === 0)) {
       return res.json({
-        totalJobs: 0, activeJobs: 0, totalCandidates: 0, totalApplications: 0,
-        pipelineEntries: 0, candidatesInPipeline: 0,
-        interviewsCompleted: 0, offersExtended: 0, hires: 0,
-        avgTimeToHireDays: 0, avgInterviewScore: 0, ghostingRatePercent: 0, outreachReplyRate: 0, topSources: [],
+        totalJobs: 0,
+        activeJobs: 0,
+        totalCandidates: 0,
+        totalApplications: 0,
+        pipelineEntries: 0,
+        candidatesInPipeline: 0,
+        interviewsCompleted: 0,
+        offersExtended: 0,
+        hires: 0,
+        avgTimeToHireDays: 0,
+        avgInterviewScore: 0,
+        ghostingRatePercent: 0,
+        outreachReplyRate: 0,
+        topSources: [],
       });
     }
 
-    const [totalJobs]        = await db.select({ count: count() }).from(jobsTable).where(whereJobs);
-    const [activeJobs]       = await db.select({ count: count() }).from(jobsTable).where(whereActiveJobs);
-    const [totalCandidates]  = await db.select({ count: count() }).from(candidatesTable).where(whereCandidates);
+    const [totalJobs] = await db.select({ count: count() }).from(jobsTable).where(whereJobs);
+    const [activeJobs] = await db.select({ count: count() }).from(jobsTable).where(whereActiveJobs);
+    const [totalCandidates] = await db
+      .select({ count: count() })
+      .from(candidatesTable)
+      .where(whereCandidates);
     /* "Applications" (formal) counts only FORMAL pipeline entries — entry_type in
        ('applied','manual') — so the headline number is not inflated by prospects
        the AI merely sourced. `pipelineEntries` is every application row (all
        entry types) and `candidatesInPipeline` is the distinct candidates with any
        application (drives the Total Candidates sublabel). By construction
        totalApplications + sourced entries === pipelineEntries. */
-    const [totalApplications] = await db.select({ count: count() }).from(applicationsTable)
-      .where(andConds(whereApplications, inArray(applicationsTable.entryType, ["applied", "manual"])));
-    const [pipelineEntries] = await db.select({ count: count() }).from(applicationsTable).where(whereApplications);
+    const [totalApplications] = await db
+      .select({ count: count() })
+      .from(applicationsTable)
+      .where(
+        andConds(whereApplications, inArray(applicationsTable.entryType, ["applied", "manual"])),
+      );
+    const [pipelineEntries] = await db
+      .select({ count: count() })
+      .from(applicationsTable)
+      .where(whereApplications);
     /* candidatesInPipeline = distinct candidates with LIVE pipeline presence, so
        it excludes terminal-negative stages (rejected/withdrawn/offer_declined) —
        a candidate who only ever left through a negative exit is no longer "in
@@ -240,13 +328,23 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     const [candidatesInPipeline] = await db
       .select({ count: sql<number>`count(distinct ${applicationsTable.candidateId})` })
       .from(applicationsTable)
-      .where(andConds(whereApplications, notInArray(applicationsTable.stage, [...TERMINAL_NEGATIVE_STAGES])));
-    const [interviewsDone]   = await db.select({ count: count() }).from(interviewSessionsTable).where(whereInterviews);
+      .where(
+        andConds(
+          whereApplications,
+          notInArray(applicationsTable.stage, [...TERMINAL_NEGATIVE_STAGES]),
+        ),
+      );
+    const [interviewsDone] = await db
+      .select({ count: count() })
+      .from(interviewSessionsTable)
+      .where(whereInterviews);
 
-    const applications = await db.select({ stage: applicationsTable.stage })
-      .from(applicationsTable).where(whereApplications);
-    const offers = applications.filter(a => a.stage === "offer").length;
-    const hires  = applications.filter(a => a.stage === "hired").length;
+    const applications = await db
+      .select({ stage: applicationsTable.stage })
+      .from(applicationsTable)
+      .where(whereApplications);
+    const offers = applications.filter((a) => a.stage === "offer").length;
+    const hires = applications.filter((a) => a.stage === "hired").length;
 
     const candidates = await db
       .select({ id: candidatesTable.id, source: candidatesTable.source })
@@ -266,7 +364,13 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     const hiredApps = await db
       .select({ candidateId: applicationsTable.candidateId })
       .from(applicationsTable)
-      .where(andConds(eq(applicationsTable.stage, "hired"), inTenant(applicationsTable.tenantId, allowed), inScope(applicationsTable.jobId, rs.jobIds)));
+      .where(
+        andConds(
+          eq(applicationsTable.stage, "hired"),
+          inTenant(applicationsTable.tenantId, allowed),
+          inScope(applicationsTable.jobId, rs.jobIds),
+        ),
+      );
     const hiredBySource: Record<string, number> = {};
     for (const h of hiredApps) {
       const src = candidateSource.get(h.candidateId);
@@ -286,14 +390,17 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     const [scoreAgg] = await db
       .select({ avg: sql<number | null>`avg(${interviewSessionsTable.score})` })
       .from(interviewSessionsTable)
-      .where(andConds(
-        eq(interviewSessionsTable.status, "completed"),
-        sql`${interviewSessionsTable.score} IS NOT NULL`,
-        inTenant(interviewSessionsTable.tenantId, allowed),
-        sessionJobScope(rs.jobIds),
-        restrictToCompliantCandidates(interviewSessionsTable.candidateId),
-      ));
-    const avgInterviewScore = scoreAgg?.avg != null ? Math.round(Number(scoreAgg.avg) * 10) / 10 : null;
+      .where(
+        andConds(
+          eq(interviewSessionsTable.status, "completed"),
+          sql`${interviewSessionsTable.score} IS NOT NULL`,
+          inTenant(interviewSessionsTable.tenantId, allowed),
+          sessionJobScope(rs.jobIds),
+          restrictToCompliantCandidates(interviewSessionsTable.candidateId),
+        ),
+      );
+    const avgInterviewScore =
+      scoreAgg?.avg != null ? Math.round(Number(scoreAgg.avg) * 10) / 10 : null;
 
     /* ── Ghosting rate — share of started interviews the candidate abandoned or
      * let expire, out of all that reached a terminal state. null when no
@@ -301,11 +408,21 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
     const sessionStatuses = await db
       .select({ status: interviewSessionsTable.status })
       .from(interviewSessionsTable)
-      .where(andConds(inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds), restrictToCompliantCandidates(interviewSessionsTable.candidateId)));
-    let terminal = 0, ghosted = 0;
+      .where(
+        andConds(
+          inTenant(interviewSessionsTable.tenantId, allowed),
+          sessionJobScope(rs.jobIds),
+          restrictToCompliantCandidates(interviewSessionsTable.candidateId),
+        ),
+      );
+    let terminal = 0,
+      ghosted = 0;
     for (const s of sessionStatuses) {
       if (s.status === "completed") terminal++;
-      else if (s.status === "abandoned" || s.status === "expired") { terminal++; ghosted++; }
+      else if (s.status === "abandoned" || s.status === "expired") {
+        terminal++;
+        ghosted++;
+      }
     }
     const ghostingRatePercent = terminal > 0 ? Math.round((ghosted / terminal) * 1000) / 10 : null;
 
@@ -313,11 +430,16 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
      * null when nothing has been sent. */
     const [replyAgg] = await db
       .select({
-        sent:    sql<number>`coalesce(sum(${outreachCampaignsTable.sentCount}), 0)`,
+        sent: sql<number>`coalesce(sum(${outreachCampaignsTable.sentCount}), 0)`,
         replied: sql<number>`coalesce(sum(${outreachCampaignsTable.repliedCount}), 0)`,
       })
       .from(outreachCampaignsTable)
-      .where(andConds(inTenant(outreachCampaignsTable.tenantId, allowed), inScope(outreachCampaignsTable.jobId, rs.jobIds)));
+      .where(
+        andConds(
+          inTenant(outreachCampaignsTable.tenantId, allowed),
+          inScope(outreachCampaignsTable.jobId, rs.jobIds),
+        ),
+      );
     const sentTotal = Number(replyAgg?.sent ?? 0);
     const outreachReplyRate = sentTotal > 0 ? Number(replyAgg?.replied ?? 0) / sentTotal : null;
 
@@ -326,13 +448,21 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
      * absent. null when there are no hires yet. */
     const hiredTimed = await db
       .select({
-        createdAt:       applicationsTable.createdAt,
+        createdAt: applicationsTable.createdAt,
         finalDecisionAt: applicationsTable.finalDecisionAt,
-        updatedAt:       applicationsTable.updatedAt,
+        updatedAt: applicationsTable.updatedAt,
       })
       .from(applicationsTable)
-      .where(andConds(eq(applicationsTable.stage, "hired"), inTenant(applicationsTable.tenantId, allowed), inScope(applicationsTable.jobId, rs.jobIds), restrictToCompliantCandidates(applicationsTable.candidateId)));
-    let hireDaysSum = 0, hireDaysN = 0;
+      .where(
+        andConds(
+          eq(applicationsTable.stage, "hired"),
+          inTenant(applicationsTable.tenantId, allowed),
+          inScope(applicationsTable.jobId, rs.jobIds),
+          restrictToCompliantCandidates(applicationsTable.candidateId),
+        ),
+      );
+    let hireDaysSum = 0,
+      hireDaysN = 0;
     for (const h of hiredTimed) {
       const end = (h.finalDecisionAt ?? h.updatedAt)?.getTime();
       const start = h.createdAt?.getTime();
@@ -341,17 +471,18 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
         hireDaysN++;
       }
     }
-    const avgTimeToHireDays = hireDaysN > 0 ? Math.round((hireDaysSum / hireDaysN) * 10) / 10 : null;
+    const avgTimeToHireDays =
+      hireDaysN > 0 ? Math.round((hireDaysSum / hireDaysN) * 10) / 10 : null;
 
     res.json({
-      totalJobs:           Number(totalJobs.count),
-      activeJobs:          Number(activeJobs.count),
-      totalCandidates:     Number(totalCandidates.count),
-      totalApplications:   Number(totalApplications.count),
-      pipelineEntries:     Number(pipelineEntries.count),
+      totalJobs: Number(totalJobs.count),
+      activeJobs: Number(activeJobs.count),
+      totalCandidates: Number(totalCandidates.count),
+      totalApplications: Number(totalApplications.count),
+      pipelineEntries: Number(pipelineEntries.count),
       candidatesInPipeline: Number(candidatesInPipeline.count),
       interviewsCompleted: Number(interviewsDone.count),
-      offersExtended:      offers,
+      offersExtended: offers,
       hires,
       avgTimeToHireDays,
       avgInterviewScore,
@@ -374,22 +505,30 @@ router.get("/analytics/funnel", resolveUser, async (req, res) => {
      * Each count is "reached this stage or beyond" so the bar chart
      * accurately represents conversion loss at each gate. */
     const FUNNEL_STAGES = [
-      { key: "sourced",          label: "Sourced" },
-      { key: "applied",          label: "Applied" },
-      { key: "screening",        label: "Screening" },
+      { key: "sourced", label: "Sourced" },
+      { key: "applied", label: "Applied" },
+      { key: "screening", label: "Screening" },
       { key: "interview_completed", label: "Interviewed" },
-      { key: "hm_review",        label: "HM Review" },
-      { key: "offer_extended",   label: "Offer Extended" },
-      { key: "offer_accepted",   label: "Offer Accepted" },
-      { key: "hired",            label: "Hired" },
-      { key: "started",          label: "Started" },
+      { key: "hm_review", label: "HM Review" },
+      { key: "offer_extended", label: "Offer Extended" },
+      { key: "offer_accepted", label: "Offer Accepted" },
+      { key: "hired", label: "Hired" },
+      { key: "started", label: "Started" },
     ] as const;
 
     const rs = await recruiterScope(req);
     // A recruiter querying a specific jobId may only see their own reqs.
-    const jobIdParamOutOfScope = !!jobId && rs.jobIds !== null && !rs.jobIds.includes(jobId as string);
-    if (allowed?.length === 0 || (rs.jobIds !== null && rs.jobIds.length === 0) || jobIdParamOutOfScope) {
-      return res.json({ jobId: jobId || null, stages: FUNNEL_STAGES.map(s => ({ stage: s.label, count: 0, conversionRate: null })) });
+    const jobIdParamOutOfScope =
+      !!jobId && rs.jobIds !== null && !rs.jobIds.includes(jobId as string);
+    if (
+      allowed?.length === 0 ||
+      (rs.jobIds !== null && rs.jobIds.length === 0) ||
+      jobIdParamOutOfScope
+    ) {
+      return res.json({
+        jobId: jobId || null,
+        stages: FUNNEL_STAGES.map((s) => ({ stage: s.label, count: 0, conversionRate: null })),
+      });
     }
 
     let whereClause = andConds(
@@ -412,12 +551,27 @@ router.get("/analytics/funnel", resolveUser, async (req, res) => {
     /* Map each stage to an ordinal so we can check "reached this stage or beyond". */
     const stageOrder: Record<string, number> = {};
     const ALL_ORDERED = [
-      "sourced", "applied", "screening", "verification", "shortlisted",
-      "phone_screen", "assessment", "interview_scheduled", "interview",
-      "interview_completed", "hm_review", "offer", "offer_recommended",
-      "offer_extended", "offer_accepted", "hired", "started",
+      "sourced",
+      "applied",
+      "screening",
+      "verification",
+      "shortlisted",
+      "phone_screen",
+      "assessment",
+      "interview_scheduled",
+      "interview",
+      "interview_completed",
+      "hm_review",
+      "offer",
+      "offer_recommended",
+      "offer_extended",
+      "offer_accepted",
+      "hired",
+      "started",
     ];
-    ALL_ORDERED.forEach((s, i) => { stageOrder[s] = i; });
+    ALL_ORDERED.forEach((s, i) => {
+      stageOrder[s] = i;
+    });
 
     /* Count DISTINCT CANDIDATES who reached each stage (not application rows).
        A candidate in two pipelines is one person in the funnel, so the Sourced
@@ -455,18 +609,43 @@ router.get("/analytics/trend", resolveUser, async (req, res) => {
     const rs = await recruiterScope(req);
     if (allowed?.length === 0 || (rs.jobIds !== null && rs.jobIds.length === 0)) {
       const months = buildMonthBuckets();
-      return res.json({ trend: months.map(({ label }) => ({ month: label, hires: 0, interviews: 0, applications: 0 })) });
+      return res.json({
+        trend: months.map(({ label }) => ({
+          month: label,
+          hires: 0,
+          interviews: 0,
+          applications: 0,
+        })),
+      });
     }
 
-    const appWhere = andConds(gte(applicationsTable.createdAt, sixMonthsAgo), inTenant(applicationsTable.tenantId, allowed), inScope(applicationsTable.jobId, rs.jobIds), restrictToCompliantCandidates(applicationsTable.candidateId));
+    const appWhere = andConds(
+      gte(applicationsTable.createdAt, sixMonthsAgo),
+      inTenant(applicationsTable.tenantId, allowed),
+      inScope(applicationsTable.jobId, rs.jobIds),
+      restrictToCompliantCandidates(applicationsTable.candidateId),
+    );
 
-    const ivWhere = andConds(eq(interviewSessionsTable.status, "completed"), gte(interviewSessionsTable.completedAt, sixMonthsAgo), inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds), restrictToCompliantCandidates(interviewSessionsTable.candidateId));
+    const ivWhere = andConds(
+      eq(interviewSessionsTable.status, "completed"),
+      gte(interviewSessionsTable.completedAt, sixMonthsAgo),
+      inTenant(interviewSessionsTable.tenantId, allowed),
+      sessionJobScope(rs.jobIds),
+      restrictToCompliantCandidates(interviewSessionsTable.candidateId),
+    );
 
     const [applications, interviews] = await Promise.all([
-      db.select({ stage: applicationsTable.stage, createdAt: applicationsTable.createdAt })
-        .from(applicationsTable).where(appWhere),
-      db.select({ completedAt: interviewSessionsTable.completedAt, status: interviewSessionsTable.status })
-        .from(interviewSessionsTable).where(ivWhere),
+      db
+        .select({ stage: applicationsTable.stage, createdAt: applicationsTable.createdAt })
+        .from(applicationsTable)
+        .where(appWhere),
+      db
+        .select({
+          completedAt: interviewSessionsTable.completedAt,
+          status: interviewSessionsTable.status,
+        })
+        .from(interviewSessionsTable)
+        .where(ivWhere),
     ]);
 
     const months = buildMonthBuckets();
@@ -478,9 +657,10 @@ router.get("/analytics/trend", resolveUser, async (req, res) => {
 
     const trend = months.map(({ month, label }) => ({
       month: label,
-      hires:        applications.filter(a => a.stage === "hired" && getMonth(a.createdAt) === month).length,
-      interviews:   interviews.filter(i => getMonth(i.completedAt) === month).length,
-      applications: applications.filter(a => getMonth(a.createdAt) === month).length,
+      hires: applications.filter((a) => a.stage === "hired" && getMonth(a.createdAt) === month)
+        .length,
+      interviews: interviews.filter((i) => getMonth(i.completedAt) === month).length,
+      applications: applications.filter((a) => getMonth(a.createdAt) === month).length,
     }));
 
     res.json({ trend });
@@ -495,11 +675,19 @@ router.get("/analytics/score-distribution", resolveUser, async (req, res) => {
 
     const rs = await recruiterScope(req);
     if (allowed?.length === 0 || (rs.jobIds !== null && rs.jobIds.length === 0)) {
-      const distribution = ["90-100","80-89","70-79","60-69","50-59","<50"].map(range => ({ range, count: 0 }));
+      const distribution = ["90-100", "80-89", "70-79", "60-69", "50-59", "<50"].map((range) => ({
+        range,
+        count: 0,
+      }));
       return res.json({ distribution, total: 0 });
     }
 
-    const whereClause = andConds(eq(interviewSessionsTable.status, "completed"), inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds), restrictToCompliantCandidates(interviewSessionsTable.candidateId));
+    const whereClause = andConds(
+      eq(interviewSessionsTable.status, "completed"),
+      inTenant(interviewSessionsTable.tenantId, allowed),
+      sessionJobScope(rs.jobIds),
+      restrictToCompliantCandidates(interviewSessionsTable.candidateId),
+    );
 
     const sessions = await db
       .select({ score: interviewSessionsTable.score })
@@ -507,19 +695,23 @@ router.get("/analytics/score-distribution", resolveUser, async (req, res) => {
       .where(whereClause);
 
     const buckets: Record<string, number> = {
-      "90-100": 0, "80-89": 0, "70-79": 0,
-      "60-69": 0,  "50-59": 0, "<50": 0,
+      "90-100": 0,
+      "80-89": 0,
+      "70-79": 0,
+      "60-69": 0,
+      "50-59": 0,
+      "<50": 0,
     };
 
     for (const s of sessions) {
       if (s.score == null) continue;
       const score = Math.round(s.score);
-      if      (score >= 90) buckets["90-100"]++;
+      if (score >= 90) buckets["90-100"]++;
       else if (score >= 80) buckets["80-89"]++;
       else if (score >= 70) buckets["70-79"]++;
       else if (score >= 60) buckets["60-69"]++;
       else if (score >= 50) buckets["50-59"]++;
-      else                  buckets["<50"]++;
+      else buckets["<50"]++;
     }
 
     const distribution = Object.entries(buckets).map(([range, cnt]) => ({ range, count: cnt }));
@@ -541,7 +733,7 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
     }
 
     // Tenant + recruiter-scope helpers, keyed by which scope-column a table has.
-    const jobScopedWhere  = (tenantCol: any, jobIdCol: any, ...extra: any[]) =>
+    const jobScopedWhere = (tenantCol: any, jobIdCol: any, ...extra: any[]) =>
       andConds(inTenant(tenantCol, allowed), inScope(jobIdCol, rs.jobIds), ...extra);
     const candScopedWhere = (tenantCol: any, candIdCol: any, ...extra: any[]) =>
       andConds(inTenant(tenantCol, allowed), inScope(candIdCol, rs.candidateIds), ...extra);
@@ -550,98 +742,166 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
     const actions: any[] = [];
 
     // 1. New applications awaiting review (applied stage)
-    const [newApps] = await db.select({ count: count() })
+    const [newApps] = await db
+      .select({ count: count() })
       .from(applicationsTable)
-      .where(jobScopedWhere(applicationsTable.tenantId, applicationsTable.jobId, eq(applicationsTable.stage, "applied")));
+      .where(
+        jobScopedWhere(
+          applicationsTable.tenantId,
+          applicationsTable.jobId,
+          eq(applicationsTable.stage, "applied"),
+        ),
+      );
     if (Number(newApps.count) > 0) {
       actions.push({
-        id: "new-apps", priority: "high",
+        id: "new-apps",
+        priority: "high",
         label: `${newApps.count} New Application${Number(newApps.count) > 1 ? "s" : ""} Awaiting Review`,
         detail: "Candidates in applied stage — ready for screening",
-        cta: "Review", icon: "Users", href: "/jobs", color: "text-emerald-400", ctaVariant: "default",
+        cta: "Review",
+        icon: "Users",
+        href: "/jobs",
+        color: "text-emerald-400",
+        ctaVariant: "default",
       });
     }
 
     // 2. Ghosting risks
-    const [ghostRow] = await db.select({ cnt: count() })
+    const [ghostRow] = await db
+      .select({ cnt: count() })
       .from(ghostingRisksTable)
-      .where(candScopedWhere(ghostingRisksTable.tenantId, ghostingRisksTable.candidateId, inArray(ghostingRisksTable.riskLevel, ["high", "critical"] as any)));
+      .where(
+        candScopedWhere(
+          ghostingRisksTable.tenantId,
+          ghostingRisksTable.candidateId,
+          inArray(ghostingRisksTable.riskLevel, ["high", "critical"] as any),
+        ),
+      );
     const ghostTotal = Number(ghostRow?.cnt ?? 0);
     if (ghostTotal > 0) {
       actions.push({
-        id: "ghosting", priority: "high",
+        id: "ghosting",
+        priority: "high",
         label: `${ghostTotal} Ghosting Risk${ghostTotal > 1 ? "s" : ""} Detected`,
         detail: "Candidates at risk of dropping off — follow up required",
-        cta: "View", icon: "AlertTriangle", href: "/candidates", color: "text-yellow-400", ctaVariant: "outline",
+        cta: "View",
+        icon: "AlertTriangle",
+        href: "/candidates",
+        color: "text-yellow-400",
+        ctaVariant: "outline",
       });
     }
 
     // 3. Open outreach campaigns needing attention
-    const outreachDraft = await db.select({ id: outreachCampaignsTable.id, name: outreachCampaignsTable.name })
+    const outreachDraft = await db
+      .select({ id: outreachCampaignsTable.id, name: outreachCampaignsTable.name })
       .from(outreachCampaignsTable)
-      .where(jobScopedWhere(outreachCampaignsTable.tenantId, outreachCampaignsTable.jobId, eq(outreachCampaignsTable.status, "draft")))
+      .where(
+        jobScopedWhere(
+          outreachCampaignsTable.tenantId,
+          outreachCampaignsTable.jobId,
+          eq(outreachCampaignsTable.status, "draft"),
+        ),
+      )
       .limit(3);
     if (outreachDraft.length > 0) {
       actions.push({
-        id: "outreach-draft", priority: "medium",
+        id: "outreach-draft",
+        priority: "medium",
         label: `${outreachDraft.length} Outreach Campaign${outreachDraft.length > 1 ? "s" : ""} Ready to Launch`,
-        detail: outreachDraft.map(c => c.name).join(", "),
-        cta: "Launch", icon: "Send", href: "/outreach", color: "text-cyan-400", ctaVariant: "default",
+        detail: outreachDraft.map((c) => c.name).join(", "),
+        cta: "Launch",
+        icon: "Send",
+        href: "/outreach",
+        color: "text-cyan-400",
+        ctaVariant: "default",
       });
     }
 
     // 4. Sourced applications (candidates sourced, not yet in pipeline)
-    const [sourcedApps] = await db.select({ count: count() })
+    const [sourcedApps] = await db
+      .select({ count: count() })
       .from(applicationsTable)
-      .where(jobScopedWhere(applicationsTable.tenantId, applicationsTable.jobId, eq(applicationsTable.stage, "sourced")));
+      .where(
+        jobScopedWhere(
+          applicationsTable.tenantId,
+          applicationsTable.jobId,
+          eq(applicationsTable.stage, "sourced"),
+        ),
+      );
     if (Number(sourcedApps.count) > 0) {
       actions.push({
-        id: "sourced", priority: "medium",
+        id: "sourced",
+        priority: "medium",
         label: `${sourcedApps.count} Sourced Candidate${Number(sourcedApps.count) > 1 ? "s" : ""} Ready for Screening`,
         detail: "Run the screening agent to evaluate and score them",
-        cta: "Screen Now", icon: "Zap", href: "/jobs", color: "text-violet-400", ctaVariant: "outline",
+        cta: "Screen Now",
+        icon: "Zap",
+        href: "/jobs",
+        color: "text-violet-400",
+        ctaVariant: "outline",
       });
     }
 
     // 5. Interview sessions completed without review
-    const [completedInterviews] = await db.select({ count: count() })
+    const [completedInterviews] = await db
+      .select({ count: count() })
       .from(interviewSessionsTable)
-      .where(andConds(inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds), eq(interviewSessionsTable.status, "completed")));
+      .where(
+        andConds(
+          inTenant(interviewSessionsTable.tenantId, allowed),
+          sessionJobScope(rs.jobIds),
+          eq(interviewSessionsTable.status, "completed"),
+        ),
+      );
     if (Number(completedInterviews.count) > 0) {
       actions.push({
-        id: "interviews", priority: "low",
+        id: "interviews",
+        priority: "low",
         label: `${completedInterviews.count} AI Interview${Number(completedInterviews.count) > 1 ? "s" : ""} Completed`,
         detail: "Review scores and decide next steps",
-        cta: "Review", icon: "Video", href: "/interviews", color: "text-violet-400", ctaVariant: "ghost",
+        cta: "Review",
+        icon: "Video",
+        href: "/interviews",
+        color: "text-violet-400",
+        ctaVariant: "ghost",
       });
     }
 
     /* ── Agent Activity Feed ── */
-    const runs = await db.select().from(pipelineRunsTable)
+    const runs = await db
+      .select()
+      .from(pipelineRunsTable)
       .where(jobScopedWhere(pipelineRunsTable.tenantId, pipelineRunsTable.jobId))
       .orderBy(desc(pipelineRunsTable.startedAt))
       .limit(10);
 
     // Get job titles for runs
-    const jobIds = [...new Set(runs.map(r => r.jobId).filter(Boolean))];
-    const jobs = jobIds.length > 0
-      ? await db.select({ id: jobsTable.id, title: jobsTable.title })
-          .from(jobsTable).where(inArray(jobsTable.id, jobIds as string[]))
-      : [];
-    const jobMap = Object.fromEntries(jobs.map(j => [j.id, j.title]));
+    const jobIds = [...new Set(runs.map((r) => r.jobId).filter(Boolean))];
+    const jobs =
+      jobIds.length > 0
+        ? await db
+            .select({ id: jobsTable.id, title: jobsTable.title })
+            .from(jobsTable)
+            .where(inArray(jobsTable.id, jobIds as string[]))
+        : [];
+    const jobMap = Object.fromEntries(jobs.map((j) => [j.id, j.title]));
 
-    const recentSessions = await db.select({
-      id: interviewSessionsTable.id,
-      status: interviewSessionsTable.status,
-      score: interviewSessionsTable.score,
-      completedAt: interviewSessionsTable.completedAt,
-      startedAt: interviewSessionsTable.startedAt,
-      lastActiveAt: interviewSessionsTable.lastActiveAt,
-      createdAt: interviewSessionsTable.createdAt,
-      candidateId: interviewSessionsTable.candidateId,
-    })
+    const recentSessions = await db
+      .select({
+        id: interviewSessionsTable.id,
+        status: interviewSessionsTable.status,
+        score: interviewSessionsTable.score,
+        completedAt: interviewSessionsTable.completedAt,
+        startedAt: interviewSessionsTable.startedAt,
+        lastActiveAt: interviewSessionsTable.lastActiveAt,
+        createdAt: interviewSessionsTable.createdAt,
+        candidateId: interviewSessionsTable.candidateId,
+      })
       .from(interviewSessionsTable)
-      .where(andConds(inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds)))
+      .where(
+        andConds(inTenant(interviewSessionsTable.tenantId, allowed), sessionJobScope(rs.jobIds)),
+      )
       /* Order by REAL activity recency, not `completedAt`. In Postgres
          `ORDER BY completed_at DESC` sorts NULLs FIRST, so never-completed
          sessions (scheduled / abandoned) float to the top and masquerade as the
@@ -649,7 +909,11 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
          as "in progress · just now". Coalesce to the most recent real timestamp
          so the feed reflects actual recency. Fetch a wider window so post-dedupe
          (below) we still have variety, then slice. */
-      .orderBy(desc(sql`COALESCE(${interviewSessionsTable.completedAt}, ${interviewSessionsTable.lastActiveAt}, ${interviewSessionsTable.startedAt}, ${interviewSessionsTable.createdAt})`))
+      .orderBy(
+        desc(
+          sql`COALESCE(${interviewSessionsTable.completedAt}, ${interviewSessionsTable.lastActiveAt}, ${interviewSessionsTable.startedAt}, ${interviewSessionsTable.createdAt})`,
+        ),
+      )
       .limit(20);
 
     const agentActivity: any[] = [];
@@ -672,7 +936,8 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
     // Pipeline runs → agent activity entries
     for (const run of runs) {
       const stageArr: any[] = Array.isArray(run.stages) ? run.stages : [];
-      const currentStage = stageArr.find((s: any) => s.status === "running") ?? stageArr[stageArr.length - 1];
+      const currentStage =
+        stageArr.find((s: any) => s.status === "running") ?? stageArr[stageArr.length - 1];
       const agentLabel = currentStage?.agentId
         ? currentStage.agentId.charAt(0).toUpperCase() + currentStage.agentId.slice(1) + " Agent"
         : "AI Agent";
@@ -695,15 +960,16 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
       agentActivity.push({
         id: run.id,
         agent: agentLabel,
-        action: run.status === "running"
-          ? `Pipeline running for "${jobTitle}"`
-          : run.status === "completed"
-          ? `Pipeline completed for "${jobTitle}"`
-          : run.status === "failed"
-          ? `Pipeline failed for "${jobTitle}"`
-          : run.status === "interrupted"
-          ? `Pipeline interrupted for "${jobTitle}" (server restart)`
-          : `Pipeline pending for "${jobTitle}"`,
+        action:
+          run.status === "running"
+            ? `Pipeline running for "${jobTitle}"`
+            : run.status === "completed"
+              ? `Pipeline completed for "${jobTitle}"`
+              : run.status === "failed"
+                ? `Pipeline failed for "${jobTitle}"`
+                : run.status === "interrupted"
+                  ? `Pipeline interrupted for "${jobTitle}" (server restart)`
+                  : `Pipeline pending for "${jobTitle}"`,
         meta: stagesCompleted > 0 ? `${stagesCompleted} of ${stageArr.length} stages done` : null,
         status: statusMapped,
         ago,
@@ -744,7 +1010,10 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
         eventAt = sess.lastActiveAt ?? sess.startedAt ?? sess.createdAt;
       } else if (sess.status === "abandoned" || sess.status === "expired") {
         statusMapped = "flagged";
-        label = sess.status === "expired" ? "AI Interview expired (never started)" : "AI Interview abandoned";
+        label =
+          sess.status === "expired"
+            ? "AI Interview expired (never started)"
+            : "AI Interview abandoned";
         eventAt = sess.lastActiveAt ?? sess.startedAt ?? sess.createdAt;
       } else if (sess.status === "flagged") {
         statusMapped = "flagged";
@@ -773,7 +1042,10 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
           id: `sess-${sess.id}`,
           agent: "Interview Agent",
           action: label,
-          meta: statusMapped === "completed" && sess.score != null ? `Score: ${Math.round(sess.score)}/100` : null,
+          meta:
+            statusMapped === "completed" && sess.score != null
+              ? `Score: ${Math.round(sess.score)}/100`
+              : null,
           status: statusMapped,
           icon: "Video",
           color: "text-violet-400",
@@ -792,15 +1064,17 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
     agentActivity.sort((a, b) => (b._sortMs ?? 0) - (a._sortMs ?? 0));
 
     /* ── Outreach reply rate ── */
-    const campaigns = await db.select({
-      enrolled: outreachCampaignsTable.enrolledCount,
-      replied: outreachCampaignsTable.repliedCount,
-    })
+    const campaigns = await db
+      .select({
+        enrolled: outreachCampaignsTable.enrolledCount,
+        replied: outreachCampaignsTable.repliedCount,
+      })
       .from(outreachCampaignsTable)
       .where(jobScopedWhere(outreachCampaignsTable.tenantId, outreachCampaignsTable.jobId));
     const totalEnrolled = campaigns.reduce((s, c) => s + (c.enrolled ?? 0), 0);
-    const totalReplied  = campaigns.reduce((s, c) => s + (c.replied ?? 0), 0);
-    const outreachReplyRate = totalEnrolled > 0 ? Math.round((totalReplied / totalEnrolled) * 100) : 0;
+    const totalReplied = campaigns.reduce((s, c) => s + (c.replied ?? 0), 0);
+    const outreachReplyRate =
+      totalEnrolled > 0 ? Math.round((totalReplied / totalEnrolled) * 100) : 0;
 
     const agentStatuses = orchestrator.getAgentStatuses();
     /* "Agents online" reflects all autonomous work Lexy is doing RIGHT NOW:
@@ -814,30 +1088,57 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
      * "System Ready"; >0 → "System Active — N agents running". */
     const LIVE_INTERVIEW_HEARTBEAT_MS = 30 * 60 * 1000; // 30 min silence ⇒ not live
     const liveHeartbeatCutoff = new Date(Date.now() - LIVE_INTERVIEW_HEARTBEAT_MS);
-    const [activeRunsRow] = await db.select({ count: count() })
+    const [activeRunsRow] = await db
+      .select({ count: count() })
       .from(agentRunsTable)
-      .where(jobScopedWhere(agentRunsTable.tenantId, agentRunsTable.workOrderId, inArray(agentRunsTable.status, ["queued", "running"] as any)));
-    const [liveInterviewsRow] = await db.select({ count: count() })
+      .where(
+        jobScopedWhere(
+          agentRunsTable.tenantId,
+          agentRunsTable.workOrderId,
+          inArray(agentRunsTable.status, ["queued", "running"] as any),
+        ),
+      );
+    const [liveInterviewsRow] = await db
+      .select({ count: count() })
       .from(interviewSessionsTable)
-      .where(andConds(
-        inTenant(interviewSessionsTable.tenantId, allowed),
-        sessionJobScope(rs.jobIds),
-        inArray(interviewSessionsTable.status, ["active", "in_progress", "resumed"] as any),
-        gte(sql`COALESCE(${interviewSessionsTable.lastActiveAt}, ${interviewSessionsTable.startedAt}, ${interviewSessionsTable.createdAt})`, liveHeartbeatCutoff),
-      ));
+      .where(
+        andConds(
+          inTenant(interviewSessionsTable.tenantId, allowed),
+          sessionJobScope(rs.jobIds),
+          inArray(interviewSessionsTable.status, ["active", "in_progress", "resumed"] as any),
+          gte(
+            sql`COALESCE(${interviewSessionsTable.lastActiveAt}, ${interviewSessionsTable.startedAt}, ${interviewSessionsTable.createdAt})`,
+            liveHeartbeatCutoff,
+          ),
+        ),
+      );
     const agentsOnline = Number(activeRunsRow?.count ?? 0) + Number(liveInterviewsRow?.count ?? 0);
 
     // The single most recent in-flight run (newest first) so the Agent Activity
     // panel can take over its empty state with that run's live event stream.
     const [activeRunRow] = await db
-      .select({ id: agentRunsTable.id, workOrderId: agentRunsTable.workOrderId, jobTitle: jobsTable.title })
+      .select({
+        id: agentRunsTable.id,
+        workOrderId: agentRunsTable.workOrderId,
+        jobTitle: jobsTable.title,
+      })
       .from(agentRunsTable)
       .leftJoin(jobsTable, eq(jobsTable.id, agentRunsTable.workOrderId))
-      .where(jobScopedWhere(agentRunsTable.tenantId, agentRunsTable.workOrderId, inArray(agentRunsTable.status, ["queued", "running"] as any)))
+      .where(
+        jobScopedWhere(
+          agentRunsTable.tenantId,
+          agentRunsTable.workOrderId,
+          inArray(agentRunsTable.status, ["queued", "running"] as any),
+        ),
+      )
       .orderBy(desc(agentRunsTable.createdAt))
       .limit(1);
     const activeRun = activeRunRow
-      ? { id: activeRunRow.id, workOrderId: activeRunRow.workOrderId, jobTitle: activeRunRow.jobTitle }
+      ? {
+          id: activeRunRow.id,
+          workOrderId: activeRunRow.workOrderId,
+          jobTitle: activeRunRow.jobTitle,
+        }
       : null;
 
     res.json({
@@ -873,10 +1174,10 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
     }
 
     const now = new Date();
-    const thirtyDaysAgo  = new Date(now.getTime() - 30 * 86_400_000);
-    const ninetyDaysAgo  = new Date(now.getTime() - 90 * 86_400_000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 86_400_000);
-    const startOfMonth   = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     /* ── 1. Platform pool health ── */
     /* Aggregate pool-health metric (counts + staleness), never per-candidate PII
@@ -884,7 +1185,11 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
        shape is exempt from the per-employer visibility seal (Step-2 policy note
        applies to whether visibility controls should shrink these numbers). */
     platformReadExemption(PLATFORM_READ_EXEMPTION.AGGREGATE_ANALYTICS_COUNT);
-    const platformWhere = andConds(eq(candidatesTable.pool as any, "platform"), inTenant(candidatesTable.tenantId, allowed), inScope(candidatesTable.id, rs.candidateIds));
+    const platformWhere = andConds(
+      eq(candidatesTable.pool as any, "platform"),
+      inTenant(candidatesTable.tenantId, allowed),
+      inScope(candidatesTable.id, rs.candidateIds),
+    );
 
     const platformCandidates = await db
       .select({ id: candidatesTable.id, updatedAt: candidatesTable.updatedAt })
@@ -892,23 +1197,27 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
       .where(platformWhere);
 
     // Get last push timestamps for all platform candidates
-    const platIds = platformCandidates.map(c => c.id);
-    const lastPushes = platIds.length > 0
-      ? await db.select({
-          candidateId: (talentPoolSubmissionsTable as any).candidateId,
-          maxPushedAt: sql<string>`MAX(${(talentPoolSubmissionsTable as any).pushedAt})`,
-        })
-        .from(talentPoolSubmissionsTable)
-        .where(inArray((talentPoolSubmissionsTable as any).candidateId, platIds))
-        .groupBy((talentPoolSubmissionsTable as any).candidateId)
-      : [];
+    const platIds = platformCandidates.map((c) => c.id);
+    const lastPushes =
+      platIds.length > 0
+        ? await db
+            .select({
+              candidateId: (talentPoolSubmissionsTable as any).candidateId,
+              maxPushedAt: sql<string>`MAX(${(talentPoolSubmissionsTable as any).pushedAt})`,
+            })
+            .from(talentPoolSubmissionsTable)
+            .where(inArray((talentPoolSubmissionsTable as any).candidateId, platIds))
+            .groupBy((talentPoolSubmissionsTable as any).candidateId)
+        : [];
 
     const pushMap = new Map<string, Date>();
     for (const r of lastPushes) {
       if (r.candidateId && r.maxPushedAt) pushMap.set(r.candidateId, new Date(r.maxPushedAt));
     }
 
-    let active = 0, passive = 0, inactive = 0;
+    let active = 0,
+      passive = 0,
+      inactive = 0;
     for (const c of platformCandidates) {
       const updatedDate = c.updatedAt ? new Date(c.updatedAt as any) : new Date(0);
       const lastPush = pushMap.get(c.id);
@@ -920,22 +1229,26 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
     }
 
     /* ── 2. Re-engagement communication events ── */
-    const commWhere = andConds(eq((communicationEventsTable as any).type, "re_engagement"), inTenant((communicationEventsTable as any).tenantId, allowed), inScope((communicationEventsTable as any).candidateId, rs.candidateIds));
+    const commWhere = andConds(
+      eq((communicationEventsTable as any).type, "re_engagement"),
+      inTenant((communicationEventsTable as any).tenantId, allowed),
+      inScope((communicationEventsTable as any).candidateId, rs.candidateIds),
+    );
 
     const allReEngagement = await db
       .select({
-        id:          (communicationEventsTable as any).id,
-        sentAt:      (communicationEventsTable as any).sentAt,
-        status:      (communicationEventsTable as any).status,
+        id: (communicationEventsTable as any).id,
+        sentAt: (communicationEventsTable as any).sentAt,
+        status: (communicationEventsTable as any).status,
         candidateId: (communicationEventsTable as any).candidateId,
-        subject:     (communicationEventsTable as any).subject,
-        createdAt:   (communicationEventsTable as any).createdAt,
+        subject: (communicationEventsTable as any).subject,
+        createdAt: (communicationEventsTable as any).createdAt,
       })
       .from(communicationEventsTable)
       .where(commWhere)
       .orderBy(desc((communicationEventsTable as any).createdAt));
 
-    const thisMonthReEng = allReEngagement.filter(e => {
+    const thisMonthReEng = allReEngagement.filter((e) => {
       const ts = e.sentAt ? new Date(e.sentAt as any) : new Date(e.createdAt as any);
       return ts >= startOfMonth;
     }).length;
@@ -953,15 +1266,22 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
       const ts = e.sentAt ? new Date(e.sentAt as any) : new Date(e.createdAt as any);
       if (ts < fourteenDaysAgo) continue;
       const key = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, "0")}-${String(ts.getDate()).padStart(2, "0")}`;
-      const bucket = trendBuckets.find(b => b.date === key);
+      const bucket = trendBuckets.find((b) => b.date === key);
       if (bucket) bucket.count++;
     }
 
     /* ── 3. Communications by type (all types, last 30 days) ── */
-    const recentCommWhere = andConds(gte((communicationEventsTable as any).createdAt, thirtyDaysAgo), inTenant((communicationEventsTable as any).tenantId, allowed), inScope((communicationEventsTable as any).candidateId, rs.candidateIds));
+    const recentCommWhere = andConds(
+      gte((communicationEventsTable as any).createdAt, thirtyDaysAgo),
+      inTenant((communicationEventsTable as any).tenantId, allowed),
+      inScope((communicationEventsTable as any).candidateId, rs.candidateIds),
+    );
 
     const recentComms = await db
-      .select({ type: (communicationEventsTable as any).type, status: (communicationEventsTable as any).status })
+      .select({
+        type: (communicationEventsTable as any).type,
+        status: (communicationEventsTable as any).status,
+      })
       .from(communicationEventsTable)
       .where(recentCommWhere);
 
@@ -976,15 +1296,23 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
 
     /* ── 4. Recent re-engagement events (with candidate name) ── */
     const recentEventRows = allReEngagement.slice(0, 12);
-    const candidateIds = [...new Set(recentEventRows.map(e => e.candidateId).filter(Boolean))];
-    const candidateNames = candidateIds.length > 0
-      ? await db.select({ id: candidatesTable.id, firstName: candidatesTable.firstName, lastName: candidatesTable.lastName })
-          .from(candidatesTable)
-          .where(inArray(candidatesTable.id, candidateIds as string[]))
-      : [];
-    const nameMap = Object.fromEntries(candidateNames.map(c => [c.id, `${c.firstName} ${c.lastName}`.trim()]));
+    const candidateIds = [...new Set(recentEventRows.map((e) => e.candidateId).filter(Boolean))];
+    const candidateNames =
+      candidateIds.length > 0
+        ? await db
+            .select({
+              id: candidatesTable.id,
+              firstName: candidatesTable.firstName,
+              lastName: candidatesTable.lastName,
+            })
+            .from(candidatesTable)
+            .where(inArray(candidatesTable.id, candidateIds as string[]))
+        : [];
+    const nameMap = Object.fromEntries(
+      candidateNames.map((c) => [c.id, `${c.firstName} ${c.lastName}`.trim()]),
+    );
 
-    const recentEvents = recentEventRows.map(e => ({
+    const recentEvents = recentEventRows.map((e) => ({
       id: e.id,
       candidateId: e.candidateId,
       candidateName: e.candidateId ? (nameMap[e.candidateId] ?? "Unknown") : "Unknown",
@@ -994,8 +1322,14 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
     }));
 
     /* ── 5. Ghosting risk summary ── */
-    const ghostWhere = andConds(inTenant(ghostingRisksTable.tenantId, allowed), inScope(ghostingRisksTable.candidateId, rs.candidateIds));
-    const ghostRows = await db.select({ riskLevel: ghostingRisksTable.riskLevel }).from(ghostingRisksTable).where(ghostWhere);
+    const ghostWhere = andConds(
+      inTenant(ghostingRisksTable.tenantId, allowed),
+      inScope(ghostingRisksTable.candidateId, rs.candidateIds),
+    );
+    const ghostRows = await db
+      .select({ riskLevel: ghostingRisksTable.riskLevel })
+      .from(ghostingRisksTable)
+      .where(ghostWhere);
     const ghostSummary = { critical: 0, high: 0, medium: 0, low: 0 };
     for (const g of ghostRows) {
       const lv = g.riskLevel as keyof typeof ghostSummary;
@@ -1003,19 +1337,29 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
     }
 
     /* ── 6. Outreach summary ── */
-    const campWhere = andConds(inTenant(outreachCampaignsTable.tenantId, allowed), inScope(outreachCampaignsTable.jobId, rs.jobIds));
-    const camps = await db.select({
-      enrolled: outreachCampaignsTable.enrolledCount,
-      replied:  outreachCampaignsTable.repliedCount,
-      sent:     outreachCampaignsTable.sentCount,
-    }).from(outreachCampaignsTable).where(campWhere);
+    const campWhere = andConds(
+      inTenant(outreachCampaignsTable.tenantId, allowed),
+      inScope(outreachCampaignsTable.jobId, rs.jobIds),
+    );
+    const camps = await db
+      .select({
+        enrolled: outreachCampaignsTable.enrolledCount,
+        replied: outreachCampaignsTable.repliedCount,
+        sent: outreachCampaignsTable.sentCount,
+      })
+      .from(outreachCampaignsTable)
+      .where(campWhere);
     const totalEnrolled = camps.reduce((s, c) => s + (c.enrolled ?? 0), 0);
-    const totalReplied  = camps.reduce((s, c) => s + (c.replied  ?? 0), 0);
-    const totalSent     = camps.reduce((s, c) => s + (c.sent     ?? 0), 0);
+    const totalReplied = camps.reduce((s, c) => s + (c.replied ?? 0), 0);
+    const totalSent = camps.reduce((s, c) => s + (c.sent ?? 0), 0);
 
     res.json({
       poolHealth: { active, passive, inactive, total: platformCandidates.length },
-      reengagementSent: { total: allReEngagement.length, thisMonth: thisMonthReEng, trend: trendBuckets },
+      reengagementSent: {
+        total: allReEngagement.length,
+        thisMonth: thisMonthReEng,
+        trend: trendBuckets,
+      },
       commsByType,
       recentEvents,
       ghostingSummary: ghostSummary,
@@ -1033,34 +1377,50 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
 });
 
 /* ── POST /engagement/run-reengagement ───────────────────────────────────── */
-router.post("/engagement/run-reengagement", validate({ body: EmptyEngagementBody }), resolveUser, async (req, res) => {
-  try {
-    const { runCandidateReengagement } = await import("../lib/candidate-reengagement-scheduler.js");
-    const result = await runCandidateReengagement();
-    res.json({ ok: true, ...result });
-  } catch (err: any) {
-    logger.error({ err }, "[run-reengagement] failed");
-    res.status(500).json({ error: "Re-engagement run failed" });
-  }
-});
+router.post(
+  "/engagement/run-reengagement",
+  validate({ body: EmptyEngagementBody }),
+  resolveUser,
+  async (req, res) => {
+    try {
+      const { runCandidateReengagement } =
+        await import("../lib/candidate-reengagement-scheduler.js");
+      const result = await runCandidateReengagement();
+      res.json({ ok: true, ...result });
+    } catch (err: any) {
+      logger.error({ err }, "[run-reengagement] failed");
+      res.status(500).json({ error: "Re-engagement run failed" });
+    }
+  },
+);
 
 /* ── POST /engagement/scan-linkedin ─────────────────────────────────────────
  * Manual trigger for the Candidate Status Check-in engine. The run spans ALL
  * tenants (cross-tenant outbound email), so it is restricted to platform_admin
  * — everyone else relies on the daily scheduled run. */
-router.post("/engagement/scan-linkedin", validate({ body: EmptyEngagementBody }), resolveUser, async (req: any, res) => {
-  try {
-    const user = req.resolvedUser!;
-    if (user.role !== "platform_admin") {
-      return res.status(403).json({ error: "Forbidden — manual status check-in runs are restricted to platform_admin. The engine runs automatically every day." });
+router.post(
+  "/engagement/scan-linkedin",
+  validate({ body: EmptyEngagementBody }),
+  resolveUser,
+  async (req: any, res) => {
+    try {
+      const user = req.resolvedUser!;
+      if (user.role !== "platform_admin") {
+        return res
+          .status(403)
+          .json({
+            error:
+              "Forbidden — manual status check-in runs are restricted to platform_admin. The engine runs automatically every day.",
+          });
+      }
+      const result = await runLinkedInProfileMonitor();
+      res.json({ ok: true, ...result });
+    } catch (err: any) {
+      logger.error({ err }, "[scan-linkedin] failed");
+      res.status(500).json({ error: "Scan failed" });
     }
-    const result = await runLinkedInProfileMonitor();
-    res.json({ ok: true, ...result });
-  } catch (err: any) {
-    logger.error({ err }, "[scan-linkedin] failed");
-    res.status(500).json({ error: "Scan failed" });
-  }
-});
+  },
+);
 
 /* ── GET /engagement/linkedin-status ───────────────────────────────────────
  * Last check-in run summary (aggregate counts only — the per-candidate
@@ -1122,24 +1482,37 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
     const rs = await recruiterScope(req);
     if (allowed?.length === 0 || (rs.candidateIds !== null && rs.candidateIds.length === 0)) {
       return res.json({
-        total: 0, kThreshold: K_THRESHOLD,
-        gender: [], raceEthnicity: [], veteranStatus: [], disabilityStatus: [],
-        bySource: [], note: "No data",
+        total: 0,
+        kThreshold: K_THRESHOLD,
+        gender: [],
+        raceEthnicity: [],
+        veteranStatus: [],
+        disabilityStatus: [],
+        bySource: [],
+        note: "No data",
       });
     }
-    const whereCands = andConds(inTenant(candidatesTable.tenantId, allowed), inScope(candidatesTable.id, rs.candidateIds));
+    const whereCands = andConds(
+      inTenant(candidatesTable.tenantId, allowed),
+      inScope(candidatesTable.id, rs.candidateIds),
+    );
     /* INNER join — only candidates who actively self-identified contribute
      * to the aggregate. Candidates who skipped the form are simply not in
      * the denominator. */
-    const rows = await db.select({
-      candidateId:      candidatesTable.id,
-      source:           candidatesTable.source,
-      gender:           candidateDemographicsTable.gender,
-      raceEthnicity:    candidateDemographicsTable.raceEthnicity,
-      veteranStatus:    candidateDemographicsTable.veteranStatus,
-      disabilityStatus: candidateDemographicsTable.disabilityStatus,
-    }).from(candidatesTable)
-      .innerJoin(candidateDemographicsTable, eq(candidatesTable.id, candidateDemographicsTable.candidateId))
+    const rows = await db
+      .select({
+        candidateId: candidatesTable.id,
+        source: candidatesTable.source,
+        gender: candidateDemographicsTable.gender,
+        raceEthnicity: candidateDemographicsTable.raceEthnicity,
+        veteranStatus: candidateDemographicsTable.veteranStatus,
+        disabilityStatus: candidateDemographicsTable.disabilityStatus,
+      })
+      .from(candidatesTable)
+      .innerJoin(
+        candidateDemographicsTable,
+        eq(candidatesTable.id, candidateDemographicsTable.candidateId),
+      )
       .where(whereCands);
 
     const total = rows.length;
@@ -1153,13 +1526,18 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
       return res.json({
         total,
         kThreshold: K_THRESHOLD,
-        gender: [], raceEthnicity: [], veteranStatus: [], disabilityStatus: [],
+        gender: [],
+        raceEthnicity: [],
+        veteranStatus: [],
+        disabilityStatus: [],
         bySource: [],
         note: "Below k-anonymity threshold",
       });
     }
 
-    function tally(values: Array<string | null | undefined>): Array<{ label: string; count: number }> {
+    function tally(
+      values: Array<string | null | undefined>,
+    ): Array<{ label: string; count: number }> {
       const counts = new Map<string, number>();
       for (const v of values) {
         const k = v ?? "prefer_not_to_say";
@@ -1167,9 +1545,13 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
       }
       return [...counts.entries()].map(([label, c]) => ({ label, count: c }));
     }
-    function collapse(buckets: Array<{ label: string; count: number }>): Array<{ label: string; count: number }> {
+    function collapse(
+      buckets: Array<{ label: string; count: number }>,
+    ): Array<{ label: string; count: number }> {
       const big = buckets.filter((b) => b.count >= K_THRESHOLD);
-      const smallSum = buckets.filter((b) => b.count < K_THRESHOLD).reduce((a, b) => a + b.count, 0);
+      const smallSum = buckets
+        .filter((b) => b.count < K_THRESHOLD)
+        .reduce((a, b) => a + b.count, 0);
       const out = [...big].sort((a, b) => b.count - a.count);
       if (smallSum > 0) out.push({ label: "not_enough_data", count: smallSum });
       return out;
@@ -1211,9 +1593,9 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
     return res.json({
       total,
       kThreshold: K_THRESHOLD,
-      gender:           collapse(tally(rows.map((r) => r.gender))),
-      raceEthnicity:    collapse(tally(raceFlat)),
-      veteranStatus:    collapse(tally(rows.map((r) => r.veteranStatus))),
+      gender: collapse(tally(rows.map((r) => r.gender))),
+      raceEthnicity: collapse(tally(raceFlat)),
+      veteranStatus: collapse(tally(rows.map((r) => r.veteranStatus))),
       disabilityStatus: collapse(tally(rows.map((r) => r.disabilityStatus))),
       bySource,
     });
@@ -1244,7 +1626,8 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
  * gated by tenant role; a separate platform-admin export covers
  * cross-tenant auditor workflows.
  */
-const AEDT_EXPORT_HEADER = "decision_id,decided_at,tenant_id,job_id,candidate_id,decision_type,score,label,input_hash,model_id,gender,race_ethnicity,veteran_status,disability_status,final_stage\n";
+const AEDT_EXPORT_HEADER =
+  "decision_id,decided_at,tenant_id,job_id,candidate_id,decision_type,score,label,input_hash,model_id,gender,race_ethnicity,veteran_status,disability_status,final_stage\n";
 
 router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
   try {
@@ -1256,7 +1639,11 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
      * exists but their account lacks permission. */
     const user = req.resolvedUser!;
     if (!["platform_admin", "tenant_admin"].includes(user.role)) {
-      return res.status(403).json({ error: "Forbidden — AEDT export is restricted to platform_admin and tenant_admin." });
+      return res
+        .status(403)
+        .json({
+          error: "Forbidden — AEDT export is restricted to platform_admin and tenant_admin.",
+        });
     }
 
     const allowed = await tenantFilter(req);
@@ -1276,30 +1663,37 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
     conds.push(eq(jobsTable.aedtEnabled, true));
     const whereClause = conds.length > 1 ? and(...conds) : conds[0];
 
-    const rows = await db.select({
-      decisionId:    aiDecisionLogTable.id,
-      decidedAt:     aiDecisionLogTable.createdAt,
-      tenantId:      aiDecisionLogTable.tenantId,
-      jobId:         aiDecisionLogTable.jobId,
-      candidateId:   aiDecisionLogTable.candidateId,
-      decisionType:  aiDecisionLogTable.decisionType,
-      score:         aiDecisionLogTable.score,
-      label:         aiDecisionLogTable.label,
-      inputHash:     aiDecisionLogTable.inputHash,
-      modelId:       aiDecisionLogTable.modelId,
-      gender:        candidateDemographicsTable.gender,
-      raceEthnicity: candidateDemographicsTable.raceEthnicity,
-      veteranStatus: candidateDemographicsTable.veteranStatus,
-      disability:    candidateDemographicsTable.disabilityStatus,
-      finalStage:    applicationsTable.stage,
-    })
+    const rows = await db
+      .select({
+        decisionId: aiDecisionLogTable.id,
+        decidedAt: aiDecisionLogTable.createdAt,
+        tenantId: aiDecisionLogTable.tenantId,
+        jobId: aiDecisionLogTable.jobId,
+        candidateId: aiDecisionLogTable.candidateId,
+        decisionType: aiDecisionLogTable.decisionType,
+        score: aiDecisionLogTable.score,
+        label: aiDecisionLogTable.label,
+        inputHash: aiDecisionLogTable.inputHash,
+        modelId: aiDecisionLogTable.modelId,
+        gender: candidateDemographicsTable.gender,
+        raceEthnicity: candidateDemographicsTable.raceEthnicity,
+        veteranStatus: candidateDemographicsTable.veteranStatus,
+        disability: candidateDemographicsTable.disabilityStatus,
+        finalStage: applicationsTable.stage,
+      })
       .from(aiDecisionLogTable)
       .innerJoin(jobsTable, eq(aiDecisionLogTable.jobId, jobsTable.id))
-      .leftJoin(candidateDemographicsTable, eq(aiDecisionLogTable.candidateId, candidateDemographicsTable.candidateId))
-      .leftJoin(applicationsTable, and(
-        eq(applicationsTable.candidateId, aiDecisionLogTable.candidateId),
-        eq(applicationsTable.jobId, aiDecisionLogTable.jobId),
-      ))
+      .leftJoin(
+        candidateDemographicsTable,
+        eq(aiDecisionLogTable.candidateId, candidateDemographicsTable.candidateId),
+      )
+      .leftJoin(
+        applicationsTable,
+        and(
+          eq(applicationsTable.candidateId, aiDecisionLogTable.candidateId),
+          eq(applicationsTable.jobId, aiDecisionLogTable.jobId),
+        ),
+      )
       .where(whereClause)
       .orderBy(desc(aiDecisionLogTable.createdAt))
       .limit(50_000); // hard cap; auditor uses /from /to for windowing in v2
@@ -1327,26 +1721,35 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
       return s;
     };
     const header = AEDT_EXPORT_HEADER;
-    const body = rows.map((r) => [
-      r.decisionId,
-      r.decidedAt instanceof Date ? r.decidedAt.toISOString() : r.decidedAt,
-      r.tenantId,
-      r.jobId ?? "",
-      r.candidateId ?? "",
-      r.decisionType,
-      r.score ?? "",
-      r.label ?? "",
-      r.inputHash ?? "",
-      r.modelId ?? "",
-      r.gender ?? "",
-      r.raceEthnicity ?? "",
-      r.veteranStatus ?? "",
-      r.disability ?? "",
-      r.finalStage ?? "",
-    ].map(esc).join(",")).join("\n");
+    const body = rows
+      .map((r) =>
+        [
+          r.decisionId,
+          r.decidedAt instanceof Date ? r.decidedAt.toISOString() : r.decidedAt,
+          r.tenantId,
+          r.jobId ?? "",
+          r.candidateId ?? "",
+          r.decisionType,
+          r.score ?? "",
+          r.label ?? "",
+          r.inputHash ?? "",
+          r.modelId ?? "",
+          r.gender ?? "",
+          r.raceEthnicity ?? "",
+          r.veteranStatus ?? "",
+          r.disability ?? "",
+          r.finalStage ?? "",
+        ]
+          .map(esc)
+          .join(","),
+      )
+      .join("\n");
 
     res.setHeader("content-type", "text/csv; charset=utf-8");
-    res.setHeader("content-disposition", `attachment; filename="aedt-export-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.setHeader(
+      "content-disposition",
+      `attachment; filename="aedt-export-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     res.send(header + body + (body ? "\n" : ""));
   } catch (err: any) {
     logger.error({ err: err?.message }, "[analytics/aedt-export] failed");
@@ -1389,48 +1792,21 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
  * counts ARE shown here because the audience is the compliance owner, but ratios
  * still require MIN_GROUP_N for validity.
  */
-const MIN_GROUP_N = 30;
-const FOUR_FIFTHS = 0.8;
-
-/* Funnel levels: applied(1) → screened(2) → interviewed(3) → offer(4) → hired(5).
- * Terminal rejected/withdrawn map to 1 on the live stage; the event log recovers
- * the furthest level actually reached before the terminal transition. */
-const STAGE_LEVEL: Record<string, number> = {
-  sourced: 1, applied: 1, rejected: 1, withdrawn: 1,
-  // Reaching the screening stage IS the "screened" milestone (level 2) — the
-  // candidate has entered screening, which is what the 4/5ths screened-rate
-  // denominator/numerator measures. Terminal rejected/withdrawn stay at 1; the
-  // event log recovers the furthest level actually reached before exit.
-  screening: 2,
-  verification: 2, shortlisted: 2, phone_screen: 2, assessment: 2, interview_scheduled: 2,
-  interview: 3, interview_completed: 3, hm_review: 3,
-  offer: 4, offer_recommended: 4, offer_extended: 4, offer_accepted: 4, offer_declined: 4,
-  hired: 5, started: 5,
-};
-const EVENT_LEVEL: Record<string, number> = {
-  CANDIDATE_CREATED: 1, JOB_MATCHED: 1, OUTREACH_SENT: 1, OUTREACH_OPENED: 1, OUTREACH_REPLIED: 1,
-  REJECTED: 1, WITHDRAWN: 1,
-  INTERVIEW_INVITED: 2, RECRUITER_REVIEWED: 2, RECRUITER_SHORTLISTED: 2,
-  // Actually starting/completing an interview IS the "interviewed" milestone
-  // (level 3) — only the invite (above) stays at level 2.
-  INTERVIEW_STARTED: 3,
-  INTERVIEW_COMPLETED: 3, INTERVIEW_SCORE_GENERATED: 3, SUBMITTED_TO_HIRING_MANAGER: 3,
-  HIRING_MANAGER_INTERVIEW_SCHEDULED: 3, HIRING_MANAGER_INTERVIEW_COMPLETED: 3,
-  OFFER_RECOMMENDED: 4, OFFER_EXTENDED: 4, OFFER_ACCEPTED: 4, OFFER_DECLINED: 4,
-  HIRED: 5, STARTED: 5, ROLE_OUTCOME_REPORTED: 5,
-};
-const ADVERSE_MILESTONES = [
-  { key: "screened",    label: "Screened",    level: 2 },
-  { key: "interviewed", label: "Interviewed", level: 3 },
-  { key: "offer",       label: "Offer",       level: 4 },
-  { key: "hired",       label: "Hired",       level: 5 },
-];
+/* The 4/5ths math (thresholds, stage/event level maps, unit collapse, per-group
+ * ratio analysis) is PURE and lives in lib/adverse-impact.ts, where it is
+ * locked in by unit tests (lib/adverse-impact.test.ts, `pnpm test:adverse-impact`).
+ * This route only fetches rows and assembles the response. */
 
 router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
   try {
     const user = req.resolvedUser!;
     if (!["platform_admin", "tenant_admin"].includes(user.role)) {
-      return res.status(403).json({ error: "Forbidden — fairness analytics are restricted to platform_admin and tenant_admin." });
+      return res
+        .status(403)
+        .json({
+          error:
+            "Forbidden — fairness analytics are restricted to platform_admin and tenant_admin.",
+        });
     }
 
     const jobIdParam = typeof req.query.jobId === "string" ? req.query.jobId : null;
@@ -1444,10 +1820,20 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
      * report can never be read out of context. */
     const populationKey = req.query.population === "sourced" ? "sourced" : "formal";
     const POPULATIONS = {
-      formal:  { key: "formal",  label: "Formal applicants", entryTypes: ["applied", "manual"],
-                 definition: "Candidates who entered a formal pipeline (applied directly or were manually added). This is the recognised applicant pool for 4/5ths adverse-impact analysis." },
-      sourced: { key: "sourced", label: "Sourced prospects", entryTypes: ["sourced"],
-                 definition: "Prospects the AI sourcing agent surfaced who have not entered a formal pipeline. Top-of-funnel sourcing-equity audit only — NOT a formal adverse-impact population." },
+      formal: {
+        key: "formal",
+        label: "Formal applicants",
+        entryTypes: ["applied", "manual"],
+        definition:
+          "Candidates who entered a formal pipeline (applied directly or were manually added). This is the recognised applicant pool for 4/5ths adverse-impact analysis.",
+      },
+      sourced: {
+        key: "sourced",
+        label: "Sourced prospects",
+        entryTypes: ["sourced"],
+        definition:
+          "Prospects the AI sourcing agent surfaced who have not entered a formal pipeline. Top-of-funnel sourcing-equity audit only — NOT a formal adverse-impact population.",
+      },
     } as const;
     const population = POPULATIONS[populationKey];
 
@@ -1460,10 +1846,16 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
     if (jobIdParam) appConds.push(eq(applicationsTable.jobId, jobIdParam));
     const appWhere = appConds.length > 1 ? and(...appConds) : appConds[0];
 
-    const popRows = allowed?.length === 0 ? [] : await db.select({
-      candidateId: applicationsTable.candidateId,
-      jobId:       applicationsTable.jobId,
-    }).from(applicationsTable).where(appWhere);
+    const popRows =
+      allowed?.length === 0
+        ? []
+        : await db
+            .select({
+              candidateId: applicationsTable.candidateId,
+              jobId: applicationsTable.jobId,
+            })
+            .from(applicationsTable)
+            .where(appWhere);
     const popUnits = new Set(popRows.map((r) => `${r.candidateId}::${r.jobId}`)).size;
 
     /* Honest coverage state: how many of the population actually self-identified.
@@ -1477,11 +1869,12 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
         disclosedPercent: pct,
         missingPercent: missingPct,
         sufficient: withDemographics >= MIN_GROUP_N,
-        message: popUnits === 0
-          ? `No ${population.label.toLowerCase()} in scope yet.`
-          : withDemographics < MIN_GROUP_N
-            ? `Insufficient demographic data: only ${withDemographics} of ${popUnits} ${population.label.toLowerCase()} (${pct}%) self-identified — below the k=${MIN_GROUP_N} reporting threshold, so no fairness ratios can be computed. ${missingPct}% of this population has no demographic data on file.`
-            : `${withDemographics} of ${popUnits} ${population.label.toLowerCase()} (${pct}%) self-identified; ${missingPct}% have no demographic data on file and are excluded from the ratios below.`,
+        message:
+          popUnits === 0
+            ? `No ${population.label.toLowerCase()} in scope yet.`
+            : withDemographics < MIN_GROUP_N
+              ? `Insufficient demographic data: only ${withDemographics} of ${popUnits} ${population.label.toLowerCase()} (${pct}%) self-identified — below the k=${MIN_GROUP_N} reporting threshold, so no fairness ratios can be computed. ${missingPct}% of this population has no demographic data on file.`
+              : `${withDemographics} of ${popUnits} ${population.label.toLowerCase()} (${pct}%) self-identified; ${missingPct}% have no demographic data on file and are excluded from the ratios below.`,
       };
     };
 
@@ -1501,16 +1894,21 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
     /* Base pool: one row per (candidate, job) application in the selected
      * population that ALSO has a voluntary demographics row (INNER join —
      * candidates who skipped self-ID are excluded from every denominator). */
-    const baseRows = await db.select({
-      candidateId:      applicationsTable.candidateId,
-      jobId:            applicationsTable.jobId,
-      stage:            applicationsTable.stage,
-      gender:           candidateDemographicsTable.gender,
-      raceEthnicity:    candidateDemographicsTable.raceEthnicity,
-      veteranStatus:    candidateDemographicsTable.veteranStatus,
-      disabilityStatus: candidateDemographicsTable.disabilityStatus,
-    }).from(applicationsTable)
-      .innerJoin(candidateDemographicsTable, eq(applicationsTable.candidateId, candidateDemographicsTable.candidateId))
+    const baseRows = await db
+      .select({
+        candidateId: applicationsTable.candidateId,
+        jobId: applicationsTable.jobId,
+        stage: applicationsTable.stage,
+        gender: candidateDemographicsTable.gender,
+        raceEthnicity: candidateDemographicsTable.raceEthnicity,
+        veteranStatus: candidateDemographicsTable.veteranStatus,
+        disabilityStatus: candidateDemographicsTable.disabilityStatus,
+      })
+      .from(applicationsTable)
+      .innerJoin(
+        candidateDemographicsTable,
+        eq(applicationsTable.candidateId, candidateDemographicsTable.candidateId),
+      )
       .where(appWhere);
 
     if (baseRows.length === 0) return res.json(emptyResp);
@@ -1520,85 +1918,20 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
     if (allowed) evConds.push(inArray(candidateEventsTable.tenantId, allowed));
     if (jobIdParam) evConds.push(eq(candidateEventsTable.jobId, jobIdParam));
     const evWhere = evConds.length > 1 ? and(...evConds) : evConds[0];
-    const evRows = await db.select({
-      candidateId: candidateEventsTable.candidateId,
-      jobId:       candidateEventsTable.jobId,
-      eventType:   candidateEventsTable.eventType,
-    }).from(candidateEventsTable).where(evWhere);
-    const evMax = new Map<string, number>();
-    for (const e of evRows) {
-      const lvl = EVENT_LEVEL[e.eventType as string] ?? 1;
-      const k = `${e.candidateId}::${e.jobId}`;
-      if (lvl > (evMax.get(k) ?? 0)) evMax.set(k, lvl);
-    }
-
-    type Unit = { level: number; gender: string | null; race: string[] | null; vet: string | null; dis: string | null };
-    /* Collapse to ONE unit per (candidate, job) — a candidate may have several
-     * application rows for the same job (re-applies, merges); counting each as a
-     * separate applicant would inflate both denominators and reached counts and
-     * skew the 4/5ths ratio. We keep the furthest level seen across those rows
-     * and any of their (identical, same-candidate) demographics. */
-    const unitMap = new Map<string, Unit>();
-    for (const r of baseRows) {
-      const k = `${r.candidateId}::${r.jobId}`;
-      const sLvl = STAGE_LEVEL[r.stage as string] ?? 1;
-      const eLvl = evMax.get(k) ?? 0;
-      const level = Math.max(sLvl, eLvl, 1);
-      const existing = unitMap.get(k);
-      if (existing) {
-        existing.level = Math.max(existing.level, level);
-      } else {
-        unitMap.set(k, {
-          level,
-          gender: r.gender, race: r.raceEthnicity, vet: r.veteranStatus, dis: r.disabilityStatus,
-        });
-      }
-    }
-    const units: Unit[] = [...unitMap.values()];
-
-    function analyzeAttribute(key: string, label: string, groupsOf: (u: Unit) => string[]) {
-      /* group label -> furthest levels of its members. NULL (prefer-not-to-say)
-       * yields an empty group list and is excluded entirely. */
-      const groupLevels = new Map<string, number[]>();
-      for (const u of units) {
-        for (const g of groupsOf(u)) {
-          if (!groupLevels.has(g)) groupLevels.set(g, []);
-          groupLevels.get(g)!.push(u.level);
-        }
-      }
-      const milestones = ADVERSE_MILESTONES.map((m) => {
-        const raw = [...groupLevels.entries()].map(([group, levels]) => {
-          const appliedN = levels.length;
-          const reachedN = levels.filter((l) => l >= m.level).length;
-          const insufficientData = appliedN < MIN_GROUP_N;
-          return { group, appliedN, reachedN, selectionRate: appliedN > 0 ? reachedN / appliedN : 0, insufficientData };
-        });
-        const qualifying = raw.filter((g) => !g.insufficientData);
-        let referenceGroup: string | null = null;
-        let maxRate = 0;
-        for (const g of qualifying) if (g.selectionRate > maxRate) { maxRate = g.selectionRate; referenceGroup = g.group; }
-        /* Need at least two qualifying groups AND a non-zero reference rate to
-         * compute a meaningful ratio; otherwise the milestone is insufficient. */
-        const canCompare = qualifying.length >= 2 && maxRate > 0;
-        const groups = raw.map((g) => {
-          if (g.insufficientData || !canCompare) {
-            return { ...g, impactRatio: null as number | null, flagged: false, isReference: false };
-          }
-          const impactRatio = g.selectionRate / maxRate;
-          return { ...g, impactRatio, flagged: impactRatio < FOUR_FIFTHS, isReference: g.group === referenceGroup };
-        }).sort((a, b) => b.appliedN - a.appliedN);
-        return { milestone: m.key, label: m.label, insufficientData: !canCompare, referenceGroup: canCompare ? referenceGroup : null, groups };
-      });
-      return { key, label, milestones };
-    }
-
-    const attributes = [
-      analyzeAttribute("gender", "Gender", (u) => (u.gender ? [u.gender] : [])),
-      analyzeAttribute("raceEthnicity", "Race / Ethnicity", (u) => (u.race && u.race.length > 0 ? u.race : [])),
-      analyzeAttribute("veteranStatus", "Veteran status", (u) => (u.vet ? [u.vet] : [])),
-      analyzeAttribute("disabilityStatus", "Disability status", (u) => (u.dis ? [u.dis] : [])),
-    ];
-    const anyFlagged = attributes.some((a) => a.milestones.some((m) => m.groups.some((g) => g.flagged)));
+    const evRows = await db
+      .select({
+        candidateId: candidateEventsTable.candidateId,
+        jobId: candidateEventsTable.jobId,
+        eventType: candidateEventsTable.eventType,
+      })
+      .from(candidateEventsTable)
+      .where(evWhere);
+    const evMax = buildEventMax(evRows);
+    const units = buildUnits(baseRows, evMax);
+    const attributes = analyzeAllAttributes(units);
+    const anyFlagged = attributes.some((a) =>
+      a.milestones.some((m) => m.groups.some((g) => g.flagged)),
+    );
 
     return res.json({
       generatedAt: new Date().toISOString(),
@@ -1645,7 +1978,11 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
  * (who also carry a tenantId + role) are blocked with 403 — the report exposes
  * cross-candidate operational counts. */
 const MORNING_REPORT_ROLES = new Set([
-  "platform_admin", "tenant_admin", "recruiter", "recruiter_admin", "hiring_manager",
+  "platform_admin",
+  "tenant_admin",
+  "recruiter",
+  "recruiter_admin",
+  "hiring_manager",
 ]);
 
 /* SQL mirror of isRealEmail()'s negative case (see lib/real-email.ts): an email
@@ -1671,14 +2008,13 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
      * re-querying the identity row — one fewer round trip per dashboard load. */
     const lastSeen = user.lastReportSeenAt ?? null;
 
-    const allowed = await tenantFilter(req);   // null=admin, []=none, string[]
-    const rs = await recruiterScope(req);      // recruiter narrowing (else nulls)
+    const allowed = await tenantFilter(req); // null=admin, []=none, string[]
+    const rs = await recruiterScope(req); // recruiter narrowing (else nulls)
 
     /* No visible scope at all (recruiter with no assignments, or a tenant
      * ceiling of []) → no roles are active / set up. */
     const noScope =
-      (allowed !== null && allowed.length === 0) ||
-      (rs.jobIds !== null && rs.jobIds.length === 0);
+      (allowed !== null && allowed.length === 0) || (rs.jobIds !== null && rs.jobIds.length === 0);
 
     /* Count of the caller's ACTIVE roles (jobs.status = 'active') in scope —
      * used by the welcome ("N roles are set up") and quiet ("N roles active")
@@ -1688,11 +2024,13 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
       const [row] = await db
         .select({ n: count() })
         .from(jobsTable)
-        .where(andConds(
-          eq(jobsTable.status, "active"),
-          inTenant(jobsTable.tenantId, allowed),
-          inScope(jobsTable.id, rs.jobIds),
-        ));
+        .where(
+          andConds(
+            eq(jobsTable.status, "active"),
+            inTenant(jobsTable.tenantId, allowed),
+            inScope(jobsTable.id, rs.jobIds),
+          ),
+        );
       return Number(row?.n ?? 0);
     };
 
@@ -1737,13 +2075,15 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
     const [reviewRow] = await db
       .select({ n: count() })
       .from(applicationsTable)
-      .where(andConds(
-        isNotNull(applicationsTable.aiRecommendation),
-        isNull(applicationsTable.finalDecision),
-        inTenant(applicationsTable.tenantId, allowed),
-        inScope(applicationsTable.jobId, rs.jobIds),
-        restrictToCompliantCandidates(applicationsTable.candidateId),
-      ));
+      .where(
+        andConds(
+          isNotNull(applicationsTable.aiRecommendation),
+          isNull(applicationsTable.finalDecision),
+          inTenant(applicationsTable.tenantId, allowed),
+          inScope(applicationsTable.jobId, rs.jobIds),
+          restrictToCompliantCandidates(applicationsTable.candidateId),
+        ),
+      );
     const nReview = Number(reviewRow?.n ?? 0);
     if (nReview > 0) {
       sentences.push({
@@ -1763,12 +2103,14 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
       .selectDistinct({ candidateId: applicationsTable.candidateId })
       .from(applicationsTable)
       .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
-      .where(andConds(
-        inTenant(applicationsTable.tenantId, allowed),
-        inScope(applicationsTable.jobId, rs.jobIds),
-        nonDeliverableEmailSql(candidatesTable.email),
-        compliantCandidatePredicate(),
-      ));
+      .where(
+        andConds(
+          inTenant(applicationsTable.tenantId, allowed),
+          inScope(applicationsTable.jobId, rs.jobIds),
+          nonDeliverableEmailSql(candidatesTable.email),
+          compliantCandidatePredicate(),
+        ),
+      );
     const nBlocked = blockedRows.length;
     if (nBlocked > 0) {
       sentences.push({
@@ -1800,10 +2142,12 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
         added: sql<number>`COALESCE(SUM(${pipelineRunEventsTable.count}), 0)`.as("added"),
       })
       .from(pipelineRunEventsTable)
-      .where(and(
-        eq(pipelineRunEventsTable.type, "step_completed"),
-        eq(pipelineRunEventsTable.stepName, "sourcing"),
-      ))
+      .where(
+        and(
+          eq(pipelineRunEventsTable.type, "step_completed"),
+          eq(pipelineRunEventsTable.stepName, "sourcing"),
+        ),
+      )
       .groupBy(pipelineRunEventsTable.tenantId, pipelineRunEventsTable.runId)
       .as("run_event_sums");
 
@@ -1817,20 +2161,25 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
       /* Join on tenant AND run so event sums can never bind across tenants.
        * run_id is a globally-unique PK today, but keeping the tenant column in
        * the join makes the isolation explicit and self-evident. */
-      .leftJoin(runEventSums, and(
-        eq(runEventSums.runId, pipelineRunsTable.id),
-        eq(runEventSums.tenantId, pipelineRunsTable.tenantId),
-      ))
-      .where(andConds(
-        inTenant(pipelineRunsTable.tenantId, allowed),
-        inScope(pipelineRunsTable.jobId, rs.jobIds),
-        sql`(
+      .leftJoin(
+        runEventSums,
+        and(
+          eq(runEventSums.runId, pipelineRunsTable.id),
+          eq(runEventSums.tenantId, pipelineRunsTable.tenantId),
+        ),
+      )
+      .where(
+        andConds(
+          inTenant(pipelineRunsTable.tenantId, allowed),
+          inScope(pipelineRunsTable.jobId, rs.jobIds),
+          sql`(
           (${pipelineRunsTable.status} IN ('failed', 'interrupted')
              AND COALESCE(${pipelineRunsTable.completedAt}, ${pipelineRunsTable.startedAt}) > ${lastSeen})
           OR (${pipelineRunsTable.status} = 'completed'
              AND ${pipelineRunsTable.completedAt} > ${lastSeen})
         )`,
-      ));
+        ),
+      );
 
     const failedRows = runRows.filter((r) => r.status === "failed" || r.status === "interrupted");
     const nFailed = failedRows.length;
@@ -1839,9 +2188,10 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
         sentenceType: "interrupted_failed",
         count: nFailed,
         textParams: { count: nFailed },
-        linkTarget: nFailed === 1
-          ? { view: "run", params: { runId: failedRows[0].id } }
-          : { view: "run_history" },
+        linkTarget:
+          nFailed === 1
+            ? { view: "run", params: { runId: failedRows[0].id } }
+            : { view: "run_history" },
         rank: 3,
       });
     }
@@ -1865,12 +2215,14 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
     const replyRows = await db
       .select({ type: recruiterInboxTable.type })
       .from(recruiterInboxTable)
-      .where(andConds(
-        sql`${recruiterInboxTable.receivedAt} > ${lastSeen}`,
-        inTenant(recruiterInboxTable.tenantId, allowed),
-        inScope(recruiterInboxTable.candidateId, rs.candidateIds),
-        restrictToCompliantCandidates(recruiterInboxTable.candidateId),
-      ));
+      .where(
+        andConds(
+          sql`${recruiterInboxTable.receivedAt} > ${lastSeen}`,
+          inTenant(recruiterInboxTable.tenantId, allowed),
+          inScope(recruiterInboxTable.candidateId, rs.candidateIds),
+          restrictToCompliantCandidates(recruiterInboxTable.candidateId),
+        ),
+      );
     const nReplies = replyRows.length;
     if (nReplies > 0) {
       const interested = replyRows.filter((r) => r.type === "positive_reply").length;
@@ -1896,23 +2248,32 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
        * from CURRENT state (not history): fix blocked contacts first, else
        * nudge sourcing for a role that has no candidates yet, else nothing. */
       const rolesActive = await countActiveRoles();
-      let nextAction:
-        | { type: string; count?: number; roleTitle?: string; linkTarget: { view: string; params?: Record<string, string> } }
-        | null = null;
+      let nextAction: {
+        type: string;
+        count?: number;
+        roleTitle?: string;
+        linkTarget: { view: string; params?: Record<string, string> };
+      } | null = null;
 
       if (nBlocked > 0) {
-        nextAction = { type: "fix_contacts", count: nBlocked, linkTarget: { view: "pipeline_blocked" } };
+        nextAction = {
+          type: "fix_contacts",
+          count: nBlocked,
+          linkTarget: { view: "pipeline_blocked" },
+        };
       } else {
         /* First active role in scope with zero candidates (no applications). */
         const [emptyRole] = await db
           .select({ id: jobsTable.id, title: jobsTable.title })
           .from(jobsTable)
           .leftJoin(applicationsTable, eq(applicationsTable.jobId, jobsTable.id))
-          .where(andConds(
-            eq(jobsTable.status, "active"),
-            inTenant(jobsTable.tenantId, allowed),
-            inScope(jobsTable.id, rs.jobIds),
-          ))
+          .where(
+            andConds(
+              eq(jobsTable.status, "active"),
+              inTenant(jobsTable.tenantId, allowed),
+              inScope(jobsTable.id, rs.jobIds),
+            ),
+          )
           .groupBy(jobsTable.id, jobsTable.title)
           .having(sql`COUNT(${applicationsTable.id}) = 0`)
           .orderBy(jobsTable.title)
@@ -1964,12 +2325,11 @@ router.get("/analytics/blocked-candidates", resolveUser, async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const allowed = await tenantFilter(req);   // null=admin, []=none, string[]
-    const rs = await recruiterScope(req);      // recruiter narrowing (else nulls)
+    const allowed = await tenantFilter(req); // null=admin, []=none, string[]
+    const rs = await recruiterScope(req); // recruiter narrowing (else nulls)
 
     const noScope =
-      (allowed !== null && allowed.length === 0) ||
-      (rs.jobIds !== null && rs.jobIds.length === 0);
+      (allowed !== null && allowed.length === 0) || (rs.jobIds !== null && rs.jobIds.length === 0);
     if (noScope) return res.json({ candidates: [] });
 
     /* Same set as the morning-report BLOCKED WORK count. */
@@ -1977,13 +2337,15 @@ router.get("/analytics/blocked-candidates", resolveUser, async (req, res) => {
       .selectDistinct({ candidateId: applicationsTable.candidateId })
       .from(applicationsTable)
       .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
-      .where(andConds(
-        inTenant(applicationsTable.tenantId, allowed),
-        inScope(applicationsTable.jobId, rs.jobIds),
-        nonDeliverableEmailSql(candidatesTable.email),
-        compliantCandidatePredicate(),
-      ));
-    const ids = blockedRows.map(r => r.candidateId).filter(Boolean) as string[];
+      .where(
+        andConds(
+          inTenant(applicationsTable.tenantId, allowed),
+          inScope(applicationsTable.jobId, rs.jobIds),
+          nonDeliverableEmailSql(candidatesTable.email),
+          compliantCandidatePredicate(),
+        ),
+      );
+    const ids = blockedRows.map((r) => r.candidateId).filter(Boolean) as string[];
     if (ids.length === 0) return res.json({ candidates: [] });
 
     /* Hydrate the candidate detail the card needs. IDs already passed the
@@ -2015,7 +2377,7 @@ router.get("/analytics/blocked-candidates", resolveUser, async (req, res) => {
  * Advance the caller's OWN last_report_seen_at watermark (dismissal / next
  * visit). Pure per-user bookkeeping on the identity row — it changes no run,
  * count, queue, or their definitions. Strict empty body. */
-const MorningReportSeenBody = z.object({}).strict();
+const MorningReportSeenBody = z.preprocess((v) => v ?? {}, z.object({}).strict());
 router.post(
   "/analytics/morning-report/seen",
   validate({ body: MorningReportSeenBody }),

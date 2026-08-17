@@ -75,7 +75,12 @@ async function tick(): Promise<void> {
   });
   const systemErrors = await pruneSystemErrors();
 
-  if (agentEvents.deleted > 0 || systemErrors.deleted > 0 || agentEvents.error || systemErrors.error) {
+  if (
+    agentEvents.deleted > 0 ||
+    systemErrors.deleted > 0 ||
+    agentEvents.error ||
+    systemErrors.error
+  ) {
     logger.info(
       {
         evt: "history_retention",

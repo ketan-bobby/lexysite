@@ -207,6 +207,11 @@ function QueueCard({
   // Trust gate: below the advance threshold (or unverified), the gate status —
   // not the hire % — must be the loudest element on the card.
   const gated = isTrustGated(record.trustScore);
+  /* Similar-hire transparency: badge only when the score genuinely came from
+   * the embedding strategy (kNN vs this tenant's REAL successful hires) —
+   * never for the LLM-vs-ICP fallback. */
+  const simAnalytics = record.signalsJson?.analytics ?? {};
+  const patternMatched = simAnalytics.similarHireSource === "embedding";
 
   const triggerMutation = useMutation({
     mutationFn: async () => {
@@ -322,6 +327,14 @@ function QueueCard({
                     </span>
                   </div>
                 ))}
+                {patternMatched && (
+                  <Badge
+                    className="text-[9px] bg-violet-500/15 text-violet-300 border border-violet-500/30"
+                    title={`Fit informed by similarity to ${simAnalytics.similarHireExemplarCount ?? "your"} real successful hires in this role family`}
+                  >
+                    <Sparkles className="w-2.5 h-2.5 mr-1" /> Matched to past hires
+                  </Badge>
+                )}
               </div>
               {(() => {
                 const overrides = (() => {
@@ -555,6 +568,24 @@ export default function DecisionQueue() {
     });
   }, [records, activeCategory, search]);
 
+  /* Scoring transparency (learned weights + similar-hire activation). One
+   * aggregate call — booleans and sample sizes only, never weights. */
+  const { data: scoringStatus } = useQuery<{
+    learnedScoring: { active: boolean; maxSampleSize: number; minSamples: number };
+    similarHire: { active: boolean; minExemplars: number };
+  }>({
+    queryKey: ["intelligence", "scoring-status"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/intelligence/scoring-status`, {
+        credentials: "include",
+        headers: { ...authHeaders() },
+      });
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    staleTime: 300_000,
+  });
+
   const totalQueue = CATEGORIES.reduce((s, cat) => s + (categoryCounts[cat.key] ?? 0), 0);
   const activeCat = visibleCategories.find((c) => c.key === activeCategory) ?? visibleCategories[0];
 
@@ -572,6 +603,27 @@ export default function DecisionQueue() {
               ? "All clear — no candidates need attention right now."
               : `${totalQueue} candidates need your attention.`}
           </p>
+          {(scoringStatus?.learnedScoring.active || scoringStatus?.similarHire.active) && (
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {scoringStatus.learnedScoring.active && (
+                <Badge
+                  className="text-[10px] bg-primary/15 text-primary border border-primary/30"
+                  title={`Score weights learned from ${scoringStatus.learnedScoring.maxSampleSize} of your own hiring outcomes (replaces the generic defaults)`}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" /> Learned scoring active — trained on{" "}
+                  {scoringStatus.learnedScoring.maxSampleSize} outcomes
+                </Badge>
+              )}
+              {scoringStatus.similarHire.active && (
+                <Badge
+                  className="text-[10px] bg-violet-500/15 text-violet-300 border border-violet-500/30"
+                  title="Fit scores can use similarity to your real successful hires; cards using it show a 'Matched to past hires' badge"
+                >
+                  <Sparkles className="w-3 h-3 mr-1" /> Similar-hire signal enabled
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {dataUpdatedAt > 0 && (

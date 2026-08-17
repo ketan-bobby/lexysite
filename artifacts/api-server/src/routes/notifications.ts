@@ -35,7 +35,9 @@ import { validate } from "../middlewares/validate";
  * in the route + caller. Strict empty-body validation prevents callers
  * from smuggling unexpected keys (defense-in-depth against future
  * mass-assignment bugs). */
-const EmptyBody = z.object({}).strict();
+/* Bodyless POSTs (fetch without a body ⇒ req.body === undefined) must still
+ * validate — default undefined to {} before the strict empty-object check. */
+const EmptyBody = z.preprocess((v) => v ?? {}, z.object({}).strict());
 
 const router: IRouter = Router();
 

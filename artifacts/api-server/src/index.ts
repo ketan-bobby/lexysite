@@ -48,6 +48,7 @@ import { startSttRetentionScheduler } from "./lib/stt-retention-scheduler";
 import { startPipelineRunEventsRetentionScheduler } from "./lib/pipeline-run-events-retention-scheduler";
 import { startHttpAccessLogRetentionScheduler } from "./lib/http-access-log-retention-scheduler";
 import { startHistoryRetentionScheduler } from "./lib/history-retention-scheduler";
+import { startLearnedScoringRefreshScheduler } from "./lib/learned-scoring-scheduler";
 import { startPostHirePulseScheduler } from "./lib/post-hire-pulse-scheduler";
 import { startLinkedInProfileMonitor, runLinkedInProfileMonitor, getLastLinkedInScanResult } from "./lib/linkedin-profile-monitor";
 import { startAiWorker } from "./lib/ai-queue/worker";
@@ -258,6 +259,7 @@ server.on("listening", () => {
       startPipelineRunEventsRetentionScheduler();
       startHttpAccessLogRetentionScheduler();
       startHistoryRetentionScheduler();
+      startLearnedScoringRefreshScheduler();
       startPostHirePulseScheduler();
       /* Candidate Status Check-in engine — runs DAILY, emails candidates whose
        * profile hasn't been updated in 6+ months (90-day per-candidate cooldown).

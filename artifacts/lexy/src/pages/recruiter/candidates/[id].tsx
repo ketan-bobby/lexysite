@@ -1885,9 +1885,9 @@ export default function CandidateProfile() {
                     <circle cx="64" cy="64" r="60" className="stroke-muted fill-none" strokeWidth="8" />
                     <circle cx="64" cy="64" r="60" className={`fill-none stroke-current ${verification?.riskScore && verification.riskScore > VERIFY_RISK_HIGH_MAX ? "text-destructive" : "text-green-500"}`} strokeWidth="8" strokeDasharray={377} strokeDashoffset={377 - (377 * (verification?.riskScore || 0)) / 100} />
                   </svg>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold">{verification?.riskScore || 0}</span>
-                    <span className="text-[10px] uppercase text-muted-foreground font-semibold">Risk Score</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                    <span className="text-3xl font-bold leading-none">{verification?.riskScore || 0}</span>
+                    <span className="text-[10px] uppercase text-muted-foreground font-semibold mt-1">Risk Score</span>
                   </div>
                 </div>
                 <VerificationBadge status={verification?.status || "unverified"} className="text-sm px-4 py-1" />

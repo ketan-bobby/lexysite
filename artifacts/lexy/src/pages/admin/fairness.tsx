@@ -73,11 +73,12 @@ function prettyGroup(g: string): string {
   return g.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function useAdverseImpact(population: PopulationKey) {
+function useAdverseImpact(population: PopulationKey, jobId: string | null) {
   return useQuery<AdverseImpact>({
-    queryKey: ["analytics", "adverse-impact", population],
+    queryKey: ["analytics", "adverse-impact", population, jobId ?? "all"],
     queryFn: async () => {
-      const res = await fetch(`${BASE}/api/analytics/adverse-impact?population=${population}`, {
+      const jobParam = jobId ? `&jobId=${encodeURIComponent(jobId)}` : "";
+      const res = await fetch(`${BASE}/api/analytics/adverse-impact?population=${population}${jobParam}`, {
         credentials: "include",
         headers: { ...authHeaders() },
       });
@@ -183,7 +184,25 @@ export default function FairnessDashboard() {
   const { user } = useAuth() as any;
   const { toast } = useToast();
   const [population, setPopulation] = useState<PopulationKey>("formal");
-  const { data, isLoading, isError } = useAdverseImpact(population);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const { data, isLoading, isError } = useAdverseImpact(population, jobId);
+
+  /* Jobs list for the per-role filter. Same admin scope as the report itself. */
+  const { data: jobsData } = useQuery<any>({
+    queryKey: ["jobs", "fairness-filter"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/jobs`, {
+        credentials: "include",
+        headers: { ...authHeaders() },
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      return res.json();
+    },
+    staleTime: 300_000,
+  });
+  const jobs: { id: string; title: string }[] = Array.isArray(jobsData)
+    ? jobsData
+    : (jobsData?.jobs ?? []);
 
   if (user && !["platform_admin", "tenant_admin"].includes(user.role)) {
     return <Redirect to="/dashboard" />;
@@ -256,7 +275,31 @@ export default function FairnessDashboard() {
               {opt.label}
             </button>
           ))}
+
+          {/* Per-role filter — scopes every ratio below to a single requisition.
+              The backend applies jobId to both the application pool AND the
+              event-log reconstruction, so this is the exact same math, narrowed. */}
+          <select
+            value={jobId ?? ""}
+            onChange={(e) => setJobId(e.target.value || null)}
+            className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold border bg-white/[0.02] text-muted-foreground border-white/10 hover:text-foreground focus:outline-none focus:border-primary/40"
+            aria-label="Filter by job"
+          >
+            <option value="">All jobs</option>
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.title}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {jobId && (
+          <p className="text-xs text-muted-foreground">
+            Scoped to a single job — small per-role samples will often show
+            &ldquo;insufficient data&rdquo;; that is the statistical-validity gate working, not an error.
+          </p>
+        )}
 
         {/* Population definition + entry_type filter footer — printed on EVERY
             report so it can never be read out of context. */}

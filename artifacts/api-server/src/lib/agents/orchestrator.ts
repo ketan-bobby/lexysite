@@ -1965,7 +1965,13 @@ Return JSON:
       if (sim) {
         try {
           await upsertIntelligence(tenantId, jobId, candidateId, {
-            analytics: { similarHirePatternScore: sim.score },
+            analytics: {
+              similarHirePatternScore: sim.score,
+              // Provenance (similar-hire transparency): lets the UI say WHEN
+              // the pattern-match signal (vs the LLM fallback) is active.
+              similarHireSource: sim.source,
+              similarHireExemplarCount: sim.exemplarCount,
+            },
           } as AgentSignals);
         } catch { /* merge-only enrichment — leave prior behavior intact */ }
       }
