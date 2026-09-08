@@ -66,26 +66,24 @@ if not exist "%MIGRATIONS_DIR%" (
 
 REM --- Ensure the lexy_app role exists (cluster-level, idempotent) -----------
 echo ^>^> Ensuring lexy_app role exists ...
-psql "%DB_URL%" -v ON_ERROR_STOP=1 -q -c "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'lexy_app') THEN CREATE ROLE lexy_app NOLOGIN; RAISE NOTICE 'created role lexy_app (NOLOGIN). Set a password / LOGIN as needed for your app connection.'; END IF; END $$;"
+psql -d "%DB_URL%" -v ON_ERROR_STOP=1 -q -c "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'lexy_app') THEN CREATE ROLE lexy_app NOLOGIN; RAISE NOTICE 'created role lexy_app (NOLOGIN). Set a password / LOGIN as needed for your app connection.'; END IF; END $$;"
 if errorlevel 1 (
   echo ERROR: failed to ensure lexy_app role.>&2
   exit /b 1
 )
+
+REM --- Optional resume mode for already-partially-migrated databases ---------
+REM Set SKIP_0000=1 when 0000_rls_pilot.sql has already been applied.
+if not defined SKIP_0000 set "SKIP_0000=0"
+if "%SKIP_0000%"=="1" echo ^>^> Baseline 0000_rls_pilot.sql already present; skipping it.
 
 REM --- Apply every forward migration in order --------------------------------
 REM Skip *_rollback* files. `dir /b /o:n` sorts by name so 0000 .. 0035 run in order.
 echo ^>^> Applying migrations from %MIGRATIONS_DIR% ...
 set /a applied=0
 for /f "delims=" %%f in ('dir /b /o:n "%MIGRATIONS_DIR%\*.sql" ^| findstr /v /i "_rollback"') do (
-  echo    -^> %%f
-  psql "%DB_URL%" -v ON_ERROR_STOP=1 -f "%MIGRATIONS_DIR%\%%f"
-  if errorlevel 1 (
-    echo.>&2
-    echo ERROR: migration failed at %%f.>&2
-    echo        Fix the cause and re-run. On a fresh database this should not happen;>&2
-    echo        on an already-populated database, some statements may conflict.>&2
-    exit /b 1
-  )
+  call :process_migration "%%f"
+  if errorlevel 1 exit /b 1
   set /a applied+=1
 )
 
@@ -94,7 +92,7 @@ echo ^>^> Applied !applied! migration file(s).
 
 REM --- Verify the security layer is present ----------------------------------
 echo ^>^> Verifying schema health ...
-psql "%DB_URL%" -v ON_ERROR_STOP=1 -t -A -c "SELECT 'pg_policies: ' || count(*)::text FROM pg_policies;" -c "SELECT 'app_tenant_in_scope(text): ' || COALESCE(to_regprocedure('app_tenant_in_scope(text)')::text, 'MISSING');" -c "SELECT 'foreign keys: ' || count(*)::text FROM pg_constraint WHERE contype = 'f';"
+psql -d "%DB_URL%" -v ON_ERROR_STOP=1 -t -A -c "SELECT 'pg_policies: ' || count(*)::text FROM pg_policies;" -c "SELECT 'app_tenant_in_scope(text): ' || COALESCE(to_regprocedure('app_tenant_in_scope(text)')::text, 'MISSING');" -c "SELECT 'foreign keys: ' || count(*)::text FROM pg_constraint WHERE contype = 'f';"
 
 echo.
 echo ^>^> Done. If 'pg_policies' is 0 or 'app_tenant_in_scope' is MISSING, the database
@@ -107,4 +105,22 @@ echo    3. psql "<lexy_fresh_url>" -f data_only.sql   (run as a superuser to byp
 echo    4. Point your app's DATABASE_URL at lexy_fresh and restart.
 
 endlocal
+exit /b 0
+
+:process_migration
+set "MIG_FILE=%~1"
+if "%SKIP_0000%"=="1" if /i "%MIG_FILE%"=="0000_rls_pilot.sql" (
+  echo    -^> %MIG_FILE% (already applied)
+  exit /b 0
+)
+
+echo    -^> %MIG_FILE%
+psql -d "%DB_URL%" -v ON_ERROR_STOP=1 -f "%MIGRATIONS_DIR%\%MIG_FILE%"
+if errorlevel 1 (
+  echo.>&2
+  echo ERROR: migration failed at %MIG_FILE%.>&2
+  echo        Fix the cause and re-run. On a fresh database this should not happen;>&2
+  echo        on an already-populated database, some statements may conflict.>&2
+  exit /b 1
+)
 exit /b 0
