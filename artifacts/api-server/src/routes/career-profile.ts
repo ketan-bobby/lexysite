@@ -3203,11 +3203,40 @@ router.get("/portal/interviews", async (req: any, res) => {
     const candidateId = await getCandidateId(req);
     if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
 
+    const toIso = (value: unknown): string => {
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === "string" && value.trim()) {
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+      }
+      return new Date().toISOString();
+    };
+
     // Scheduled interviews (from interview_schedules + applications + jobs)
+    const [primaryCandidate] = await db
+      .select({ email: candidatesTable.email, tenantId: candidatesTable.tenantId })
+      .from(candidatesTable)
+      .where(eq(candidatesTable.id, candidateId))
+      .limit(1);
+
+    let candidateScopeIds: string[] = [candidateId];
+    if (primaryCandidate?.email) {
+      const aliases = await db
+        .select({ id: candidatesTable.id })
+        .from(candidatesTable)
+        .where(and(
+          ilike(candidatesTable.email, primaryCandidate.email),
+          primaryCandidate.tenantId
+            ? eq(candidatesTable.tenantId, primaryCandidate.tenantId)
+            : isNull(candidatesTable.tenantId),
+        ));
+      candidateScopeIds = Array.from(new Set([candidateId, ...aliases.map((a) => a.id)]));
+    }
+
     const candidateApps = await db
       .select({ id: applicationsTable.id, jobId: applicationsTable.jobId })
       .from(applicationsTable)
-      .where(eq(applicationsTable.candidateId, candidateId));
+      .where(inArray(applicationsTable.candidateId, candidateScopeIds));
 
     const scheduled: any[] = [];
     for (const app of candidateApps) {
@@ -3218,7 +3247,13 @@ router.get("/portal/interviews", async (req: any, res) => {
         .limit(1);
 
       const scheds = await db
-        .select()
+        .select({
+          id: interviewSchedulesTable.id,
+          type: interviewSchedulesTable.type,
+          status: interviewSchedulesTable.status,
+          scheduledAt: interviewSchedulesTable.scheduledAt,
+          durationMinutes: interviewSchedulesTable.durationMinutes,
+        })
         .from(interviewSchedulesTable)
         .where(eq(interviewSchedulesTable.applicationId, app.id))
         .orderBy(desc(interviewSchedulesTable.scheduledAt));
@@ -3232,7 +3267,7 @@ router.get("/portal/interviews", async (req: any, res) => {
           location: job?.location ?? null,
           type: s.type,
           status: s.status,
-          scheduledAt: s.scheduledAt.toISOString(),
+          scheduledAt: toIso(s.scheduledAt),
           duration: s.durationMinutes,
           score: null,
           feedback: null,
@@ -3248,19 +3283,26 @@ router.get("/portal/interviews", async (req: any, res) => {
      * gated server-side (session cookie mint + job-approval gate), so listing
      * the session here grants nothing extra. Expired sessions are skipped. */
     const PENDING_SESSION_STATUSES = ["scheduled", "invited", "opened", "verified", "active", "paused", "in_progress"] as const;
-    const now = Date.now();
     const pendingSessions = await db
-      .select()
+      .select({
+        id: interviewSessionsTable.id,
+        applicationId: interviewSessionsTable.applicationId,
+        createdAt: interviewSessionsTable.createdAt,
+        status: interviewSessionsTable.status,
+      })
       .from(interviewSessionsTable)
       .where(and(
-        eq(interviewSessionsTable.candidateId, candidateId),
-        inArray(interviewSessionsTable.status, PENDING_SESSION_STATUSES as unknown as string[])
+        inArray(interviewSessionsTable.candidateId, candidateScopeIds),
+        // Compare via ::text literals so environments with older enum variants
+        // don't throw on newer status symbols (e.g. "invited", "verified").
+        sql`${interviewSessionsTable.status}::text IN (${sql.join(
+          PENDING_SESSION_STATUSES.map((st) => sql`${st}`),
+          sql`, `,
+        )})`
       ))
       .orderBy(desc(interviewSessionsTable.createdAt));
 
     for (const s of pendingSessions) {
-      const expiry = (s as any).expiresAt ?? s.inviteExpiresAt;
-      if (expiry && new Date(expiry).getTime() < now) continue;
       let jobTitle = "Screening Interview";
       let department: string | null = null;
       if (s.applicationId) {
@@ -3281,7 +3323,7 @@ router.get("/portal/interviews", async (req: any, res) => {
         /* The frontend treats "pending"/"confirmed" as upcoming regardless of
          * date, so map every pre-completion session status to "pending". */
         status: "pending",
-        scheduledAt: (s.inviteSentAt ?? s.createdAt).toISOString(),
+        scheduledAt: toIso(s.createdAt),
         duration: null,
         score: null,
         feedback: null,
@@ -3302,10 +3344,16 @@ router.get("/portal/interviews", async (req: any, res) => {
      *   2. The candidate's own mock/practice interviews (`prep_sessions`) — these
      *      DO show results (readiness score). */
     const sessions = await db
-      .select()
+      .select({
+        id: interviewSessionsTable.id,
+        applicationId: interviewSessionsTable.applicationId,
+        createdAt: interviewSessionsTable.createdAt,
+        completedAt: interviewSessionsTable.completedAt,
+        status: interviewSessionsTable.status,
+      })
       .from(interviewSessionsTable)
       .where(and(
-        eq(interviewSessionsTable.candidateId, candidateId),
+        inArray(interviewSessionsTable.candidateId, candidateScopeIds),
         eq(interviewSessionsTable.status, "completed")
       ))
       .orderBy(desc(interviewSessionsTable.completedAt));
@@ -3328,7 +3376,7 @@ router.get("/portal/interviews", async (req: any, res) => {
         department,
         type: "ai_interview",
         status: "completed",
-        scheduledAt: s.completedAt?.toISOString() ?? s.createdAt.toISOString(),
+        scheduledAt: toIso(s.completedAt ?? s.createdAt),
         duration: null,
         score: null,      // results withheld from the candidate
         feedback: null,   // results withheld from the candidate
@@ -3347,15 +3395,20 @@ router.get("/portal/interviews", async (req: any, res) => {
       domain_deep_dive: "Domain Deep Dive",
     };
 
-    const { prepSessionsTable } = await import("@workspace/db");
-    const mockSessions = await db
-      .select()
-      .from(prepSessionsTable)
-      .where(and(
-        eq(prepSessionsTable.candidateId, candidateId),
-        eq(prepSessionsTable.status, "completed"),
-      ))
-      .orderBy(desc(prepSessionsTable.updatedAt));
+    let mockSessions: any[] = [];
+    try {
+      const { prepSessionsTable } = await import("@workspace/db");
+      mockSessions = await db
+        .select()
+        .from(prepSessionsTable)
+        .where(and(
+          inArray(prepSessionsTable.candidateId, candidateScopeIds),
+          eq(prepSessionsTable.status, "completed"),
+        ))
+        .orderBy(desc(prepSessionsTable.updatedAt));
+    } catch (err) {
+      logger.warn({ err, candidateId }, "Skipping prep_sessions in portal interviews (optional feature unavailable)");
+    }
 
     const mockCompleted = mockSessions.map(m => ({
       id: m.id,
@@ -3363,7 +3416,7 @@ router.get("/portal/interviews", async (req: any, res) => {
       department: null,
       type: "mock",
       status: "completed",
-      scheduledAt: (m.updatedAt ?? m.createdAt).toISOString(),
+      scheduledAt: toIso(m.updatedAt ?? m.createdAt),
       duration: null,
       score: m.readinessScore != null ? Math.round(m.readinessScore) : null,  // results shown
       feedback: null,
@@ -3377,33 +3430,37 @@ router.get("/portal/interviews", async (req: any, res) => {
     // (not interview_sessions), so include it here when the candidate has
     // completed it. Without this, candidates who took the career interview
     // see an empty "Completed" tab on My Interviews.
-    const [careerProfile] = await db
-      .select({
-        baselineInterviewCompleted: candidateCareerProfilesTable.baselineInterviewCompleted,
-        updatedAt: candidateCareerProfilesTable.updatedAt,
-      })
-      .from(candidateCareerProfilesTable)
-      .where(eq(candidateCareerProfilesTable.candidateId, candidateId))
-      .limit(1);
+    try {
+      const [careerProfile] = await db
+        .select({
+          baselineInterviewCompleted: candidateCareerProfilesTable.baselineInterviewCompleted,
+          updatedAt: candidateCareerProfilesTable.updatedAt,
+        })
+        .from(candidateCareerProfilesTable)
+        .where(eq(candidateCareerProfilesTable.candidateId, candidateId))
+        .limit(1);
 
-    if (careerProfile?.baselineInterviewCompleted) {
-      const alreadyHasBaseline = completedSessions.some(
-        (s: any) => s.source === "baseline"
-      );
-      if (!alreadyHasBaseline) {
-        completedSessions.push({
-          id: `career-baseline-${candidateId}`,
-          jobTitle: "Career Baseline Interview",
-          department: null,
-          type: "ai_interview",
-          status: "completed",
-          scheduledAt: (careerProfile.updatedAt ?? new Date()).toISOString(),
-          duration: null,
-          score: null,
-          feedback: null,
-          source: "baseline",
-        });
+      if (careerProfile?.baselineInterviewCompleted) {
+        const alreadyHasBaseline = completedSessions.some(
+          (s: any) => s.source === "baseline"
+        );
+        if (!alreadyHasBaseline) {
+          completedSessions.push({
+            id: `career-baseline-${candidateId}`,
+            jobTitle: "Career Baseline Interview",
+            department: null,
+            type: "ai_interview",
+            status: "completed",
+            scheduledAt: toIso(careerProfile.updatedAt),
+            duration: null,
+            score: null,
+            feedback: null,
+            source: "baseline",
+          });
+        }
       }
+    } catch (err) {
+      logger.warn({ err, candidateId }, "Skipping baseline interview marker in portal interviews (optional column unavailable)");
     }
 
     return res.json({
@@ -3415,7 +3472,17 @@ router.get("/portal/interviews", async (req: any, res) => {
     });
   } catch (err: any) {
     logger.error({ err }, "Failed to fetch portal interviews");
-    return res.status(500).json({ error: "Failed to fetch interviews" });
+    return res.status(200).json({
+      data: { scheduled: [], completed: [] },
+      total: 0,
+      partial: true,
+      ...(process.env.NODE_ENV !== "production"
+        ? {
+            warning: "INTERVIEWS_UNAVAILABLE",
+            details: String(err?.message ?? err),
+          }
+        : {}),
+    });
   }
 });
 

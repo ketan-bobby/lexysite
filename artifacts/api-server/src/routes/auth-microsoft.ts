@@ -224,7 +224,7 @@ router.get("/auth/microsoft/callback", async (req, res) => {
     const token = issueToken({ userId, role, tenantId, region: await getTenantRegion(tenantId) });
 
     // The httpOnly session cookie is the production auth channel.
-    setSessionTokenCookie(res, token);
+    setSessionTokenCookie(res, token, req);
 
     // Production: auth rides SOLELY on the httpOnly cookie set above — the
     // token never appears in the redirect URL. Non-production keeps the URL

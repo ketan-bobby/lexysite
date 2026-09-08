@@ -355,16 +355,17 @@ async function consumeResetToken(rawToken: string): Promise<{ userId: string } |
 }
 
 /** Public-facing URL for the customer-installed Lexy SPA. Used to build
- *  email links. In dev the SPA is mounted at /lexy under REPLIT_DEV_DOMAIN;
+ *  email links. The registered Lexy artifact is mounted at the domain root;
  *  in prod set LEXY_APP_URL (or PUBLIC_APP_URL) to the bare app URL, e.g.
- *  `https://app.l3xy.ai` — *with* any path prefix the SPA is served under. */
+ *  `https://app.l3xy.ai` — with a path prefix only if that deployment
+ *  explicitly serves the SPA beneath one. */
 function getLexyAppUrl(): string {
   const explicit = process.env.LEXY_APP_URL || process.env.PUBLIC_APP_URL;
   if (explicit) return explicit.replace(/\/$/, "");
   if (process.env.REPLIT_DEV_DOMAIN) {
-    return `https://${process.env.REPLIT_DEV_DOMAIN}/lexy`;
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
-  return "http://localhost:5000/lexy";
+  return "http://localhost:5000";
 }
 
 function getAppBaseUrl(req: any): string {
@@ -1330,7 +1331,7 @@ router.post("/reset-password", resetPasswordIpLimit, validate({ body: ResetPassw
 
     logger.info({ userId: updated.id }, "[reset-password] password updated");
     const resetToken = issueToken({ userId: updated.id, role: updated.role, tenantId: updated.tenantId, region: await getTenantRegion(updated.tenantId) });
-    setSessionTokenCookie(res, resetToken);
+    setSessionTokenCookie(res, resetToken, req);
     return res.json({
       ok: true,
       user: { ...updated, createdAt: updated.createdAt.toISOString() },

@@ -21,7 +21,7 @@
  *   /portal/login
  */
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Zap, Mail, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth-context";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function CandidateLogin() {
+  const [, navigate] = useLocation();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -79,6 +80,7 @@ export default function CandidateLogin() {
     try {
       const res = await fetch(`${BASE}/api/auth/candidate-login`, {
         method:  "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
@@ -88,7 +90,7 @@ export default function CandidateLogin() {
         return;
       }
       login(data.user, data.token);
-      window.location.href = `${BASE}/portal`;
+      navigate("/portal/career");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

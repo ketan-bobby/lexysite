@@ -410,7 +410,7 @@ router.post("/staff-invites/:token/accept", validate({ body: AcceptStaffInviteBo
     logger.info({ userId: user.id, email: user.email, role: user.role }, "Staff invite accepted");
 
     const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, region: await getTenantRegion(user.tenantId) });
-    setSessionTokenCookie(res, acceptToken);
+    setSessionTokenCookie(res, acceptToken, req);
     res.json({
       user: {
         id: user.id,

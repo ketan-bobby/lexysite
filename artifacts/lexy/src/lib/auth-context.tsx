@@ -29,7 +29,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "@workspace/api-client-react";
 import { authHeaders, endSession } from "@/lib/api";
 
@@ -46,6 +46,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [localUser, setLocalUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem("user");
@@ -109,6 +110,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (newUser: User, devToken?: string) => {
     setLocalUser(newUser);
+    // Replace the unauthenticated /auth/me result that commonly completed
+    // while the visitor was filling in the login form. Without this, route
+    // guards can still see the pre-login 401 and redirect a successful login
+    // back to the general login page.
+    queryClient.setQueryData(["auth/me"], newUser);
     localStorage.setItem("user", JSON.stringify(newUser));
     // DEV ONLY: mirror the token for the iframe Bearer fallback. Production
     // responses omit `token` entirely and this branch is dead-code-eliminated.

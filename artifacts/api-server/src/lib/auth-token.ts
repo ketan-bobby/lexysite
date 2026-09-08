@@ -176,6 +176,22 @@ export function getAuthUserId(req: {
  * header-only until a later phase. */
 export const SESSION_COOKIE_NAME = "session_token";
 
+type CookieRequest = {
+  secure?: boolean;
+  protocol?: string;
+  headers?: {
+    "x-forwarded-proto"?: string | string[];
+  };
+};
+
+function requestUsesHttps(req?: CookieRequest): boolean {
+  if (!req) return process.env.NODE_ENV === "production";
+  if (req.secure || req.protocol === "https") return true;
+  const forwarded = req.headers?.["x-forwarded-proto"];
+  const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return value?.split(",")[0]?.trim().toLowerCase() === "https";
+}
+
 /** Extract the raw token string from a request: `Authorization: Bearer …`
  *  header first; if absent, fall back to the httpOnly session cookie.
  *  Returns null when neither is present. */
@@ -197,10 +213,14 @@ export function tokenFromRequest(req: {
 export function setSessionTokenCookie(
   res: { cookie: (name: string, value: string, opts: Record<string, unknown>) => unknown },
   token: string,
+  req?: CookieRequest,
 ): void {
   res.cookie(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // Derive this from the real request, not NODE_ENV. Local production-mode
+    // builds still run over http://localhost and browsers reject Secure
+    // cookies there; proxied/deployed HTTPS requests remain Secure.
+    secure: requestUsesHttps(req),
     sameSite: "lax",
     maxAge: TTL_SECONDS * 1000, // 30 days — matches the token's own exp
     path: "/api",
@@ -221,10 +241,11 @@ export function devOnlyTokenBody(token: string): { token?: string } {
  *  used when setting it or the browser won't remove it. */
 export function clearSessionTokenCookie(
   res: { clearCookie: (name: string, opts: Record<string, unknown>) => unknown },
+  req?: CookieRequest,
 ): void {
   res.clearCookie(SESSION_COOKIE_NAME, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: requestUsesHttps(req),
     sameSite: "lax",
     path: "/api",
   });

@@ -384,11 +384,16 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
   const isPlatformAdmin = user?.role === "platform_admin";
   const isHiringManager = user?.role === "hiring_manager";
   const isInterviewer   = user?.role === "interviewer";
+  const isCandidate     = user?.role === "candidate";
+  const isPortalRoute   = location.startsWith("/portal");
+  const canPollAgents   = !isCandidate && !isPortalRoute;
 
   /* Poll the AI agent status every 10 seconds to update the status pill. */
   const { data: agentData } = useQuery<any>({
     queryKey: ["agent-status-pill"],
     queryFn: () => layoutApiFetch("/agents"),
+    enabled: canPollAgents,
+    retry: false,
     refetchInterval: 10_000,
     staleTime: 5_000,
   });
@@ -482,8 +487,6 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
       </div>
     );
   }
-
-  const isCandidate = user.role === "candidate";
 
   /* ── Candidate layout ──────────────────────────────────────────────────── */
   if (isCandidate) {

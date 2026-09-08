@@ -243,7 +243,7 @@ router.post("/auth/complete-trial-signup", trialCompleteLimit, async (req, res) 
   logger.info({ tenantId, userId: u.id, email: u.email }, "[complete-trial-signup] password set, session issued");
 
   const trialToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, region: tenant?.region ?? null });
-  setSessionTokenCookie(res, trialToken);
+  setSessionTokenCookie(res, trialToken, req);
   res.json({
     user: {
       id: u.id, tenantId: u.tenantId,
@@ -356,7 +356,7 @@ router.post("/auth/login", loginIpLimit, loginEmailLimit, validate({ body: Login
    * body below is unchanged — every existing consumer keeps working;
    * middlewares accept the cookie only when no Authorization header is
    * present. */
-  setSessionTokenCookie(res, sessionToken);
+  setSessionTokenCookie(res, sessionToken, req);
 
   res.json({
     user: {
@@ -464,7 +464,7 @@ router.post("/auth/candidate-login", loginIpLimit, loginEmailLimit, validate({ b
     : [null];
 
   const candidateToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, region: tenant?.region ?? null });
-  setSessionTokenCookie(res, candidateToken);
+  setSessionTokenCookie(res, candidateToken, req);
   res.json({
     user: {
       id: u.id,
@@ -503,11 +503,11 @@ router.get("/auth/me", async (req, res) => {
   res.json({ id: u.id, tenantId: u.tenantId, tenantName: tenant?.name ?? null, tenantType: tenant?.clientType ?? null, email: u.email, name: u.name, role: u.role, avatarUrl: u.avatarUrl, createdAt: u.createdAt.toISOString() });
 });
 
-router.post("/auth/logout", (_req, res) => {
+router.post("/auth/logout", (req, res) => {
   /* Cookie-auth migration: clear the httpOnly session cookie so logout
    * actually terminates cookie-based sessions (the client can't clear an
    * httpOnly cookie itself). */
-  clearSessionTokenCookie(res);
+  clearSessionTokenCookie(res, req);
   res.json({ success: true, message: "Logged out" });
 });
 

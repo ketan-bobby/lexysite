@@ -501,7 +501,7 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
     }
 
     const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, region: await getTenantRegion(user.tenantId) });
-    setSessionTokenCookie(res, acceptToken);
+    setSessionTokenCookie(res, acceptToken, req);
     res.json({
       user: { id: user.id, tenantId: user.tenantId, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl, createdAt: user.createdAt.toISOString() },
       ...devOnlyTokenBody(acceptToken),

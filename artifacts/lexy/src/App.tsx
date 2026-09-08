@@ -244,6 +244,10 @@ function Router() {
       <Route path="/careers/:id" component={CareersJobPage} />
       <Route path="/career-register" component={CareerRegister} />
       <Route path="/portal/reset-password" component={ResetPassword} />
+      {/* Compatibility for reset emails generated before the Lexy artifact
+          moved from /lexy to the domain root. Keep until those one-hour
+          reset tokens have naturally expired. */}
+      <Route path="/lexy/portal/reset-password" component={ResetPassword} />
       <Route path="/hm/:token" component={HmPackagePage} />
 
       {/* ── Hiring Manager portal ─────────────────────────────── */}

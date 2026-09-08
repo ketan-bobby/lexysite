@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import { apiBase, apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 interface ActiveSession {
   active: boolean;
@@ -28,10 +29,13 @@ interface ActiveSession {
 }
 
 export function ImpersonationBanner() {
+  const { user } = useAuth();
   const [data, setData] = useState<ActiveSession | null>(null);
   const [stopping, setStopping] = useState(false);
+  const canCheckImpersonation = user?.role === "platform_admin";
 
   useEffect(() => {
+    if (!canCheckImpersonation) return;
     let cancelled = false;
     const load = async () => {
       try {
@@ -47,7 +51,7 @@ export function ImpersonationBanner() {
      * hard cap. */
     const t = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(t); };
-  }, []);
+  }, [canCheckImpersonation]);
 
   if (!data?.active) return null;
 

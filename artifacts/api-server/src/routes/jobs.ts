@@ -340,72 +340,89 @@ Return JSON with exactly these fields:
 // hiring_manager → sees jobs assigned to them OR belonging to their tenant
 // interviewer → sees all jobs in their tenant (for scheduling context)
 router.get("/jobs", async (req, res) => {
-  const user = await getCallerUser(req);
-  /* Mandatory auth — anonymous callers were previously dropped into the
-     `!user || platform_admin` branch and saw every tenant's jobs. */
-  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const { status, page = 1, limit = 20, tenantId: queryTenantId, assignedToMe } = req.query;
+  try {
+    const user = await getCallerUser(req);
+    /* Mandatory auth — anonymous callers were previously dropped into the
+       `!user || platform_admin` branch and saw every tenant's jobs. */
+    if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const { status, page = 1, limit = 20, tenantId: queryTenantId } = req.query;
 
-  let jobs;
-  // Defensive cap on every branch — see lib/query-limits.ts. A tenant with
-  // thousands of work orders would otherwise pull the whole table per call.
-  if (user.role === "platform_admin") {
-    let query = db.select().from(jobsTable).$dynamic();
-    if (queryTenantId) query = query.where(eq(jobsTable.tenantId, queryTenantId as string));
-    jobs = await query.orderBy(desc(jobsTable.createdAt)).limit(MAX_PAGE_SIZE);
-  } else if (user.role === "hiring_manager") {
-    // HMs only see work orders assigned to them
-    const allowed = await getAllowedTenantIds(user);
-    if (!allowed || allowed.length === 0) { res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) }); return; }
-    jobs = await db.select().from(jobsTable)
-      .where(and(
-        inArray(jobsTable.tenantId, allowed),
-        eq(jobsTable.assignedHiringManagerId, user.id),
-      ))
-      .orderBy(desc(jobsTable.createdAt))
-      .limit(MAX_PAGE_SIZE);
-  } else if (user.role === "recruiter") {
-    // Recruiters only see work orders assigned to them — either as the primary
-    // (jobs.assigned_recruiter_id) or via the job_recruiters roster. The shared
-    // getRecruiterAssignedJobIds already unions both and enforces the tenant
-    // subtree ceiling, so an empty set means "no assigned reqs → see nothing".
-    const assignedJobIds = await getRecruiterAssignedJobIds(user);
-    if (!assignedJobIds || assignedJobIds.length === 0) {
+    // Candidate portal should never list recruiter work orders. Return an
+    // empty shape so accidental probes do not surface backend 500s.
+    if (user.role === "candidate") {
       res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
       return;
     }
-    jobs = await db.select().from(jobsTable)
-      .where(inArray(jobsTable.id, assignedJobIds))
-      .orderBy(desc(jobsTable.createdAt))
-      .limit(MAX_PAGE_SIZE);
-  } else if (user.role === "recruiter_admin") {
-    // Recruiter Admins see every work order belonging to their ASSIGNED client
-    // sub-tenants only (getDataScopeTenantIds). No assigned clients ⇒ nothing.
-    const scope = await getDataScopeTenantIds(user);
-    if (!scope || scope.length === 0) {
-      res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
-      return;
+
+    let jobs;
+    // Defensive cap on every branch — see lib/query-limits.ts. A tenant with
+    // thousands of work orders would otherwise pull the whole table per call.
+    if (user.role === "platform_admin") {
+      let query = db.select().from(jobsTable).$dynamic();
+      if (queryTenantId) query = query.where(eq(jobsTable.tenantId, queryTenantId as string));
+      jobs = await query.orderBy(desc(jobsTable.createdAt)).limit(MAX_PAGE_SIZE);
+    } else if (user.role === "hiring_manager") {
+      // HMs only see work orders assigned to them
+      const allowed = await getAllowedTenantIds(user);
+      if (!allowed || allowed.length === 0) { res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) }); return; }
+      jobs = await db.select().from(jobsTable)
+        .where(and(
+          inArray(jobsTable.tenantId, allowed),
+          eq(jobsTable.assignedHiringManagerId, user.id),
+        ))
+        .orderBy(desc(jobsTable.createdAt))
+        .limit(MAX_PAGE_SIZE);
+    } else if (user.role === "recruiter") {
+      // Recruiters only see work orders assigned to them — either as the primary
+      // (jobs.assigned_recruiter_id) or via the job_recruiters roster. The shared
+      // getRecruiterAssignedJobIds already unions both and enforces the tenant
+      // subtree ceiling, so an empty set means "no assigned reqs → see nothing".
+      const assignedJobIds = await getRecruiterAssignedJobIds(user);
+      if (!assignedJobIds || assignedJobIds.length === 0) {
+        res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
+        return;
+      }
+      jobs = await db.select().from(jobsTable)
+        .where(inArray(jobsTable.id, assignedJobIds))
+        .orderBy(desc(jobsTable.createdAt))
+        .limit(MAX_PAGE_SIZE);
+    } else if (user.role === "recruiter_admin") {
+      // Recruiter Admins see every work order belonging to their ASSIGNED client
+      // sub-tenants only (getDataScopeTenantIds). No assigned clients ⇒ nothing.
+      const scope = await getDataScopeTenantIds(user);
+      if (!scope || scope.length === 0) {
+        res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
+        return;
+      }
+      jobs = await db.select().from(jobsTable)
+        .where(inArray(jobsTable.tenantId, scope))
+        .orderBy(desc(jobsTable.createdAt))
+        .limit(MAX_PAGE_SIZE);
+    } else {
+      // tenant_admin, interviewer, etc. — all jobs in their tenant tree
+      const allowed = await getAllowedTenantIds(user);
+      if (!allowed || allowed.length === 0) {
+        res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
+        return;
+      }
+      jobs = await db.select().from(jobsTable)
+        .where(inArray(jobsTable.tenantId, allowed))
+        .orderBy(desc(jobsTable.createdAt))
+        .limit(MAX_PAGE_SIZE);
     }
-    jobs = await db.select().from(jobsTable)
-      .where(inArray(jobsTable.tenantId, scope))
-      .orderBy(desc(jobsTable.createdAt))
-      .limit(MAX_PAGE_SIZE);
-  } else {
-    // tenant_admin, interviewer, etc. — all jobs in their tenant tree
-    const allowed = await getAllowedTenantIds(user);
-    if (!allowed || allowed.length === 0) {
-      res.json({ jobs: [], total: 0, page: Number(page), limit: Number(limit) });
-      return;
-    }
-    jobs = await db.select().from(jobsTable)
-      .where(inArray(jobsTable.tenantId, allowed))
-      .orderBy(desc(jobsTable.createdAt))
-      .limit(MAX_PAGE_SIZE);
+
+    const filtered = status ? jobs.filter((j) => j.status === status) : jobs;
+    const withCounts = await Promise.all(filtered.map(jobWithCount));
+    res.json({ jobs: withCounts, total: filtered.length, page: Number(page), limit: Number(limit) });
+  } catch (err: any) {
+    logger.error({ err }, "Failed to fetch jobs");
+    res.status(500).json({
+      error: "Failed to fetch jobs",
+      ...(process.env.NODE_ENV !== "production"
+        ? { details: String(err?.message ?? err) }
+        : {}),
+    });
   }
-
-  const filtered = status ? jobs.filter((j) => j.status === status) : jobs;
-  const withCounts = await Promise.all(filtered.map(jobWithCount));
-  res.json({ jobs: withCounts, total: filtered.length, page: Number(page), limit: Number(limit) });
 });
 
 /* ── Approval routing for recruiter-created work orders ───────────────────
