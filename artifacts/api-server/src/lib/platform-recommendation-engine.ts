@@ -48,6 +48,10 @@ import { logger } from "./logger";
 import { sendEmail } from "./email.js";
 import { recordAudit } from "./audit.js";
 import { applyCandidatePrivacyFilter, applyCandidateHardExclusions } from "../routes/candidates";
+import {
+  getApprovedCandidateIntroductions,
+  type ApprovedCandidateIntroduction,
+} from "./candidate-introduction";
 
 const MATCH_THRESHOLD = 75;
 
@@ -150,6 +154,7 @@ async function scoreCandidate(
   candidate: any,
   job: any,
   icp: any | null,
+  introduction: ApprovedCandidateIntroduction,
 ): Promise<ScoreResult> {
   const icpSection = icp
     ? `\nIdeal Candidate Profile:
@@ -179,7 +184,7 @@ Location: ${candidate.location || "Unknown — treat as location risk"}
 Skills: ${(candidate.skills || []).join(", ") || "None listed"}
 Experience Level: ${candidate.experienceLevel || "Unknown"}
 Preferred Work Style: ${candidate.workStyle || "Unknown"}
-Professional Summary: ${(candidate.summary || "Not provided").slice(0, 600)}
+Evidence boundary: Use only the factual title, location, skills, experience, and work-style fields above. Never infer from career intake, coaching, practice, baseline, or mock-interview material.
 
 SCORING (total 100 points):
 • Role & Title alignment with the JD: 30 pts
@@ -326,8 +331,20 @@ async function evaluateJobAgainstCandidates(
     applyCandidateHardExclusions(platformCandidates),
     job.tenantId,
   );
+  /* A push is an external employer presentation, not merely a ranking event.
+     Require the candidate's current approved introduction; do not substitute a
+     legacy candidate.summary/bio or an intelligence-generated aggregate. */
+  const approvedIntroductions = await getApprovedCandidateIntroductions(sealed.map((c) => c.id));
 
   for (const candidate of sealed) {
+    const introduction = approvedIntroductions.get(candidate.id);
+    if (!introduction) {
+      logger.debug(
+        { candidateId: candidate.id, jobId: job.id },
+        "[platform-rec] Skipped — no current approved candidate introduction",
+      );
+      continue;
+    }
     if (pushedIds.has(candidate.id)) {
       r.skippedAlreadyPushed++;
       continue;
@@ -354,7 +371,7 @@ async function evaluateJobAgainstCandidates(
     r.evaluated++;
 
     try {
-      const result = await scoreCandidate(candidate, job, icp ?? null);
+      const result = await scoreCandidate(candidate, job, icp ?? null, introduction);
 
       logger.debug(
         { candidateId: candidate.id, jobId: job.id, score: result.score, recommend: result.shouldRecommend },
@@ -384,7 +401,7 @@ async function evaluateJobAgainstCandidates(
             ${(candidate as any).experienceLevel ?? null},
             ${(candidate as any).workStyle ?? null},
             NULL,
-            ${(candidate as any).summary ?? null},
+            ${introduction.summary},
             ${candidate.linkedinUrl ?? null},
             ${candidate.resumeUrl ?? null},
             'active',

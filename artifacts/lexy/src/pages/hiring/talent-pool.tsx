@@ -2,16 +2,12 @@
  * pages/hiring/talent-pool.tsx — Hiring Manager Talent Pool Browser
  *
  * ─── What this page does ────────────────────────────────────────────────────
- * Browse the platform talent pool — candidates who have self-registered and
- * opted in to being discovered by hiring teams. Hiring managers can search
- * by skill, location, or role and flag interesting candidates for recruiter
- * follow-up.
+ * Browse candidate-approved recruiter submissions. A card is visible only
+ * while its candidate's written introduction remains approved.
  *
  * ─── Key sections ────────────────────────────────────────────────────────────
  *   SearchFilters   — skill tags, location, experience level, availability
- *   CandidateCard   — name, current role, location, top skills, availability
- *                     status, AI career score, "Flag for Recruiter" CTA
- *   FlaggedList     — sidebar: candidates this HM has flagged
+ *   CandidateCard   — candidate-approved introduction and existing role actions
  *
  * ─── Data sources ────────────────────────────────────────────────────────────
  *   GET /api/talent-pool?skills=…&location=…   — talent pool browser
@@ -47,13 +43,21 @@ interface Submission {
   currentTitle: string | null;
   location: string | null;
   experienceLevel: string | null;
-  bio: string | null;
   linkedinUrl: string | null;
   resumeObjectPath: string | null;
   status: string | null;
-  note: string | null;
   pushedAt: string;
   candidateId: string | null;
+  introduction: CandidateApprovedIntroduction;
+}
+
+interface CandidateApprovedIntroduction {
+  summary: string;
+  strengths: Array<{ title: string; evidence: string }>;
+  achievements: Array<{ text: string }>;
+  careerDirection: string | null;
+  preferences: string | null;
+  availability: string | null;
 }
 
 interface Job {
@@ -279,7 +283,12 @@ export default function HiringTalentPool() {
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
-    staleTime: 30_000,
+    /* Introductions are live consent, not snapshots: remove a withdrawn card
+     * while this page is open, including when the tab is in the background. */
+    staleTime: 0,
+    refetchInterval: 7_500,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 
   const submissions = data?.submissions ?? [];
@@ -308,10 +317,13 @@ export default function HiringTalentPool() {
             <div>
               <h1 className="text-2xl font-bold">Recruiters Shortlist</h1>
               <p className="text-muted-foreground text-sm mt-0.5">
-                Candidates recommended by your recruiter for your consideration.
+                Candidate-approved written introductions shared by your recruiter for consideration.
               </p>
             </div>
           </div>
+          <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+            A candidate must approve their written introduction before it can appear here. They can withdraw approval at any time.
+          </p>
         </div>
 
         {/* Stats strip */}
@@ -319,7 +331,7 @@ export default function HiringTalentPool() {
           {[
             { label: "Total Submitted", value: submissions.length,                                   color: "text-sky-400"     },
             { label: "Active",          value: submissions.filter(s => s.status === "active").length, color: "text-emerald-400" },
-            { label: "With Resume",     value: submissions.filter(s => !!s.resumeObjectPath).length,  color: "text-violet-400"  },
+            { label: "Approved introductions", value: submissions.length, color: "text-violet-400" },
           ].map(stat => (
             <Card key={stat.label} className="border-border/40">
               <CardContent className="p-4 flex items-center gap-3">
@@ -361,7 +373,7 @@ export default function HiringTalentPool() {
             </p>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               {submissions.length === 0
-                ? "Your recruiter will push relevant candidates here for your consideration."
+                ? "Candidates appear here only after they approve a written introduction for sharing."
                 : "Try a different search term."}
             </p>
           </div>
@@ -425,17 +437,24 @@ export default function HiringTalentPool() {
                         )}
                       </div>
 
-                      {s.bio && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 italic border-l-2 border-sky-500/30 pl-2">
-                          "{s.bio}"
-                        </p>
-                      )}
-
-                      {s.note && (
-                        <div className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-md px-3 py-1.5">
-                          <span className="font-semibold">Recruiter note:</span> {s.note}
-                        </div>
-                      )}
+                       <div className="space-y-2 border-l-2 border-sky-500/30 pl-3">
+                         <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">Candidate-approved introduction</p>
+                         <p className="line-clamp-3 text-sm text-muted-foreground">{s.introduction.summary}</p>
+                         {s.introduction.strengths.length > 0 && (
+                           <div className="flex flex-wrap gap-1.5">
+                             {s.introduction.strengths.slice(0, 3).map((strength, index) => (
+                               <Badge key={`${strength.title}-${index}`} variant="outline" className="h-auto max-w-full whitespace-normal py-1 text-[10px]">
+                                 {strength.title}: {strength.evidence}
+                               </Badge>
+                             ))}
+                           </div>
+                         )}
+                         {s.introduction.achievements.length > 0 && (
+                           <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
+                             {s.introduction.achievements.slice(0, 2).map((achievement, index) => <li key={`${achievement.text}-${index}`} className="line-clamp-1">{achievement.text}</li>)}
+                           </ul>
+                         )}
+                       </div>
                     </div>
 
                     {/* Right column: date + actions */}
@@ -471,7 +490,7 @@ export default function HiringTalentPool() {
                         {s.candidateId && (
                           <Button size="sm" variant="outline" className="h-7 px-2 gap-1 text-xs" asChild>
                             <Link href={`/candidates/${s.candidateId}`}>
-                              Profile <ArrowRight className="w-3 h-3" />
+                              Schedule Interview <ArrowRight className="w-3 h-3" />
                             </Link>
                           </Button>
                         )}

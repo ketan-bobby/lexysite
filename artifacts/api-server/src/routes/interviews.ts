@@ -1066,6 +1066,45 @@ router.get("/interviews", async (req: any, res) => {
       .limit(MAX_PAGE_SIZE);
   }
 
+  /* A session must be linked to a real job interview plan before any staff
+     list can expose it. Career-baseline and self-practice sessions have no
+     plan/job and are candidate developmental material, not platform-admin
+     operational data. */
+  const staffVisiblePlanIds = Array.from(
+    new Set(sessions.map((s) => s.planId).filter(Boolean) as string[]),
+  );
+  const staffVisiblePlans = staffVisiblePlanIds.length
+    ? await db
+        .select({ id: interviewPlansTable.id, jobId: interviewPlansTable.jobId })
+        .from(interviewPlansTable)
+        .where(inArray(interviewPlansTable.id, staffVisiblePlanIds))
+    : [];
+  const jobScopedPlanIds = new Set(
+    staffVisiblePlans.filter((plan) => !!plan.jobId).map((plan) => plan.id),
+  );
+  const staffVisibleApplicationIds = Array.from(
+    new Set(sessions.map((s) => s.applicationId).filter(Boolean) as string[]),
+  );
+  const staffVisibleApplications = staffVisibleApplicationIds.length
+    ? await db
+        .select({ id: applicationsTable.id, jobId: applicationsTable.jobId })
+        .from(applicationsTable)
+        .where(inArray(applicationsTable.id, staffVisibleApplicationIds))
+    : [];
+  const applicationJobMap = new Map(
+    staffVisibleApplications
+      .filter((application) => !!application.jobId)
+      .map((application) => [application.id, application.jobId]),
+  );
+  const sessionJobScopeMap = new Map(
+    sessions.flatMap((session) => {
+      const jobId = (session.planId ? staffVisiblePlans.find((plan) => plan.id === session.planId)?.jobId : null)
+        ?? (session.applicationId ? applicationJobMap.get(session.applicationId) : null);
+      return jobId ? [[session.id, jobId] as const] : [];
+    }),
+  );
+  sessions = sessions.filter((session) => sessionJobScopeMap.has(session.id));
+
   // Tenant scoping
   if (caller.role !== "platform_admin") {
     const allowed = await getAllowedTenantIds(caller);
@@ -1110,18 +1149,8 @@ router.get("/interviews", async (req: any, res) => {
         res.json([]);
         return;
       }
-      const planIds = Array.from(
-        new Set(sessions.map((s) => s.planId).filter(Boolean) as string[]),
-      );
-      const planRows = planIds.length
-        ? await db
-            .select({ id: interviewPlansTable.id, jobId: interviewPlansTable.jobId })
-            .from(interviewPlansTable)
-            .where(inArray(interviewPlansTable.id, planIds))
-        : [];
-      const planJobMap = new Map(planRows.map((p) => [p.id, p.jobId]));
       sessions = sessions.filter((s) => {
-        const jobId = s.planId ? planJobMap.get(s.planId) : undefined;
+        const jobId = sessionJobScopeMap.get(s.id);
         return jobId ? myJobIds.has(jobId) : false;
       });
     }
@@ -1197,7 +1226,7 @@ router.get("/interviews", async (req: any, res) => {
   /* Attach the AI interview assessment (overall score, recommendation,
      recruiter summary, strengths/weaknesses) so downstream consumers — the
      candidate evaluation PDF in particular — can render the interview verdict.
-     The raw session row carries only `score`, which is frequently NULL even on
+       The raw session row carries only `score`, which is frequently NULL even on
      completed sessions; the real assessment lives in interview_summaries
      (one row per session, keyed by interview_session_id). */
   const sessionIds = sessions.map((s) => s.id);
@@ -2985,14 +3014,34 @@ const INTERVIEW_STAFF_ROLES = [
 /* Role-based session read scope — the single rule for every staff by-id
  * interview read (detail, summary, proctor report, recruiter comments).
  * Mirrors the GET /interviews list scoping exactly:
- *   platform_admin  → everything
+ *   platform_admin  → every job-specific session
  *   tenant_admin / interviewer → tenant subtree
  *   recruiter_admin → data scope (assigned clients ∪ managed recruiters' job
  *                     tenants ∪ own staffed-job tenants)
  *   recruiter       → only sessions whose plan→job they're staffed on
  *   hiring_manager  → only sessions whose plan→job is assigned to them
- * Sessions with no plan/job fail closed for recruiter & hiring_manager. */
+ * Sessions with no plan/job are private developmental sessions and fail closed
+ * for every staff role, including platform admins. */
 async function staffCanReadInterviewSession(caller: any, session: any): Promise<boolean> {
+  const planId = (session as any).planId as string | null;
+  const [plan] = planId
+    ? await db
+        .select({ jobId: interviewPlansTable.jobId })
+        .from(interviewPlansTable)
+        .where(eq(interviewPlansTable.id, planId))
+        .limit(1)
+    : [];
+  let jobId = plan?.jobId ?? null;
+  if (!jobId && session.applicationId) {
+    const [application] = await db
+      .select({ jobId: applicationsTable.jobId })
+      .from(applicationsTable)
+      .where(eq(applicationsTable.id, session.applicationId))
+      .limit(1);
+    jobId = application?.jobId ?? null;
+  }
+  if (!jobId) return false;
+
   if (caller.role === "platform_admin") return true;
   const allowed = await getAllowedTenantIds(caller);
   if (!allowed || !allowed.includes(session.tenantId ?? "")) return false;
@@ -3001,15 +3050,6 @@ async function staffCanReadInterviewSession(caller: any, session: any): Promise<
     return scope === null || scope.includes(session.tenantId ?? "");
   }
   if (caller.role === "recruiter" || caller.role === "hiring_manager") {
-    const planId = (session as any).planId as string | null;
-    if (!planId) return false;
-    const [plan] = await db
-      .select({ jobId: interviewPlansTable.jobId })
-      .from(interviewPlansTable)
-      .where(eq(interviewPlansTable.id, planId))
-      .limit(1);
-    const jobId = plan?.jobId ?? null;
-    if (!jobId) return false;
     if (caller.role === "recruiter") {
       const assigned = await getRecruiterAssignedJobIds(caller);
       return assigned.includes(jobId);

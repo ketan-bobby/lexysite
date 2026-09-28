@@ -127,6 +127,10 @@ const STRONG_TOKENS = [
   // step. A route using one of these can only touch the caller's own candidate.
   "resolveCandidateId",
   "resolveCandidateSession",
+  // Developmental records are stricter than staff tenant access: these audited
+  // helpers resolve candidates.user_id and reject every non-candidate role.
+  "callerOwnsCandidateDevelopmentData",
+  "ownedCandidateDevelopmentIds",
   "resolveCandidateForRequest",
   // Role / staff gates
   "requireRole",

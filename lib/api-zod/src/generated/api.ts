@@ -257,9 +257,7 @@ export const ListJobsResponse = zod.object({
       department: zod.string().nullish(),
       location: zod.string().nullish(),
       workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-      employmentType: zod
-        .enum(["full_time", "part_time", "contract", "internship"])
-        .nullish(),
+      employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
       salaryMin: zod.number().nullish(),
       salaryMax: zod.number().nullish(),
       description: zod.string(),
@@ -321,9 +319,7 @@ export const GetJobResponse = zod.object({
   department: zod.string().nullish(),
   location: zod.string().nullish(),
   workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-  employmentType: zod
-    .enum(["full_time", "part_time", "contract", "internship"])
-    .nullish(),
+  employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
   salaryMin: zod.number().nullish(),
   salaryMax: zod.number().nullish(),
   description: zod.string(),
@@ -378,9 +374,7 @@ export const UpdateJobResponse = zod.object({
   department: zod.string().nullish(),
   location: zod.string().nullish(),
   workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-  employmentType: zod
-    .enum(["full_time", "part_time", "contract", "internship"])
-    .nullish(),
+  employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
   salaryMin: zod.number().nullish(),
   salaryMax: zod.number().nullish(),
   description: zod.string(),
@@ -541,12 +535,7 @@ export const ListCandidatesResponse = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -600,12 +589,7 @@ export const GetCandidateResponse = zod.object({
   githubUrl: zod.string().nullish(),
   skills: zod.array(zod.string()),
   source: zod.string().nullish(),
-  verificationStatus: zod.enum([
-    "unverified",
-    "pending",
-    "verified",
-    "flagged",
-  ]),
+  verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
   resumeUrl: zod.string().nullish(),
   talentMatchScore: zod.number().nullish(),
   resumeScreenScore: zod.number().nullish(),
@@ -647,18 +631,227 @@ export const UpdateCandidateResponse = zod.object({
   githubUrl: zod.string().nullish(),
   skills: zod.array(zod.string()),
   source: zod.string().nullish(),
-  verificationStatus: zod.enum([
-    "unverified",
-    "pending",
-    "verified",
-    "flagged",
-  ]),
+  verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
   resumeUrl: zod.string().nullish(),
   talentMatchScore: zod.number().nullish(),
   resumeScreenScore: zod.number().nullish(),
   applicationCount: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
+});
+
+/**
+ * Returns only the candidate's currently approved allowlisted introduction when the caller has an authorised candidate relationship. Private career, evaluation, transcript, and recording data are never included.
+ * @summary Get a candidate-approved written introduction
+ */
+export const GetCandidateIntroductionParams = zod.object({
+  candidateId: zod.coerce.string(),
+});
+
+export const getCandidateIntroductionResponseStrengthsItemTitleMax = 100;
+
+export const getCandidateIntroductionResponseStrengthsItemEvidenceMax = 500;
+
+export const getCandidateIntroductionResponseAchievementsItemTextMax = 500;
+
+export const GetCandidateIntroductionResponse = zod.object({
+  exists: zod.boolean(),
+  candidateId: zod.string(),
+  summary: zod.string(),
+  strengths: zod.array(
+    zod.object({
+      title: zod.string().max(getCandidateIntroductionResponseStrengthsItemTitleMax),
+      evidence: zod.string().max(getCandidateIntroductionResponseStrengthsItemEvidenceMax),
+    }),
+  ),
+  achievements: zod.array(
+    zod.object({
+      text: zod.string().max(getCandidateIntroductionResponseAchievementsItemTextMax),
+    }),
+  ),
+  careerDirection: zod.string().nullable(),
+  preferences: zod.string().nullable(),
+  availability: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+});
+
+/**
+ * @summary Get the authenticated candidate's private introduction draft
+ */
+export const getPortalIntroductionResponseStrengthsItemTitleMax = 100;
+
+export const getPortalIntroductionResponseStrengthsItemEvidenceMax = 500;
+
+export const getPortalIntroductionResponseAchievementsItemTextMax = 500;
+
+export const GetPortalIntroductionResponse = zod.object({
+  exists: zod.boolean(),
+  candidateId: zod.string(),
+  status: zod.enum(["draft", "approved", "withdrawn"]),
+  summary: zod.string(),
+  strengths: zod.array(
+    zod.object({
+      title: zod.string().max(getPortalIntroductionResponseStrengthsItemTitleMax),
+      evidence: zod.string().max(getPortalIntroductionResponseStrengthsItemEvidenceMax),
+    }),
+  ),
+  achievements: zod.array(
+    zod.object({
+      text: zod.string().max(getPortalIntroductionResponseAchievementsItemTextMax),
+    }),
+  ),
+  careerDirection: zod.string().nullable(),
+  rolePreferences: zod.string().nullable(),
+  availability: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  withdrawnAt: zod.date().nullable(),
+  version: zod.date().nullable(),
+});
+
+/**
+ * Saving any change revokes an existing approval and returns the introduction to draft status.
+ * @summary Save the authenticated candidate's written introduction
+ */
+export const updateCandidateIntroductionBodySummaryMax = 1200;
+
+export const updateCandidateIntroductionBodyStrengthsItemTitleMax = 100;
+
+export const updateCandidateIntroductionBodyStrengthsItemEvidenceMax = 500;
+
+export const updateCandidateIntroductionBodyStrengthsMax = 8;
+
+export const updateCandidateIntroductionBodyAchievementsItemTextMax = 500;
+
+export const updateCandidateIntroductionBodyAchievementsMax = 8;
+
+export const updateCandidateIntroductionBodyCareerDirectionMax = 500;
+
+export const updateCandidateIntroductionBodyRolePreferencesMax = 500;
+
+export const updateCandidateIntroductionBodyAvailabilityMax = 250;
+
+export const UpdateCandidateIntroductionBody = zod.object({
+  summary: zod.string().max(updateCandidateIntroductionBodySummaryMax).optional(),
+  strengths: zod
+    .array(
+      zod.object({
+        title: zod.string().max(updateCandidateIntroductionBodyStrengthsItemTitleMax),
+        evidence: zod.string().max(updateCandidateIntroductionBodyStrengthsItemEvidenceMax),
+      }),
+    )
+    .max(updateCandidateIntroductionBodyStrengthsMax)
+    .optional(),
+  achievements: zod
+    .array(
+      zod.object({
+        text: zod.string().max(updateCandidateIntroductionBodyAchievementsItemTextMax),
+      }),
+    )
+    .max(updateCandidateIntroductionBodyAchievementsMax)
+    .optional(),
+  careerDirection: zod.string().max(updateCandidateIntroductionBodyCareerDirectionMax).nullish(),
+  rolePreferences: zod.string().max(updateCandidateIntroductionBodyRolePreferencesMax).nullish(),
+  availability: zod.string().max(updateCandidateIntroductionBodyAvailabilityMax).nullish(),
+});
+
+export const updateCandidateIntroductionResponseStrengthsItemTitleMax = 100;
+
+export const updateCandidateIntroductionResponseStrengthsItemEvidenceMax = 500;
+
+export const updateCandidateIntroductionResponseAchievementsItemTextMax = 500;
+
+export const UpdateCandidateIntroductionResponse = zod.object({
+  exists: zod.boolean(),
+  candidateId: zod.string(),
+  status: zod.enum(["draft", "approved", "withdrawn"]),
+  summary: zod.string(),
+  strengths: zod.array(
+    zod.object({
+      title: zod.string().max(updateCandidateIntroductionResponseStrengthsItemTitleMax),
+      evidence: zod.string().max(updateCandidateIntroductionResponseStrengthsItemEvidenceMax),
+    }),
+  ),
+  achievements: zod.array(
+    zod.object({
+      text: zod.string().max(updateCandidateIntroductionResponseAchievementsItemTextMax),
+    }),
+  ),
+  careerDirection: zod.string().nullable(),
+  rolePreferences: zod.string().nullable(),
+  availability: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  withdrawnAt: zod.date().nullable(),
+  version: zod.date().nullable(),
+});
+
+/**
+ * @summary Approve an introduction for authorised employer sharing
+ */
+export const ApproveCandidateIntroductionBody = zod.object({
+  version: zod.date(),
+});
+
+export const approveCandidateIntroductionResponseStrengthsItemTitleMax = 100;
+
+export const approveCandidateIntroductionResponseStrengthsItemEvidenceMax = 500;
+
+export const approveCandidateIntroductionResponseAchievementsItemTextMax = 500;
+
+export const ApproveCandidateIntroductionResponse = zod.object({
+  exists: zod.boolean(),
+  candidateId: zod.string(),
+  status: zod.enum(["draft", "approved", "withdrawn"]),
+  summary: zod.string(),
+  strengths: zod.array(
+    zod.object({
+      title: zod.string().max(approveCandidateIntroductionResponseStrengthsItemTitleMax),
+      evidence: zod.string().max(approveCandidateIntroductionResponseStrengthsItemEvidenceMax),
+    }),
+  ),
+  achievements: zod.array(
+    zod.object({
+      text: zod.string().max(approveCandidateIntroductionResponseAchievementsItemTextMax),
+    }),
+  ),
+  careerDirection: zod.string().nullable(),
+  rolePreferences: zod.string().nullable(),
+  availability: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  withdrawnAt: zod.date().nullable(),
+  version: zod.date().nullable(),
+});
+
+/**
+ * @summary Withdraw employer sharing for the authenticated candidate's introduction
+ */
+export const withdrawCandidateIntroductionResponseStrengthsItemTitleMax = 100;
+
+export const withdrawCandidateIntroductionResponseStrengthsItemEvidenceMax = 500;
+
+export const withdrawCandidateIntroductionResponseAchievementsItemTextMax = 500;
+
+export const WithdrawCandidateIntroductionResponse = zod.object({
+  exists: zod.boolean(),
+  candidateId: zod.string(),
+  status: zod.enum(["draft", "approved", "withdrawn"]),
+  summary: zod.string(),
+  strengths: zod.array(
+    zod.object({
+      title: zod.string().max(withdrawCandidateIntroductionResponseStrengthsItemTitleMax),
+      evidence: zod.string().max(withdrawCandidateIntroductionResponseStrengthsItemEvidenceMax),
+    }),
+  ),
+  achievements: zod.array(
+    zod.object({
+      text: zod.string().max(withdrawCandidateIntroductionResponseAchievementsItemTextMax),
+    }),
+  ),
+  careerDirection: zod.string().nullable(),
+  rolePreferences: zod.string().nullable(),
+  availability: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  withdrawnAt: zod.date().nullable(),
+  version: zod.date().nullable(),
 });
 
 /**
@@ -695,9 +888,7 @@ export const ListApplicationsResponseItem = zod.object({
       department: zod.string().nullish(),
       location: zod.string().nullish(),
       workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-      employmentType: zod
-        .enum(["full_time", "part_time", "contract", "internship"])
-        .nullish(),
+      employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
       salaryMin: zod.number().nullish(),
       salaryMax: zod.number().nullish(),
       description: zod.string(),
@@ -743,12 +934,7 @@ export const ListApplicationsResponseItem = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -804,9 +990,7 @@ export const GetApplicationResponse = zod.object({
       department: zod.string().nullish(),
       location: zod.string().nullish(),
       workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-      employmentType: zod
-        .enum(["full_time", "part_time", "contract", "internship"])
-        .nullish(),
+      employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
       salaryMin: zod.number().nullish(),
       salaryMax: zod.number().nullish(),
       description: zod.string(),
@@ -852,12 +1036,7 @@ export const GetApplicationResponse = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -907,9 +1086,7 @@ export const UpdateApplicationResponse = zod.object({
       department: zod.string().nullish(),
       location: zod.string().nullish(),
       workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-      employmentType: zod
-        .enum(["full_time", "part_time", "contract", "internship"])
-        .nullish(),
+      employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
       salaryMin: zod.number().nullish(),
       salaryMax: zod.number().nullish(),
       description: zod.string(),
@@ -955,12 +1132,7 @@ export const UpdateApplicationResponse = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1130,14 +1302,7 @@ export const GeneratePrepPlanResponse = zod.object({
   id: zod.string(),
   candidateId: zod.string(),
   jobId: zod.string(),
-  mode: zod.enum([
-    "quick",
-    "full",
-    "mock_interview",
-    "behavioral",
-    "technical",
-    "competency",
-  ]),
+  mode: zod.enum(["quick", "full", "mock_interview", "behavioral", "technical", "competency"]),
   likelyQuestions: zod.array(zod.string()),
   keySkillsToFocus: zod.array(zod.string()),
   preparationTips: zod.array(zod.string()),
@@ -1170,14 +1335,7 @@ export const ListPrepSessionsResponse = zod.array(ListPrepSessionsResponseItem);
  */
 export const StartPrepSessionBody = zod.object({
   jobId: zod.string(),
-  mode: zod.enum([
-    "quick",
-    "full",
-    "mock_interview",
-    "behavioral",
-    "technical",
-    "competency",
-  ]),
+  mode: zod.enum(["quick", "full", "mock_interview", "behavioral", "technical", "competency"]),
 });
 
 /**
@@ -1216,13 +1374,7 @@ export const ListSchedulesResponseItem = zod.object({
   scheduledAt: zod.string(),
   durationMinutes: zod.number(),
   type: zod.string(),
-  status: zod.enum([
-    "pending",
-    "confirmed",
-    "rescheduled",
-    "cancelled",
-    "completed",
-  ]),
+  status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -1260,13 +1412,7 @@ export const UpdateScheduleResponse = zod.object({
   scheduledAt: zod.string(),
   durationMinutes: zod.number(),
   type: zod.string(),
-  status: zod.enum([
-    "pending",
-    "confirmed",
-    "rescheduled",
-    "cancelled",
-    "completed",
-  ]),
+  status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -1356,12 +1502,7 @@ export const MatchCandidateToIcpResponse = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1406,12 +1547,7 @@ export const RediscoverCandidatesResponseItem = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1422,9 +1558,7 @@ export const RediscoverCandidatesResponseItem = zod.object({
     .nullish(),
   createdAt: zod.string(),
 });
-export const RediscoverCandidatesResponse = zod.array(
-  RediscoverCandidatesResponseItem,
-);
+export const RediscoverCandidatesResponse = zod.array(RediscoverCandidatesResponseItem);
 
 /**
  * @summary Screen a resume against ICP
@@ -1497,15 +1631,7 @@ export const ListSourcedCandidatesQueryParams = zod.object({
 export const ListSourcedCandidatesResponseItem = zod.object({
   id: zod.string(),
   tenantId: zod.string(),
-  source: zod.enum([
-    "pdl",
-    "serp",
-    "github",
-    "linkedin",
-    "internal",
-    "manual",
-    "referral",
-  ]),
+  source: zod.enum(["pdl", "serp", "github", "linkedin", "internal", "manual", "referral"]),
   rawData: zod.record(zod.string(), zod.unknown()),
   normalizedProfile: zod
     .object({
@@ -1524,12 +1650,7 @@ export const ListSourcedCandidatesResponseItem = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1542,9 +1663,7 @@ export const ListSourcedCandidatesResponseItem = zod.object({
   mergedWithCandidateId: zod.string().nullish(),
   createdAt: zod.string(),
 });
-export const ListSourcedCandidatesResponse = zod.array(
-  ListSourcedCandidatesResponseItem,
-);
+export const ListSourcedCandidatesResponse = zod.array(ListSourcedCandidatesResponseItem);
 
 /**
  * @summary Ingest a public profile
@@ -1558,15 +1677,7 @@ export const IngestProfileBody = zod.object({
 export const IngestProfileResponse = zod.object({
   id: zod.string(),
   tenantId: zod.string(),
-  source: zod.enum([
-    "pdl",
-    "serp",
-    "github",
-    "linkedin",
-    "internal",
-    "manual",
-    "referral",
-  ]),
+  source: zod.enum(["pdl", "serp", "github", "linkedin", "internal", "manual", "referral"]),
   rawData: zod.record(zod.string(), zod.unknown()),
   normalizedProfile: zod
     .object({
@@ -1585,12 +1696,7 @@ export const IngestProfileResponse = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1637,9 +1743,7 @@ export const ListOutreachCampaignsResponseItem = zod.object({
   replyRate: zod.number(),
   createdAt: zod.string(),
 });
-export const ListOutreachCampaignsResponse = zod.array(
-  ListOutreachCampaignsResponseItem,
-);
+export const ListOutreachCampaignsResponse = zod.array(ListOutreachCampaignsResponseItem);
 
 /**
  * @summary Create outreach campaign
@@ -1726,13 +1830,7 @@ export const ToggleAutopilotResponse = zod.object({
  */
 export const GetRecruiterInboxResponseItem = zod.object({
   id: zod.string(),
-  type: zod.enum([
-    "positive_reply",
-    "question",
-    "negative_reply",
-    "unsubscribe",
-    "needs_followup",
-  ]),
+  type: zod.enum(["positive_reply", "question", "negative_reply", "unsubscribe", "needs_followup"]),
   candidateId: zod.string(),
   campaignId: zod.string(),
   subject: zod.string(),
@@ -1757,12 +1855,7 @@ export const GetRecruiterInboxResponseItem = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1772,9 +1865,7 @@ export const GetRecruiterInboxResponseItem = zod.object({
     })
     .nullish(),
 });
-export const GetRecruiterInboxResponse = zod.array(
-  GetRecruiterInboxResponseItem,
-);
+export const GetRecruiterInboxResponse = zod.array(GetRecruiterInboxResponseItem);
 
 /**
  * @summary Send an email reply to a candidate from a recruiter inbox item
@@ -1788,7 +1879,7 @@ export const ReplyToInboxItemBody = zod.object({
     .string()
     .optional()
     .describe('Optional subject override; defaults to \"Re: <inbox subject>\"'),
-  body: zod.string().describe("Plain-text body of the reply email"),
+  body: zod.string(),
 });
 
 export const ReplyToInboxItemResponse = zod.object({
@@ -1823,9 +1914,7 @@ export const ListCommunicationEventsResponseItem = zod.object({
   sentAt: zod.string().nullish(),
   createdAt: zod.string(),
 });
-export const ListCommunicationEventsResponse = zod.array(
-  ListCommunicationEventsResponseItem,
-);
+export const ListCommunicationEventsResponse = zod.array(ListCommunicationEventsResponseItem);
 
 /**
  * @summary Send a communication
@@ -1886,12 +1975,7 @@ export const ListGhostingRisksResponseItem = zod.object({
       githubUrl: zod.string().nullish(),
       skills: zod.array(zod.string()),
       source: zod.string().nullish(),
-      verificationStatus: zod.enum([
-        "unverified",
-        "pending",
-        "verified",
-        "flagged",
-      ]),
+      verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
       resumeUrl: zod.string().nullish(),
       talentMatchScore: zod.number().nullish(),
       resumeScreenScore: zod.number().nullish(),
@@ -1901,9 +1985,1459 @@ export const ListGhostingRisksResponseItem = zod.object({
     })
     .nullish(),
 });
-export const ListGhostingRisksResponse = zod.array(
-  ListGhostingRisksResponseItem,
-);
+export const ListGhostingRisksResponse = zod.array(ListGhostingRisksResponseItem);
+
+/**
+ * Candidate-private pilot data. Availability is read-only and disabled candidates receive a safe unavailable response without learning or career-profile values.
+ * @summary Get the authenticated candidate's private graduate learning plan
+ */
+export const getLearningGrowthResponseInterestsOneCareerAreasMax = 8;
+
+export const getLearningGrowthResponseInterestsOneOtherInterestMax = 250;
+
+export const getLearningGrowthResponseInterestsOneImmediateRolesItemMax = 100;
+
+export const getLearningGrowthResponseInterestsOneImmediateRolesMin = 0;
+export const getLearningGrowthResponseInterestsOneImmediateRolesMax = 10;
+
+export const getLearningGrowthResponseInterestsOneDisciplineMax = 200;
+
+export const getLearningGrowthResponseInterestsOneGraduationYearMin = 1950;
+export const getLearningGrowthResponseInterestsOneGraduationYearMax = 2100;
+
+export const getLearningGrowthResponseInterestsOneLearningPrioritiesMax = 5;
+
+export const getLearningGrowthResponseInterestsOnePreferredLanguageMax = 100;
+
+export const getLearningGrowthResponseInterestsOneAccessibilityPreferencesMax = 500;
+
+export const GetLearningGrowthResponse = zod.object({
+  available: zod.boolean(),
+  stage: zod.enum(["unavailable", "interests", "baseline", "goals", "ready"]),
+  revision: zod.number(),
+  baseline: zod.object({
+    completed: zod.boolean(),
+    completedAt: zod.date().nullable(),
+  }),
+  interests: zod.union([
+    zod.object({
+      careerAreas: zod
+        .array(
+          zod.enum([
+            "software_technology",
+            "data_analytics",
+            "finance_accounting",
+            "sales_marketing",
+            "customer_service",
+            "operations",
+            "other",
+            "exploring",
+          ]),
+        )
+        .min(1)
+        .max(getLearningGrowthResponseInterestsOneCareerAreasMax),
+      otherInterest: zod
+        .string()
+        .max(getLearningGrowthResponseInterestsOneOtherInterestMax)
+        .nullable(),
+      immediateRoles: zod
+        .array(zod.string().min(1).max(getLearningGrowthResponseInterestsOneImmediateRolesItemMax))
+        .min(getLearningGrowthResponseInterestsOneImmediateRolesMin)
+        .max(getLearningGrowthResponseInterestsOneImmediateRolesMax),
+      educationStage: zod.enum(["studying", "graduating", "graduated", "working", "exploring"]),
+      discipline: zod.string().max(getLearningGrowthResponseInterestsOneDisciplineMax).nullable(),
+      graduationYear: zod
+        .number()
+        .min(getLearningGrowthResponseInterestsOneGraduationYearMin)
+        .max(getLearningGrowthResponseInterestsOneGraduationYearMax)
+        .nullable(),
+      learningPriorities: zod
+        .array(
+          zod.enum([
+            "first_job",
+            "career_exploration",
+            "communication",
+            "interviews",
+            "role_skills",
+          ]),
+        )
+        .min(1)
+        .max(getLearningGrowthResponseInterestsOneLearningPrioritiesMax),
+      preferredLanguage: zod
+        .string()
+        .max(getLearningGrowthResponseInterestsOnePreferredLanguageMax)
+        .nullable(),
+      accessibilityPreferences: zod
+        .string()
+        .max(getLearningGrowthResponseInterestsOneAccessibilityPreferencesMax)
+        .nullable()
+        .describe("Optional learning accommodations or preferences; not a medical diagnosis."),
+      startTiming: zod.enum(["now", "within_month", "later", "exploring"]),
+    }),
+    zod.null(),
+  ]),
+  goals: zod.object({
+    immediateGoal: zod.string(),
+    careerGoal3yr: zod.string(),
+    careerGoal5yr: zod.string(),
+    confirmedAt: zod.date().nullable(),
+  }),
+  plan: zod.union([
+    zod.object({
+      summary: zod.string(),
+      startingPointNote: zod.string(),
+      nextSteps: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          kind: zod.enum(["practice", "reflection", "resource"]),
+          href: zod.string().nullable(),
+        }),
+      ),
+      plannedCourses: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          status: zod.enum(["planned"]),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Save the authenticated candidate's private learning interests
+ */
+export const saveLearningGrowthInterestsBodyOneCareerAreasMax = 8;
+
+export const saveLearningGrowthInterestsBodyOneOtherInterestMax = 250;
+
+export const saveLearningGrowthInterestsBodyOneImmediateRolesItemMax = 100;
+
+export const saveLearningGrowthInterestsBodyOneImmediateRolesMin = 0;
+export const saveLearningGrowthInterestsBodyOneImmediateRolesMax = 10;
+
+export const saveLearningGrowthInterestsBodyOneDisciplineMax = 200;
+
+export const saveLearningGrowthInterestsBodyOneGraduationYearMin = 1950;
+export const saveLearningGrowthInterestsBodyOneGraduationYearMax = 2100;
+
+export const saveLearningGrowthInterestsBodyOneLearningPrioritiesMax = 5;
+
+export const saveLearningGrowthInterestsBodyOnePreferredLanguageMax = 100;
+
+export const saveLearningGrowthInterestsBodyOneAccessibilityPreferencesMax = 500;
+
+export const saveLearningGrowthInterestsBodyTwoRevisionMin = 0;
+
+export const SaveLearningGrowthInterestsBody = zod
+  .object({
+    careerAreas: zod
+      .array(
+        zod.enum([
+          "software_technology",
+          "data_analytics",
+          "finance_accounting",
+          "sales_marketing",
+          "customer_service",
+          "operations",
+          "other",
+          "exploring",
+        ]),
+      )
+      .min(1)
+      .max(saveLearningGrowthInterestsBodyOneCareerAreasMax),
+    otherInterest: zod.string().max(saveLearningGrowthInterestsBodyOneOtherInterestMax).nullable(),
+    immediateRoles: zod
+      .array(zod.string().min(1).max(saveLearningGrowthInterestsBodyOneImmediateRolesItemMax))
+      .min(saveLearningGrowthInterestsBodyOneImmediateRolesMin)
+      .max(saveLearningGrowthInterestsBodyOneImmediateRolesMax),
+    educationStage: zod.enum(["studying", "graduating", "graduated", "working", "exploring"]),
+    discipline: zod.string().max(saveLearningGrowthInterestsBodyOneDisciplineMax).nullable(),
+    graduationYear: zod
+      .number()
+      .min(saveLearningGrowthInterestsBodyOneGraduationYearMin)
+      .max(saveLearningGrowthInterestsBodyOneGraduationYearMax)
+      .nullable(),
+    learningPriorities: zod
+      .array(
+        zod.enum(["first_job", "career_exploration", "communication", "interviews", "role_skills"]),
+      )
+      .min(1)
+      .max(saveLearningGrowthInterestsBodyOneLearningPrioritiesMax),
+    preferredLanguage: zod
+      .string()
+      .max(saveLearningGrowthInterestsBodyOnePreferredLanguageMax)
+      .nullable(),
+    accessibilityPreferences: zod
+      .string()
+      .max(saveLearningGrowthInterestsBodyOneAccessibilityPreferencesMax)
+      .nullable()
+      .describe("Optional learning accommodations or preferences; not a medical diagnosis."),
+    startTiming: zod.enum(["now", "within_month", "later", "exploring"]),
+  })
+  .and(
+    zod.object({
+      revision: zod.number().min(saveLearningGrowthInterestsBodyTwoRevisionMin),
+    }),
+  );
+
+export const saveLearningGrowthInterestsResponseInterestsOneCareerAreasMax = 8;
+
+export const saveLearningGrowthInterestsResponseInterestsOneOtherInterestMax = 250;
+
+export const saveLearningGrowthInterestsResponseInterestsOneImmediateRolesItemMax = 100;
+
+export const saveLearningGrowthInterestsResponseInterestsOneImmediateRolesMin = 0;
+export const saveLearningGrowthInterestsResponseInterestsOneImmediateRolesMax = 10;
+
+export const saveLearningGrowthInterestsResponseInterestsOneDisciplineMax = 200;
+
+export const saveLearningGrowthInterestsResponseInterestsOneGraduationYearMin = 1950;
+export const saveLearningGrowthInterestsResponseInterestsOneGraduationYearMax = 2100;
+
+export const saveLearningGrowthInterestsResponseInterestsOneLearningPrioritiesMax = 5;
+
+export const saveLearningGrowthInterestsResponseInterestsOnePreferredLanguageMax = 100;
+
+export const saveLearningGrowthInterestsResponseInterestsOneAccessibilityPreferencesMax = 500;
+
+export const SaveLearningGrowthInterestsResponse = zod.object({
+  available: zod.boolean(),
+  stage: zod.enum(["unavailable", "interests", "baseline", "goals", "ready"]),
+  revision: zod.number(),
+  baseline: zod.object({
+    completed: zod.boolean(),
+    completedAt: zod.date().nullable(),
+  }),
+  interests: zod.union([
+    zod.object({
+      careerAreas: zod
+        .array(
+          zod.enum([
+            "software_technology",
+            "data_analytics",
+            "finance_accounting",
+            "sales_marketing",
+            "customer_service",
+            "operations",
+            "other",
+            "exploring",
+          ]),
+        )
+        .min(1)
+        .max(saveLearningGrowthInterestsResponseInterestsOneCareerAreasMax),
+      otherInterest: zod
+        .string()
+        .max(saveLearningGrowthInterestsResponseInterestsOneOtherInterestMax)
+        .nullable(),
+      immediateRoles: zod
+        .array(
+          zod
+            .string()
+            .min(1)
+            .max(saveLearningGrowthInterestsResponseInterestsOneImmediateRolesItemMax),
+        )
+        .min(saveLearningGrowthInterestsResponseInterestsOneImmediateRolesMin)
+        .max(saveLearningGrowthInterestsResponseInterestsOneImmediateRolesMax),
+      educationStage: zod.enum(["studying", "graduating", "graduated", "working", "exploring"]),
+      discipline: zod
+        .string()
+        .max(saveLearningGrowthInterestsResponseInterestsOneDisciplineMax)
+        .nullable(),
+      graduationYear: zod
+        .number()
+        .min(saveLearningGrowthInterestsResponseInterestsOneGraduationYearMin)
+        .max(saveLearningGrowthInterestsResponseInterestsOneGraduationYearMax)
+        .nullable(),
+      learningPriorities: zod
+        .array(
+          zod.enum([
+            "first_job",
+            "career_exploration",
+            "communication",
+            "interviews",
+            "role_skills",
+          ]),
+        )
+        .min(1)
+        .max(saveLearningGrowthInterestsResponseInterestsOneLearningPrioritiesMax),
+      preferredLanguage: zod
+        .string()
+        .max(saveLearningGrowthInterestsResponseInterestsOnePreferredLanguageMax)
+        .nullable(),
+      accessibilityPreferences: zod
+        .string()
+        .max(saveLearningGrowthInterestsResponseInterestsOneAccessibilityPreferencesMax)
+        .nullable()
+        .describe("Optional learning accommodations or preferences; not a medical diagnosis."),
+      startTiming: zod.enum(["now", "within_month", "later", "exploring"]),
+    }),
+    zod.null(),
+  ]),
+  goals: zod.object({
+    immediateGoal: zod.string(),
+    careerGoal3yr: zod.string(),
+    careerGoal5yr: zod.string(),
+    confirmedAt: zod.date().nullable(),
+  }),
+  plan: zod.union([
+    zod.object({
+      summary: zod.string(),
+      startingPointNote: zod.string(),
+      nextSteps: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          kind: zod.enum(["practice", "reflection", "resource"]),
+          href: zod.string().nullable(),
+        }),
+      ),
+      plannedCourses: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          status: zod.enum(["planned"]),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Confirm private learning goals and update canonical career goals
+ */
+export const confirmLearningGrowthGoalsBodyRevisionMin = 0;
+
+export const confirmLearningGrowthGoalsBodyImmediateGoalMax = 2000;
+
+export const confirmLearningGrowthGoalsBodyCareerGoal3yrMax = 2000;
+
+export const confirmLearningGrowthGoalsBodyCareerGoal5yrMax = 2000;
+
+export const ConfirmLearningGrowthGoalsBody = zod.object({
+  revision: zod.number().min(confirmLearningGrowthGoalsBodyRevisionMin),
+  immediateGoal: zod.string().min(1).max(confirmLearningGrowthGoalsBodyImmediateGoalMax),
+  careerGoal3yr: zod.string().min(1).max(confirmLearningGrowthGoalsBodyCareerGoal3yrMax),
+  careerGoal5yr: zod.string().min(1).max(confirmLearningGrowthGoalsBodyCareerGoal5yrMax),
+});
+
+export const confirmLearningGrowthGoalsResponseInterestsOneCareerAreasMax = 8;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneOtherInterestMax = 250;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesItemMax = 100;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesMin = 0;
+export const confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesMax = 10;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneDisciplineMax = 200;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneGraduationYearMin = 1950;
+export const confirmLearningGrowthGoalsResponseInterestsOneGraduationYearMax = 2100;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneLearningPrioritiesMax = 5;
+
+export const confirmLearningGrowthGoalsResponseInterestsOnePreferredLanguageMax = 100;
+
+export const confirmLearningGrowthGoalsResponseInterestsOneAccessibilityPreferencesMax = 500;
+
+export const ConfirmLearningGrowthGoalsResponse = zod.object({
+  available: zod.boolean(),
+  stage: zod.enum(["unavailable", "interests", "baseline", "goals", "ready"]),
+  revision: zod.number(),
+  baseline: zod.object({
+    completed: zod.boolean(),
+    completedAt: zod.date().nullable(),
+  }),
+  interests: zod.union([
+    zod.object({
+      careerAreas: zod
+        .array(
+          zod.enum([
+            "software_technology",
+            "data_analytics",
+            "finance_accounting",
+            "sales_marketing",
+            "customer_service",
+            "operations",
+            "other",
+            "exploring",
+          ]),
+        )
+        .min(1)
+        .max(confirmLearningGrowthGoalsResponseInterestsOneCareerAreasMax),
+      otherInterest: zod
+        .string()
+        .max(confirmLearningGrowthGoalsResponseInterestsOneOtherInterestMax)
+        .nullable(),
+      immediateRoles: zod
+        .array(
+          zod
+            .string()
+            .min(1)
+            .max(confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesItemMax),
+        )
+        .min(confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesMin)
+        .max(confirmLearningGrowthGoalsResponseInterestsOneImmediateRolesMax),
+      educationStage: zod.enum(["studying", "graduating", "graduated", "working", "exploring"]),
+      discipline: zod
+        .string()
+        .max(confirmLearningGrowthGoalsResponseInterestsOneDisciplineMax)
+        .nullable(),
+      graduationYear: zod
+        .number()
+        .min(confirmLearningGrowthGoalsResponseInterestsOneGraduationYearMin)
+        .max(confirmLearningGrowthGoalsResponseInterestsOneGraduationYearMax)
+        .nullable(),
+      learningPriorities: zod
+        .array(
+          zod.enum([
+            "first_job",
+            "career_exploration",
+            "communication",
+            "interviews",
+            "role_skills",
+          ]),
+        )
+        .min(1)
+        .max(confirmLearningGrowthGoalsResponseInterestsOneLearningPrioritiesMax),
+      preferredLanguage: zod
+        .string()
+        .max(confirmLearningGrowthGoalsResponseInterestsOnePreferredLanguageMax)
+        .nullable(),
+      accessibilityPreferences: zod
+        .string()
+        .max(confirmLearningGrowthGoalsResponseInterestsOneAccessibilityPreferencesMax)
+        .nullable()
+        .describe("Optional learning accommodations or preferences; not a medical diagnosis."),
+      startTiming: zod.enum(["now", "within_month", "later", "exploring"]),
+    }),
+    zod.null(),
+  ]),
+  goals: zod.object({
+    immediateGoal: zod.string(),
+    careerGoal3yr: zod.string(),
+    careerGoal5yr: zod.string(),
+    confirmedAt: zod.date().nullable(),
+  }),
+  plan: zod.union([
+    zod.object({
+      summary: zod.string(),
+      startingPointNote: zod.string(),
+      nextSteps: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          kind: zod.enum(["practice", "reflection", "resource"]),
+          href: zod.string().nullable(),
+        }),
+      ),
+      plannedCourses: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          description: zod.string(),
+          status: zod.enum(["planned"]),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary List courses available to the authenticated candidate
+ */
+export const listLearningCoursesResponseCoursesItemEnrollmentOneCompletedLessonsMin = 0;
+
+export const listLearningCoursesResponseCoursesItemEnrollmentOneTotalLessonsMin = 0;
+
+export const ListLearningCoursesResponse = zod.object({
+  available: zod.boolean(),
+  unlocked: zod.boolean(),
+  lockReason: zod.string().nullable(),
+  courses: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      description: zod.string(),
+      version: zod.number(),
+      estimatedMinutes: zod.number(),
+      lessonCount: zod.number(),
+      enrollment: zod.union([
+        zod.object({
+          id: zod.string(),
+          path: zod.enum(["voice", "chat_email"]),
+          status: zod.enum(["in_progress", "completed"]),
+          enrolledAt: zod.date(),
+          completedAt: zod.date().nullable(),
+          completedLessons: zod
+            .number()
+            .min(listLearningCoursesResponseCoursesItemEnrollmentOneCompletedLessonsMin),
+          totalLessons: zod
+            .number()
+            .min(listLearningCoursesResponseCoursesItemEnrollmentOneTotalLessonsMin),
+          resumeLessonId: zod.string().nullable(),
+        }),
+        zod.null(),
+      ]),
+    }),
+  ),
+});
+
+/**
+ * @summary Get private course content and candidate progress
+ */
+export const GetLearningCourseParams = zod.object({
+  courseId: zod.coerce.string(),
+});
+
+export const getLearningCourseResponseCourseEnrollmentOneCompletedLessonsMin = 0;
+
+export const getLearningCourseResponseCourseEnrollmentOneTotalLessonsMin = 0;
+
+export const getLearningCourseResponseLessonsItemProgressRevisionMin = 0;
+
+export const getLearningCourseResponseLessonsItemProgressAttemptsMin = 0;
+
+export const GetLearningCourseResponse = zod.object({
+  course: zod.object({
+    id: zod.string(),
+    title: zod.string(),
+    description: zod.string(),
+    version: zod.number(),
+    estimatedMinutes: zod.number(),
+    lessonCount: zod.number(),
+    enrollment: zod.union([
+      zod.object({
+        id: zod.string(),
+        path: zod.enum(["voice", "chat_email"]),
+        status: zod.enum(["in_progress", "completed"]),
+        enrolledAt: zod.date(),
+        completedAt: zod.date().nullable(),
+        completedLessons: zod
+          .number()
+          .min(getLearningCourseResponseCourseEnrollmentOneCompletedLessonsMin),
+        totalLessons: zod.number().min(getLearningCourseResponseCourseEnrollmentOneTotalLessonsMin),
+        resumeLessonId: zod.string().nullable(),
+      }),
+      zod.null(),
+    ]),
+  }),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      track: zod.enum(["shared", "voice", "chat_email"]),
+      estimatedMinutes: zod.number(),
+      objectives: zod.array(zod.string()),
+      sections: zod.array(
+        zod.object({
+          heading: zod.string(),
+          body: zod.string(),
+        }),
+      ),
+      example: zod.object({
+        scenario: zod.string(),
+        response: zod.string(),
+        whyItWorks: zod.string(),
+      }),
+      exercises: zod.array(
+        zod.object({
+          id: zod.string(),
+          type: zod.enum(["choice", "reflection"]),
+          prompt: zod.string(),
+          options: zod.array(
+            zod.object({
+              id: zod.string(),
+              label: zod.string(),
+            }),
+          ),
+          checklist: zod.array(zod.string()),
+        }),
+      ),
+      progress: zod.object({
+        revision: zod.number().min(getLearningCourseResponseLessonsItemProgressRevisionMin),
+        status: zod.enum(["not_started", "draft", "completed"]),
+        answers: zod.record(zod.string(), zod.string()),
+        attempts: zod.number().min(getLearningCourseResponseLessonsItemProgressAttemptsMin),
+        completedAt: zod.date().nullable(),
+        feedback: zod.array(
+          zod.object({
+            exerciseId: zod.string(),
+            message: zod.string(),
+            correct: zod.boolean().nullable(),
+            modelAnswer: zod.string().nullable(),
+          }),
+        ),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Enrol the authenticated candidate in a course
+ */
+export const EnrollLearningCourseParams = zod.object({
+  courseId: zod.coerce.string(),
+});
+
+export const EnrollLearningCourseBody = zod.object({
+  path: zod.enum(["voice", "chat_email"]),
+});
+
+export const enrollLearningCourseResponseCourseEnrollmentOneCompletedLessonsMin = 0;
+
+export const enrollLearningCourseResponseCourseEnrollmentOneTotalLessonsMin = 0;
+
+export const enrollLearningCourseResponseLessonsItemProgressRevisionMin = 0;
+
+export const enrollLearningCourseResponseLessonsItemProgressAttemptsMin = 0;
+
+export const EnrollLearningCourseResponse = zod.object({
+  course: zod.object({
+    id: zod.string(),
+    title: zod.string(),
+    description: zod.string(),
+    version: zod.number(),
+    estimatedMinutes: zod.number(),
+    lessonCount: zod.number(),
+    enrollment: zod.union([
+      zod.object({
+        id: zod.string(),
+        path: zod.enum(["voice", "chat_email"]),
+        status: zod.enum(["in_progress", "completed"]),
+        enrolledAt: zod.date(),
+        completedAt: zod.date().nullable(),
+        completedLessons: zod
+          .number()
+          .min(enrollLearningCourseResponseCourseEnrollmentOneCompletedLessonsMin),
+        totalLessons: zod
+          .number()
+          .min(enrollLearningCourseResponseCourseEnrollmentOneTotalLessonsMin),
+        resumeLessonId: zod.string().nullable(),
+      }),
+      zod.null(),
+    ]),
+  }),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      track: zod.enum(["shared", "voice", "chat_email"]),
+      estimatedMinutes: zod.number(),
+      objectives: zod.array(zod.string()),
+      sections: zod.array(
+        zod.object({
+          heading: zod.string(),
+          body: zod.string(),
+        }),
+      ),
+      example: zod.object({
+        scenario: zod.string(),
+        response: zod.string(),
+        whyItWorks: zod.string(),
+      }),
+      exercises: zod.array(
+        zod.object({
+          id: zod.string(),
+          type: zod.enum(["choice", "reflection"]),
+          prompt: zod.string(),
+          options: zod.array(
+            zod.object({
+              id: zod.string(),
+              label: zod.string(),
+            }),
+          ),
+          checklist: zod.array(zod.string()),
+        }),
+      ),
+      progress: zod.object({
+        revision: zod.number().min(enrollLearningCourseResponseLessonsItemProgressRevisionMin),
+        status: zod.enum(["not_started", "draft", "completed"]),
+        answers: zod.record(zod.string(), zod.string()),
+        attempts: zod.number().min(enrollLearningCourseResponseLessonsItemProgressAttemptsMin),
+        completedAt: zod.date().nullable(),
+        feedback: zod.array(
+          zod.object({
+            exerciseId: zod.string(),
+            message: zod.string(),
+            correct: zod.boolean().nullable(),
+            modelAnswer: zod.string().nullable(),
+          }),
+        ),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Save or submit private lesson practice
+ */
+export const SaveLearningLessonParams = zod.object({
+  courseId: zod.coerce.string(),
+  lessonId: zod.coerce.string(),
+});
+
+export const saveLearningLessonBodyRevisionMin = 0;
+
+export const saveLearningLessonBodyAnswersMaxOne = 4000;
+
+export const SaveLearningLessonBody = zod.object({
+  revision: zod.number().min(saveLearningLessonBodyRevisionMin),
+  answers: zod.record(zod.string(), zod.string().max(saveLearningLessonBodyAnswersMaxOne)),
+  action: zod.enum(["save_draft", "submit"]),
+});
+
+export const saveLearningLessonResponseCourseEnrollmentOneCompletedLessonsMin = 0;
+
+export const saveLearningLessonResponseCourseEnrollmentOneTotalLessonsMin = 0;
+
+export const saveLearningLessonResponseLessonsItemProgressRevisionMin = 0;
+
+export const saveLearningLessonResponseLessonsItemProgressAttemptsMin = 0;
+
+export const SaveLearningLessonResponse = zod.object({
+  course: zod.object({
+    id: zod.string(),
+    title: zod.string(),
+    description: zod.string(),
+    version: zod.number(),
+    estimatedMinutes: zod.number(),
+    lessonCount: zod.number(),
+    enrollment: zod.union([
+      zod.object({
+        id: zod.string(),
+        path: zod.enum(["voice", "chat_email"]),
+        status: zod.enum(["in_progress", "completed"]),
+        enrolledAt: zod.date(),
+        completedAt: zod.date().nullable(),
+        completedLessons: zod
+          .number()
+          .min(saveLearningLessonResponseCourseEnrollmentOneCompletedLessonsMin),
+        totalLessons: zod
+          .number()
+          .min(saveLearningLessonResponseCourseEnrollmentOneTotalLessonsMin),
+        resumeLessonId: zod.string().nullable(),
+      }),
+      zod.null(),
+    ]),
+  }),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      track: zod.enum(["shared", "voice", "chat_email"]),
+      estimatedMinutes: zod.number(),
+      objectives: zod.array(zod.string()),
+      sections: zod.array(
+        zod.object({
+          heading: zod.string(),
+          body: zod.string(),
+        }),
+      ),
+      example: zod.object({
+        scenario: zod.string(),
+        response: zod.string(),
+        whyItWorks: zod.string(),
+      }),
+      exercises: zod.array(
+        zod.object({
+          id: zod.string(),
+          type: zod.enum(["choice", "reflection"]),
+          prompt: zod.string(),
+          options: zod.array(
+            zod.object({
+              id: zod.string(),
+              label: zod.string(),
+            }),
+          ),
+          checklist: zod.array(zod.string()),
+        }),
+      ),
+      progress: zod.object({
+        revision: zod.number().min(saveLearningLessonResponseLessonsItemProgressRevisionMin),
+        status: zod.enum(["not_started", "draft", "completed"]),
+        answers: zod.record(zod.string(), zod.string()),
+        attempts: zod.number().min(saveLearningLessonResponseLessonsItemProgressAttemptsMin),
+        completedAt: zod.date().nullable(),
+        feedback: zod.array(
+          zod.object({
+            exerciseId: zod.string(),
+            message: zod.string(),
+            correct: zod.boolean().nullable(),
+            modelAnswer: zod.string().nullable(),
+          }),
+        ),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary List private developmental reassessments
+ */
+export const ListLearningAssessmentsResponse = zod.object({
+  available: zod.boolean(),
+  unlockedCourses: zod.array(zod.string()),
+  assessments: zod.array(
+    zod.object({
+      id: zod.string(),
+      courseId: zod.string(),
+      title: zod.string(),
+      path: zod.enum(["voice", "chat_email"]),
+      status: zod.enum(["draft", "completed"]),
+      taskSetVersion: zod.number(),
+      rubricVersion: zod.string(),
+      startedAt: zod.date(),
+      completedAt: zod.date().nullable(),
+      completedTasks: zod.number(),
+      totalTasks: zod.number(),
+      resumeTaskKey: zod.string().nullable(),
+    }),
+  ),
+});
+
+/**
+ * @summary Start or resume a private developmental reassessment
+ */
+
+export const StartLearningAssessmentBody = zod.object({
+  courseId: zod.string().min(1),
+});
+
+export const StartLearningAssessmentResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    title: zod.string(),
+    path: zod.enum(["voice", "chat_email"]),
+    status: zod.enum(["draft", "completed"]),
+    taskSetVersion: zod.number(),
+    rubricVersion: zod.string(),
+    startedAt: zod.date(),
+    completedAt: zod.date().nullable(),
+    completedTasks: zod.number(),
+    totalTasks: zod.number(),
+    resumeTaskKey: zod.string().nullable(),
+  }),
+  tasks: zod.array(
+    zod.object({
+      key: zod.string(),
+      title: zod.string(),
+      instructions: zod.string(),
+      scenario: zod.string(),
+      responseMode: zod.enum(["spoken_or_typed", "typed"]),
+      minimumNonSpaceCharacters: zod.number(),
+      coveredDimensions: zod.array(zod.string()),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["not_started", "draft", "submitted"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Get a private developmental reassessment
+ */
+export const GetLearningAssessmentParams = zod.object({
+  assessmentId: zod.coerce.string(),
+});
+
+export const GetLearningAssessmentResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    title: zod.string(),
+    path: zod.enum(["voice", "chat_email"]),
+    status: zod.enum(["draft", "completed"]),
+    taskSetVersion: zod.number(),
+    rubricVersion: zod.string(),
+    startedAt: zod.date(),
+    completedAt: zod.date().nullable(),
+    completedTasks: zod.number(),
+    totalTasks: zod.number(),
+    resumeTaskKey: zod.string().nullable(),
+  }),
+  tasks: zod.array(
+    zod.object({
+      key: zod.string(),
+      title: zod.string(),
+      instructions: zod.string(),
+      scenario: zod.string(),
+      responseMode: zod.enum(["spoken_or_typed", "typed"]),
+      minimumNonSpaceCharacters: zod.number(),
+      coveredDimensions: zod.array(zod.string()),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["not_started", "draft", "submitted"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Save or submit one private developmental task
+ */
+export const SaveLearningAssessmentTaskParams = zod.object({
+  assessmentId: zod.coerce.string(),
+  taskKey: zod.coerce.string(),
+});
+
+export const saveLearningAssessmentTaskBodyRevisionMin = 0;
+
+export const saveLearningAssessmentTaskBodyResponseMax = 6000;
+
+export const SaveLearningAssessmentTaskBody = zod.object({
+  revision: zod.number().min(saveLearningAssessmentTaskBodyRevisionMin),
+  response: zod.string().max(saveLearningAssessmentTaskBodyResponseMax),
+  action: zod.enum(["save_draft", "submit"]),
+});
+
+export const SaveLearningAssessmentTaskResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    title: zod.string(),
+    path: zod.enum(["voice", "chat_email"]),
+    status: zod.enum(["draft", "completed"]),
+    taskSetVersion: zod.number(),
+    rubricVersion: zod.string(),
+    startedAt: zod.date(),
+    completedAt: zod.date().nullable(),
+    completedTasks: zod.number(),
+    totalTasks: zod.number(),
+    resumeTaskKey: zod.string().nullable(),
+  }),
+  tasks: zod.array(
+    zod.object({
+      key: zod.string(),
+      title: zod.string(),
+      instructions: zod.string(),
+      scenario: zod.string(),
+      responseMode: zod.enum(["spoken_or_typed", "typed"]),
+      minimumNonSpaceCharacters: zod.number(),
+      coveredDimensions: zod.array(zod.string()),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["not_started", "draft", "submitted"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Get a completed private developmental report
+ */
+export const GetLearningAssessmentReportParams = zod.object({
+  assessmentId: zod.coerce.string(),
+});
+
+export const GetLearningAssessmentReportResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    title: zod.string(),
+    path: zod.enum(["voice", "chat_email"]),
+    status: zod.enum(["draft", "completed"]),
+    taskSetVersion: zod.number(),
+    rubricVersion: zod.string(),
+    startedAt: zod.date(),
+    completedAt: zod.date().nullable(),
+    completedTasks: zod.number(),
+    totalTasks: zod.number(),
+    resumeTaskKey: zod.string().nullable(),
+  }),
+  versions: zod.object({
+    taskSetVersion: zod.number(),
+    rubricVersion: zod.string(),
+  }),
+  comparison: zod.object({
+    available: zod.boolean(),
+    reason: zod.string().nullable(),
+  }),
+  overallSummary: zod.string(),
+  dimensions: zod.array(
+    zod.object({
+      dimension: zod.string(),
+      label: zod.string(),
+      level: zod.enum(["emerging", "developing", "consistent", "not_observed"]),
+      levelLabel: zod.string(),
+      evidence: zod.array(zod.string()),
+      observed: zod.number().optional(),
+      possible: zod.number().optional(),
+    }),
+  ),
+  recommendations: zod.array(
+    zod.object({
+      lessonId: zod.string(),
+      courseId: zod.string(),
+      lessonTitle: zod.string(),
+      reason: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get private voice progress interview cycles
+ */
+export const GetLearningVoiceProgressHomeResponse = zod.object({
+  available: zod.boolean(),
+  eligibleCourses: zod.array(zod.string()),
+  cycles: zod.array(
+    zod.object({
+      id: zod.string(),
+      courseId: zod.string(),
+      state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+      form: zod.enum(["A", "B"]),
+      comparisonFamilyVersion: zod.string(),
+      rubricVersion: zod.string(),
+      evaluatorVersion: zod.string(),
+      baselineCompletedAt: zod.date().nullable(),
+      progressStartedAt: zod.date().nullable(),
+      completedAt: zod.date().nullable(),
+      completedTurns: zod.number(),
+      totalTurns: zod.number(),
+      reason: zod.string(),
+      action: zod.string(),
+      reviewedCount: zod.number(),
+      totalReviewLessons: zod.number(),
+      reviewAttemptId: zod.string().nullable(),
+    }),
+  ),
+});
+
+/**
+ * @summary Start or resume a private structured baseline
+ */
+
+export const StartLearningVoiceProgressCycleBody = zod.object({
+  courseId: zod.string().min(1),
+});
+
+export const StartLearningVoiceProgressCycleResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  turns: zod.array(
+    zod.object({
+      key: zod.string(),
+      prompt: zod.string(),
+      phase: zod.enum(["baseline", "progress"]),
+      form: zod.enum(["A", "B"]),
+      minimumNonSpaceCharacters: zod.number(),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["draft", "submitted", "not_started"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+  privacy: zod.object({
+    audioStorage: zod.string(),
+    speechDisclosure: zod.string(),
+  }),
+});
+
+/**
+ * @summary Get a private voice progress cycle
+ */
+export const GetLearningVoiceProgressCycleParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const GetLearningVoiceProgressCycleResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  turns: zod.array(
+    zod.object({
+      key: zod.string(),
+      prompt: zod.string(),
+      phase: zod.enum(["baseline", "progress"]),
+      form: zod.enum(["A", "B"]),
+      minimumNonSpaceCharacters: zod.number(),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["draft", "submitted", "not_started"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+  privacy: zod.object({
+    audioStorage: zod.string(),
+    speechDisclosure: zod.string(),
+  }),
+});
+
+/**
+ * @summary Save or submit one private voice progress response
+ */
+export const SaveLearningVoiceProgressTurnParams = zod.object({
+  cycleId: zod.coerce.string(),
+  taskKey: zod.coerce.string(),
+});
+
+export const saveLearningVoiceProgressTurnBodyRevisionMin = 0;
+
+export const saveLearningVoiceProgressTurnBodyResponseMax = 6000;
+
+export const SaveLearningVoiceProgressTurnBody = zod.object({
+  revision: zod.number().min(saveLearningVoiceProgressTurnBodyRevisionMin),
+  response: zod.string().max(saveLearningVoiceProgressTurnBodyResponseMax),
+  action: zod.enum(["save_draft", "submit"]),
+});
+
+export const SaveLearningVoiceProgressTurnResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  turns: zod.array(
+    zod.object({
+      key: zod.string(),
+      prompt: zod.string(),
+      phase: zod.enum(["baseline", "progress"]),
+      form: zod.enum(["A", "B"]),
+      minimumNonSpaceCharacters: zod.number(),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["draft", "submitted", "not_started"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+  privacy: zod.object({
+    audioStorage: zod.string(),
+    speechDisclosure: zod.string(),
+  }),
+});
+
+/**
+ * @summary Start the post-training equivalent voice form
+ */
+export const StartLearningVoiceProgressParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const StartLearningVoiceProgressBody = zod.object({});
+
+export const StartLearningVoiceProgressResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  turns: zod.array(
+    zod.object({
+      key: zod.string(),
+      prompt: zod.string(),
+      phase: zod.enum(["baseline", "progress"]),
+      form: zod.enum(["A", "B"]),
+      minimumNonSpaceCharacters: zod.number(),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["draft", "submitted", "not_started"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+  privacy: zod.object({
+    audioStorage: zod.string(),
+    speechDisclosure: zod.string(),
+  }),
+});
+
+/**
+ * @summary Get a private tracked training review
+ */
+export const GetLearningVoiceTrainingReviewParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const GetLearningVoiceTrainingReviewResponse = zod.object({
+  attemptId: zod.string(),
+  cycleId: zod.string(),
+  courseId: zod.string(),
+  status: zod.enum(["in_progress", "completed"]),
+  startedAt: zod.date(),
+  completedAt: zod.date().nullable(),
+  reviewedCount: zod.number(),
+  totalLessons: zod.number(),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      reviewedAt: zod.date().nullable(),
+    }),
+  ),
+});
+
+/**
+ * @summary Start or resume a private tracked training review
+ */
+export const StartLearningVoiceTrainingReviewParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const StartLearningVoiceTrainingReviewBody = zod.object({});
+
+export const StartLearningVoiceTrainingReviewResponse = zod.object({
+  attemptId: zod.string(),
+  cycleId: zod.string(),
+  courseId: zod.string(),
+  status: zod.enum(["in_progress", "completed"]),
+  startedAt: zod.date(),
+  completedAt: zod.date().nullable(),
+  reviewedCount: zod.number(),
+  totalLessons: zod.number(),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      reviewedAt: zod.date().nullable(),
+    }),
+  ),
+});
+
+/**
+ * @summary Mark one private training lesson reviewed
+ */
+export const ReviewLearningVoiceTrainingLessonParams = zod.object({
+  cycleId: zod.coerce.string(),
+  lessonId: zod.coerce.string(),
+});
+
+export const ReviewLearningVoiceTrainingLessonBody = zod.object({});
+
+export const ReviewLearningVoiceTrainingLessonResponse = zod.object({
+  attemptId: zod.string(),
+  cycleId: zod.string(),
+  courseId: zod.string(),
+  status: zod.enum(["in_progress", "completed"]),
+  startedAt: zod.date(),
+  completedAt: zod.date().nullable(),
+  reviewedCount: zod.number(),
+  totalLessons: zod.number(),
+  lessons: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      reviewedAt: zod.date().nullable(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get private learning recognition
+ */
+export const GetLearningAchievementsResponse = zod.object({
+  creditsBalance: zod.number(),
+  creditLabel: zod.string(),
+  nonMonetaryDisclaimer: zod.string(),
+  badges: zod.array(
+    zod.object({
+      key: zod.string(),
+      title: zod.string(),
+      description: zod.string(),
+      earnedAt: zod.date(),
+    }),
+  ),
+  recentActivity: zod.array(
+    zod.object({
+      id: zod.string(),
+      eventType: zod.string(),
+      title: zod.string(),
+      description: zod.string(),
+      creditsDelta: zod.number(),
+      earnedAt: zod.date(),
+    }),
+  ),
+  milestones: zod.array(
+    zod.object({
+      key: zod.string(),
+      title: zod.string(),
+      target: zod.number(),
+      current: zod.number(),
+      completed: zod.boolean(),
+    }),
+  ),
+});
+
+/**
+ * @summary Confirm review of already completed voice training
+ */
+export const CompleteLearningVoiceProgressTrainingReviewParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const CompleteLearningVoiceProgressTrainingReviewBody = zod.object({});
+
+export const CompleteLearningVoiceProgressTrainingReviewResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  turns: zod.array(
+    zod.object({
+      key: zod.string(),
+      prompt: zod.string(),
+      phase: zod.enum(["baseline", "progress"]),
+      form: zod.enum(["A", "B"]),
+      minimumNonSpaceCharacters: zod.number(),
+      progress: zod.object({
+        revision: zod.number(),
+        status: zod.enum(["draft", "submitted", "not_started"]),
+        response: zod.string(),
+        updatedAt: zod.date().nullable(),
+      }),
+    }),
+  ),
+  privacy: zod.object({
+    audioStorage: zod.string(),
+    speechDisclosure: zod.string(),
+  }),
+});
+
+/**
+ * @summary Get a completed private observed-change report
+ */
+export const GetLearningVoiceProgressReportParams = zod.object({
+  cycleId: zod.coerce.string(),
+});
+
+export const GetLearningVoiceProgressReportResponse = zod.object({
+  summary: zod.object({
+    id: zod.string(),
+    courseId: zod.string(),
+    state: zod.enum(["baseline_draft", "training_required", "progress_draft", "completed"]),
+    form: zod.enum(["A", "B"]),
+    comparisonFamilyVersion: zod.string(),
+    rubricVersion: zod.string(),
+    evaluatorVersion: zod.string(),
+    baselineCompletedAt: zod.date().nullable(),
+    progressStartedAt: zod.date().nullable(),
+    completedAt: zod.date().nullable(),
+    completedTurns: zod.number(),
+    totalTurns: zod.number(),
+    reason: zod.string(),
+    action: zod.string(),
+    reviewedCount: zod.number(),
+    totalReviewLessons: zod.number(),
+    reviewAttemptId: zod.string().nullable(),
+  }),
+  comparison: zod.object({
+    comparable: zod.boolean(),
+    reason: zod.string(),
+    dimensions: zod.array(
+      zod.object({
+        dimension: zod.string(),
+        baselineLevel: zod.string(),
+        progressLevel: zod.string(),
+        observedDifference: zod.enum(["higher", "same", "lower", "not_comparable"]),
+        evidence: zod.array(zod.string()),
+      }),
+    ),
+  }),
+  baseline: zod.record(zod.string(), zod.unknown()),
+  progress: zod.record(zod.string(), zod.unknown()),
+  recommendations: zod.array(zod.string()),
+});
 
 /**
  * @summary Get candidate portal dashboard
@@ -1925,12 +3459,7 @@ export const GetCandidateDashboardResponse = zod.object({
     githubUrl: zod.string().nullish(),
     skills: zod.array(zod.string()),
     source: zod.string().nullish(),
-    verificationStatus: zod.enum([
-      "unverified",
-      "pending",
-      "verified",
-      "flagged",
-    ]),
+    verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
     resumeUrl: zod.string().nullish(),
     talentMatchScore: zod.number().nullish(),
     resumeScreenScore: zod.number().nullish(),
@@ -1946,13 +3475,7 @@ export const GetCandidateDashboardResponse = zod.object({
       scheduledAt: zod.string(),
       durationMinutes: zod.number(),
       type: zod.string(),
-      status: zod.enum([
-        "pending",
-        "confirmed",
-        "rescheduled",
-        "cancelled",
-        "completed",
-      ]),
+      status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
       notes: zod.string().nullish(),
       createdAt: zod.string(),
     }),
@@ -1999,9 +3522,7 @@ export const GetCandidateDashboardResponse = zod.object({
           department: zod.string().nullish(),
           location: zod.string().nullish(),
           workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
-          employmentType: zod
-            .enum(["full_time", "part_time", "contract", "internship"])
-            .nullish(),
+          employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
           salaryMin: zod.number().nullish(),
           salaryMax: zod.number().nullish(),
           description: zod.string(),
@@ -2047,12 +3568,7 @@ export const GetCandidateDashboardResponse = zod.object({
           githubUrl: zod.string().nullish(),
           skills: zod.array(zod.string()),
           source: zod.string().nullish(),
-          verificationStatus: zod.enum([
-            "unverified",
-            "pending",
-            "verified",
-            "flagged",
-          ]),
+          verificationStatus: zod.enum(["unverified", "pending", "verified", "flagged"]),
           resumeUrl: zod.string().nullish(),
           talentMatchScore: zod.number().nullish(),
           resumeScreenScore: zod.number().nullish(),
@@ -2082,9 +3598,7 @@ export const ListCandidateNotificationsResponseItem = zod.object({
   actionUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
-export const ListCandidateNotificationsResponse = zod.array(
-  ListCandidateNotificationsResponseItem,
-);
+export const ListCandidateNotificationsResponse = zod.array(ListCandidateNotificationsResponseItem);
 
 /**
  * @summary Get analytics overview

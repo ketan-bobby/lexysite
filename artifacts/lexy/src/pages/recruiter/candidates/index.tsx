@@ -21,7 +21,7 @@
  *   /recruiter/candidates  (registered in App.tsx)
  */
 import { authHeaders } from "@/lib/api";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListCandidates } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -793,9 +793,11 @@ export default function CandidatesList() {
   const [nlLoading, setNlLoading] = useState(false);
   const [nlResult, setNlResult] = useState<NlResult | null>(null);
   const [nlError, setNlError] = useState<string | null>(null);
+  const nlRequestId = useRef(0);
 
   async function runNlSearch(q: string) {
     if (!q.trim()) return;
+    const requestId = ++nlRequestId.current;
     setNlLoading(true);
     setNlError(null);
     setNlResult(null);
@@ -811,15 +813,17 @@ export default function CandidatesList() {
       });
       if (!res.ok) throw new Error(`Search failed (${res.status})`);
       const data: NlResult = await res.json();
-      setNlResult(data);
+      if (requestId === nlRequestId.current) setNlResult(data);
     } catch (e: any) {
-      setNlError(e.message ?? "Search failed");
+      if (requestId === nlRequestId.current) setNlError(e.message ?? "Search failed");
     } finally {
-      setNlLoading(false);
+      if (requestId === nlRequestId.current) setNlLoading(false);
     }
   }
 
   function clearNlSearch() {
+    nlRequestId.current++;
+    setNlLoading(false);
     setNlResult(null);
     setNlError(null);
     setSearch("");
@@ -1304,7 +1308,7 @@ export default function CandidatesList() {
                 : <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               }
               <Input
-                placeholder={`Ask in plain English — e.g. "find React developers in UK active in last 30 days"`}
+                placeholder="Search candidates by name, title, skill, or keyword"
                 className={cn(
                   "pl-10 pr-16 bg-background border-border/50 transition-colors",
                   nlResult && "border-violet-500/40 bg-violet-500/5",
@@ -1312,15 +1316,12 @@ export default function CandidatesList() {
                 )}
                 value={search}
                 onChange={e => {
+                  nlRequestId.current++;
                   setSearch(e.target.value);
-                  if (nlResult) { setNlResult(null); setNlError(null); }
+                  setNlLoading(false);
+                  setNlResult(null);
+                  setNlError(null);
                 }}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && search.trim()) {
-                    runNlSearch(search.trim());
-                  }
-                }}
-                disabled={nlLoading}
               />
               {/* Clear button */}
               {(search || nlResult) && !nlLoading && (
@@ -1344,10 +1345,10 @@ export default function CandidatesList() {
                     <div className="p-3 space-y-2">
                       <div className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                        AI natural language search
+                        Search options
                       </div>
                       <div className="text-xs text-muted-foreground leading-relaxed">
-                        Type a sentence and press <span className="font-mono bg-muted px-1 rounded text-foreground">Enter</span> to search with AI:
+                        Typing filters candidates normally. For natural-language filters, type a sentence and click <span className="font-medium text-foreground">AI Search</span>:
                       </div>
                       <div className="space-y-1 text-xs text-muted-foreground/80">
                         <div className="italic">"find React developers in the UK active last 30 days"</div>

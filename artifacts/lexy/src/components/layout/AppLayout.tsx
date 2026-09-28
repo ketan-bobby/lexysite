@@ -110,8 +110,9 @@ const platformAdminNav = [
 ];
 
 /** Top-nav links rendered in the candidate portal header. */
-const candidateNav = [
+const candidateNavBase = [
   { title: "Career Engine", href: "/portal/career"       },
+  { title: "Introduction",  href: "/portal/introduction" },
   { title: "Applications",  href: "/portal/applications" },
   { title: "Interviews",    href: "/portal/interviews"   },
   { title: "Prep Center",   href: "/portal/prep"         },
@@ -384,16 +385,11 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
   const isPlatformAdmin = user?.role === "platform_admin";
   const isHiringManager = user?.role === "hiring_manager";
   const isInterviewer   = user?.role === "interviewer";
-  const isCandidate     = user?.role === "candidate";
-  const isPortalRoute   = location.startsWith("/portal");
-  const canPollAgents   = !isCandidate && !isPortalRoute;
 
   /* Poll the AI agent status every 10 seconds to update the status pill. */
   const { data: agentData } = useQuery<any>({
     queryKey: ["agent-status-pill"],
     queryFn: () => layoutApiFetch("/agents"),
-    enabled: canPollAgents,
-    retry: false,
     refetchInterval: 10_000,
     staleTime: 5_000,
   });
@@ -431,6 +427,21 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
   });
   const isLinxAdmin = Array.isArray(linxProbe?.requests);
   const linxPendingCount = linxProbe?.requests?.length ?? 0;
+
+  const { data: learningGrowthProbe } = useQuery<any>({
+    queryKey: ["learning-growth", user?.id ?? "guest", "nav-probe"],
+    queryFn: () => layoutApiFetch("/portal/learning-growth"),
+    enabled: user?.role === "candidate",
+    retry: false,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    select: (response: any) => response?.available === true,
+  });
+  const lgAvailable = learningGrowthProbe === true;
+
+  const candidateNav = lgAvailable
+    ? [...candidateNavBase, { title: "Learning & Growth", href: "/portal/learning-growth" }]
+    : candidateNavBase;
 
   const pendingApprovalCount = (jobsForApproval?.jobs ?? jobsForApproval ?? [])
     .filter((j: any) => {
@@ -488,6 +499,8 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
     );
   }
 
+  const isCandidate = user.role === "candidate";
+
   /* ── Candidate layout ──────────────────────────────────────────────────── */
   if (isCandidate) {
     return (
@@ -498,7 +511,7 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
             <Logo isPlatformAdmin={user.role === "platform_admin"} />
 
             {/* Portal section links */}
-            <nav className="hidden md:flex gap-1">
+            <nav className="hidden 2xl:flex gap-1">
               {candidateNav.map((item) => (
                 <Link
                   key={item.href}
@@ -557,6 +570,15 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
             </DropdownMenu>
           </div>
         </header>
+
+        <nav aria-label="Candidate portal" className="flex 2xl:hidden shrink-0 gap-1 overflow-x-auto border-b px-4 py-2">
+          {candidateNav.map((item) => (
+            <Link key={item.href} href={item.href} className={cn(
+              "shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium",
+              location === item.href ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-foreground/5",
+            )}>{item.title}</Link>
+          ))}
+        </nav>
 
         {/* Page content */}
         <main className="flex-1 w-full p-4 md:p-8 animate-in fade-in duration-500">

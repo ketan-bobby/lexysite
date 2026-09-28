@@ -143,12 +143,15 @@ const PushToClientBody = z.object({
 }).passthrough();
 import { candidatesTable, applicationsTable, interviewSessionsTable, communicationEventsTable, interviewSchedulesTable, candidateNotificationsTable, sourcedCandidatesTable, usersTable, tenantsTable, candidateCareerProfilesTable, candidateRejectionsTable, talentPoolSubmissionsTable, inviteTokensTable, jobsTable, candidateJobIntelligenceTable } from "@workspace/db";
 import { getAuthUserId } from "../lib/auth-token";
+import { callerOwnsCandidateDevelopmentData } from "../lib/candidate-development-privacy";
 import { resolveCandidateId } from "../lib/portal-auth";
 import { assertJobApproved } from "../lib/job-approval-gate";
 import { getAllowedTenantIds, getDataScopeTenantIds, getRecruiterAdminClientTenantIds, getRecruiterAssignedJobIds, recruiterIsAssignedToJob } from "../lib/tenantUtils";
 import { recruiterOwnsResource } from "../lib/ownership";
 import { MAX_PAGE_SIZE } from "../lib/query-limits";
 import { sendEmail, isEmailConfigured, plainToHtml } from "../lib/email";
+import { getApprovedCandidateIntroduction, getApprovedCandidateIntroductions } from "../lib/candidate-introduction";
+import { approvedShortlistPresentation } from "../lib/approved-shortlist-presentation";
 
 /* ── Per-candidate privacy filter (brochure slide 6 — Stay invisible) ─────
  * SCOPE: PLATFORM-pool candidates only. Tenant-pool candidates are the
@@ -2649,49 +2652,18 @@ async function recruiterCanAccessCandidate(
 }
 
 /* ── GET /candidates/:candidateId/career-recording ───────────────────────── */
-/* Streams the chunked screen recording for a candidate's career interview.     */
-/* Auth: recruiter / tenant admin / platform admin Bearer token.               */
+/* Streams the candidate's own private career-baseline recording.               */
 router.get("/candidates/:candidateId/career-recording", async (req: any, res: any) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const { candidateId } = req.params;
 
-  /* Verify caller may see this candidate. Select the FULL row (not just
-     tenantId/pool) so the platform-pool privacy seal below has the privacy
-     columns it needs. */
-  const [candidate] = await db.select()
-    .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
-  if (!candidate) { res.status(404).json({ error: "Candidate not found" }); return; }
-
-  if (user.role !== "platform_admin") {
-    const allowed = await getDataScopeTenantIds(user);
-    const isPoolPlatform = (candidate as any).pool === "platform";
-    /* A platform-pool candidate is readable across tenants ONLY by a tenant that
-       is licensed for the shared candidate database — the same gate enforced by
-       GET /candidates. Without this, any authenticated recruiter could pull a
-       shared candidate's profile/recording by ID even if their tenant was never
-       granted pool access. Own-tenant candidates remain readable as before. */
-    const platformReadOk = isPoolPlatform && (await callerHasPlatformPoolAccess(user));
-    if (allowed && !allowed.includes(candidate.tenantId ?? "") && !platformReadOk) {
-      res.status(403).json({ error: "Forbidden" }); return;
-    }
-  }
-  if (user.role === "recruiter" && !(await recruiterCanAccessCandidate(user, candidateId))) {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
-  /* PRIVACY (platform-pool job-seeker seal): a valid candidateDatabaseAccess
-     licence + a known candidateId must NOT bypass the candidate's own
-     hide-from-employer / pause / blocklist / match-only + DNC / erased state.
-     Apply the SAME seal as GET /candidates; a filtered-out record returns 404
-     so its existence isn't confirmed to an employer it is hidden from. */
-  if ((candidate as any).pool === "platform" && user.role !== "platform_admin") {
-    const sealed = await applyCandidatePrivacyFilter(
-      applyCandidateHardExclusions([candidate as any]),
-      user.tenantId ?? null,
-    );
-    if (sealed.length === 0) { res.status(404).json({ error: "Candidate not found" }); return; }
+  /* Career-baseline recordings are developmental material, not a client
+     assessment. Tenant scope, recruiter assignment, and platform-admin status
+     never permit ordinary playback; candidates.user_id ownership is required. */
+  if (!(await callerOwnsCandidateDevelopmentData(user, candidateId))) {
+    res.status(404).json({ error: "Not found" }); return;
   }
 
   /* Load the recording URL from the career profile */
@@ -2741,43 +2713,18 @@ router.get("/candidates/:candidateId/career-recording", async (req: any, res: an
 });
 
 /* ── GET /candidates/:candidateId/career-profile ─────────────────────────── */
-/* Returns the portal-generated career profile for a candidate. Accessible by  */
-/* any authenticated recruiter, tenant admin, or platform admin.                */
+/* Private developmental profile. Non-owners receive no profile fields.         */
 router.get("/candidates/:candidateId/career-profile", async (req, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const { candidateId } = req.params;
 
-  /* Verify the candidate is accessible to this caller. Select the FULL row so
-     the platform-pool privacy seal below has the privacy columns it needs. */
-  const [candidate] = await db.select()
-    .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
-  if (!candidate) { res.status(404).json({ error: "Candidate not found" }); return; }
-
-  if (user.role !== "platform_admin") {
-    const allowed = await getDataScopeTenantIds(user);
-    const isPoolPlatform = (candidate as any).pool === "platform";
-    /* Same shared-pool licensing gate as career-recording above: a platform-pool
-       candidate is readable cross-tenant only by a tenant with candidateDatabaseAccess. */
-    const platformReadOk = isPoolPlatform && (await callerHasPlatformPoolAccess(user));
-    if (allowed && !allowed.includes(candidate.tenantId ?? "") && !platformReadOk) {
-      res.status(403).json({ error: "Forbidden" }); return;
-    }
-  }
-  if (user.role === "recruiter" && !(await recruiterCanAccessCandidate(user, candidateId))) {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
-  /* PRIVACY (platform-pool job-seeker seal): same as career-recording — a
-     licence + a known id must NOT bypass hide/pause/block/match-only + DNC /
-     erased. A filtered-out record returns 404 (existence not confirmed). */
-  if ((candidate as any).pool === "platform" && user.role !== "platform_admin") {
-    const sealed = await applyCandidatePrivacyFilter(
-      applyCandidateHardExclusions([candidate as any]),
-      user.tenantId ?? null,
-    );
-    if (sealed.length === 0) { res.status(404).json({ error: "Candidate not found" }); return; }
+  if (!(await callerOwnsCandidateDevelopmentData(user, candidateId))) {
+    /* Preserve the historical no-profile response shape for employer clients,
+       while withholding every baseline-derived field and raw transcript. */
+    res.json({ exists: false, candidateId });
+    return;
   }
 
   const [profile] = await db.select()
@@ -2885,7 +2832,40 @@ router.get("/talent-pool/submissions", async (req, res) => {
     rows = rows.filter((r) => r.jobPostingId && assignedSet.has(r.jobPostingId));
   }
 
-  res.json({ submissions: rows });
+  if (caller.role === "hiring_manager") {
+    const assignedJobs = await db.select({ id: jobsTable.id }).from(jobsTable)
+      .where(and(eq(jobsTable.assignedHiringManagerId, caller.id), eq(jobsTable.tenantId, clientTenantId!)));
+    const assignedSet = new Set(assignedJobs.map((job) => job.id));
+    rows = rows.filter((row) => row.jobPostingId && assignedSet.has(row.jobPostingId));
+  }
+
+  // Re-check current candidate visibility even for historical submissions.
+  // The tenant/job relationship above authorizes this bounded cross-pool read;
+  // it must not be broadened into an unscoped candidate-database query.
+  const submittedIds = [...new Set<string>(rows.map((row) => row.candidateId).filter(Boolean))];
+  const currentCandidates = submittedIds.length
+    ? await controlDb.select().from(candidatesTable).where(inArray(candidatesTable.id, submittedIds))
+    : [];
+  const allowedByTenant = new Map<string, Set<string>>();
+  for (const tenantId of new Set<string>(rows.map((row) => row.clientTenantId).filter(Boolean))) {
+    const visible = await applyCandidatePrivacyFilter(
+      applyCandidateHardExclusions(currentCandidates),
+      tenantId,
+    );
+    allowedByTenant.set(tenantId, new Set(visible.map((candidate) => candidate.id)));
+  }
+  rows = rows.filter((row) => allowedByTenant.get(row.clientTenantId)?.has(row.candidateId));
+
+  // Candidate approval is live: an old snapshot never preserves withdrawn
+  // introduction text or free-form developmental notes.
+  const introductions = await getApprovedCandidateIntroductions(
+    rows.map((row) => row.candidateId).filter(Boolean),
+  );
+  const submissions = rows
+    .map((row) => approvedShortlistPresentation(row, introductions.get(row.candidateId)))
+    .filter((row) => row !== null);
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json({ submissions });
 });
 
 /* ── Push candidate to client pool ───────────────────────────────────────
@@ -2912,7 +2892,7 @@ router.post("/candidates/:candidateId/push-to-client", validate({ body: PushToCl
   }
 
   const { candidateId } = req.params;
-  const { clientTenantId, note, jobPostingId } = req.body ?? {};
+  const { clientTenantId, jobPostingId } = req.body ?? {};
 
   if (!clientTenantId) {
     res.status(400).json({ error: "clientTenantId is required" }); return;
@@ -2945,6 +2925,31 @@ router.post("/candidates/:candidateId/push-to-client", validate({ body: PushToCl
   const [clientTenant] = await db.select({ id: tenantsTable.id, name: tenantsTable.name })
     .from(tenantsTable).where(eq(tenantsTable.id, clientTenantId)).limit(1);
   if (!clientTenant) { res.status(404).json({ error: "Client not found" }); return; }
+
+  // Sharing is a candidate-approved presentation, not a copy of an intake
+  // summary or recruiter-entered notes. The stored introduction stays separate.
+  const introduction = await getApprovedCandidateIntroduction(candidateId);
+  if (!introduction) {
+    res.status(409).json({
+      error: "introduction_approval_required",
+      message: "The candidate must approve their written introduction before it can be shared.",
+    });
+    return;
+  }
+  if (jobPostingId) {
+    const [job] = await db.select({ id: jobsTable.id, tenantId: jobsTable.tenantId, status: jobsTable.status })
+      .from(jobsTable).where(eq(jobsTable.id, jobPostingId)).limit(1);
+    if (!job || job.tenantId !== clientTenantId
+      || !(await recruiterOwnsResource(caller, { kind: "jobId", value: jobPostingId }))) {
+      res.status(404).json({ error: "Work order not found" }); return;
+    }
+    if (!assertJobApproved(res, job.status)) return;
+  }
+  const shareable = await applyCandidatePrivacyFilter(
+    applyCandidateHardExclusions([candidate]),
+    clientTenantId,
+  );
+  if (!shareable.length) { res.status(404).json({ error: "Candidate not found" }); return; }
 
   // Check for duplicate push (same candidate + same client)
   const { talentPoolSubmissionsTable } = await import("@workspace/db");
@@ -2981,14 +2986,14 @@ router.post("/candidates/:candidateId/push-to-client", validate({ body: PushToCl
       ${candidate.experienceLevel ?? null},
       ${candidate.workStyle ?? null},
       ${candidate.languages ? sql`${JSON.stringify(candidate.languages)}::jsonb` : sql`NULL`},
-      ${candidate.summary ?? null},
+      ${null},
       ${candidate.linkedinUrl ?? null},
       ${candidate.resumeUrl ?? null},
       'active',
       ${candidateId},
       ${clientTenantId},
       ${caller.id ?? null},
-      ${note ?? null},
+      ${null},
       NOW(),
       ${jobPostingId ?? null}
     )

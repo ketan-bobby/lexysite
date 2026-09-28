@@ -128,6 +128,7 @@ import { rankWithStaleness } from "../lib/staleness.js";
 import { restrictToCompliantCandidates } from "../lib/compliance-scope.js";
 import { intelTenantScope } from "../lib/class-b-access";
 import { logger } from "../lib/logger";
+import { sanitizeEmployerSignals } from "../lib/employer-presentation-firewall";
 import { orchestrator } from "../lib/agents/orchestrator";
 import { resolveUser } from "../middlewares/resolveUser";
 import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
@@ -232,6 +233,39 @@ const VALID_OUTCOMES = [
   "offer_accepted",
   "offer_declined",
 ] as const;
+
+/**
+ * Intelligence rows predate the provenance firewall. Never serialize their
+ * stored explanations, risk prose, aggregate score or raw JSON directly: any
+ * of those may have been derived from a candidate's private development data.
+ * Recompute presentation values solely from the allowed job-bound/factual
+ * signal set. The stored operational row is deliberately left untouched.
+ */
+function employerSafeIntelligenceRecord<T extends Record<string, any>>(record: T): T {
+  const signals = sanitizeEmployerSignals(record.signalsJson, {
+    jobId: String(record.jobId ?? ""),
+    candidateId: String(record.candidateId ?? ""),
+  });
+  const timestamps = (record.signalTimestampsJson as Record<string, string> | null) ?? {};
+  const result = computeScores(signals as any, timestamps as any);
+  return {
+    ...record,
+    fitScore: result.fitScore,
+    qualityScore: result.qualityScore,
+    trustScore: result.trustScore,
+    conversionScore: result.conversionScore,
+    hireProbability: result.hireProbability,
+    nextBestAction: result.nextBestAction,
+    topStrengths: result.topStrengths,
+    topRisks: result.topRisks,
+    explanationJson: result.explanationJson,
+    stageProbsJson: result.stageProbs,
+    signalsJson: signals,
+    // Human override prose is not evidence provenance and is not an employer
+    // presentation field. Preserve it in storage for operational audit only.
+    overridesJson: undefined,
+  };
+}
 const VALID_ACTIONS = [
   "advance",
   "schedule",
@@ -309,7 +343,8 @@ router.get("/", async (req, res) => {
        much signal actually backs each hireProbability so the UI can show a
        confidence band and an honest "insufficient data" state instead of a bare
        confident-looking percentage. */
-    const enriched = scoped.map((r) => {
+    const enriched = scoped.map((raw) => {
+      const r = employerSafeIntelligenceRecord(raw);
       const signals = (r.signalsJson as any) ?? {};
       const timestamps = (r.signalTimestampsJson as any) ?? {};
       const conf = computeConfidence(signals, timestamps);
@@ -364,7 +399,7 @@ router.get("/job/:jobId", enforceOwnership({ kinds: ["jobId"] }), async (req, re
       req.params.jobId,
       await getDataScopeTenantIds(user),
     );
-    res.json({ data: records });
+    res.json({ data: records.map(employerSafeIntelligenceRecord) });
   } catch (err: any) {
     logger.error({ err }, "Failed to fetch job intelligence");
     res.status(500).json({ error: "Failed to fetch intelligence records" });
@@ -426,7 +461,7 @@ router.get(
         const assigned = new Set(await getRecruiterAssignedJobIds(user));
         scoped = records.filter((r) => r.jobId && assigned.has(r.jobId));
       }
-      res.json({ data: scoped });
+      res.json({ data: scoped.map(employerSafeIntelligenceRecord) });
     } catch (err: any) {
       logger.error({ err }, "Failed to fetch candidate intelligence");
       res.status(500).json({ error: "Failed to fetch intelligence records" });
@@ -593,19 +628,20 @@ router.get(
   async (req, res) => {
     try {
       const user = req.resolvedUser!;
-      const record = await getIntelligenceForPair(
+      const unsafeRecord = await getIntelligenceForPair(
         req.params.jobId,
         req.params.candidateId,
         await getDataScopeTenantIds(user),
       );
-      if (!record)
+      if (!unsafeRecord)
         return res.status(404).json({ error: "No intelligence record found for this pair" });
       // Defense-in-depth: the SQL scope above already excludes out-of-scope rows;
       // this second check is a redundant belt-and-suspenders, kept intentionally.
-      if (!(await canAccessTenant(user, record.tenantId))) {
+      if (!(await canAccessTenant(user, unsafeRecord.tenantId))) {
         return res.status(404).json({ error: "No intelligence record found for this pair" });
       }
 
+      const record = employerSafeIntelligenceRecord(unsafeRecord);
       let decisionResult = null;
       if (record.signalsJson) {
         const scores = {
@@ -635,17 +671,18 @@ router.get(
   async (req, res) => {
     try {
       const user = req.resolvedUser!;
-      const record = await getIntelligenceForPair(
+      const unsafeRecord = await getIntelligenceForPair(
         req.params.jobId,
         req.params.candidateId,
         await getDataScopeTenantIds(user),
       );
-      if (!record) return res.status(404).json({ error: "No intelligence record found" });
+      if (!unsafeRecord) return res.status(404).json({ error: "No intelligence record found" });
       // Defense-in-depth: SQL scope already excludes out-of-scope rows; redundant.
-      if (!(await canAccessTenant(user, record.tenantId))) {
+      if (!(await canAccessTenant(user, unsafeRecord.tenantId))) {
         return res.status(404).json({ error: "No intelligence record found" });
       }
 
+      const record = employerSafeIntelligenceRecord(unsafeRecord);
       /* Neutral-50 coercion is for the INTERNAL decision/stage-prob math only —
        the response's `scores` must be the RAW stored values (nullable) so every
        UI surface renders the same record identically ("—" for unknown), instead
@@ -766,12 +803,13 @@ router.post(
       if (!(await assertJobOwnership(req, res, jobId))) return;
       if (!(await assertCandidateOwnership(req, res, candidateId))) return;
 
-      const record = await getIntelligenceForPair(
+      const unsafeRecord = await getIntelligenceForPair(
         jobId,
         candidateId,
         await getDataScopeTenantIds(req.resolvedUser!),
       );
-      if (!record) return res.status(404).json({ error: "No intelligence record found" });
+      if (!unsafeRecord) return res.status(404).json({ error: "No intelligence record found" });
+      const record = employerSafeIntelligenceRecord(unsafeRecord);
 
       const scores = {
         fitScore: record.fitScore ?? 50,

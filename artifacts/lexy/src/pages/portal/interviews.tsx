@@ -136,12 +136,7 @@ export default function PortalInterviews() {
     apiFetch(`${apiBase}/portal/interviews`)
       .then(r => r.json())
       .then(res => {
-        if (res.error) {
-          const detail = typeof res.details === "string" ? ` (${res.details})` : "";
-          setError(`${res.error}${detail}`);
-          setLoading(false);
-          return;
-        }
+        if (res.error) { setError(res.error); setLoading(false); return; }
 
         const allScheduled: Interview[] = res.data?.scheduled ?? [];
         const allCompleted: Interview[] = res.data?.completed ?? [];

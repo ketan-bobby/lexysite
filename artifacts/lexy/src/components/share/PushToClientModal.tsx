@@ -3,8 +3,9 @@
  *
  * ─── What this file does ────────────────────────────────────────────────────
  * A dialog that lets a recruiter select one of their client tenants from a
- * dropdown and push the current candidate into that client's talent pool,
- * with an optional personal note. Submits to POST /api/talent-pool/:candidateId.
+ * dropdown and push the current candidate into that client's talent pool.
+ * Candidate-facing presentation is supplied only by the candidate's current
+ * approved introduction. Submits to POST /api/talent-pool/:candidateId.
  *
  * ─── Used by ─────────────────────────────────────────────────────────────────
  *   pages/recruiter/candidates/[id].tsx  — candidate profile action menu
@@ -16,7 +17,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -45,7 +45,6 @@ export function PushToClientModal({ open, onClose, candidateId, candidateName }:
   const { toast } = useToast();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [note, setNote] = useState("");
   const [pushing, setPushing] = useState(false);
   const [pushed, setPushed] = useState(false);
   const [pushedClientName, setPushedClientName] = useState("");
@@ -66,7 +65,6 @@ export function PushToClientModal({ open, onClose, candidateId, candidateName }:
 
   const handleClose = () => {
     setSelectedClientId("");
-    setNote("");
     setPushing(false);
     setPushed(false);
     setPushedClientName("");
@@ -80,7 +78,7 @@ export function PushToClientModal({ open, onClose, candidateId, candidateName }:
       const res = await apiFetch(`${apiBase}/candidates/${candidateId}/push-to-client`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientTenantId: selectedClientId, note: note.trim() || undefined }),
+        body: JSON.stringify({ clientTenantId: selectedClientId }),
       });
       const data = await res.json();
       if (res.status === 409) {
@@ -118,7 +116,7 @@ export function PushToClientModal({ open, onClose, candidateId, candidateName }:
             Push to Client Pool
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Add <span className="font-medium text-foreground">{candidateName}</span> to a client's talent pool for consideration.
+            Add <span className="font-medium text-foreground">{candidateName}</span> to a client's talent pool for consideration. Only a current candidate-approved introduction can be shared.
           </DialogDescription>
         </DialogHeader>
 
@@ -183,20 +181,6 @@ export function PushToClientModal({ open, onClose, candidateId, candidateName }:
                 )}
               </div>
             )}
-
-            {/* Optional note */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Note <span className="normal-case font-normal text-muted-foreground/70">(optional)</span>
-              </label>
-              <Textarea
-                placeholder="e.g. Strong match for the senior dev role, fast-track review recommended…"
-                className="resize-none text-sm"
-                rows={3}
-                value={note}
-                onChange={e => setNote(e.target.value)}
-              />
-            </div>
 
             {/* Actions */}
             <div className="flex gap-2 pt-1">

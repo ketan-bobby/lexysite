@@ -9,10 +9,11 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "start": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:score-band": "tsx --env-file=../../.env --test src/lib/score-band.test.ts src/lib/score-band-guard.test.ts",
-    "test:score-display": "tsx --env-file=../../.env --test src/lib/score-display.test.ts",
-    "test:trust-gate": "tsx --env-file=../../.env --test src/lib/trust-gate.test.ts",
-    "verify:a11y": "node --require dotenv/config ./scripts/a11y-verify.mjs"
+    "test:score-band": "tsx --test src/lib/score-band.test.ts src/lib/score-band-guard.test.ts",
+    "test:score-display": "tsx --test src/lib/score-display.test.ts",
+    "test:trust-gate": "tsx --test src/lib/trust-gate.test.ts",
+    "test:work-order-approval": "tsx --test src/lib/work-order-approval.test.ts",
+    "verify:a11y": "node scripts/a11y-verify.mjs"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

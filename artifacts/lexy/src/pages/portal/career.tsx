@@ -37,6 +37,7 @@ import { scoreBand, bandBy } from "@/lib/score-band";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AiDisclosureBanner } from "@/components/portal/AiDisclosureBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -590,12 +591,63 @@ function PathCard({ path, index, profile, canUnlock }: { path: CareerPath; index
         {index === 0 && (
           <div className="pt-2 border-t border-border/30">
             {canUnlock ? (
-              <button
-                onClick={() => setExpanded(true)}
-                className="w-full flex items-center justify-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 font-medium py-1.5 transition-colors"
-              >
-                <Unlock className="w-3.5 h-3.5" />Unlock detailed roadmap
-              </button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 font-medium py-1.5 transition-colors"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />View detailed roadmap
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{path.title} roadmap</DialogTitle>
+                    <DialogDescription>
+                      Your suggested steps toward {path.targetRole || path.title}
+                      {path.timeframe ? ` · ${path.timeframe}` : ""}. Based on your career profile, not a record of completed steps.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-5 text-sm">
+                    <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
+                      <div className="flex justify-between gap-3 text-xs font-medium">
+                        <span>Path readiness</span><span>{readiness}%</span>
+                      </div>
+                      <Progress value={readiness} className="mt-2 h-1.5" />
+                    </div>
+                    {path.milestones?.length > 0 && (
+                      <section>
+                        <h3 className="font-semibold mb-3">Steps on this path</h3>
+                        <ol className="space-y-3">
+                          {path.milestones.map((milestone, step) => (
+                            <li key={step} className="flex items-start gap-3">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{step + 1}</span>
+                              <span className="text-muted-foreground pt-0.5">{milestone}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </section>
+                    )}
+                    {path.keySkillsNeeded?.length > 0 && (
+                      <section className="border-t border-border/40 pt-4">
+                        <h3 className="font-semibold mb-2">Skills to develop</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {path.keySkillsNeeded.map((skill, step) => (
+                            <Link key={step} href={`/portal/prep?mode=${skillToPrepMode(skill)}`}>
+                              <Button size="sm" variant="outline" className="h-auto min-h-8 whitespace-normal text-left gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 shrink-0" />Practise {skill}
+                              </Button>
+                            </Link>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                    {!path.milestones?.length && !path.keySkillsNeeded?.length && (
+                      <p className="text-muted-foreground">No detailed steps are available for this path yet. Complete your career interview to refresh your profile.</p>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             ) : (
               <div>
                 <button

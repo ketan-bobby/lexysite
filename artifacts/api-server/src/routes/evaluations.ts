@@ -45,7 +45,6 @@ import {
   RECOMMENDATION_BANDS,
   RECOMMENDATION_BAND_LABEL,
   type EvaluationContent,
-  type EvaluationHumanEdits,
 } from "../lib/evaluation-synthesis";
 import { COMPETENCY_LIBRARY } from "../lib/competency-library";
 
@@ -146,13 +145,40 @@ async function authorizeCandidate(req: any, res: any, candidateId: string): Prom
   return true;
 }
 
+function hasTrustedEvaluationProvenance(
+  content: unknown,
+  jobId: string,
+  candidateId: string,
+): content is EvaluationContent {
+  const p = (content as EvaluationContent | null)?.evidenceBasis?.provenance;
+  return p?.kind === "job_bound_evaluation_v1" && p.jobId === jobId && p.candidateId === candidateId;
+}
+
+function untrustedEvaluationContent(): EvaluationContent {
+  return {
+    headline: "Evaluation unavailable",
+    executiveSummary: "This historical evaluation has no verified job-bound evidence provenance. Regenerate it for this requisition before sharing.",
+    roleAlignment: "",
+    competencies: [],
+    behavioralInsights: [],
+    observations: [],
+    developmentOpportunities: [],
+    riskAssessment: { concerns: [], toValidate: [] },
+    verification: { status: "not_available", summary: "Verification status is unavailable." },
+    recommendation: { band: "further_assessment", rationale: "" },
+    evidenceBasis: { hasInterview: false, interviewAnswers: 0, hasIntelligence: false, hasResume: false },
+  };
+}
+
 /* Serialise a row into the API shape: the row + the MERGED client-facing content.
    Verification is overlaid LIVE from the candidate row — the snapshot stamped at
    generation time goes stale the moment verification (re-)runs or completes. */
 async function serialize(row: typeof candidateEvaluationsTable.$inferSelect) {
+  const trusted = hasTrustedEvaluationProvenance(row.aiContent, row.jobId, row.candidateId);
   const merged = mergeEvaluation(
-    row.aiContent as EvaluationContent,
-    (row.humanEdits as EvaluationHumanEdits) ?? null,
+    trusted ? row.aiContent as EvaluationContent : untrustedEvaluationContent(),
+    // Never merge unprovenanced recruiter prose into a client presentation.
+    null,
     row.competencyKeys ?? [],
   );
   try {
@@ -185,8 +211,9 @@ async function serialize(row: typeof candidateEvaluationsTable.$inferSelect) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     content: merged,
-    aiContent: row.aiContent,
-    humanEdits: row.humanEdits ?? null,
+     // Historical source blobs can contain candidate-development notes. The
+     // report content above is the only employer-safe representation.
+     evidenceProvenanceVerified: trusted,
   };
 }
 

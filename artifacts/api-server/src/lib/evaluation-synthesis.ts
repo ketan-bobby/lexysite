@@ -26,6 +26,7 @@ import {
   candidateJobIntelligenceTable,
   interviewSessionsTable,
   interviewSummariesTable,
+  interviewPlansTable,
   applicationsTable,
 } from "@workspace/db";
 import { and, eq, desc, inArray, sql, type SQL } from "drizzle-orm";
@@ -35,6 +36,8 @@ import { logger } from "./logger";
 import { intelTenantScope, type TenantScope } from "./class-b-access";
 import { classBRead, CLASS_B_READ_EXEMPTION } from "./class-b-read";
 import { resolveCompetencies, selectCompetencies, type Competency } from "./competency-library";
+import { sanitizeEmployerSignals } from "./employer-presentation-firewall";
+import { computeScores, type AgentSignals } from "./intelligence";
 
 /* ── Public content shape (persisted as ai_content; same shape overlaid by
  *    human_edits; rendered by the web report AND the PDF) ─────────────────── */
@@ -107,6 +110,13 @@ export interface EvaluationContent {
     interviewAnswers: number;
     hasIntelligence: boolean;
     hasResume: boolean;
+    /** Required for a report to be eligible for an employer-facing surface. */
+    provenance?: {
+      kind: "job_bound_evaluation_v1";
+      jobId: string;
+      candidateId: string;
+      interviewSessionId: string | null;
+    };
   };
 }
 
@@ -176,11 +186,14 @@ export async function gatherEvaluationInputs(
   const sessionRows = await db
     .select({
       session: interviewSessionsTable,
-      appJobId: applicationsTable.jobId,
+        appJobId: applicationsTable.jobId,
+        appCandidateId: applicationsTable.candidateId,
+        planJobId: interviewPlansTable.jobId,
       summary: interviewSummariesTable,
     })
     .from(interviewSessionsTable)
     .leftJoin(applicationsTable, eq(applicationsTable.id, interviewSessionsTable.applicationId))
+    .leftJoin(interviewPlansTable, eq(interviewPlansTable.id, interviewSessionsTable.planId))
     .leftJoin(
       interviewSummariesTable,
       eq(interviewSummariesTable.interviewSessionId, interviewSessionsTable.id),
@@ -189,7 +202,15 @@ export async function gatherEvaluationInputs(
     .orderBy(desc(interviewSessionsTable.createdAt));
 
   let interview: EvaluationInputs["interview"] = null;
-  const match = sessionRows.find((r) => r.appJobId === jobId) ?? sessionRows[0];
+  // Never fall back to "the candidate's latest interview": that can be a
+  // private baseline/mock or an assessment for another requisition. A session
+  // is usable only when its linked application OR its plan proves this exact
+  // job. Missing provenance fails closed.
+  const match = sessionRows.find(
+    (r) =>
+      (r.appJobId === jobId && r.appCandidateId === candidateId) ||
+      r.planJobId === jobId,
+  );
   if (match) {
     interview = { session: match.session, summary: match.summary ?? null };
   }
@@ -212,10 +233,18 @@ export function defaultCompetencyKeysFor(inputs: EvaluationInputs): string[] {
 function primaryScore(inputs: EvaluationInputs): number | null {
   const overall = inputs.interview?.summary?.overallScore;
   if (typeof overall === "number") return overall;
-  const fit = inputs.intelligence?.fitScore;
-  if (typeof fit === "number") return fit;
-  const hp = inputs.intelligence?.hireProbability;
-  if (typeof hp === "number") return Math.round(hp * 100);
+  const safeSignals = sanitizeEmployerSignals(inputs.intelligence?.signalsJson, {
+    jobId: inputs.job.id,
+    candidateId: inputs.candidate.id,
+  }) as AgentSignals;
+  // Do not reuse a stored aggregate: older aggregate scores may have been
+  // calculated from a baseline/mock or other unprovenanced signal. Recompute
+  // from the firewall allowlist instead.
+  if (Object.keys(safeSignals).length > 0) {
+    const safeScores = computeScores(safeSignals, {});
+    if (typeof safeScores.fitScore === "number") return safeScores.fitScore;
+    if (typeof safeScores.hireProbability === "number") return Math.round(safeScores.hireProbability);
+  }
   return null;
 }
 
@@ -370,7 +399,26 @@ export async function synthesizeEvaluation(
   const names = [inputs.candidate.firstName, inputs.candidate.lastName].filter(Boolean) as string[];
 
   const summary = inputs.interview?.summary;
-  const intel = inputs.intelligence;
+  // Old intelligence snapshots can contain arbitrary historical free text.
+  // Keep only the role-scoped, employer-safe signal allowlist before it enters
+  // the LLM prompt or derived report score/risk text.
+  const safeIntelSignals = sanitizeEmployerSignals(inputs.intelligence?.signalsJson, {
+    jobId: inputs.job.id,
+    candidateId: inputs.candidate.id,
+  }) as AgentSignals;
+  const safeIntelScores =
+    Object.keys(safeIntelSignals).length > 0 ? computeScores(safeIntelSignals, {}) : null;
+  const safeInterviewSignals = safeIntelSignals.interview;
+  const intel = safeIntelScores
+    ? {
+        fitScore: safeIntelScores.fitScore,
+        topStrengths: safeInterviewSignals?.strengths ?? [],
+        topRisks: [
+          ...(safeInterviewSignals?.weaknesses ?? []),
+          ...(safeInterviewSignals?.redFlags ?? []),
+        ],
+      }
+    : null;
 
   const evidenceBlock = [
     `ROLE: ${inputs.job.title}${inputs.job.department ? ` (${inputs.job.department})` : ""}`,
@@ -541,6 +589,12 @@ Rules:
       interviewAnswers: answers,
       hasIntelligence: !!inputs.intelligence,
       hasResume: !!inputs.candidate.resumeUrl,
+      provenance: {
+        kind: "job_bound_evaluation_v1",
+        jobId: inputs.job.id,
+        candidateId: inputs.candidate.id,
+        interviewSessionId: inputs.interview?.session.id ?? null,
+      },
     },
   };
 
@@ -580,7 +634,12 @@ export function mergeEvaluation(
   humanEdits: EvaluationHumanEdits | null | undefined,
   competencyKeys: string[],
 ): EvaluationContent & { recruiterComments: string } {
-  const he = humanEdits ?? {};
+  /* Human edits are recruiter workspace content, not evidence provenance. Do
+     not let an arbitrary note/override cross into the client-rendered content:
+     a historical overlay may contain career-intake, prep, or coaching detail.
+     The stored edit remains intact for the recruiter; public renderers receive
+     only the job-bound AI evidence drafted from the sealed inputs above. */
+  const he: EvaluationHumanEdits = {};
   const aiByKey = new Map<string, EvalCompetency>();
   for (const c of aiContent.competencies ?? []) aiByKey.set(c.key, c);
 

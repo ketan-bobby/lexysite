@@ -54,6 +54,7 @@ import { logger } from "../lib/logger";
 import { ObjectStorageService, s3Client } from "../lib/objectStorage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { applyCandidateHardExclusions } from "./candidates";
+import { sanitizeEmployerPackageSnapshot } from "../lib/employer-presentation-firewall";
 
 const router: IRouter = Router();
 export const hmSharePublicRouter: IRouter = Router();
@@ -127,30 +128,14 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Sanitise the client-supplied package snapshot SERVER-SIDE so a toggle that
- *  is OFF truly removes the data from what we persist + ever serve — never just
- *  hides it in the UI. The client is untrusted (the public token endpoints read
- *  this snapshot back), so we strip the omitted fields before the row is written
- *  rather than relying on the client to have honoured the toggles. */
+/** The browser payload is untrusted. Employer snapshots use a positive
+ * factual/resume allowlist rather than a fragile denylist of private fields. */
 function sanitizePackageSnapshot(
   pkg: any,
   opts: { includeContact: boolean; includeNotes: boolean },
 ): any {
-  if (!pkg || typeof pkg !== "object") return pkg ?? null;
-  const out: any = JSON.parse(JSON.stringify(pkg));
-  if (!opts.includeContact && out.candidate && typeof out.candidate === "object") {
-    delete out.candidate.email;
-    delete out.candidate.phone;
-    delete out.candidate.location;
-  }
-  if (!opts.includeNotes) {
-    // Recruiter-authored prose lives under resumeScreen.recruiterSummary and the
-    // top-level preparedBy note. Drop both so notes-off omits them from storage.
-    if (out.resumeScreen && typeof out.resumeScreen === "object") {
-      delete out.resumeScreen.recruiterSummary;
-    }
-  }
-  return out;
+  void opts.includeNotes; // notes are unprovenanced and never eligible externally.
+  return sanitizeEmployerPackageSnapshot(pkg, { includeContact: opts.includeContact });
 }
 
 /** Extension → MIME type for résumé attachments. */
@@ -288,7 +273,7 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
 
   const {
     candidateId, jobId, applicationId, recipients,
-    includeContact, includeResume, includeNotes, message, package: pkg, pdf, expiresInDays,
+    includeContact, includeResume, includeNotes, package: pkg, pdf, expiresInDays,
   } = req.body as z.infer<typeof CreateShareBody>;
 
   if (caller.role === "recruiter" && !(await recruiterCanAccessCandidate(caller as any, candidateId))) {
@@ -364,8 +349,23 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
 
   /* Sanitise the snapshot server-side: an OFF toggle must REMOVE the data from
      storage, not merely hide it client-side (the snapshot is read back by the
-     public token endpoints, which trust the stored row). */
-  const safePackage = sanitizePackageSnapshot(pkg, { includeContact: !!includeContact, includeNotes: !!includeNotes });
+     public token endpoints, which trust the stored row). Browser-generated PDFs
+     are opaque and have no evidence provenance, so they are never attached. */
+  const safePackage = sanitizePackageSnapshot(pkg, { includeContact: !!includeContact, includeNotes: !!includeNotes }) ?? {};
+  // Canonical candidate fields replace browser-provided identity fields. This
+  // allows only resume/factual data, never a client-provided historical bio.
+  safePackage.candidate = {
+    firstName: candidate.firstName ?? "",
+    lastName: candidate.lastName ?? "",
+    ...(candidate.currentTitle ? { currentTitle: candidate.currentTitle } : {}),
+    ...(candidate.currentCompany ? { currentCompany: candidate.currentCompany } : {}),
+    ...(candidate.location ? { location: candidate.location } : {}),
+    ...(Array.isArray(candidate.skills) && candidate.skills.length ? { skills: candidate.skills } : {}),
+    ...(candidate.verificationStatus ? { verificationStatus: candidate.verificationStatus } : {}),
+    ...(includeContact && candidate.email ? { email: candidate.email } : {}),
+    ...(includeContact && candidate.phone ? { phone: candidate.phone } : {}),
+  };
+  const safeMessage = null; // arbitrary recruiter prose is not employer evidence
 
   const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
@@ -382,11 +382,11 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
       recipientName: r.name ?? null,
       includeContact: !!includeContact,
       includeResume: !!includeResume,
-      includeNotes: !!includeNotes,
+      includeNotes: false,
       packageSnapshot: safePackage,
       brandSnapshot: brand,
       resumeObjectPath,
-      message: message ?? null,
+      message: safeMessage,
       status: "sent",
       expiresAt,
     }).returning();
@@ -394,9 +394,7 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
     const link = base ? `${base}/hm/${row.token}` : `/hm/${row.token}`;
     const accent = brand.primaryColor || "#7c3aed";
     const greeting = r.name ? `Hi ${escapeHtml(r.name)},` : "Hello,";
-    const noteBlock = message
-      ? `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-left:3px solid ${accent};border-radius:6px;color:#334155;font-size:14px;white-space:pre-wrap;">${escapeHtml(message)}</div>`
-      : "";
+    const noteBlock = "";
     const html = `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0f172a;">
       <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
         <div style="text-align:center;margin-bottom:8px;">
@@ -411,7 +409,7 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
           <div style="text-align:center;margin:24px 0 8px;">
             <a href="${link}" style="display:inline-block;padding:12px 28px;background:${accent};color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">Review the candidate →</a>
           </div>
-          <p style="margin:16px 0 0;color:#94a3b8;font-size:12.5px;text-align:center;">No login required. You can advance, request an interview, or pass — right from the page.${pdf ? " A PDF copy is attached for your records." : ""}</p>
+          <p style="margin:16px 0 0;color:#94a3b8;font-size:12.5px;text-align:center;">No login required. You can advance, request an interview, or pass — right from the page.</p>
           <p style="margin:6px 0 0;color:#94a3b8;font-size:12px;text-align:center;">This link expires on ${expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.</p>
         </div>
         <p style="margin:18px 0 0;color:#94a3b8;font-size:11px;text-align:center;">If the button doesn't work, paste this into your browser:<br/>${escapeHtml(link)}</p>
@@ -420,13 +418,13 @@ router.post("/hm-share", validate({ body: CreateShareBody }), async (req: Reques
     const text =
       `${r.name ? `Hi ${r.name},` : "Hello,"}\n\n` +
       `${brand.name} has shared a candidate profile with you for review: ${candidateName}.\n` +
-      (message ? `\n${message}\n` : "") +
       `\nReview the candidate (no login required): ${link}\n` +
       `You can advance, request an interview, or pass directly from the page.\n` +
       `This link expires on ${expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.\n`;
 
     const attachments: Array<{ filename: string; content: string; contentType?: string }> = [];
-    if (pdf?.base64) attachments.push({ filename: pdf.fileName || `Evaluation-${candidateName}.pdf`, content: pdf.base64, contentType: "application/pdf" });
+    // Client PDFs cannot be inspected for private baseline/prep/growth content.
+    void pdf;
     if (resumeAttachment) attachments.push(resumeAttachment);
 
     let emailed = false;
@@ -545,18 +543,16 @@ hmSharePublicRouter.get("/:token", async (req: Request, res: Response) => {
     updatedAt: new Date(),
   }).where(eq(hiringManagerSharesTable.id, share.id));
 
-  /* Defence in depth: strip contact details from the snapshot if the recruiter
-     did not include them, even though the client-built snapshot already should. */
-  const pkg: any = share.packageSnapshot ? JSON.parse(JSON.stringify(share.packageSnapshot)) : null;
-  if (pkg && pkg.candidate && !share.includeContact) {
-    delete pkg.candidate.email;
-    delete pkg.candidate.phone;
-  }
+  /* Re-apply the positive allowlist on read so legacy snapshots with no
+     evidence provenance fail closed as well. */
+  const pkg = sanitizeEmployerPackageSnapshot(share.packageSnapshot, {
+    includeContact: !!share.includeContact,
+  });
 
   res.json({
     package: pkg,
     brand: share.brandSnapshot ?? null,
-    message: share.includeNotes ? share.message : null,
+    message: null,
     recipientName: share.recipientName,
     includeContact: share.includeContact,
     includeResume: share.includeResume,

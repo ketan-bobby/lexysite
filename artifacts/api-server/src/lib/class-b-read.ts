@@ -55,6 +55,13 @@ export const CLASS_B_READ_EXEMPTION = Object.freeze({
    * caller-supplied id for someone else.
    */
   CANDIDATE_SELF_OWNED: "candidate_self_owned",
+  /**
+   * Exact object-pointer lookup used only to classify private developmental
+   * recordings before generic ACL fallback. Returns no profile content; a
+   * matched pointer requires candidates.user_id ownership before any file read.
+   * Tenant-filtering this lookup would let foreign private pointers evade it.
+   */
+  PRIVATE_OBJECT_CLASSIFICATION: "private_object_classification",
 
   /**
    * A single-row read authorized by an opaque, expiring SHARE TOKEN rather than a

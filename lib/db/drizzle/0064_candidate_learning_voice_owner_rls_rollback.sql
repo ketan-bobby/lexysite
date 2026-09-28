@@ -1,0 +1,25 @@
+BEGIN;
+
+DROP POLICY IF EXISTS candidate_learning_voice_cycles_tenant_select ON candidate_learning_voice_cycles;
+CREATE POLICY candidate_learning_voice_cycles_tenant_select ON candidate_learning_voice_cycles FOR SELECT TO lexy_app USING (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_cycles_tenant_insert ON candidate_learning_voice_cycles;
+CREATE POLICY candidate_learning_voice_cycles_tenant_insert ON candidate_learning_voice_cycles FOR INSERT TO lexy_app WITH CHECK (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_cycles_tenant_update ON candidate_learning_voice_cycles;
+CREATE POLICY candidate_learning_voice_cycles_tenant_update ON candidate_learning_voice_cycles FOR UPDATE TO lexy_app USING (app_tenant_in_scope(tenant_id)) WITH CHECK (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_cycles_tenant_delete ON candidate_learning_voice_cycles;
+CREATE POLICY candidate_learning_voice_cycles_tenant_delete ON candidate_learning_voice_cycles FOR DELETE TO lexy_app USING (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_turns_tenant_select ON candidate_learning_voice_turns;
+CREATE POLICY candidate_learning_voice_turns_tenant_select ON candidate_learning_voice_turns FOR SELECT TO lexy_app USING (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_turns_tenant_insert ON candidate_learning_voice_turns;
+CREATE POLICY candidate_learning_voice_turns_tenant_insert ON candidate_learning_voice_turns FOR INSERT TO lexy_app WITH CHECK (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_turns_tenant_update ON candidate_learning_voice_turns;
+CREATE POLICY candidate_learning_voice_turns_tenant_update ON candidate_learning_voice_turns FOR UPDATE TO lexy_app USING (app_tenant_in_scope(tenant_id)) WITH CHECK (app_tenant_in_scope(tenant_id));
+DROP POLICY IF EXISTS candidate_learning_voice_turns_tenant_delete ON candidate_learning_voice_turns;
+CREATE POLICY candidate_learning_voice_turns_tenant_delete ON candidate_learning_voice_turns FOR DELETE TO lexy_app USING (app_tenant_in_scope(tenant_id));
+
+ALTER TABLE candidate_learning_voice_cycles DROP CONSTRAINT IF EXISTS candidate_learning_voice_cycles_training_evidence_chk;
+ALTER TABLE candidate_learning_voice_cycles
+  DROP COLUMN IF EXISTS training_completed_at,
+  DROP COLUMN IF EXISTS training_evidence;
+
+COMMIT;

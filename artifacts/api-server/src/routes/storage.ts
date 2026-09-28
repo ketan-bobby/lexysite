@@ -102,31 +102,57 @@ import {
   db,
   usersTable,
   interviewSessionsTable,
+  interviewPlansTable,
+  applicationsTable,
   candidatesTable,
   candidateCareerProfilesTable,
   recruiterAvatarVideoJobsTable,
   recruiterAvatarProfilesTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { resolveCandidateId } from "../lib/portal-auth";
 import { getAuthUserId } from "../lib/auth-token";
 import { getAllowedTenantIds } from "../lib/tenantUtils";
+import { callerOwnsCandidateDevelopmentData } from "../lib/candidate-development-privacy";
+import { classBRead, CLASS_B_READ_EXEMPTION } from "../lib/class-b-read";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * isCallerAuthorizedForSession — the ownership/capability check that gates every
  * recording write for a given interview session. A caller is authorized when
- * they are the platform admin, the session's own candidate (matched by the
- * candidates.user_id FK, NEVER by email), or a recruiter/admin inside the
- * session's tenant subtree. Returns false when the session does not exist so a
- * non-owner can't distinguish "wrong session" from "no such session".
+ * they are the session's own candidate (matched by candidates.user_id, NEVER
+ * email), or staff authorized for a job-specific session. Sessions without a
+ * plan→job are candidate-development content and never become staff-readable
+ * merely because a caller is in the same tenant or is a platform admin.
  *
  * This is the single source of truth shared by attachRecordingToSession (the
  * pointer write on POST /recording and /chunk) and the POST /recording/part
  * S3 write, whose object key is derived from the caller-supplied sessionId and
  * therefore MUST be ownership-checked before any storage I/O.
  */
+async function isJobScopedInterviewSession(
+  session: { planId: string | null; applicationId?: string | null },
+): Promise<boolean> {
+  if (session.planId) {
+    const [plan] = await db
+      .select({ jobId: interviewPlansTable.jobId })
+      .from(interviewPlansTable)
+      .where(eq(interviewPlansTable.id, session.planId))
+      .limit(1);
+    if (plan?.jobId) return true;
+  }
+  /* Some valid legacy sessions are attached directly to an application rather
+     than a persisted plan. They remain a job-specific client assessment. */
+  if (!session.applicationId) return false;
+  const [application] = await db
+    .select({ jobId: applicationsTable.jobId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, session.applicationId))
+    .limit(1);
+  return !!application?.jobId;
+}
+
 async function isCallerAuthorizedForSession(
   callerId: string,
   sessionId: string,
@@ -144,16 +170,15 @@ async function isCallerAuthorizedForSession(
     .where(eq(usersTable.id, callerId))
     .limit(1);
 
-  if (callerUser?.role === "platform_admin") return true;
   /* Candidate-owner: match the session's candidate by FK, never by email. */
-  if (session.candidateId) {
-    const [cand] = await db
-      .select()
-      .from(candidatesTable)
-      .where(eq(candidatesTable.id, session.candidateId))
-      .limit(1);
-    if (cand?.userId && cand.userId === callerId) return true;
+  if (callerUser && session.candidateId
+    && await callerOwnsCandidateDevelopmentData(callerUser, session.candidateId)) {
+    return true;
   }
+  /* No job binding means a baseline/mock/self-practice session. Do not fall
+     back to tenant or platform authority for private developmental material. */
+  if (!(await isJobScopedInterviewSession(session))) return false;
+  if (callerUser?.role === "platform_admin") return true;
   /* Tenant recruiter/admin fallback (e.g. a recruiter re-uploading). */
   if (callerUser) {
     const allowed = await getAllowedTenantIds(callerUser as any);
@@ -998,6 +1023,79 @@ async function canCallerReadObject(
   objectFile: Awaited<ReturnType<typeof objectStorageService.getObjectEntityFile>>,
   req: Request,
 ): Promise<boolean> {
+  /* A career-profile recording pointer is an explicit developmental-content
+   * binding. Evaluate it before ACL grants or interview-session fallbacks:
+   * otherwise a staff ACL grant could re-open a private baseline recording. */
+  /* Legacy career uploads stored the S3 key without the `/objects/` route
+   * prefix, while newer pointers use the canonical object path. Match both
+   * representations so neither can slip through the generic object fallback. */
+  const careerRecordingPaths = Array.from(new Set([
+    objectPath,
+    objectPath.replace(/^\/objects\//, ""),
+  ]));
+  classBRead(CLASS_B_READ_EXEMPTION.PRIVATE_OBJECT_CLASSIFICATION);
+  const careerRecordingRows = await db
+    .select({ candidateId: candidateCareerProfilesTable.candidateId })
+    .from(candidateCareerProfilesTable)
+    .where(inArray(candidateCareerProfilesTable.recordingUrl, careerRecordingPaths))
+    .limit(2);
+  if (careerRecordingRows.length > 0) {
+    if (careerRecordingRows.length !== 1) {
+      req.log.warn(
+        { objectPath },
+        "[storage] career recording denied — object referenced by multiple profiles",
+      );
+      return false;
+    }
+    const [caller] = await controlDb
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, callerId))
+      .limit(1);
+    const allowed = !!caller
+      && await callerOwnsCandidateDevelopmentData(caller, careerRecordingRows[0].candidateId);
+    if (!allowed) {
+      req.log.warn({ objectPath, callerId }, "[storage] career recording denied — candidate self required");
+    }
+    return allowed;
+  }
+
+  /* A non-job interview-session recording is likewise private development
+   * data. This seal deliberately runs even where an object ACL would otherwise
+   * allow a tenant staff member to read it. Job-scoped recordings continue
+   * through the existing ACL/session authorization below. */
+  const boundSessions = await db
+    .select({
+      id: interviewSessionsTable.id,
+      candidateId: interviewSessionsTable.candidateId,
+      planId: interviewSessionsTable.planId,
+      applicationId: interviewSessionsTable.applicationId,
+    })
+    .from(interviewSessionsTable)
+    .where(eq(interviewSessionsTable.recordingUrl, objectPath))
+    .limit(2);
+  if (boundSessions.length > 1) {
+    req.log.warn(
+      { objectPath },
+      "[storage] recording denied — object referenced by multiple sessions",
+    );
+    return false;
+  }
+  if (boundSessions.length === 1 && !(await isJobScopedInterviewSession(boundSessions[0]))) {
+    const [caller] = await controlDb
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, callerId))
+      .limit(1);
+    const allowed = !!caller
+      && !!boundSessions[0].candidateId
+      && await callerOwnsCandidateDevelopmentData(caller, boundSessions[0].candidateId);
+    if (!allowed) {
+      req.log.warn({ objectPath, callerId }, "[storage] developmental recording denied — candidate self required");
+    }
+    return allowed;
+  }
+
   let canAccess = await objectStorageService.canAccessObjectEntity({
     userId: callerId,
     objectFile,

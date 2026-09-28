@@ -5,11 +5,363 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+export type LearningGrowthInterestArea =
+  (typeof LearningGrowthInterestArea)[keyof typeof LearningGrowthInterestArea];
+
+export const LearningGrowthInterestArea = {
+  software_technology: "software_technology",
+  data_analytics: "data_analytics",
+  finance_accounting: "finance_accounting",
+  sales_marketing: "sales_marketing",
+  customer_service: "customer_service",
+  operations: "operations",
+  other: "other",
+  exploring: "exploring",
+} as const;
+
+export type LearningGrowthPriority =
+  (typeof LearningGrowthPriority)[keyof typeof LearningGrowthPriority];
+
+export const LearningGrowthPriority = {
+  first_job: "first_job",
+  career_exploration: "career_exploration",
+  communication: "communication",
+  interviews: "interviews",
+  role_skills: "role_skills",
+} as const;
+
+export type LearningGrowthInterestsEducationStage =
+  (typeof LearningGrowthInterestsEducationStage)[keyof typeof LearningGrowthInterestsEducationStage];
+
+export const LearningGrowthInterestsEducationStage = {
+  studying: "studying",
+  graduating: "graduating",
+  graduated: "graduated",
+  working: "working",
+  exploring: "exploring",
+} as const;
+
+export type LearningGrowthInterestsStartTiming =
+  (typeof LearningGrowthInterestsStartTiming)[keyof typeof LearningGrowthInterestsStartTiming];
+
+export const LearningGrowthInterestsStartTiming = {
+  now: "now",
+  within_month: "within_month",
+  later: "later",
+  exploring: "exploring",
+} as const;
+
+export interface LearningGrowthInterests {
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  careerAreas: LearningGrowthInterestArea[];
+  /**
+   * @maxLength 250
+   * @nullable
+   */
+  otherInterest: string | null;
+  /**
+   * @minItems 0
+   * @maxItems 10
+   */
+  immediateRoles: string[];
+  educationStage: LearningGrowthInterestsEducationStage;
+  /**
+   * @maxLength 200
+   * @nullable
+   */
+  discipline: string | null;
+  /**
+   * @minimum 1950
+   * @maximum 2100
+   * @nullable
+   */
+  graduationYear: number | null;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  learningPriorities: LearningGrowthPriority[];
+  /**
+   * @maxLength 100
+   * @nullable
+   */
+  preferredLanguage: string | null;
+  /**
+   * Optional learning accommodations or preferences; not a medical diagnosis.
+   * @maxLength 500
+   * @nullable
+   */
+  accessibilityPreferences: string | null;
+  startTiming: LearningGrowthInterestsStartTiming;
+}
+
+export type LearningGrowthInterestsInput = LearningGrowthInterests & {
+  /** @minimum 0 */
+  revision: number;
+};
+
+export interface LearningGrowthGoalsInput {
+  /** @minimum 0 */
+  revision: number;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  immediateGoal: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  careerGoal3yr: string;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  careerGoal5yr: string;
+}
+
+export interface LearningGrowthGoals {
+  immediateGoal: string;
+  careerGoal3yr: string;
+  careerGoal5yr: string;
+  /** @nullable */
+  confirmedAt: string | null;
+}
+
+export interface LearningGrowthBaseline {
+  completed: boolean;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type LearningGrowthNextStepKind =
+  (typeof LearningGrowthNextStepKind)[keyof typeof LearningGrowthNextStepKind];
+
+export const LearningGrowthNextStepKind = {
+  practice: "practice",
+  reflection: "reflection",
+  resource: "resource",
+} as const;
+
+export interface LearningGrowthNextStep {
+  id: string;
+  title: string;
+  description: string;
+  kind: LearningGrowthNextStepKind;
+  /** @nullable */
+  href: string | null;
+}
+
+export type LearningGrowthPlannedCourseStatus =
+  (typeof LearningGrowthPlannedCourseStatus)[keyof typeof LearningGrowthPlannedCourseStatus];
+
+export const LearningGrowthPlannedCourseStatus = {
+  planned: "planned",
+} as const;
+
+export interface LearningGrowthPlannedCourse {
+  id: string;
+  title: string;
+  description: string;
+  status: LearningGrowthPlannedCourseStatus;
+}
+
+export interface LearningGrowthPlan {
+  summary: string;
+  startingPointNote: string;
+  nextSteps: LearningGrowthNextStep[];
+  plannedCourses: LearningGrowthPlannedCourse[];
+}
+
+export type LearningGrowthResponseStage =
+  (typeof LearningGrowthResponseStage)[keyof typeof LearningGrowthResponseStage];
+
+export const LearningGrowthResponseStage = {
+  unavailable: "unavailable",
+  interests: "interests",
+  baseline: "baseline",
+  goals: "goals",
+  ready: "ready",
+} as const;
+
+export interface LearningGrowthResponse {
+  available: boolean;
+  stage: LearningGrowthResponseStage;
+  revision: number;
+  baseline: LearningGrowthBaseline;
+  interests: LearningGrowthInterests | null;
+  goals: LearningGrowthGoals;
+  plan: LearningGrowthPlan | null;
+}
+
+export type LearningCoursePath = (typeof LearningCoursePath)[keyof typeof LearningCoursePath];
+
+export const LearningCoursePath = {
+  voice: "voice",
+  chat_email: "chat_email",
+} as const;
+
+export interface LearningCourseEnrollmentInput {
+  path: LearningCoursePath;
+}
+
+export type LearningLessonInputAnswers = { [key: string]: string };
+
+export type LearningLessonInputAction =
+  (typeof LearningLessonInputAction)[keyof typeof LearningLessonInputAction];
+
+export const LearningLessonInputAction = {
+  save_draft: "save_draft",
+  submit: "submit",
+} as const;
+
+export interface LearningLessonInput {
+  /** @minimum 0 */
+  revision: number;
+  answers: LearningLessonInputAnswers;
+  action: LearningLessonInputAction;
+}
+
+export type LearningCourseEnrollmentStatus =
+  (typeof LearningCourseEnrollmentStatus)[keyof typeof LearningCourseEnrollmentStatus];
+
+export const LearningCourseEnrollmentStatus = {
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export interface LearningCourseEnrollment {
+  id: string;
+  path: LearningCoursePath;
+  status: LearningCourseEnrollmentStatus;
+  enrolledAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  /** @minimum 0 */
+  completedLessons: number;
+  /** @minimum 0 */
+  totalLessons: number;
+  /** @nullable */
+  resumeLessonId: string | null;
+}
+
+export interface LearningCourseSummary {
+  id: string;
+  title: string;
+  description: string;
+  version: number;
+  estimatedMinutes: number;
+  lessonCount: number;
+  enrollment: LearningCourseEnrollment | null;
+}
+
+export interface LearningCourseCatalog {
+  available: boolean;
+  unlocked: boolean;
+  /** @nullable */
+  lockReason: string | null;
+  courses: LearningCourseSummary[];
+}
+
+export interface LearningCourseSection {
+  heading: string;
+  body: string;
+}
+
+export interface LearningCourseExample {
+  scenario: string;
+  response: string;
+  whyItWorks: string;
+}
+
+export interface LearningExerciseOption {
+  id: string;
+  label: string;
+}
+
+export type LearningCourseExerciseType =
+  (typeof LearningCourseExerciseType)[keyof typeof LearningCourseExerciseType];
+
+export const LearningCourseExerciseType = {
+  choice: "choice",
+  reflection: "reflection",
+} as const;
+
+export interface LearningCourseExercise {
+  id: string;
+  type: LearningCourseExerciseType;
+  prompt: string;
+  options: LearningExerciseOption[];
+  checklist: string[];
+}
+
+export interface LearningExerciseFeedback {
+  exerciseId: string;
+  message: string;
+  /** @nullable */
+  correct: boolean | null;
+  /** @nullable */
+  modelAnswer: string | null;
+}
+
+export type LearningLessonProgressStatus =
+  (typeof LearningLessonProgressStatus)[keyof typeof LearningLessonProgressStatus];
+
+export const LearningLessonProgressStatus = {
+  not_started: "not_started",
+  draft: "draft",
+  completed: "completed",
+} as const;
+
+export type LearningLessonProgressAnswers = { [key: string]: string };
+
+export interface LearningLessonProgress {
+  /** @minimum 0 */
+  revision: number;
+  status: LearningLessonProgressStatus;
+  answers: LearningLessonProgressAnswers;
+  /** @minimum 0 */
+  attempts: number;
+  /** @nullable */
+  completedAt: string | null;
+  feedback: LearningExerciseFeedback[];
+}
+
+export type LearningCourseLessonTrack =
+  (typeof LearningCourseLessonTrack)[keyof typeof LearningCourseLessonTrack];
+
+export const LearningCourseLessonTrack = {
+  shared: "shared",
+  voice: "voice",
+  chat_email: "chat_email",
+} as const;
+
+export interface LearningCourseLesson {
+  id: string;
+  title: string;
+  track: LearningCourseLessonTrack;
+  estimatedMinutes: number;
+  objectives: string[];
+  sections: LearningCourseSection[];
+  example: LearningCourseExample;
+  exercises: LearningCourseExercise[];
+  progress: LearningLessonProgress;
+}
+
+export interface LearningCourseDetail {
+  course: LearningCourseSummary;
+  lessons: LearningCourseLesson[];
+}
+
 export interface HealthStatus {
   status: string;
 }
 
 export interface ErrorResponse {
+  code?: string;
   error: string;
   message?: string;
 }
@@ -46,7 +398,7 @@ export interface User {
   createdAt: string;
 }
 
-export interface LoginResponse {
+export interface LoginResult {
   user: User;
   token: string;
 }
@@ -119,9 +471,7 @@ export const JobWorkType = {
   onsite: "onsite",
 } as const;
 
-export type JobEmploymentType =
-  | (typeof JobEmploymentType)[keyof typeof JobEmploymentType]
-  | null;
+export type JobEmploymentType = (typeof JobEmploymentType)[keyof typeof JobEmploymentType] | null;
 
 export const JobEmploymentType = {
   full_time: "full_time",
@@ -266,6 +616,92 @@ export interface Candidate {
   updatedAt: string;
 }
 
+export interface CandidateIntroductionStrength {
+  /** @maxLength 100 */
+  title: string;
+  /** @maxLength 500 */
+  evidence: string;
+}
+
+export interface CandidateIntroductionAchievement {
+  /** @maxLength 500 */
+  text: string;
+}
+
+export interface CandidateIntroductionInput {
+  /** @maxLength 1200 */
+  summary?: string;
+  /** @maxItems 8 */
+  strengths?: CandidateIntroductionStrength[];
+  /** @maxItems 8 */
+  achievements?: CandidateIntroductionAchievement[];
+  /**
+   * @maxLength 500
+   * @nullable
+   */
+  careerDirection?: string | null;
+  /**
+   * @maxLength 500
+   * @nullable
+   */
+  rolePreferences?: string | null;
+  /**
+   * @maxLength 250
+   * @nullable
+   */
+  availability?: string | null;
+}
+
+export interface CandidateIntroductionApprovalInput {
+  version: string;
+}
+
+export type CandidateIntroductionDraftStatus =
+  (typeof CandidateIntroductionDraftStatus)[keyof typeof CandidateIntroductionDraftStatus];
+
+export const CandidateIntroductionDraftStatus = {
+  draft: "draft",
+  approved: "approved",
+  withdrawn: "withdrawn",
+} as const;
+
+export interface CandidateIntroductionDraft {
+  exists: boolean;
+  candidateId: string;
+  status: CandidateIntroductionDraftStatus;
+  summary: string;
+  strengths: CandidateIntroductionStrength[];
+  achievements: CandidateIntroductionAchievement[];
+  /** @nullable */
+  careerDirection: string | null;
+  /** @nullable */
+  rolePreferences: string | null;
+  /** @nullable */
+  availability: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  withdrawnAt: string | null;
+  /** @nullable */
+  version: string | null;
+}
+
+export interface ApprovedCandidateIntroduction {
+  exists: true;
+  candidateId: string;
+  summary: string;
+  strengths: CandidateIntroductionStrength[];
+  achievements: CandidateIntroductionAchievement[];
+  /** @nullable */
+  careerDirection: string | null;
+  /** @nullable */
+  preferences: string | null;
+  /** @nullable */
+  availability: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+}
+
 export interface CandidatesListResponse {
   candidates: Candidate[];
   total: number;
@@ -297,8 +733,7 @@ export interface UpdateCandidateRequest {
   skills?: string[];
 }
 
-export type ApplicationStage =
-  (typeof ApplicationStage)[keyof typeof ApplicationStage];
+export type ApplicationStage = (typeof ApplicationStage)[keyof typeof ApplicationStage];
 
 export const ApplicationStage = {
   sourced: "sourced",
@@ -474,8 +909,7 @@ export interface PrepPlan {
   createdAt: string;
 }
 
-export type PrepSessionStatus =
-  (typeof PrepSessionStatus)[keyof typeof PrepSessionStatus];
+export type PrepSessionStatus = (typeof PrepSessionStatus)[keyof typeof PrepSessionStatus];
 
 export const PrepSessionStatus = {
   active: "active",
@@ -900,7 +1334,13 @@ export interface HiringFunnel {
   stages: FunnelStage[];
 }
 
-export interface RequestUploadUrlBody {
+export interface InboxReplyInput {
+  /** Optional subject override; defaults to "Re: <inbox subject>" */
+  subject?: string;
+  body: string;
+}
+
+export interface StorageUploadUrlInput {
   /** @minLength 1 */
   name: string;
   /** @minimum 1 */
@@ -909,10 +1349,381 @@ export interface RequestUploadUrlBody {
   contentType: string;
 }
 
-export interface RequestUploadUrlResponse {
+export interface StorageUploadUrlResult {
   uploadURL: string;
   objectPath: string;
-  metadata?: RequestUploadUrlBody;
+  metadata?: StorageUploadUrlInput;
+}
+
+export interface LearningAssessmentStartInput {
+  /** @minLength 1 */
+  courseId: string;
+}
+
+export type LearningAssessmentSummaryPath =
+  (typeof LearningAssessmentSummaryPath)[keyof typeof LearningAssessmentSummaryPath];
+
+export const LearningAssessmentSummaryPath = {
+  voice: "voice",
+  chat_email: "chat_email",
+} as const;
+
+export type LearningAssessmentSummaryStatus =
+  (typeof LearningAssessmentSummaryStatus)[keyof typeof LearningAssessmentSummaryStatus];
+
+export const LearningAssessmentSummaryStatus = {
+  draft: "draft",
+  completed: "completed",
+} as const;
+
+export interface LearningAssessmentSummary {
+  id: string;
+  courseId: string;
+  title: string;
+  path: LearningAssessmentSummaryPath;
+  status: LearningAssessmentSummaryStatus;
+  taskSetVersion: number;
+  rubricVersion: string;
+  startedAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  completedTasks: number;
+  totalTasks: number;
+  /** @nullable */
+  resumeTaskKey: string | null;
+}
+
+export type LearningAssessmentTaskResponseMode =
+  (typeof LearningAssessmentTaskResponseMode)[keyof typeof LearningAssessmentTaskResponseMode];
+
+export const LearningAssessmentTaskResponseMode = {
+  spoken_or_typed: "spoken_or_typed",
+  typed: "typed",
+} as const;
+
+export type LearningAssessmentTaskProgressStatus =
+  (typeof LearningAssessmentTaskProgressStatus)[keyof typeof LearningAssessmentTaskProgressStatus];
+
+export const LearningAssessmentTaskProgressStatus = {
+  not_started: "not_started",
+  draft: "draft",
+  submitted: "submitted",
+} as const;
+
+export type LearningAssessmentTaskProgress = {
+  revision: number;
+  status: LearningAssessmentTaskProgressStatus;
+  response: string;
+  /** @nullable */
+  updatedAt: string | null;
+};
+
+export interface LearningAssessmentTask {
+  key: string;
+  title: string;
+  instructions: string;
+  scenario: string;
+  responseMode: LearningAssessmentTaskResponseMode;
+  minimumNonSpaceCharacters: number;
+  coveredDimensions: string[];
+  progress: LearningAssessmentTaskProgress;
+}
+
+export interface LearningAssessmentDetail {
+  summary: LearningAssessmentSummary;
+  tasks: LearningAssessmentTask[];
+}
+
+export interface LearningAssessmentHome {
+  available: boolean;
+  unlockedCourses: string[];
+  assessments: LearningAssessmentSummary[];
+}
+
+export type LearningAssessmentTaskInputAction =
+  (typeof LearningAssessmentTaskInputAction)[keyof typeof LearningAssessmentTaskInputAction];
+
+export const LearningAssessmentTaskInputAction = {
+  save_draft: "save_draft",
+  submit: "submit",
+} as const;
+
+export interface LearningAssessmentTaskInput {
+  /** @minimum 0 */
+  revision: number;
+  /** @maxLength 6000 */
+  response: string;
+  action: LearningAssessmentTaskInputAction;
+}
+
+export type LearningAssessmentDimensionLevel =
+  (typeof LearningAssessmentDimensionLevel)[keyof typeof LearningAssessmentDimensionLevel];
+
+export const LearningAssessmentDimensionLevel = {
+  emerging: "emerging",
+  developing: "developing",
+  consistent: "consistent",
+  not_observed: "not_observed",
+} as const;
+
+export interface LearningAssessmentDimension {
+  dimension: string;
+  label: string;
+  level: LearningAssessmentDimensionLevel;
+  levelLabel: string;
+  evidence: string[];
+  observed?: number;
+  possible?: number;
+}
+
+export interface LearningAssessmentComparison {
+  available: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
+export interface LearningAssessmentRecommendation {
+  lessonId: string;
+  courseId: string;
+  lessonTitle: string;
+  reason: string;
+}
+
+export type LearningAssessmentReportVersions = {
+  taskSetVersion: number;
+  rubricVersion: string;
+};
+
+export interface LearningAssessmentReport {
+  summary: LearningAssessmentSummary;
+  versions: LearningAssessmentReportVersions;
+  comparison: LearningAssessmentComparison;
+  overallSummary: string;
+  dimensions: LearningAssessmentDimension[];
+  recommendations: LearningAssessmentRecommendation[];
+}
+
+export interface LearningVoiceProgressStartInput {
+  /** @minLength 1 */
+  courseId: string;
+}
+
+export type LearningVoiceProgressTurnInputAction =
+  (typeof LearningVoiceProgressTurnInputAction)[keyof typeof LearningVoiceProgressTurnInputAction];
+
+export const LearningVoiceProgressTurnInputAction = {
+  save_draft: "save_draft",
+  submit: "submit",
+} as const;
+
+export interface LearningVoiceProgressTurnInput {
+  /** @minimum 0 */
+  revision: number;
+  /** @maxLength 6000 */
+  response: string;
+  action: LearningVoiceProgressTurnInputAction;
+}
+
+export interface LearningVoiceProgressEmptyInput {
+  [key: string]: unknown;
+}
+
+export type LearningVoiceProgressSummaryState =
+  (typeof LearningVoiceProgressSummaryState)[keyof typeof LearningVoiceProgressSummaryState];
+
+export const LearningVoiceProgressSummaryState = {
+  baseline_draft: "baseline_draft",
+  training_required: "training_required",
+  progress_draft: "progress_draft",
+  completed: "completed",
+} as const;
+
+export type LearningVoiceProgressSummaryForm =
+  (typeof LearningVoiceProgressSummaryForm)[keyof typeof LearningVoiceProgressSummaryForm];
+
+export const LearningVoiceProgressSummaryForm = {
+  A: "A",
+  B: "B",
+} as const;
+
+export interface LearningVoiceProgressSummary {
+  id: string;
+  courseId: string;
+  state: LearningVoiceProgressSummaryState;
+  form: LearningVoiceProgressSummaryForm;
+  comparisonFamilyVersion: string;
+  rubricVersion: string;
+  evaluatorVersion: string;
+  /** @nullable */
+  baselineCompletedAt: string | null;
+  /** @nullable */
+  progressStartedAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  completedTurns: number;
+  totalTurns: number;
+  reason: string;
+  action: string;
+  reviewedCount: number;
+  totalReviewLessons: number;
+  /** @nullable */
+  reviewAttemptId: string | null;
+}
+
+export type LearningVoiceProgressTurnPhase =
+  (typeof LearningVoiceProgressTurnPhase)[keyof typeof LearningVoiceProgressTurnPhase];
+
+export const LearningVoiceProgressTurnPhase = {
+  baseline: "baseline",
+  progress: "progress",
+} as const;
+
+export type LearningVoiceProgressTurnForm =
+  (typeof LearningVoiceProgressTurnForm)[keyof typeof LearningVoiceProgressTurnForm];
+
+export const LearningVoiceProgressTurnForm = {
+  A: "A",
+  B: "B",
+} as const;
+
+export type LearningVoiceProgressTurnProgressStatus =
+  (typeof LearningVoiceProgressTurnProgressStatus)[keyof typeof LearningVoiceProgressTurnProgressStatus];
+
+export const LearningVoiceProgressTurnProgressStatus = {
+  draft: "draft",
+  submitted: "submitted",
+  not_started: "not_started",
+} as const;
+
+export type LearningVoiceProgressTurnProgress = {
+  revision: number;
+  status: LearningVoiceProgressTurnProgressStatus;
+  response: string;
+  /** @nullable */
+  updatedAt: string | null;
+};
+
+export interface LearningVoiceProgressTurn {
+  key: string;
+  prompt: string;
+  phase: LearningVoiceProgressTurnPhase;
+  form: LearningVoiceProgressTurnForm;
+  minimumNonSpaceCharacters: number;
+  progress: LearningVoiceProgressTurnProgress;
+}
+
+export type LearningVoiceProgressDetailPrivacy = {
+  audioStorage: string;
+  speechDisclosure: string;
+};
+
+export interface LearningVoiceProgressDetail {
+  summary: LearningVoiceProgressSummary;
+  turns: LearningVoiceProgressTurn[];
+  privacy: LearningVoiceProgressDetailPrivacy;
+}
+
+export interface LearningVoiceProgressHome {
+  available: boolean;
+  eligibleCourses: string[];
+  cycles: LearningVoiceProgressSummary[];
+}
+
+export type LearningVoiceProgressReportComparisonDimensionsItemObservedDifference =
+  (typeof LearningVoiceProgressReportComparisonDimensionsItemObservedDifference)[keyof typeof LearningVoiceProgressReportComparisonDimensionsItemObservedDifference];
+
+export const LearningVoiceProgressReportComparisonDimensionsItemObservedDifference = {
+  higher: "higher",
+  same: "same",
+  lower: "lower",
+  not_comparable: "not_comparable",
+} as const;
+
+export type LearningVoiceProgressReportComparisonDimensionsItem = {
+  dimension: string;
+  baselineLevel: string;
+  progressLevel: string;
+  observedDifference: LearningVoiceProgressReportComparisonDimensionsItemObservedDifference;
+  evidence: string[];
+};
+
+export type LearningVoiceProgressReportComparison = {
+  comparable: boolean;
+  reason: string;
+  dimensions: LearningVoiceProgressReportComparisonDimensionsItem[];
+};
+
+export type LearningVoiceProgressReportBaseline = { [key: string]: unknown };
+
+export type LearningVoiceProgressReportProgress = { [key: string]: unknown };
+
+export interface LearningVoiceProgressReport {
+  summary: LearningVoiceProgressSummary;
+  comparison: LearningVoiceProgressReportComparison;
+  baseline: LearningVoiceProgressReportBaseline;
+  progress: LearningVoiceProgressReportProgress;
+  recommendations: string[];
+}
+
+export type LearningVoiceTrainingReviewStatus =
+  (typeof LearningVoiceTrainingReviewStatus)[keyof typeof LearningVoiceTrainingReviewStatus];
+
+export const LearningVoiceTrainingReviewStatus = {
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export type LearningVoiceTrainingReviewLessonsItem = {
+  id: string;
+  title: string;
+  /** @nullable */
+  reviewedAt: string | null;
+};
+
+export interface LearningVoiceTrainingReview {
+  attemptId: string;
+  cycleId: string;
+  courseId: string;
+  status: LearningVoiceTrainingReviewStatus;
+  startedAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  reviewedCount: number;
+  totalLessons: number;
+  lessons: LearningVoiceTrainingReviewLessonsItem[];
+}
+
+export type LearningAchievementsBadgesItem = {
+  key: string;
+  title: string;
+  description: string;
+  earnedAt: string;
+};
+
+export type LearningAchievementsRecentActivityItem = {
+  id: string;
+  eventType: string;
+  title: string;
+  description: string;
+  creditsDelta: number;
+  earnedAt: string;
+};
+
+export type LearningAchievementsMilestonesItem = {
+  key: string;
+  title: string;
+  target: number;
+  current: number;
+  completed: boolean;
+};
+
+export interface LearningAchievements {
+  creditsBalance: number;
+  creditLabel: string;
+  nonMonetaryDisclaimer: string;
+  badges: LearningAchievementsBadgesItem[];
+  recentActivity: LearningAchievementsRecentActivityItem[];
+  milestones: LearningAchievementsMilestonesItem[];
 }
 
 export type ListUsersParams = {
@@ -956,13 +1767,6 @@ export type ListSchedulesParams = {
 export type ListSourcedCandidatesParams = {
   jobId?: string;
   source?: string;
-};
-
-export type ReplyToInboxItemBody = {
-  /** Optional subject override; defaults to "Re: <inbox subject>" */
-  subject?: string;
-  /** Plain-text body of the reply email */
-  body: string;
 };
 
 export type ReplyToInboxItem200 = {

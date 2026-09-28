@@ -79,7 +79,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LoginResponse"
+                $ref: "#/components/schemas/LoginResult"
         "401":
           description: Unauthorized
           content:
@@ -104,7 +104,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LoginResponse"
+                $ref: "#/components/schemas/LoginResult"
 
   /auth/me:
     get:
@@ -524,6 +524,143 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Candidate"
+
+  /candidates/{candidateId}/introduction:
+    get:
+      operationId: getCandidateIntroduction
+      tags: [candidates]
+      summary: Get a candidate-approved written introduction
+      description: Returns only the candidate's currently approved allowlisted introduction when the caller has an authorised candidate relationship. Private career, evaluation, transcript, and recording data are never included.
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Candidate-approved introduction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovedCandidateIntroduction"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Candidate or approved introduction is unavailable to this caller
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/introduction:
+    get:
+      operationId: getPortalIntroduction
+      tags: [candidates]
+      summary: Get the authenticated candidate's private introduction draft
+      responses:
+        "200":
+          description: Candidate's private introduction draft and sharing status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateIntroductionDraft"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateCandidateIntroduction
+      tags: [candidates]
+      summary: Save the authenticated candidate's written introduction
+      description: Saving any change revokes an existing approval and returns the introduction to draft status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateIntroductionInput"
+      responses:
+        "200":
+          description: Saved private draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateIntroductionDraft"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/introduction/approve:
+    post:
+      operationId: approveCandidateIntroduction
+      tags: [candidates]
+      summary: Approve an introduction for authorised employer sharing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateIntroductionApprovalInput"
+      responses:
+        "200":
+          description: Approved introduction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateIntroductionDraft"
+        "409":
+          description: The supplied draft version is stale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Required candidate-entered introduction fields are missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/introduction/withdraw:
+    post:
+      operationId: withdrawCandidateIntroduction
+      tags: [candidates]
+      summary: Withdraw employer sharing for the authenticated candidate's introduction
+      responses:
+        "200":
+          description: Withdrawn private draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateIntroductionDraft"
+        "404":
+          description: Introduction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # APPLICATIONS
   /applications:
@@ -1219,15 +1356,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [body]
-              properties:
-                subject:
-                  type: string
-                  description: 'Optional subject override; defaults to "Re: <inbox subject>"'
-                body:
-                  type: string
-                  description: Plain-text body of the reply email
+              $ref: "#/components/schemas/InboxReplyInput"
       responses:
         "200":
           description: Reply sent
@@ -1298,6 +1427,561 @@ paths:
                   $ref: "#/components/schemas/GhostingRisk"
 
   # CANDIDATE PORTAL
+  /portal/learning-growth:
+    get:
+      operationId: getLearningGrowth
+      tags: [candidates]
+      summary: Get the authenticated candidate's private graduate learning plan
+      description: Candidate-private pilot data. Availability is read-only and disabled candidates receive a safe unavailable response without learning or career-profile values.
+      responses:
+        "200":
+          description: Current pilot availability, gating state, saved inputs, and private plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningGrowthResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/interests:
+    put:
+      operationId: saveLearningGrowthInterests
+      tags: [candidates]
+      summary: Save the authenticated candidate's private learning interests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningGrowthInterestsInput"
+      responses:
+        "200":
+          description: Updated private graduate learning state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningGrowthResponse"
+        "400":
+          description: Invalid or unknown input fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Pilot unavailable for this candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/goals:
+    put:
+      operationId: confirmLearningGrowthGoals
+      tags: [candidates]
+      summary: Confirm private learning goals and update canonical career goals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningGrowthGoalsInput"
+      responses:
+        "200":
+          description: Updated private graduate learning state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningGrowthResponse"
+        "400":
+          description: Invalid or unknown input fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Pilot unavailable for this candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Interests or baseline prerequisite missing, or revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/courses:
+    get:
+      operationId: listLearningCourses
+      tags: [candidates]
+      summary: List courses available to the authenticated candidate
+      responses:
+        "200":
+          description: Private course catalog and prerequisite state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningCourseCatalog"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Existing enrolment content version mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/courses/{courseId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getLearningCourse
+      tags: [candidates]
+      summary: Get private course content and candidate progress
+      responses:
+        "200":
+          description: Course definition and private progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningCourseDetail"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access or prerequisites required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Course or pilot unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/courses/{courseId}/enroll:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: enrollLearningCourse
+      tags: [candidates]
+      summary: Enrol the authenticated candidate in a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningCourseEnrollmentInput"
+      responses:
+        "200":
+          description: Enrolled course and private progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningCourseDetail"
+        "400":
+          description: Invalid or unknown input fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Candidate-owner access or prerequisites required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Course or pilot unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Enrolment path conflict or content version mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/courses/{courseId}/lessons/{lessonId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: lessonId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: saveLearningLesson
+      tags: [candidates]
+      summary: Save or submit private lesson practice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningLessonInput"
+      responses:
+        "200":
+          description: Updated course and private progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningCourseDetail"
+        "400":
+          description: Invalid lesson, exercise, or unknown input fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /portal/learning-growth/assessments:
+    get:
+      operationId: listLearningAssessments
+      tags: [candidates]
+      summary: List private developmental reassessments
+      responses:
+        "200":
+          description: Candidate-private assessment home
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningAssessmentHome"
+        "401": { description: Authentication required, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "403": { description: Candidate-owner access required, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+    post:
+      operationId: startLearningAssessment
+      tags: [candidates]
+      summary: Start or resume a private developmental reassessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningAssessmentStartInput"
+      responses:
+        "200":
+          description: Assessment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningAssessmentDetail"
+        "400": { description: Invalid course, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "403": { description: Prerequisite or completion required, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/assessments/{assessmentId}:
+    parameters:
+      - { name: assessmentId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getLearningAssessment
+      tags: [candidates]
+      summary: Get a private developmental reassessment
+      responses:
+        "200":
+          description: Assessment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningAssessmentDetail"
+        "404": { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/assessments/{assessmentId}/tasks/{taskKey}:
+    parameters:
+      - { name: assessmentId, in: path, required: true, schema: { type: string } }
+      - { name: taskKey, in: path, required: true, schema: { type: string } }
+    put:
+      operationId: saveLearningAssessmentTask
+      tags: [candidates]
+      summary: Save or submit one private developmental task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LearningAssessmentTaskInput"
+      responses:
+        "200":
+          description: Updated assessment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningAssessmentDetail"
+        "400": { description: Invalid response, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "409": { description: Stale revision or immutable submitted task, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/assessments/{assessmentId}/report:
+    parameters:
+      - { name: assessmentId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getLearningAssessmentReport
+      tags: [candidates]
+      summary: Get a completed private developmental report
+      responses:
+        "200":
+          description: Current-evidence developmental report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningAssessmentReport"
+        "404": { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+        "409": { description: Assessment is not completed, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress:
+    get:
+      operationId: getLearningVoiceProgressHome
+      tags: [candidates]
+      summary: Get private voice progress interview cycles
+      responses:
+        "200":
+          description: Candidate-private voice progress home
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressHome" }
+    post:
+      operationId: startLearningVoiceProgressCycle
+      tags: [candidates]
+      summary: Start or resume a private structured baseline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressStartInput" }
+      responses:
+        "200":
+          description: Baseline detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressDetail" }
+        "403": { description: Prerequisite required, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress/{cycleId}:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getLearningVoiceProgressCycle
+      tags: [candidates]
+      summary: Get a private voice progress cycle
+      responses:
+        "200":
+          description: Cycle detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressDetail" }
+        "404": { description: Not found, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress/{cycleId}/turns/{taskKey}:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+      - { name: taskKey, in: path, required: true, schema: { type: string } }
+    put:
+      operationId: saveLearningVoiceProgressTurn
+      tags: [candidates]
+      summary: Save or submit one private voice progress response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressTurnInput" }
+      responses:
+        "200":
+          description: Updated cycle detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressDetail" }
+        "409": { description: Stale or immutable turn, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress/{cycleId}/start-progress:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: startLearningVoiceProgress
+      tags: [candidates]
+      summary: Start the post-training equivalent voice form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressEmptyInput" }
+      responses:
+        "200":
+          description: Progress detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressDetail" }
+        "403": { description: Training chronology or version requirement, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress/{cycleId}/training-review:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getLearningVoiceTrainingReview
+      tags: [candidates]
+      summary: Get a private tracked training review
+      responses:
+        "200":
+          description: Training review detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceTrainingReview" }
+        "404": { description: Review not started, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+    post:
+      operationId: startLearningVoiceTrainingReview
+      tags: [candidates]
+      summary: Start or resume a private tracked training review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressEmptyInput" }
+      responses:
+        "200":
+          description: Training review detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceTrainingReview" }
+
+  /portal/learning-growth/voice-progress/{cycleId}/training-review/lessons/{lessonId}:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+      - { name: lessonId, in: path, required: true, schema: { type: string } }
+    put:
+      operationId: reviewLearningVoiceTrainingLesson
+      tags: [candidates]
+      summary: Mark one private training lesson reviewed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressEmptyInput" }
+      responses:
+        "200":
+          description: Updated training review detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceTrainingReview" }
+
+  /portal/learning-growth/achievements:
+    get:
+      operationId: getLearningAchievements
+      tags: [candidates]
+      summary: Get private learning recognition
+      responses:
+        "200":
+          description: Candidate-private non-monetary recognition
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningAchievements" }
+
+  /portal/learning-growth/voice-progress/{cycleId}/complete-training-review:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+    post:
+      operationId: completeLearningVoiceProgressTrainingReview
+      tags: [candidates]
+      summary: Confirm review of already completed voice training
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningVoiceProgressEmptyInput" }
+      responses:
+        "200":
+          description: Ready progress detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressDetail" }
+        "403": { description: Matching completed training required, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
+  /portal/learning-growth/voice-progress/{cycleId}/report:
+    parameters:
+      - { name: cycleId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getLearningVoiceProgressReport
+      tags: [candidates]
+      summary: Get a completed private observed-change report
+      responses:
+        "200":
+          description: Frozen comparison report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningVoiceProgressReport" }
+        "409": { description: Cycle is not completed, content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } } }
+
   /portal/dashboard:
     get:
       operationId: getCandidateDashboard
@@ -1381,14 +2065,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestUploadUrlBody'
+              $ref: '#/components/schemas/StorageUploadUrlInput'
       responses:
         '200':
           description: Presigned upload URL generated.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RequestUploadUrlResponse'
+                $ref: '#/components/schemas/StorageUploadUrlResult'
         '400':
           description: Missing or invalid required fields.
         '500':
@@ -1420,6 +2104,428 @@ paths:
 
 components:
   schemas:
+    LearningGrowthInterestArea:
+      type: string
+      enum:
+        - software_technology
+        - data_analytics
+        - finance_accounting
+        - sales_marketing
+        - customer_service
+        - operations
+        - other
+        - exploring
+
+    LearningGrowthPriority:
+      type: string
+      enum:
+        - first_job
+        - career_exploration
+        - communication
+        - interviews
+        - role_skills
+
+    LearningGrowthInterests:
+      type: object
+      additionalProperties: false
+      required:
+        - careerAreas
+        - otherInterest
+        - immediateRoles
+        - educationStage
+        - discipline
+        - graduationYear
+        - learningPriorities
+        - preferredLanguage
+        - accessibilityPreferences
+        - startTiming
+      properties:
+        careerAreas:
+          type: array
+          minItems: 1
+          maxItems: 8
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/LearningGrowthInterestArea"
+        otherInterest:
+          type: ["string", "null"]
+          maxLength: 250
+        immediateRoles:
+          type: array
+          minItems: 0
+          maxItems: 10
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+        educationStage:
+          type: string
+          enum: [studying, graduating, graduated, working, exploring]
+        discipline:
+          type: ["string", "null"]
+          maxLength: 200
+        graduationYear:
+          type: ["integer", "null"]
+          minimum: 1950
+          maximum: 2100
+        learningPriorities:
+          type: array
+          minItems: 1
+          maxItems: 5
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/LearningGrowthPriority"
+        preferredLanguage:
+          type: ["string", "null"]
+          maxLength: 100
+        accessibilityPreferences:
+          type: ["string", "null"]
+          maxLength: 500
+          description: Optional learning accommodations or preferences; not a medical diagnosis.
+        startTiming:
+          type: string
+          enum: [now, within_month, later, exploring]
+
+    LearningGrowthInterestsInput:
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/LearningGrowthInterests"
+        - type: object
+          required: [revision]
+          properties:
+            revision:
+              type: integer
+              minimum: 0
+
+    LearningGrowthGoalsInput:
+      type: object
+      additionalProperties: false
+      required: [revision, immediateGoal, careerGoal3yr, careerGoal5yr]
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        immediateGoal:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        careerGoal3yr:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        careerGoal5yr:
+          type: string
+          minLength: 1
+          maxLength: 2000
+
+    LearningGrowthGoals:
+      type: object
+      additionalProperties: false
+      required: [immediateGoal, careerGoal3yr, careerGoal5yr, confirmedAt]
+      properties:
+        immediateGoal:
+          type: string
+        careerGoal3yr:
+          type: string
+        careerGoal5yr:
+          type: string
+        confirmedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    LearningGrowthBaseline:
+      type: object
+      additionalProperties: false
+      required: [completed, completedAt]
+      properties:
+        completed:
+          type: boolean
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    LearningGrowthNextStep:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, kind, href]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+          enum: [practice, reflection, resource]
+        href:
+          type: ["string", "null"]
+
+    LearningGrowthPlannedCourse:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [planned]
+
+    LearningGrowthPlan:
+      type: object
+      additionalProperties: false
+      required: [summary, startingPointNote, nextSteps, plannedCourses]
+      properties:
+        summary:
+          type: string
+        startingPointNote:
+          type: string
+        nextSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningGrowthNextStep"
+        plannedCourses:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningGrowthPlannedCourse"
+
+    LearningGrowthResponse:
+      type: object
+      additionalProperties: false
+      required: [available, stage, revision, baseline, interests, goals, plan]
+      properties:
+        available:
+          type: boolean
+        stage:
+          type: string
+          enum: [unavailable, interests, baseline, goals, ready]
+        revision:
+          type: integer
+        baseline:
+          $ref: "#/components/schemas/LearningGrowthBaseline"
+        interests:
+          oneOf:
+            - $ref: "#/components/schemas/LearningGrowthInterests"
+            - type: "null"
+        goals:
+          $ref: "#/components/schemas/LearningGrowthGoals"
+        plan:
+          oneOf:
+            - $ref: "#/components/schemas/LearningGrowthPlan"
+            - type: "null"
+
+    LearningCoursePath:
+      type: string
+      enum: [voice, chat_email]
+
+    LearningCourseEnrollmentInput:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          $ref: "#/components/schemas/LearningCoursePath"
+
+    LearningLessonInput:
+      type: object
+      additionalProperties: false
+      required: [revision, answers, action]
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        answers:
+          type: object
+          maxProperties: 20
+          additionalProperties:
+            type: string
+            maxLength: 4000
+        action:
+          type: string
+          enum: [save_draft, submit]
+
+    LearningCourseEnrollment:
+      type: object
+      additionalProperties: false
+      required: [id, path, status, enrolledAt, completedAt, completedLessons, totalLessons, resumeLessonId]
+      properties:
+        id:
+          type: string
+        path:
+          $ref: "#/components/schemas/LearningCoursePath"
+        status:
+          type: string
+          enum: [in_progress, completed]
+        enrolledAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedLessons:
+          type: integer
+          minimum: 0
+        totalLessons:
+          type: integer
+          minimum: 0
+        resumeLessonId:
+          type: ["string", "null"]
+
+    LearningCourseSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, version, estimatedMinutes, lessonCount, enrollment]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        version: { type: integer }
+        estimatedMinutes: { type: integer }
+        lessonCount: { type: integer }
+        enrollment:
+          oneOf:
+            - $ref: "#/components/schemas/LearningCourseEnrollment"
+            - type: "null"
+
+    LearningCourseCatalog:
+      type: object
+      additionalProperties: false
+      required: [available, unlocked, lockReason, courses]
+      properties:
+        available: { type: boolean }
+        unlocked: { type: boolean }
+        lockReason:
+          type: ["string", "null"]
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningCourseSummary"
+
+    LearningCourseSection:
+      type: object
+      additionalProperties: false
+      required: [heading, body]
+      properties:
+        heading: { type: string }
+        body: { type: string }
+
+    LearningCourseExample:
+      type: object
+      additionalProperties: false
+      required: [scenario, response, whyItWorks]
+      properties:
+        scenario: { type: string }
+        response: { type: string }
+        whyItWorks: { type: string }
+
+    LearningExerciseOption:
+      type: object
+      additionalProperties: false
+      required: [id, label]
+      properties:
+        id: { type: string }
+        label: { type: string }
+
+    LearningCourseExercise:
+      type: object
+      additionalProperties: false
+      required: [id, type, prompt, options, checklist]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [choice, reflection]
+        prompt: { type: string }
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningExerciseOption"
+        checklist:
+          type: array
+          items: { type: string }
+
+    LearningExerciseFeedback:
+      type: object
+      additionalProperties: false
+      required: [exerciseId, message, correct, modelAnswer]
+      properties:
+        exerciseId: { type: string }
+        message: { type: string }
+        correct:
+          type: ["boolean", "null"]
+        modelAnswer:
+          type: ["string", "null"]
+
+    LearningLessonProgress:
+      type: object
+      additionalProperties: false
+      required: [revision, status, answers, attempts, completedAt, feedback]
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [not_started, draft, completed]
+        answers:
+          type: object
+          additionalProperties:
+            type: string
+        attempts:
+          type: integer
+          minimum: 0
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        feedback:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningExerciseFeedback"
+
+    LearningCourseLesson:
+      type: object
+      additionalProperties: false
+      required: [id, title, track, estimatedMinutes, objectives, sections, example, exercises, progress]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        track:
+          type: string
+          enum: [shared, voice, chat_email]
+        estimatedMinutes: { type: integer }
+        objectives:
+          type: array
+          items: { type: string }
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningCourseSection"
+        example:
+          $ref: "#/components/schemas/LearningCourseExample"
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningCourseExercise"
+        progress:
+          $ref: "#/components/schemas/LearningLessonProgress"
+
+    LearningCourseDetail:
+      type: object
+      additionalProperties: false
+      required: [course, lessons]
+      properties:
+        course:
+          $ref: "#/components/schemas/LearningCourseSummary"
+        lessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningCourseLesson"
+
     HealthStatus:
       type: object
       properties:
@@ -1431,6 +2537,8 @@ components:
     ErrorResponse:
       type: object
       properties:
+        code:
+          type: string
         error:
           type: string
         message:
@@ -1459,7 +2567,7 @@ components:
         - email
         - password
 
-    LoginResponse:
+    LoginResult:
       type: object
       properties:
         user:
@@ -1889,6 +2997,131 @@ components:
         - applicationCount
         - createdAt
         - updatedAt
+
+    CandidateIntroductionStrength:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        evidence:
+          type: string
+          maxLength: 500
+      required: [title, evidence]
+
+    CandidateIntroductionAchievement:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          maxLength: 500
+      required: [text]
+
+    CandidateIntroductionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        summary:
+          type: string
+          maxLength: 1200
+        strengths:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionStrength"
+        achievements:
+          type: array
+          maxItems: 8
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionAchievement"
+        careerDirection:
+          type: [string, "null"]
+          maxLength: 500
+        rolePreferences:
+          type: [string, "null"]
+          maxLength: 500
+        availability:
+          type: [string, "null"]
+          maxLength: 250
+
+    CandidateIntroductionApprovalInput:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          format: date-time
+      required: [version]
+
+    CandidateIntroductionDraft:
+      type: object
+      additionalProperties: false
+      properties:
+        exists:
+          type: boolean
+        candidateId:
+          type: string
+        status:
+          type: string
+          enum: [draft, approved, withdrawn]
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionStrength"
+        achievements:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionAchievement"
+        careerDirection:
+          type: [string, "null"]
+        rolePreferences:
+          type: [string, "null"]
+        availability:
+          type: [string, "null"]
+        approvedAt:
+          type: [string, "null"]
+          format: date-time
+        withdrawnAt:
+          type: [string, "null"]
+          format: date-time
+        version:
+          type: [string, "null"]
+          format: date-time
+      required: [exists, candidateId, status, summary, strengths, achievements, careerDirection, rolePreferences, availability, approvedAt, withdrawnAt, version]
+
+    ApprovedCandidateIntroduction:
+      type: object
+      additionalProperties: false
+      properties:
+        exists:
+          type: boolean
+          const: true
+        candidateId:
+          type: string
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionStrength"
+        achievements:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateIntroductionAchievement"
+        careerDirection:
+          type: [string, "null"]
+        preferences:
+          type: [string, "null"]
+        availability:
+          type: [string, "null"]
+        approvedAt:
+          type: [string, "null"]
+          format: date-time
+      required: [exists, candidateId, summary, strengths, achievements, careerDirection, preferences, availability, approvedAt]
 
     CandidatesListResponse:
       type: object
@@ -3016,7 +4249,17 @@ components:
         - stage
         - count
 
-    RequestUploadUrlBody:
+    InboxReplyInput:
+      type: object
+      required: [body]
+      properties:
+        subject:
+          type: string
+          description: 'Optional subject override; defaults to "Re: <inbox subject>"'
+        body:
+          type: string
+
+    StorageUploadUrlInput:
       type: object
       required: [name, size, contentType]
       properties:
@@ -3030,7 +4273,7 @@ components:
           type: string
           minLength: 1
 
-    RequestUploadUrlResponse:
+    StorageUploadUrlResult:
       type: object
       required: [uploadURL, objectPath]
       properties:
@@ -3040,4 +4283,265 @@ components:
         objectPath:
           type: string
         metadata:
-          $ref: '#/components/schemas/RequestUploadUrlBody'
+          $ref: '#/components/schemas/StorageUploadUrlInput'
+
+    LearningAssessmentStartInput:
+      type: object
+      required: [courseId]
+      additionalProperties: false
+      properties:
+        courseId: { type: string, minLength: 1 }
+
+    LearningAssessmentSummary:
+      type: object
+      required: [id, courseId, title, path, status, taskSetVersion, rubricVersion, startedAt, completedAt, completedTasks, totalTasks, resumeTaskKey]
+      properties:
+        id: { type: string }
+        courseId: { type: string }
+        title: { type: string }
+        path: { type: string, enum: [voice, chat_email] }
+        status: { type: string, enum: [draft, completed] }
+        taskSetVersion: { type: integer }
+        rubricVersion: { type: string }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        completedTasks: { type: integer }
+        totalTasks: { type: integer }
+        resumeTaskKey: { type: [string, "null"] }
+
+    LearningAssessmentTask:
+      type: object
+      required: [key, title, instructions, scenario, responseMode, minimumNonSpaceCharacters, coveredDimensions, progress]
+      properties:
+        key: { type: string }
+        title: { type: string }
+        instructions: { type: string }
+        scenario: { type: string }
+        responseMode: { type: string, enum: [spoken_or_typed, typed] }
+        minimumNonSpaceCharacters: { type: integer }
+        coveredDimensions:
+          type: array
+          items: { type: string }
+        progress:
+          type: object
+          required: [revision, status, response, updatedAt]
+          properties:
+            revision: { type: integer }
+            status: { type: string, enum: [not_started, draft, submitted] }
+            response: { type: string }
+            updatedAt: { type: [string, "null"], format: date-time }
+
+    LearningAssessmentDetail:
+      type: object
+      required: [summary, tasks]
+      properties:
+        summary: { $ref: "#/components/schemas/LearningAssessmentSummary" }
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/LearningAssessmentTask" }
+
+    LearningAssessmentHome:
+      type: object
+      required: [available, unlockedCourses, assessments]
+      properties:
+        available: { type: boolean }
+        unlockedCourses:
+          type: array
+          items: { type: string }
+        assessments:
+          type: array
+          items: { $ref: "#/components/schemas/LearningAssessmentSummary" }
+
+    LearningAssessmentTaskInput:
+      type: object
+      required: [revision, response, action]
+      additionalProperties: false
+      properties:
+        revision: { type: integer, minimum: 0 }
+        response: { type: string, maxLength: 6000 }
+        action: { type: string, enum: [save_draft, submit] }
+
+    LearningAssessmentDimension:
+      type: object
+      required: [dimension, label, level, levelLabel, evidence]
+      properties:
+        dimension: { type: string }
+        label: { type: string }
+        level: { type: string, enum: [emerging, developing, consistent, not_observed] }
+        levelLabel: { type: string }
+        evidence:
+          type: array
+          items: { type: string }
+        observed: { type: integer }
+        possible: { type: integer }
+
+    LearningAssessmentComparison:
+      type: object
+      required: [available, reason]
+      properties:
+        available: { type: boolean }
+        reason: { type: [string, "null"] }
+
+    LearningAssessmentRecommendation:
+      type: object
+      required: [lessonId, courseId, lessonTitle, reason]
+      properties:
+        lessonId: { type: string }
+        courseId: { type: string }
+        lessonTitle: { type: string }
+        reason: { type: string }
+
+    LearningAssessmentReport:
+      type: object
+      required: [summary, versions, comparison, overallSummary, dimensions, recommendations]
+      properties:
+        summary: { $ref: "#/components/schemas/LearningAssessmentSummary" }
+        versions:
+          type: object
+          required: [taskSetVersion, rubricVersion]
+          properties:
+            taskSetVersion: { type: integer }
+            rubricVersion: { type: string }
+        comparison: { $ref: "#/components/schemas/LearningAssessmentComparison" }
+        overallSummary: { type: string }
+        dimensions:
+          type: array
+          items: { $ref: "#/components/schemas/LearningAssessmentDimension" }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/LearningAssessmentRecommendation" }
+
+    LearningVoiceProgressStartInput:
+      type: object
+      required: [courseId]
+      additionalProperties: false
+      properties:
+        courseId: { type: string, minLength: 1 }
+    LearningVoiceProgressTurnInput:
+      type: object
+      required: [revision, response, action]
+      additionalProperties: false
+      properties:
+        revision: { type: integer, minimum: 0 }
+        response: { type: string, maxLength: 6000 }
+        action: { type: string, enum: [save_draft, submit] }
+    LearningVoiceProgressEmptyInput:
+      type: object
+      additionalProperties: false
+    LearningVoiceProgressSummary:
+      type: object
+      required: [id, courseId, state, form, comparisonFamilyVersion, rubricVersion, evaluatorVersion, baselineCompletedAt, progressStartedAt, completedAt, completedTurns, totalTurns, reason, action, reviewedCount, totalReviewLessons, reviewAttemptId]
+      properties:
+        id: { type: string }
+        courseId: { type: string }
+        state: { type: string, enum: [baseline_draft, training_required, progress_draft, completed] }
+        form: { type: string, enum: [A, B] }
+        comparisonFamilyVersion: { type: string }
+        rubricVersion: { type: string }
+        evaluatorVersion: { type: string }
+        baselineCompletedAt: { type: [string, "null"], format: date-time }
+        progressStartedAt: { type: [string, "null"], format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        completedTurns: { type: integer }
+        totalTurns: { type: integer }
+        reason: { type: string }
+        action: { type: string }
+        reviewedCount: { type: integer }
+        totalReviewLessons: { type: integer }
+        reviewAttemptId: { type: [string, "null"] }
+    LearningVoiceProgressTurn:
+      type: object
+      required: [key, prompt, phase, form, minimumNonSpaceCharacters, progress]
+      properties:
+        key: { type: string }
+        prompt: { type: string }
+        phase: { type: string, enum: [baseline, progress] }
+        form: { type: string, enum: [A, B] }
+        minimumNonSpaceCharacters: { type: integer }
+        progress:
+          type: object
+          required: [revision, status, response, updatedAt]
+          properties:
+            revision: { type: integer }
+            status: { type: string, enum: [draft, submitted, not_started] }
+            response: { type: string }
+            updatedAt: { type: [string, "null"], format: date-time }
+    LearningVoiceProgressDetail:
+      type: object
+      required: [summary, turns, privacy]
+      properties:
+        summary: { $ref: "#/components/schemas/LearningVoiceProgressSummary" }
+        turns:
+          type: array
+          items: { $ref: "#/components/schemas/LearningVoiceProgressTurn" }
+        privacy:
+          type: object
+          required: [audioStorage, speechDisclosure]
+          properties:
+            audioStorage: { type: string }
+            speechDisclosure: { type: string }
+    LearningVoiceProgressHome:
+      type: object
+      required: [available, eligibleCourses, cycles]
+      properties:
+        available: { type: boolean }
+        eligibleCourses: { type: array, items: { type: string } }
+        cycles:
+          type: array
+          items: { $ref: "#/components/schemas/LearningVoiceProgressSummary" }
+    LearningVoiceProgressReport:
+      type: object
+      required: [summary, comparison, baseline, progress, recommendations]
+      properties:
+        summary: { $ref: "#/components/schemas/LearningVoiceProgressSummary" }
+        comparison:
+          type: object
+          required: [comparable, reason, dimensions]
+          properties:
+            comparable: { type: boolean }
+            reason: { type: string }
+            dimensions:
+              type: array
+              items:
+                type: object
+                required: [dimension, baselineLevel, progressLevel, observedDifference, evidence]
+                properties:
+                  dimension: { type: string }
+                  baselineLevel: { type: string }
+                  progressLevel: { type: string }
+                  observedDifference: { type: string, enum: [higher, same, lower, not_comparable] }
+                  evidence: { type: array, items: { type: string } }
+        baseline: { type: object, additionalProperties: true }
+        progress: { type: object, additionalProperties: true }
+        recommendations: { type: array, items: { type: string } }
+    LearningVoiceTrainingReview:
+      type: object
+      required: [attemptId, cycleId, courseId, status, startedAt, completedAt, lessons, reviewedCount, totalLessons]
+      properties:
+        attemptId: { type: string }
+        cycleId: { type: string }
+        courseId: { type: string }
+        status: { type: string, enum: [in_progress, completed] }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        reviewedCount: { type: integer }
+        totalLessons: { type: integer }
+        lessons:
+          type: array
+          items:
+            type: object
+            required: [id, title, reviewedAt]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              reviewedAt: { type: [string, "null"], format: date-time }
+    LearningAchievements:
+      type: object
+      required: [creditsBalance, creditLabel, nonMonetaryDisclaimer, badges, recentActivity, milestones]
+      properties:
+        creditsBalance: { type: integer }
+        creditLabel: { type: string }
+        nonMonetaryDisclaimer: { type: string }
+        badges: { type: array, items: { type: object, required: [key, title, description, earnedAt], properties: { key: { type: string }, title: { type: string }, description: { type: string }, earnedAt: { type: string, format: date-time } } } }
+        recentActivity: { type: array, items: { type: object, required: [id, eventType, title, description, creditsDelta, earnedAt], properties: { id: { type: string }, eventType: { type: string }, title: { type: string }, description: { type: string }, creditsDelta: { type: integer }, earnedAt: { type: string, format: date-time } } } }
+        milestones: { type: array, items: { type: object, required: [key, title, target, current, completed], properties: { key: { type: string }, title: { type: string }, target: { type: integer }, current: { type: integer }, completed: { type: boolean } } } }

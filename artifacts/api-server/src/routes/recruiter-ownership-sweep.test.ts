@@ -355,28 +355,25 @@ test("prep answer: candidate on ANOTHER candidate's session → 404", async () =
   assert.equal(r.status, 404, "cross-candidate prep session must 404");
 });
 
-test("prep answer: recruiter on session for an UNASSIGNED job → 404", async () => {
-  // recrX is assigned jobX only; sessY belongs to jobY (recrY's req).
+test("prep answer: recruiter on any candidate practice session → denied", async () => {
+  // Practice sessions remain private even where the recruiter owns the named job.
   const r = await api("POST", `/prep/sessions/${id("sessY")}/answer`, tok.recrX(), answerBody());
-  assert.equal(r.status, 404, "unassigned-recruiter prep session must 404");
+  assert.equal(r.status, 403, "staff must not answer private candidate practice sessions");
 });
 
-test("prep answer: recruiter on session for an ASSIGNED job → allowed (2xx)", async () => {
+test("prep answer: recruiter on an assigned-job practice session → denied", async () => {
   const r = await api("POST", `/prep/sessions/${id("sessX")}/answer`, tok.recrX(), answerBody());
-  assert.ok(r.status < 300, `assigned recruiter should be allowed, got ${r.status} ${JSON.stringify(r.json)}`);
+  assert.equal(r.status, 403, "a prep job reference must not make candidate practice content staff-readable");
 });
 
-test("prep answer: tenant_admin on any tenant session → allowed (2xx)", async () => {
+test("prep answer: tenant_admin on any candidate practice session → denied", async () => {
   const r = await api("POST", `/prep/sessions/${id("sessY")}/answer`, tok.tAdmin(), answerBody());
-  assert.ok(r.status < 300, `tenant_admin should be allowed, got ${r.status} ${JSON.stringify(r.json)}`);
+  assert.equal(r.status, 403, "tenant admin must not answer private candidate practice sessions");
 });
 
-test("prep list: recruiter sees ONLY assigned-job sessions; candidate sees ONLY own", async () => {
+test("prep list: staff is denied; candidate sees ONLY own", async () => {
   const rx = await api("GET", "/prep/sessions", tok.recrX());
-  assert.equal(rx.status, 200);
-  const rxIds = new Set((rx.json.sessions ?? rx.json ?? []).map((s: any) => s.id));
-  assert.ok(rxIds.has(id("sessX")), "recrX should see its assigned-job session");
-  assert.ok(!rxIds.has(id("sessY")), "recrX must NOT see recrY's session");
+  assert.equal(rx.status, 403, "staff cannot list candidate practice sessions");
 
   const rc = await api("GET", "/prep/sessions", tok.candU());
   assert.equal(rc.status, 200);

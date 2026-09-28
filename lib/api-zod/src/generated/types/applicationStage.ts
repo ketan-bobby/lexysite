@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ApplicationStage =
-  (typeof ApplicationStage)[keyof typeof ApplicationStage];
+export type ApplicationStage = (typeof ApplicationStage)[keyof typeof ApplicationStage];
 
 export const ApplicationStage = {
   sourced: "sourced",

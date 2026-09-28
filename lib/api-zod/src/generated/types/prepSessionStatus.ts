@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PrepSessionStatus =
-  (typeof PrepSessionStatus)[keyof typeof PrepSessionStatus];
+export type PrepSessionStatus = (typeof PrepSessionStatus)[keyof typeof PrepSessionStatus];
 
 export const PrepSessionStatus = {
   active: "active",

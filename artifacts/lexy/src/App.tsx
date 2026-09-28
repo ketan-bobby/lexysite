@@ -69,6 +69,7 @@ import CandidatePortal from "@/pages/portal/index";
 import PortalInterviews from "@/pages/portal/interviews";
 import PrepCenter from "@/pages/portal/prep";
 import PortalApplications from "@/pages/portal/applications";
+import PortalIntroduction from "@/pages/portal/introduction";
 import PortalNotifications from "@/pages/portal/notifications";
 import StaffNotifications from "@/pages/notifications";
 import CareersPage from "@/pages/careers/index";
@@ -84,6 +85,12 @@ import CandidatePortalLogin from "@/pages/portal/login";
 import AcceptInvite from "@/pages/accept-invite";
 import NotFound from "@/pages/not-found";
 import CareerHub from "@/pages/portal/career";
+import PortalLearningGrowth from "@/pages/portal/learning-growth";
+import PortalLearningGrowthCourseDetail from "@/pages/portal/learning-growth/course-detail";
+import AssessmentDetail from "@/pages/portal/learning-growth/assessment-detail";
+import AssessmentReport from "@/pages/portal/learning-growth/assessment-report";
+import VoiceProgressCycleDetail from "@/pages/portal/learning-growth/voice-progress/cycle-detail";
+import VoiceProgressReport from "@/pages/portal/learning-growth/voice-progress/cycle-report";
 import CareerInterview from "@/pages/portal/career-interview";
 import OnboardingResume from "@/pages/portal/onboarding-resume";
 import OnboardingScreening from "@/pages/portal/onboarding-screening";
@@ -221,6 +228,7 @@ function Router() {
       <Route path="/portal/interviews"><ProtectedRoute component={PortalInterviews} roles={["candidate"]} /></Route>
       <Route path="/portal/prep"><ProtectedRoute component={PrepCenter} roles={["candidate"]} /></Route>
       <Route path="/portal/applications"><ProtectedRoute component={PortalApplications} roles={["candidate"]} /></Route>
+      <Route path="/portal/introduction"><ProtectedRoute component={PortalIntroduction} roles={["candidate"]} /></Route>
       <Route path="/portal/notifications"><ProtectedRoute component={PortalNotifications} roles={["candidate"]} /></Route>
       <Route path="/notifications"><ProtectedRoute component={StaffNotifications} roles={[...recruiterRoles, "hiring_manager", "interviewer"]} /></Route>
       <Route path="/portal/career/interview"><ProtectedRoute component={CareerInterview} roles={["candidate"]} /></Route>
@@ -238,6 +246,12 @@ function Router() {
       <Route path="/activity"><ProtectedRoute component={AuditPage} roles={recruiterRoles} /></Route>
       <Route path="/portal/settings"><ProtectedRoute component={PortalSettings} roles={["candidate"]} /></Route>
       <Route path="/portal/career"><ProtectedRoute component={CareerHub} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth"><ProtectedRoute component={PortalLearningGrowth} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth/courses/:courseId"><ProtectedRoute component={PortalLearningGrowthCourseDetail} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth/assessments/:assessmentId/report"><ProtectedRoute component={AssessmentReport} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth/assessments/:assessmentId"><ProtectedRoute component={AssessmentDetail} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth/voice-progress/:cycleId/report"><ProtectedRoute component={VoiceProgressReport} roles={["candidate"]} /></Route>
+      <Route path="/portal/learning-growth/voice-progress/:cycleId"><ProtectedRoute component={VoiceProgressCycleDetail} roles={["candidate"]} /></Route>
 
       <Route path="/company/:slug" component={ClientCareersPage} />
       <Route path="/careers" component={CareersPage} />

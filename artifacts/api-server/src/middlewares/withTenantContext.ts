@@ -43,9 +43,9 @@
  * "context" function on the DB side.
  */
 import type { Request, Response, NextFunction } from "express";
-import { pool, requestDbContext, schema, dbAdmin, usersTable } from "@workspace/db";
+import { pool, requestDbContext, schema, dbAdmin, usersTable, candidatesTable } from "@workspace/db";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { verifyToken, tokenFromRequest } from "../lib/auth-token";
 import { logger } from "../lib/logger";
 
@@ -298,6 +298,19 @@ export async function withTenantContext(
   }
 
   const isPlatformAdmin = userRow.role === "platform_admin";
+  let currentCandidateId = "";
+  if (userRow.role === "candidate") {
+    try {
+      const [candidate] = await dbAdmin
+        .select({ id: candidatesTable.id })
+        .from(candidatesTable)
+        .where(and(eq(candidatesTable.userId, userRow.id), eq(candidatesTable.tenantId, tenantId)))
+        .limit(1);
+      if (candidate) currentCandidateId = candidate.id;
+    } catch (err) {
+      logger.warn({ err, userId: userRow.id, tenantId }, "[withTenantContext] candidate lookup failed — clearing candidate RLS context");
+    }
+  }
 
   let client;
   try {
@@ -359,8 +372,9 @@ export async function withTenantContext(
     await client.query(
       `SELECT set_config('app.current_tenant_id', $1, false),
               set_config('app.is_platform_admin', $2, false),
-              set_config('app.allowed_tenant_ids', $3, false)`,
-      [tenantId, isPlatformAdmin ? "true" : "false", allowedTenantIds.join(",")],
+              set_config('app.allowed_tenant_ids', $3, false),
+              set_config('app.current_candidate_id', $4, false)`,
+      [tenantId, isPlatformAdmin ? "true" : "false", allowedTenantIds.join(","), currentCandidateId],
     );
     await client.query(`SET ROLE lexy_app`);
   } catch (err) {

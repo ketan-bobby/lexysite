@@ -25,25 +25,16 @@ import { Router, type IRouter } from "express";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { controlDb, db } from "@workspace/db";
-import { prepSessionsTable, prepPlansTable, jobsTable, usersTable, candidatesTable } from "@workspace/db";
+import { prepSessionsTable, prepPlansTable, jobsTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { generateWithAI } from "../lib/ai";
 import { assertNotForTraining } from "../lib/policies";
 import { getAuthUserId } from "../lib/auth-token.js";
 import { validate } from "../middlewares/validate";
-import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
-import { recruiterOwnsResource } from "../lib/ownership";
-
-/* Resolve the caller's OWN candidate record ids (empty unless role==="candidate").
-   Prep content is candidate-owned: a candidate maps to their candidate row via
-   candidates.userId and may only touch sessions/plans for that candidateId —
-   tenant scope alone would leak peers' practice within the same tenant (report c). */
-async function candidateOwnIds(user: { id: string; role: string }): Promise<string[]> {
-  if (user.role !== "candidate") return [];
-  const rows = await db.select({ id: candidatesTable.id })
-    .from(candidatesTable).where(eq(candidatesTable.userId, user.id));
-  return rows.map(r => r.id);
-}
+import {
+  callerOwnsCandidateDevelopmentData,
+  ownedCandidateDevelopmentIds,
+} from "../lib/candidate-development-privacy";
 
 const GeneratePrepBody = z.object({
   candidateId: z.string().min(1),
@@ -195,19 +186,19 @@ router.post("/prep/generate", validate({ body: GeneratePrepBody }), async (req, 
   const user = await requireAuthedUser(req, res);
   if (!user) return;
   const { candidateId, jobId, mode = "quick" } = req.body;
-  const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  /* Candidate self-path: may only generate prep for their OWN candidate record.
-     Staff: tenant scope FIRST (fail-closed on missing/out-of-scope job), THEN the
-     plain-recruiter ASSIGNED-requisition ceiling. */
-  if (user.role === "candidate") {
-    const own = await candidateOwnIds(user);
-    if (!own.includes(candidateId)) { res.status(404).json({ error: "Not found" }); return; }
-  } else {
-    if (!job) { res.status(404).json({ error: "Not found" }); return; }
-    const allowed = await getDataScopeTenantIds(user);
-    if (allowed !== null && !allowed.includes(job.tenantId ?? "")) { res.status(404).json({ error: "Not found" }); return; }
-    if (!(await recruiterOwnsResource(user, { kind: "jobId", value: jobId }))) { res.status(404).json({ error: "Not found" }); return; }
+  /* Preparation questions and generated plans are developmental content, not a
+     job assessment. They are candidate-self-only even when the plan names a
+     client job: no recruiter, tenant admin, or platform admin may use this
+     endpoint to create a practice proxy or obtain its questions. */
+  if (!(await callerOwnsCandidateDevelopmentData(user, candidateId))) {
+    if (user.role === "candidate") {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(403).json({ error: "Candidate developmental content is self-only" });
+    return;
   }
+  const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
 
   const prompt = `Generate interview preparation materials for a candidate applying to: ${job?.title || "a software position"}.
 Mode: ${mode}
@@ -237,20 +228,19 @@ router.get("/prep/sessions", async (req, res) => {
   const user = await requireAuthedUser(req, res);
   if (!user) return;
   const { candidateId } = req.query;
-  /* Was previously: `db.select().from(prepSessionsTable)` with no filter —
-     returned every session in the database. Now scoped to caller's tenant. */
-  let sessions = await db.select().from(prepSessionsTable)
-    .where(eq(prepSessionsTable.tenantId, user.tenantId))
-    .orderBy(desc(prepSessionsTable.createdAt));
-  /* Candidate self-path: only their OWN sessions — tenant scope alone leaks peers.
-     Plain-recruiter ceiling: only sessions for an ASSIGNED requisition. */
-  if (user.role === "candidate") {
-    const own = new Set(await candidateOwnIds(user));
-    sessions = own.size === 0 ? [] : sessions.filter(s => s.candidateId && own.has(s.candidateId));
-  } else if (user.role === "recruiter") {
-    const assigned = new Set(await getRecruiterAssignedJobIds(user));
-    sessions = assigned.size === 0 ? [] : sessions.filter(s => s.jobId && assigned.has(s.jobId));
+  if (user.role !== "candidate") {
+    res.status(403).json({ error: "Candidate developmental content is self-only" });
+    return;
   }
+  /* Scope by the actual candidate user, not the token tenant. A candidate may
+     legitimately own multiple candidate records, while a same-tenant peer must
+     never receive their questions, answers, quotes, or rubric. */
+  const own = new Set(await ownedCandidateDevelopmentIds(user));
+  let sessions = own.size === 0
+    ? []
+    : (await db.select().from(prepSessionsTable)
+      .orderBy(desc(prepSessionsTable.createdAt)))
+      .filter(s => s.candidateId && own.has(s.candidateId));
   if (candidateId) sessions = sessions.filter(s => s.candidateId === candidateId);
   res.json(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt.toISOString() })));
 });
@@ -260,26 +250,20 @@ router.post("/prep/sessions", validate({ body: CreatePrepSessionBody }), async (
   if (!user) return;
   const { jobId, mode = "quick" } = req.body;
   let candidateId: string | undefined = req.body.candidateId;
-  const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  /* Candidate self-path: candidateId must be their OWN record (default→their id).
-     Staff: tenant scope FIRST (fail-closed on missing/out-of-scope job), THEN the
-     plain-recruiter ASSIGNED-requisition ceiling. */
-  if (user.role === "candidate") {
-    const own = await candidateOwnIds(user);
-    if (candidateId && !own.includes(candidateId)) { res.status(404).json({ error: "Not found" }); return; }
-    /* A candidate with NO candidate-record mapping (staff without a candidate row,
-       or an orphaned account) has no self record to attach a session to. Fail
-       closed with 404 — never fall through to the "default" placeholder below,
-       which would create an orphan session the caller can't read back. */
-    if (!candidateId) {
-      if (own.length === 0) { res.status(404).json({ error: "Not found" }); return; }
-      candidateId = own[0];
-    }
-  } else {
-    if (!job) { res.status(404).json({ error: "Not found" }); return; }
-    const allowed = await getDataScopeTenantIds(user);
-    if (allowed !== null && !allowed.includes(job.tenantId ?? "")) { res.status(404).json({ error: "Not found" }); return; }
-    if (!(await recruiterOwnsResource(user, { kind: "jobId", value: jobId }))) { res.status(404).json({ error: "Not found" }); return; }
+  if (user.role !== "candidate") {
+    res.status(403).json({ error: "Candidate developmental content is self-only" });
+    return;
+  }
+  const own = await ownedCandidateDevelopmentIds(user);
+  if (candidateId && !own.includes(candidateId)) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  /* A candidate with no candidate-record mapping cannot create an orphan
+     practice session. */
+  if (!candidateId) {
+    if (own.length === 0) { res.status(404).json({ error: "Not found" }); return; }
+    candidateId = own[0];
   }
 
   const questions = questionsForMode(mode);
@@ -307,20 +291,15 @@ router.post("/prep/sessions/:sessionId/answer", validate({ body: AnswerPrepBody 
   const [session] = await db.select().from(prepSessionsTable).where(eq(prepSessionsTable.id, req.params.sessionId)).limit(1);
   if (!session) { res.status(404).json({ error: "Not found" }); return; }
 
-  /* Post-load owner check (previously ABSENT — any authed user could answer any
-     session cross-tenant). Candidate self-path: only their OWN session. Staff:
-     data-scope tenant + plain-recruiter assigned-req ceiling. */
-  if (user.role === "candidate") {
-    const own = await candidateOwnIds(user);
-    if (!session.candidateId || !own.includes(session.candidateId)) { res.status(404).json({ error: "Not found" }); return; }
-  } else {
-    const allowed = await getDataScopeTenantIds(user);
-    if (allowed !== null && !(session.tenantId && allowed.includes(session.tenantId))) {
-      res.status(404).json({ error: "Not found" }); return;
+  if (!session.candidateId || !(await callerOwnsCandidateDevelopmentData(user, session.candidateId))) {
+    /* Preserve non-enumerating behavior for a candidate probing a peer's
+       practice-session id; staff receive an explicit policy denial instead. */
+    if (user.role === "candidate") {
+      res.status(404).json({ error: "Not found" });
+      return;
     }
-    if (!(await recruiterOwnsResource(user, { kind: "jobId", value: session.jobId ?? "" }))) {
-      res.status(404).json({ error: "Not found" }); return;
-    }
+    res.status(403).json({ error: "Candidate developmental content is self-only" });
+    return;
   }
 
   /* Hard policy guard: candidate practice content must NEVER be exported into

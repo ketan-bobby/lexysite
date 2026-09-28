@@ -428,6 +428,82 @@ function InterviewsTab({ candidateId }: { candidateId: string }) {
   );
 }
 
+/**
+ * Employer-safe interview list. The legacy component above includes a private
+ * candidate career recording and is intentionally not mounted on this page.
+ * Only role-specific interview sessions are available to recruiter workflows.
+ */
+function SafeInterviewsTab({ candidateId }: { candidateId: string }) {
+  const [, navigate] = useLocation();
+  const { data: interviews, isLoading } = useListInterviews({ candidateId });
+  if (isLoading) return <div className="py-12 text-center text-muted-foreground">Loading interviews...</div>;
+  if (!interviews?.length) return (
+    <Card className="border-dashed"><CardContent className="py-16 text-center">
+      <Video className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+      <h3 className="mb-1 font-bold">No role-specific interviews yet</h3>
+      <p className="mb-4 text-sm text-muted-foreground">Schedule an interview for a role to see it here.</p>
+      <Button size="sm" className="gap-2" onClick={() => navigate(`/interviews?candidateId=${encodeURIComponent(candidateId)}&schedule=1`)}><Video className="h-4 w-4" />Schedule interview</Button>
+    </CardContent></Card>
+  );
+  return <div className="space-y-3">{(interviews as any[]).map((interview) => (
+    <Card key={interview.id} className="border-border/40"><CardContent className="flex items-center justify-between gap-4 p-5">
+      <div><p className="font-semibold text-sm">Role interview</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(interview.createdAt)} · {interview.totalQuestions ?? 0} questions</p></div>
+      <Link href={`/interviews/${interview.id}`}><Button size="sm" variant="outline">View report <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
+    </CardContent></Card>
+  ))}</div>;
+}
+
+type SafeIntroduction = {
+  summary: string;
+  strengths: Array<{ title: string; evidence: string }>;
+  achievements: Array<{ text: string }>;
+  careerDirection: string | null;
+  preferences: string | null;
+  availability: string | null;
+};
+
+/** No candidate profile, evaluation, transcript, or recording fallback. */
+function ApprovedIntroductionTab({ candidateId }: { candidateId: string }) {
+  const { data: introduction, isLoading } = useQuery<SafeIntroduction | null>({
+    queryKey: ["approved-candidate-introduction", candidateId],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/candidates/${candidateId}/introduction`, {
+          credentials: "include", headers: { ...authHeaders() },
+        });
+        return res.ok ? res.json() : null;
+      } catch {
+        /* Fail closed: never retain a previously approved introduction after a
+         * failed refresh. A later successful poll can repopulate this card. */
+        return null;
+      }
+    },
+    /* A candidate can withdraw while this detail page stays open. Poll and
+     * refetch on focus/mount so a 404 promptly clears this allowlisted card. */
+    staleTime: 0,
+    refetchInterval: 7_500,
+    refetchIntervalInBackground: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    retry: false,
+  });
+  if (isLoading) return <div className="py-12 text-center text-muted-foreground">Loading introduction...</div>;
+  if (!introduction) return (
+    <Card className="border-dashed"><CardContent className="py-14 text-center">
+      <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+      <h3 className="font-semibold">No approved introduction available</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">This candidate has not approved a written introduction for this authorised relationship.</p>
+    </CardContent></Card>
+  );
+  return <Card className="border-primary/20"><CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />Candidate-approved introduction</CardTitle></CardHeader><CardContent className="space-y-5">
+    <p className="whitespace-pre-wrap text-sm leading-relaxed">{introduction.summary}</p>
+    {introduction.strengths.length > 0 && <div><h3 className="mb-2 text-sm font-semibold">Strengths and evidence</h3><div className="space-y-3">{introduction.strengths.map((strength, i) => <div key={i} className="rounded-lg border p-3"><p className="text-sm font-medium">{strength.title}</p><p className="mt-1 text-sm text-muted-foreground">{strength.evidence}</p></div>)}</div></div>}
+    {introduction.achievements.length > 0 && <div><h3 className="mb-2 text-sm font-semibold">Selected achievements</h3><ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{introduction.achievements.map((achievement, i) => <li key={i}>{achievement.text}</li>)}</ul></div>}
+    {(introduction.careerDirection || introduction.preferences || introduction.availability) && <div className="grid gap-4 border-t pt-4 sm:grid-cols-3">{introduction.careerDirection && <div><p className="text-xs font-medium text-muted-foreground">Career direction</p><p className="mt-1 text-sm">{introduction.careerDirection}</p></div>}{introduction.preferences && <div><p className="text-xs font-medium text-muted-foreground">Preferences</p><p className="mt-1 text-sm">{introduction.preferences}</p></div>}{introduction.availability && <div><p className="text-xs font-medium text-muted-foreground">Availability</p><p className="mt-1 text-sm">{introduction.availability}</p></div>}</div>}
+    <div className="border-t pt-4"><Button size="sm" className="gap-2" asChild><Link href={`/interviews?candidateId=${encodeURIComponent(candidateId)}&schedule=1`}><Video className="h-4 w-4" />Invite to role-specific interview</Link></Button></div>
+  </CardContent></Card>;
+}
+
 const EVENT_ICON_MAP: Record<string, { icon: any; color: string }> = {
   sourcing:   { icon: UserPlus,    color: "bg-cyan-500/10 text-cyan-500" },
   screening:  { icon: Layers,      color: "bg-violet-500/10 text-violet-500" },
@@ -1296,24 +1372,10 @@ export default function CandidateProfile() {
     });
   };
 
-  // Career profile — used by Overview + Career Profile tabs
-  const { data: careerProfile } = useQuery<any>({
-    queryKey: ["career-profile", candidateId],
-    queryFn: async () => {
-      const res = await fetch(`${BASE}/api/candidates/${candidateId}/career-profile`, {
-        credentials: "include",
-        headers: { ...authHeaders() },
-      });
-      if (!res.ok) return { exists: false };
-      return res.json();
-    },
-    staleTime: 60_000,
-    enabled: !!candidateId,
-  });
-  const cp = careerProfile?.exists ? careerProfile : null;
-
-  // Merge skills: prefer career profile skills if candidate record is empty
-  const displaySkills: string[] = (candidate?.skills?.length ? candidate.skills : (cp?.skills ?? [])) as string[];
+  const displaySkills: string[] = (candidate?.skills ?? []) as string[];
+  // Deprecated career-profile markup below is deliberately unreachable while
+  // the page transitions to the approved written introduction tab.
+  const cp: any = null;
 
   /* Hiring-manager shares + their decisions, surfaced back on the candidate page. */
   const { data: hmSharesData } = useQuery<{ shares: Array<{
@@ -1571,7 +1633,7 @@ export default function CandidateProfile() {
           <TabsList className="min-w-max h-auto p-1 bg-muted/50 rounded-xl gap-0.5">
             <TabsTrigger value="overview" className="rounded-lg py-2.5 px-4">Overview</TabsTrigger>
             <TabsTrigger value="career" className="rounded-lg py-2.5 px-4 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3" /> Career Profile
+              <FileText className="w-3 h-3" /> Introduction
             </TabsTrigger>
             <TabsTrigger value="resume" className="rounded-lg py-2.5 px-4">Resume Screen</TabsTrigger>
             <TabsTrigger value="interviews" className="rounded-lg py-2.5 px-4">Interviews</TabsTrigger>
@@ -1639,7 +1701,7 @@ export default function CandidateProfile() {
           )}
 
           {/* ── Career Snapshot (from AI interview) ── */}
-          {cp && (
+          {false && (
             <Card className="shadow-sm border-violet-500/20">
               <div className="h-1 bg-gradient-to-r from-violet-500 to-primary rounded-t-lg" />
               <CardHeader className="pb-3">
@@ -1857,7 +1919,7 @@ export default function CandidateProfile() {
         </TabsContent>
 
         <TabsContent value="career" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <CareerProfileTab candidateId={candidateId} onShare={() => setPushToClientOpen(true)} />
+          <ApprovedIntroductionTab candidateId={candidateId} />
         </TabsContent>
 
         <TabsContent value="resume" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1865,7 +1927,7 @@ export default function CandidateProfile() {
         </TabsContent>
 
         <TabsContent value="interviews" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <InterviewsTab candidateId={candidateId} />
+          <SafeInterviewsTab candidateId={candidateId} />
         </TabsContent>
 
         <TabsContent value="verification" className="space-y-6">

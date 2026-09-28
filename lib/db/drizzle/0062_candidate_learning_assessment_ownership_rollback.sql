@@ -1,0 +1,5 @@
+BEGIN;
+ALTER TABLE candidate_learning_assessment_tasks
+  DROP CONSTRAINT IF EXISTS candidate_learning_assessment_tasks_parent_owner_fk;
+DROP INDEX IF EXISTS candidate_learning_assessments_id_candidate_tenant_uidx;
+COMMIT;

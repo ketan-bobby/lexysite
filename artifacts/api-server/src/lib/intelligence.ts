@@ -71,6 +71,7 @@ import {
   type TenantPolicy,
   type PolicyApplication,
 } from "./policies";
+import { sanitizeEmployerSignals } from "./employer-presentation-firewall";
 
 /* ── Agent Signal Types ───────────────────────────────────────────────────── */
 
@@ -112,6 +113,12 @@ export interface AgentSignals {
     weaknesses?: string[];
     redFlags?: string[];
     recommendation?: string;
+    provenance?: {
+      kind: "job_bound_assessment_v1";
+      jobId: string;
+      candidateId: string;
+      sessionId: string;
+    };
   };
   proctoring?: {
     fraudRiskScore?: number;
@@ -1185,10 +1192,17 @@ export async function upsertIntelligence(
     )
     .limit(1);
 
+  // The intelligence row is consumed by employer-facing ranking, recommendations
+  // and reports. Never carry a career intake, prep/mock transcript, coaching
+  // note, or an unprovenanced historical interview snapshot into that row.
+  // Existing legacy signals are re-sanitized on every write rather than deleted.
+  const safeExisting = sanitizeEmployerSignals(existing[0]?.signalsJson, { jobId, candidateId });
+  const safeNew = sanitizeEmployerSignals(newSignals, { jobId, candidateId });
+
   // Merge signals
   const mergedSignals: AgentSignals = {
-    ...((existing[0]?.signalsJson as AgentSignals) ?? {}),
-    ...Object.fromEntries(Object.entries(newSignals).filter(([, v]) => v !== undefined)),
+    ...(safeExisting as AgentSignals),
+    ...Object.fromEntries(Object.entries(safeNew).filter(([, v]) => v !== undefined)),
   };
 
   // Merge + update timestamps for agents that provided new signals now
@@ -1196,8 +1210,8 @@ export async function upsertIntelligence(
     (existing[0]?.signalTimestampsJson as SignalTimestamps) ?? {};
   const now = new Date().toISOString();
   const updatedTs: SignalTimestamps = { ...existingTs };
-  for (const agentKey of Object.keys(newSignals) as (keyof AgentSignals)[]) {
-    if (newSignals[agentKey] !== undefined) {
+  for (const agentKey of Object.keys(safeNew) as (keyof AgentSignals)[]) {
+    if (safeNew[agentKey] !== undefined) {
       (updatedTs as any)[agentKey] = now;
     }
   }
@@ -1304,6 +1318,15 @@ export async function upsertIntelligenceFromInterviewSession(
       weaknesses: weaknesses ?? [],
       redFlags: redFlags ?? [],
       recommendation,
+      // This is the required evidence link for an employer-side interview
+      // signal. Legacy blobs without it are intentionally ignored by the
+      // presentation firewall.
+      provenance: {
+        kind: "job_bound_assessment_v1",
+        jobId,
+        candidateId,
+        sessionId,
+      },
     };
 
     const result = await upsertIntelligence(tenantId, jobId, candidateId, {

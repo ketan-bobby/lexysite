@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type JobEmploymentType =
-  | (typeof JobEmploymentType)[keyof typeof JobEmploymentType]
-  | null;
+export type JobEmploymentType = (typeof JobEmploymentType)[keyof typeof JobEmploymentType] | null;
 
 export const JobEmploymentType = {
   full_time: "full_time",
