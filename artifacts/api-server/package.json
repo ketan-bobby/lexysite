@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=../../.env ./build.mjs && node --env-file=../../.env --enable-source-maps ./dist/index.mjs",
+    "dev": "node --env-file=../../.env ./build.mjs && node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs index",
     "build": "node --env-file=../../.env ./build.mjs",
-    "start": "node --env-file=../../.env --enable-source-maps ./dist/index.mjs",
-    "worker": "node --env-file=../../.env --enable-source-maps ./dist/worker.mjs",
+    "start": "node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs index",
+    "worker": "node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs worker",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:no-console": "node --env-file=../../.env ./scripts/check-no-console.mjs",
     "check:no-adverse-writes": "node --env-file=../../.env ./scripts/check-no-adverse-writes.mjs",
@@ -86,6 +86,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1046.0",
+    "@aws-sdk/client-secrets-manager": "^3.1149.0",
     "@aws-sdk/client-sesv2": "^3.1033.0",
     "@aws-sdk/s3-request-presigner": "^3.1046.0",
     "@azure/msal-node": "^5.2.5",
