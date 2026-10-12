@@ -660,9 +660,25 @@ async function parseInboundPayload(
  * of `requireInboundSecret`), not a body-shape allowlist. Adding a strict
  * schema here would only block legitimate AWS payloads when AWS evolves
  * the envelope. The body is parsed defensively before use. */
-router.post("/webhooks/ses-events", requireInboundSecret, async (req, res) => {
+router.post("/webhooks/ses-events", async (req, res) => {
   try {
-    const envelope: any = req.body || {};
+    let envelope: any = req.body || {};
+
+    /* SNS HTTP/S deliveries may use text/plain for a JSON envelope.
+       Parse the string before checking the SNS signature. */
+    if (typeof envelope === "string") {
+      try {
+        envelope = JSON.parse(envelope);
+      } catch {
+        res.status(400).json({ error: "invalid_sns_json" });
+        return;
+      }
+    }
+
+    if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
+      res.status(400).json({ error: "expected_sns_envelope" });
+      return;
+    }
 
     /* Hard requirement: every SNS-wrapped payload must carry a valid AWS
        signature. This blocks payload-spoofing even when the shared secret
@@ -697,24 +713,61 @@ router.post("/webhooks/ses-events", requireInboundSecret, async (req, res) => {
       }
       res.status(200).json({ ok: true, confirmed: true }); return;
     }
+    let sesMessageParsed = true;
     if (payload?.Type === "Notification" && typeof payload?.Message === "string") {
-      try { payload = JSON.parse(payload.Message); } catch { /* keep raw */ }
+      try {
+        payload = JSON.parse(payload.Message);
+      } catch {
+        sesMessageParsed = false;
+      }
     }
 
+    logger.info(
+      {
+        snsType: envelope?.Type ?? null,
+        sesMessageParsed,
+        notificationType: payload?.notificationType ?? null,
+        eventType: payload?.eventType ?? null,
+        payloadKeys: payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).slice(0, 30)
+          : [],
+      },
+      "[ses-events] payload diagnostic",
+    );
+
+    const sesEventType = payload?.notificationType ?? payload?.eventType;
     const kind: "Bounce" | "Complaint" | null =
-      payload?.notificationType === "Bounce" ? "Bounce" :
-      payload?.notificationType === "Complaint" ? "Complaint" : null;
+      sesEventType === "Bounce" ? "Bounce" :
+      sesEventType === "Complaint" ? "Complaint" : null;
     if (!kind) {
-      res.status(400).json({ error: "Expected notificationType=Bounce|Complaint" }); return;
+      /* SES sends several valid event types through this destination.
+         After SNS signature verification, acknowledge events that this
+         handler does not process to prevent unnecessary SNS retries. */
+      logger.info(
+        { notificationType: payload?.notificationType ?? null },
+        "[ses-events] valid SNS notification acknowledged without processing",
+      );
+      res.status(200).json({ ok: true, ignored: true });
+      return;
     }
 
     /* Hard-bounces only — soft bounces (e.g. "MailboxFull") will retry.
        Also dedupe + cap recipients per request (defense-in-depth blast-radius
        limit even if a valid SNS event ever names thousands of recipients). */
     const MAX_RECIPIENTS_PER_EVENT = 100;
+    const bounceType = kind === "Bounce" ? payload.bounce?.bounceType ?? null : null;
+    const bounceRecipientCount = kind === "Bounce"
+      ? (payload.bounce?.bouncedRecipients?.length ?? 0)
+      : 0;
+
+    logger.info(
+      { kind, bounceType, bounceRecipientCount },
+      "[ses-events] recipient classification",
+    );
+
     const rawRecipients: { emailAddress?: string }[] =
       kind === "Bounce"
-        ? (payload.bounce?.bounceType === "Permanent" ? (payload.bounce?.bouncedRecipients ?? []) : [])
+        ? (bounceType === "Permanent" ? (payload.bounce?.bouncedRecipients ?? []) : [])
         : (payload.complaint?.complainedRecipients ?? []);
     const seen = new Set<string>();
     const recipients = rawRecipients.filter(r => {
@@ -731,6 +784,45 @@ router.post("/webhooks/ses-events", requireInboundSecret, async (req, res) => {
     for (const r of recipients) {
       const email = (r.emailAddress || "").trim().toLowerCase();
       if (!email) continue;
+
+      const matches = await db.select({
+        doNotContact: candidatesTable.doNotContact,
+      })
+        .from(candidatesTable)
+        .where(sql`lower(${candidatesTable.email}) = ${email}`)
+        .limit(5);
+
+      const crypto = await import("node:crypto");
+      const recipientFingerprint = crypto
+        .createHash("sha256")
+        .update(email)
+        .digest("hex");
+
+      const sourcedMatches = await db.select({
+        rawData: sourcedCandidatesTable.rawData,
+        normalizedCandidateId: sourcedCandidatesTable.normalizedCandidateId,
+      })
+        .from(sourcedCandidatesTable)
+        .where(sql`lower(${sourcedCandidatesTable.rawData}->>'email') = ${email}`)
+        .limit(5);
+
+      logger.info({
+        recipientFingerprint,
+        candidateMatches: matches.length,
+        sourcedCandidateMatches: sourcedMatches.length,
+        sourcedMatchesWithNormalizedCandidate: sourcedMatches.filter(
+          (x) => Boolean(x.normalizedCandidateId)
+        ).length,
+        alreadyDoNotContact: matches.filter((x) => x.doNotContact).length,
+        eligibleForUpdate: matches.filter((x) => !x.doNotContact).length,
+      }, "[ses-events] recipient fingerprint diagnostic");
+
+      logger.info({
+        matchingCandidates: matches.length,
+        alreadyDoNotContact: matches.filter((x) => x.doNotContact).length,
+        eligibleForUpdate: matches.filter((x) => !x.doNotContact).length,
+      }, "[ses-events] candidate match diagnostic");
+
       const result = await db.update(candidatesTable)
         .set({
           doNotContact: true,
