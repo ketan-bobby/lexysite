@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+<<<<<<< HEAD
     "test:session-replicas": "node --import ../../scripts/test-egress-guard.mjs --import tsx scripts/check-session-replicas.ts",
     "test:zoho-stage-durability": "node --import ../../scripts/test-egress-guard.mjs --test scripts/zoho-stage-durability.test.mjs",
     "test:zoho-stage-write": "tsx --import ../../scripts/test-egress-guard.mjs --test src/lib/ats-connectors/zoho-stage-write.test.ts src/lib/ats-connectors/zoho-stage-requests.test.ts src/lib/ats-connectors/zoho-stage-request-store.test.ts src/lib/ats-connectors/zoho-stage-authority.test.ts",
@@ -15,9 +16,12 @@
     "test:google-operations": "tsx --experimental-test-module-mocks --import ../../scripts/test-egress-guard.mjs --test src/lib/google-invitation-operation.test.ts src/lib/google-interview-event-changes.test.ts src/routes/google-invitation-operations.test.ts",
     "test:google-invitations": "tsx --experimental-test-module-mocks --import ../../scripts/test-egress-guard.mjs --test src/lib/google-interview-event.test.ts src/lib/google-interview-invitation.test.ts src/lib/google-staff-write-consent.test.ts src/routes/google-interview-invitations.test.ts",
     "dev": "node --env-file=../../.env ./build.mjs && node --env-file=../../.env --enable-source-maps ./dist/index.mjs",
+=======
+    "dev": "node --env-file=../../.env ./build.mjs && node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs index",
+>>>>>>> e2824cb1c7d86b50a950b342c3efd12bcb5d5ad3
     "build": "node --env-file=../../.env ./build.mjs",
-    "start": "node --env-file=../../.env --enable-source-maps ./dist/index.mjs",
-    "worker": "node --env-file=../../.env --enable-source-maps ./dist/worker.mjs",
+    "start": "node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs index",
+    "worker": "node --env-file=../../.env --enable-source-maps ./start-with-secrets.mjs worker",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:backend-runtime-regressions": "tsx --import ../../scripts/test-egress-guard.mjs --test src/lib/candidate-display-name.test.ts src/routes/portal-withdrawal-handler.test.ts src/lib/agents/orchestrator-runtime-regressions.test.ts src/routes/nullable-result-regressions.test.ts src/routes/record-field-regressions.test.ts",
     "check:no-console": "node --env-file=../../.env ./scripts/check-no-console.mjs",
@@ -108,6 +112,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1046.0",
+    "@aws-sdk/client-secrets-manager": "^3.1149.0",
     "@aws-sdk/client-sesv2": "^3.1033.0",
     "@aws-sdk/s3-request-presigner": "^3.1046.0",
     "@azure/msal-node": "^5.2.5",
