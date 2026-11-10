@@ -250,6 +250,8 @@ export const interviewSchedulesTable = pgTable("interview_schedules", {
   notes: text("notes"),
   feedbackRating: integer("feedback_rating"),
   feedbackNotes: text("feedback_notes"),
+  // Opaque public revision only; identities and grants stay in the private panel table.
+  panelRevision: text("panel_revision"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

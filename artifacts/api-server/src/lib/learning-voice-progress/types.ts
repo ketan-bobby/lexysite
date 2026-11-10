@@ -9,7 +9,12 @@ export const VOICE_PROGRESS_DIMENSIONS = [
 export type VoiceProgressDimension = (typeof VOICE_PROGRESS_DIMENSIONS)[number];
 export type VoiceProgressForm = "A" | "B";
 export type VoiceProgressPhase = "baseline" | "progress";
-export type VoiceProgressLevel = "not_comparable" | "not_observed" | "emerging" | "developing" | "consistent";
+export type VoiceProgressLevel =
+  | "not_comparable"
+  | "not_observed"
+  | "emerging"
+  | "developing"
+  | "consistent";
 
 export type VoiceProgressFact = {
   id: string;

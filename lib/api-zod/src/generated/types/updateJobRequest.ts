@@ -16,4 +16,6 @@ export interface UpdateJobRequest {
   salaryMax?: number;
   description?: string;
   status?: string;
+  /** Restrict sourcing to employees of this job's exact client tenant when true; otherwise allow known nonemployees and external candidates. */
+  internalMobility?: boolean;
 }

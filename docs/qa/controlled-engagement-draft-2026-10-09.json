@@ -1,0 +1,84 @@
+{
+  "execution": {
+    "runId": "6d773927-e001-4303-9b9a-f01d33a31324",
+    "status": "completed"
+  },
+  "workflowId": "eee9f7ae-d7f6-4dab-8641-1842390d6974",
+  "jobId": "evidence_ui_8f1d510f-96c9-4b0c-83dc-cd1b65c0f1c3_job",
+  "messageId": "f5850bb4-a1bb-4445-a9bf-ea5f8b42fff4",
+  "messageStatus": "pending_approval",
+  "subject": "Lexy / Linx internal test — are you interested?",
+  "body": "Hi,\n\nThis is Lexy’s controlled Linx internal test—not a real job opportunity or hiring decision.\nWe are testing the order: interest-check email, your Interested response, then a separately approved interview invitation.\nThere is no interview link in this message and no invitation will be sent automatically.\n\n--- AI-generated draft being tested ---\nHi Synthetic Evidence,\n\nI came across your impressive background as a SQL backend engineer and thought you might be interested in a unique opportunity with Disposable evidence UI. The role of [AUTONOMY PILOT] Synthetic SQL backend engineer is a perfect match for your skills in SQL, PostgreSQL, and API design. This position focuses on isolated fictional backend engineering, allowing you to dive deep into the technical aspects without the need for candidate contact or automatic pipeline execution.\n\nYour expertise in automated testing would be a great asset to the team, and this role could be a strong next step in your career. Would you be open to a quick chat this week?\n\nPlease use the Interested button if you want to continue this internal test.\nLexy",
+  "identityVerified": false,
+  "identityRecordStatus": "pending",
+  "prerequisites": "Explicit synthetic screening setup and workflow-only identity clearance; no new assessments.",
+  "providerUsage": [
+    {
+      "provider": "openai_proxy",
+      "model": "gpt-4o",
+      "status": "succeeded",
+      "costStatus": "unknown",
+      "units": {
+        "audio_bytes": null,
+        "input_tokens": 800,
+        "audio_seconds": null,
+        "output_tokens": 313,
+        "input_characters": null,
+        "reasoning_tokens": 0,
+        "cached_input_tokens": 0,
+        "provider_request_id": "b6a762c6-7b66-4e19-92f7-ddba4d2a1f44",
+        "observed_api_requests": 1
+      }
+    }
+  ],
+  "prematureInvitationRejected": 409,
+  "emailsSent": 0,
+  "interviewSessionsCreated": 0,
+  "interestedReplyRecorded": false,
+  "executionPermissionRevoked": true,
+  "steps": [
+    {
+      "key": "screening",
+      "label": "Screening evidence",
+      "status": "completed",
+      "evidence": "[SYNTHETIC FIXTURE SETUP ONLY] Predecessor workflow clearance for an isolated verification test. No native screening call, real qualification approval or hiring evidence is claimed.",
+      "authority": "human_review"
+    },
+    {
+      "key": "verification",
+      "label": "Identity review — synthetic test only",
+      "status": "completed",
+      "evidence": "Synthetic controlled-inbox pilot clearance only — identity remains unverified. Reviewed by evidence_ui_8f1d510f-96c9-4b0c-83dc-cd1b65c0f1c3_user. Source f452aaa6-11cb-46a3-b609-c3e60f70ff89. Owner-authorized Stage-3 synthetic-profile test, restricted to the previously designated Linx test inbox. Workflow-only clearance; no real identity verification or hiring assessment is claimed.",
+      "authority": "human_review"
+    },
+    {
+      "key": "engagement",
+      "label": "Engagement evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "ai_interview",
+      "label": "AI interview evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "evaluation_review",
+      "label": "Human evaluation review",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "hiring_decision",
+      "label": "Human hiring decision",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    }
+  ],
+  "next": "Explicit approval of the held first-send; then the owner must actually receive and click Interested. Do not simulate that reply."
+}

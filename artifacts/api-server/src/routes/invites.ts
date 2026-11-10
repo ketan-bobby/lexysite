@@ -36,12 +36,13 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
-import { candidatesTable, usersTable, inviteTokensTable, candidateCareerProfilesTable } from "@workspace/db";
-import { eq, and, desc as descOp, sql } from "drizzle-orm";
+import { candidatesTable, usersTable, inviteTokensTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { issueToken, getAuthUserId, setSessionTokenCookie, devOnlyTokenBody } from "../lib/auth-token";
-import { getDataScopeTenantIds } from "../lib/tenantUtils";
-import { recruiterOwnsResource } from "../lib/ownership";
+import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
+import { recruiterOwnsResource, recruiterCandidatePredicate, exemptFromOwnership, OWNERSHIP_EXEMPTION } from "../lib/ownership";
+import { compliantCandidatePredicate } from "../lib/compliance-scope";
 import { getTenantRegion } from "../lib/region";
 import { rateLimit } from "../middlewares/rateLimit";
 import { validate } from "../middlewares/validate";
@@ -53,6 +54,17 @@ const GenerateInviteBody = z.object({
 
 const BulkCareerInviteBody = z.object({
   candidateIds: z.array(z.string().min(1)).min(1).max(200),
+});
+
+const CareerCampaignQuery = z.object({
+  cursor: z.string().min(1).max(200).regex(/^[A-Za-z0-9_-]+$/).optional(),
+  limit: z.string().regex(/^[1-9]\d{0,2}$/).optional()
+    .transform(value => value === undefined ? 50 : Number(value))
+    .pipe(z.number().int().min(1).max(200)),
+});
+
+const CandidateRegistrationQuery = CareerCampaignQuery.extend({
+  search: z.string().trim().max(200).optional(),
 });
 
 const router: IRouter = Router();
@@ -132,23 +144,23 @@ export async function generateInviteToken(candidateId: string, userId: string, t
 
 /* ─── POST /api/invites/generate ─────────────────────────────────────────── */
 // Recruiter-triggered: create a portal invite for a candidate
-router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (req, res) => {
+router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (req, res): Promise<void> => {
   try {
     /* Hard auth: resolve the caller to a real user row — header presence is
      * not authentication. This endpoint now sends real invite emails and mints
      * portal accounts, so an unauthenticated / cross-tenant caller must not be
      * able to trigger it. */
     const callerId = getAuthUserId(req);
-    if (!callerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [caller] = await db
       .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId })
       .from(usersTable)
       .where(eq(usersTable.id, callerId))
       .limit(1);
-    if (!caller) return res.status(401).json({ error: "Unauthorized" });
+    if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
 
     const { candidateId } = req.body as { candidateId?: string };
-    if (!candidateId) return res.status(400).json({ error: "candidateId required" });
+    if (!candidateId) { res.status(400).json({ error: "candidateId required" }); return; }
 
     const [candidate] = await db
       .select({ id: candidatesTable.id, tenantId: candidatesTable.tenantId, firstName: candidatesTable.firstName, lastName: candidatesTable.lastName, email: candidatesTable.email })
@@ -156,7 +168,7 @@ router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (
       .where(eq(candidatesTable.id, candidateId))
       .limit(1);
 
-    if (!candidate) return res.status(404).json({ error: "Candidate not found" });
+    if (!candidate) { res.status(404).json({ error: "Candidate not found" }); return; }
 
     /* Tenant scoping: a caller may only invite candidates within their own
      * tenant subtree. Platform admins (allowed === null) bypass. Return 404 to
@@ -164,7 +176,7 @@ router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (
     if (caller.role !== "platform_admin") {
       const allowed = await getDataScopeTenantIds(caller);
       if (allowed && !allowed.includes(candidate.tenantId ?? "")) {
-        return res.status(404).json({ error: "Candidate not found" });
+        res.status(404).json({ error: "Candidate not found" }); return;
       }
     }
 
@@ -172,11 +184,11 @@ router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (
        reachable via a requisition ASSIGNED to them. Tenant scope alone would let
        a recruiter invite any candidate in the tenant. 404 to avoid leaking. */
     if (!(await recruiterOwnsResource(caller, { kind: "candidateId", value: candidateId }))) {
-      return res.status(404).json({ error: "Candidate not found" });
+      res.status(404).json({ error: "Candidate not found" }); return;
     }
 
     const userId = await ensureCandidateUser(candidateId, candidate.tenantId);
-    if (!userId) return res.status(500).json({ error: "Failed to create portal account" });
+    if (!userId) { res.status(500).json({ error: "Failed to create portal account" }); return; }
 
     const token = await generateInviteToken(candidateId, userId, candidate.tenantId);
 
@@ -239,58 +251,144 @@ router.post("/invites/generate", validate({ body: GenerateInviteBody }), async (
 // NOTE: this static route MUST be registered before GET /invites/:token below —
 // otherwise the param route greedily matches "/invites/career-campaign-status"
 // (token = "career-campaign-status") and shadows this handler entirely.
-router.get("/invites/career-campaign-status", async (req, res) => {
+// Administrative account inventory, NOT an employer-facing talent search.
+// Keep private registrations out of ordinary candidate discovery and never
+// join coaching, career narratives, assessments or transcripts into this DTO.
+router.get("/platform/candidate-registrations",
+  exemptFromOwnership("GET /platform/candidate-registrations", OWNERSHIP_EXEMPTION.ADMIN_ONLY_ROUTE),
+  async (req, res): Promise<void> => {
+  try {
+    const callerId = getAuthUserId(req);
+    if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [caller] = await db
+      .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status })
+      .from(usersTable)
+      .where(eq(usersTable.id, callerId))
+      .limit(1);
+    if (!caller || caller.status !== "active") {
+      res.status(401).json({ error: "Unauthorized" }); return;
+    }
+    if (caller.role !== "platform_admin") {
+      res.status(403).json({ error: "Platform administrator required" }); return;
+    }
+    const parsed = CandidateRegistrationQuery.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid registration search or pagination parameters" }); return;
+    }
+    const { cursor, limit, search } = parsed.data;
+    const { asc, gt, isNotNull } = await import("drizzle-orm");
+    const rows = await db
+      .select({
+        candidateId: candidatesTable.id,
+        firstName: candidatesTable.firstName,
+        lastName: candidatesTable.lastName,
+        email: candidatesTable.email,
+        registeredAt: candidatesTable.createdAt,
+        pool: candidatesTable.pool,
+      })
+      .from(candidatesTable)
+      .where(and(
+        eq(candidatesTable.source, "self_registered"),
+        isNotNull(candidatesTable.userId),
+        compliantCandidatePredicate(),
+        cursor ? gt(candidatesTable.id, cursor) : undefined,
+        search
+          ? sql`strpos(lower(concat_ws(' ', ${candidatesTable.firstName}, ${candidatesTable.lastName}, ${candidatesTable.email})), lower(${search})) > 0`
+          : undefined,
+      ))
+      .orderBy(asc(candidatesTable.id))
+      .limit(limit + 1);
+    const hasMore = rows.length > limit;
+    const page = rows.slice(0, limit);
+    res.json({
+      data: page.map(row => ({
+        candidateId: row.candidateId,
+        name: `${row.firstName} ${row.lastName}`.trim(),
+        email: row.email,
+        registeredAt: row.registeredAt.toISOString(),
+        pool: row.pool,
+      })),
+      hasMore,
+      nextCursor: hasMore ? page.at(-1)!.candidateId : null,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch candidate registrations");
+    res.status(500).json({ error: "Candidate registrations could not be loaded" });
+  }
+});
+
+router.get("/invites/career-campaign-status", async (req, res): Promise<void> => {
   try {
     /* Hard auth: header presence is not authentication. Resolve the caller and
      * scope the candidate set to their tenant subtree (platform_admin sees all).
      * candidates is RLS-protected so the query is already tenant-bound, but we
      * add an explicit filter for defense-in-depth and clear intent. */
     const callerId = getAuthUserId(req);
-    if (!callerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [caller] = await db
-      .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId })
+      .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status })
       .from(usersTable)
       .where(eq(usersTable.id, callerId))
       .limit(1);
-    if (!caller) return res.status(401).json({ error: "Unauthorized" });
+    if (!caller || caller.status !== "active") { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager", "interviewer"].includes(caller.role)) {
+      res.status(403).json({ error: "Staff access required" }); return;
+    }
 
-    // Get all candidates and join against invite tokens + career profiles
+    const parsed = CareerCampaignQuery.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Choose a limit from 1 to 200 and a valid candidate cursor." });
+      return;
+    }
+    const { limit, cursor } = parsed.data;
+
+    // Keyset pagination is stable and never scans other candidates' child rows.
     const { candidateCareerProfilesTable } = await import("@workspace/db");
-    const { or, inArray, and, desc: descOp } = await import("drizzle-orm");
+    const { inArray, and, asc, gt, desc: descOp } = await import("drizzle-orm");
 
     const allowedTenantIds = caller.role === "platform_admin"
       ? null
       : await getDataScopeTenantIds(caller);
 
-    const candidatesRaw = await db
+    const ownedJobs = caller.role === "recruiter"
+      ? await getRecruiterAssignedJobIds(caller)
+      : null;
+    const page = await db
       .select({
         id: candidatesTable.id,
         firstName: candidatesTable.firstName,
         lastName: candidatesTable.lastName,
         email: candidatesTable.email,
-        jobTitle: candidatesTable.jobTitle,
-        company: candidatesTable.company,
+        jobTitle: candidatesTable.currentTitle,
+        company: candidatesTable.currentCompany,
       })
       .from(candidatesTable)
-      .where(allowedTenantIds ? inArray(candidatesTable.tenantId, allowedTenantIds) : undefined)
-      .limit(200);
+      .where(and(
+        allowedTenantIds !== null ? inArray(candidatesTable.tenantId, allowedTenantIds) : undefined,
+        ownedJobs !== null ? recruiterCandidatePredicate(ownedJobs) : undefined,
+        cursor ? gt(candidatesTable.id, cursor) : undefined,
+        compliantCandidatePredicate(),
+      ))
+      .orderBy(asc(candidatesTable.id))
+      .limit(limit + 1);
+    const hasMore = page.length > limit;
+    const candidates = page.slice(0, limit);
+    const nextCursor = hasMore ? candidates.at(-1)!.id : null;
 
-    /* Plain-recruiter ownership ceiling: narrow the tenant-scoped set to only
-       candidates reachable via a requisition ASSIGNED to the caller. */
-    let candidates = candidatesRaw;
-    if (caller.role === "recruiter") {
-      const owned = await Promise.all(
-        candidatesRaw.map((c) => recruiterOwnsResource(caller, { kind: "candidateId", value: c.id })),
-      );
-      candidates = candidatesRaw.filter((_, i) => owned[i]);
+    // Child tables are not scoped by the parent query or by recruiter ownership.
+    // Use the final authorized set, including the plain-recruiter ceiling.
+    const authorizedIds = candidates.map(c => c.id);
+    if (authorizedIds.length === 0) {
+      res.json({ data: [], hasMore: false, nextCursor: null });
+      return;
     }
 
     const tokens = await db
       .select()
       .from(inviteTokensTable)
-      .orderBy(descOp(inviteTokensTable.createdAt));
+      .where(inArray(inviteTokensTable.candidateId, authorizedIds))
+      .orderBy(descOp(inviteTokensTable.createdAt), descOp(inviteTokensTable.id));
 
-    const { default: dbModule } = await import("@workspace/db");
     const profiles = await db
       .select({
         candidateId: candidateCareerProfilesTable.candidateId,
@@ -298,44 +396,29 @@ router.get("/invites/career-campaign-status", async (req, res) => {
         profileCompleteness: candidateCareerProfilesTable.profileCompleteness,
         updatedAt: candidateCareerProfilesTable.updatedAt,
       })
-      .from(candidateCareerProfilesTable);
+      .from(candidateCareerProfilesTable)
+      .where(inArray(candidateCareerProfilesTable.candidateId, authorizedIds));
 
     const profileMap = new Map(profiles.map(p => [p.candidateId, p]));
+    // Activation is candidate-bound evidence, not the existence of a same-email
+    // user (which may be a placeholder or belong to another visible client).
+    const activated = new Set(tokens.filter(t => t.usedAt !== null).map(t => t.candidateId));
     const tokenMap = new Map<string, typeof tokens[0]>();
     for (const t of tokens) {
       if (!tokenMap.has(t.candidateId)) tokenMap.set(t.candidateId, t);
     }
 
-    const userIdMap = new Map<string, string>();
-    // Tenant-scope the candidate-user lookup too: usersTable is NOT RLS-protected,
-    // so an unscoped role='candidate' read would leak users across tenants and let
-    // a same-email collision in another tenant flip status to portal_created.
-    const users = await db
-      .select({ id: usersTable.id, email: usersTable.email })
-      .from(usersTable)
-      .where(
-        allowedTenantIds
-          ? and(eq(usersTable.role, "candidate"), inArray(usersTable.tenantId, allowedTenantIds))
-          : eq(usersTable.role, "candidate"),
-      );
-    for (const u of users) userIdMap.set(u.email, u.id);
-
     const result = candidates.map(c => {
       const token = tokenMap.get(c.id);
       const profile = profileMap.get(c.id);
-      const userId = userIdMap.get(c.email);
 
       let status: "not_invited" | "invited" | "portal_created" | "interview_completed" | "profile_complete";
       if (profile?.baselineInterviewCompleted) {
         status = "profile_complete";
-      } else if (profile) {
-        status = "interview_completed";
-      } else if (token && token.usedAt) {
+      } else if (profile || activated.has(c.id)) {
         status = "portal_created";
       } else if (token) {
         status = "invited";
-      } else if (userId) {
-        status = "portal_created";
       } else {
         status = "not_invited";
       }
@@ -348,12 +431,12 @@ router.get("/invites/career-campaign-status", async (req, res) => {
         company: c.company,
         status,
         invitedAt: token?.createdAt?.toISOString() ?? null,
-        completedAt: profile?.updatedAt?.toISOString() ?? null,
+        completedAt: profile?.baselineInterviewCompleted ? profile.updatedAt?.toISOString() ?? null : null,
         profileCompleteness: profile?.profileCompleteness ?? 0,
       };
     });
 
-    res.json({ data: result });
+    res.json({ data: result, hasMore, nextCursor });
   } catch (err: any) {
     logger.error({ err }, "Failed to fetch career campaign status");
     res.status(500).json({ error: "Failed to fetch status" });
@@ -362,7 +445,7 @@ router.get("/invites/career-campaign-status", async (req, res) => {
 
 /* ─── GET /api/invites/:token ────────────────────────────────────────────── */
 // Validates a token — called by the accept-invite page before showing the UI
-router.get("/invites/:token", async (req, res) => {
+router.get("/invites/:token", async (req, res): Promise<void> => {
   try {
     const [row] = await db
       .select()
@@ -370,9 +453,9 @@ router.get("/invites/:token", async (req, res) => {
       .where(eq(inviteTokensTable.token, req.params.token))
       .limit(1);
 
-    if (!row) return res.status(404).json({ valid: false, error: "Invite link not found" });
-    if (row.usedAt) return res.status(410).json({ valid: false, error: "This invite link has already been used" });
-    if (new Date() > row.expiresAt) return res.status(410).json({ valid: false, error: "This invite link has expired" });
+    if (!row) { res.status(404).json({ valid: false, error: "Invite link not found" }); return; }
+    if (row.usedAt) { res.status(410).json({ valid: false, error: "This invite link has already been used" }); return; }
+    if (new Date() > row.expiresAt) { res.status(410).json({ valid: false, error: "This invite link has expired" }); return; }
 
     const [candidate] = await db
       .select({ firstName: candidatesTable.firstName, lastName: candidatesTable.lastName, email: candidatesTable.email })
@@ -402,7 +485,7 @@ const inviteAcceptIpLimit = rateLimit({
   max: 10,
   scope: "invite-accept-ip",
 });
-router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
+router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res): Promise<void> => {
   try {
     const [row] = await db
       .select()
@@ -410,9 +493,9 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
       .where(eq(inviteTokensTable.token, req.params.token))
       .limit(1);
 
-    if (!row) return res.status(404).json({ error: "Invite link not found" });
-    if (row.usedAt) return res.status(410).json({ error: "This invite link has already been used" });
-    if (new Date() > row.expiresAt) return res.status(410).json({ error: "This invite link has expired" });
+    if (!row) { res.status(404).json({ error: "Invite link not found" }); return; }
+    if (row.usedAt) { res.status(410).json({ error: "This invite link has already been used" }); return; }
+    if (new Date() > row.expiresAt) { res.status(410).json({ error: "This invite link has expired" }); return; }
 
     /* Atomic claim — gate the UPDATE on `used_at IS NULL` so that two
      * concurrent /accept calls on the same token can't both succeed (and
@@ -424,19 +507,19 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
       .where(and(eq(inviteTokensTable.token, req.params.token), sql`${inviteTokensTable.usedAt} IS NULL`))
       .returning({ id: inviteTokensTable.token });
     if (marked.length === 0) {
-      return res.status(410).json({ error: "This invite link has already been used" });
+      res.status(410).json({ error: "This invite link has already been used" }); return;
     }
 
     const userId = row.userId;
-    if (!userId) return res.status(500).json({ error: "No user account linked to this invite" });
+    if (!userId) { res.status(500).json({ error: "No user account linked to this invite" }); return; }
 
     const [user] = await db
-      .select({ id: usersTable.id, tenantId: usersTable.tenantId, email: usersTable.email, name: usersTable.name, role: usersTable.role, avatarUrl: usersTable.avatarUrl, createdAt: usersTable.createdAt, lockedAt: usersTable.lockedAt })
+      .select({ id: usersTable.id, credentialVersion:usersTable.credentialVersion, tenantId: usersTable.tenantId, email: usersTable.email, name: usersTable.name, role: usersTable.role, avatarUrl: usersTable.avatarUrl, createdAt: usersTable.createdAt, lockedAt: usersTable.lockedAt })
       .from(usersTable)
       .where(eq(usersTable.id, userId))
       .limit(1);
 
-    if (!user) return res.status(404).json({ error: "User account not found" });
+    if (!user) { res.status(404).json({ error: "User account not found" }); return; }
 
     /* Lockout-bypass guard (architect 2026-05-16): /invites/:token/accept
      * mints a session token below, so without this check a locked candidate
@@ -448,11 +531,11 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
      * invite, and invites are recruiter-issued. */
     if (user.lockedAt) {
       logger.warn({ userId: user.id }, "[invites/accept] rejected: account is locked — admin unlock required");
-      return res.status(423).json({
+      res.status(423).json({
         error: "ACCOUNT_LOCKED",
         message:
           "This account is locked after too many failed sign-in attempts. Please contact your administrator to unlock it.",
-      });
+      }); return;
     }
 
     logger.info({ userId, candidateId: row.candidateId }, "Portal invite accepted");
@@ -500,7 +583,7 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
       logger.error({ err }, "Failed to create invite-accepted notification");
     }
 
-    const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, region: await getTenantRegion(user.tenantId) });
+    const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, credentialVersion:user.credentialVersion, region: await getTenantRegion(user.tenantId) });
     setSessionTokenCookie(res, acceptToken, req);
     res.json({
       user: { id: user.id, tenantId: user.tenantId, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl, createdAt: user.createdAt.toISOString() },
@@ -514,19 +597,19 @@ router.post("/invites/:token/accept", inviteAcceptIpLimit, async (req, res) => {
 
 /* ─── POST /api/invites/bulk-career-invite ──────────────────────────────── */
 // Bulk-generate portal invites for a list of candidates (career profile flow)
-router.post("/invites/bulk-career-invite", validate({ body: BulkCareerInviteBody }), async (req, res) => {
+router.post("/invites/bulk-career-invite", validate({ body: BulkCareerInviteBody }), async (req, res): Promise<void> => {
   try {
     /* Hard auth: resolve the caller to a real user row — header presence is
      * not authentication. This mints portal accounts + invite tokens, so an
      * unauthenticated / cross-tenant caller must not be able to trigger it. */
     const callerId = getAuthUserId(req);
-    if (!callerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!callerId) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [caller] = await db
       .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId })
       .from(usersTable)
       .where(eq(usersTable.id, callerId))
       .limit(1);
-    if (!caller) return res.status(401).json({ error: "Unauthorized" });
+    if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
 
     /* Tenant scoping: a caller may only invite candidates within their own
      * tenant subtree. platform_admin (allowed === null) bypasses the filter. */
@@ -536,10 +619,10 @@ router.post("/invites/bulk-career-invite", validate({ body: BulkCareerInviteBody
 
     const { candidateIds } = req.body as { candidateIds?: string[] };
     if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
-      return res.status(400).json({ error: "candidateIds array required" });
+      res.status(400).json({ error: "candidateIds array required" }); return;
     }
     if (candidateIds.length > 200) {
-      return res.status(400).json({ error: "Maximum 200 candidates per batch" });
+      res.status(400).json({ error: "Maximum 200 candidates per batch" }); return;
     }
 
     const results: Array<{

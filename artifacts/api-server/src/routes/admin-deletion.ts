@@ -53,60 +53,15 @@ import { resolveUser, requireRole } from "../middlewares/resolveUser";
 import { validate } from "../middlewares/validate";
 import { recordAudit } from "../lib/audit";
 import { logger } from "../lib/logger";
+import { stageErasureCleanup, processErasureCleanup, serializeErasureRequest } from "../lib/erasure-cleanup";
+import { CANDIDATE_LINKED_TABLES, purgeCandidateLinkedData, collectCandidateRecordingPaths } from "../lib/candidate-erasure";
+export { CANDIDATE_LINKED_TABLES } from "../lib/candidate-erasure";
 
 const router: IRouter = Router();
 
-/* Complete enumeration of tables that carry a candidate_id column
- * (verified against information_schema 2026-05-16, 38 entries). Order
- * is mostly irrelevant inside a transaction since there are no FK
- * constraints to satisfy, but we delete the `candidates` row LAST so
- * any trigger / observer on the candidates table sees its child rows
- * already gone. */
-export const CANDIDATE_LINKED_TABLES = [
-  "ai_decision_log",
-  "applications",
-  "candidate_achievements",
-  "candidate_action_events",
-  "candidate_activity_streaks",
-  "candidate_ai_consent",
-  "candidate_career_profiles",
-  "candidate_connection_events",
-  "candidate_connection_insights",
-  "candidate_demographics",
-  "candidate_external_clicks",
-  "candidate_import_records",
-  "candidate_job_intelligence",
-  "candidate_learning_enrollments",
-  "candidate_learning_assessments",
-  "candidate_learning_assessment_tasks",
-  "candidate_learning_lesson_progress",
-  "candidate_learning_profiles",
-  "candidate_market_events_sent",
-  "candidate_notifications",
-  "candidate_progress_snapshots",
-  "candidate_recommendation_progress",
-  "candidate_rejections",
-  "candidate_skill_scores",
-  "communication_events",
-  "connection_events",
-  "connection_scores",
-  "ghosting_alerts",
-  "ghosting_risk_flags",
-  "interview_sessions",
-  "invite_tokens",
-  "nurture_pool",
-  "outreach_conversation_drafts",
-  "outreach_enrollments",
-  "outreach_messages",
-  "prep_plans",
-  "prep_sessions",
-  "recruiter_inbox_items",
-  "resume_screens",
-  "talent_matches",
-  "talent_pool_submissions",
-  "trust_events",
-  "verification_records",
-] as const;
+/* The shared inventory deletes indirect/FK children before their parents.
+ * The candidates row is removed last. Immutable decision and financial
+ * history has an explicit, separately documented retention basis. */
 
 /* Helper: gather every /objects/... path the candidate owns BEFORE we
  * delete the rows that contain them. We must read first because once
@@ -134,10 +89,13 @@ async function collectCandidateObjectPaths(
   );
   for (const r of profileRecs.rows ?? []) push((r as any).recording_url);
 
-  const sessionRecs = await tx.execute<{ recording_url: string | null }>(
-    sql`SELECT recording_url FROM interview_sessions WHERE candidate_id = ${candidateId}`,
+  const sessionRecs = await tx.execute<{ id: string; recording_url: string | null }>(
+    sql`SELECT id, recording_url FROM interview_sessions WHERE candidate_id = ${candidateId}`,
   );
-  for (const r of sessionRecs.rows ?? []) push((r as any).recording_url);
+  for (const r of sessionRecs.rows ?? []) {
+    push((r as any).recording_url);
+    if (/^[0-9a-f-]{36}$/i.test(r.id)) push(`/objects/recording-segments/${r.id}/`);
+  }
 
   /* recruiter_inbox_items.attachments is jsonb — could be string[] or
    * [{url}]. Be defensive: extract any string that looks like an
@@ -187,7 +145,7 @@ router.get(
       .orderBy(desc(deletionRequestsTable.createdAt))
       .limit(200);
     res.json({
-      data: rows.map((r) => ({ ...r, ...erasureSlaStatus(r.createdAt, r.status) })),
+      data: rows.map((r) => ({ ...serializeErasureRequest(r), ...erasureSlaStatus(r.createdAt, r.status) })),
       slaDays: ERASURE_SLA_DAYS,
     });
   },
@@ -195,6 +153,27 @@ router.get(
 
 const HandlerNotes         = z.object({ handlerNotes: z.string().max(2000).optional() }).strict();
 const HandlerNotesRequired = z.object({ handlerNotes: z.string().min(1).max(2000) }).strict();
+
+router.post(
+  "/admin/deletion-requests/:id/retry-cleanup",
+  resolveUser,
+  requireRole("platform_admin"),
+  validate({ body: z.object({}).strict() }),
+  async (req: any, res) => {
+    const [request] = await db.select().from(deletionRequestsTable)
+      .where(eq(deletionRequestsTable.id, req.params.id)).limit(1);
+    if (!request) { res.status(404).json({ error: "Not found" }); return; }
+    if (!request.storageCleanup) {
+      res.status(409).json({ error: "No durable file receipt. Historical requests require manual review." }); return;
+    }
+    try {
+      const result = await processErasureCleanup(request.id);
+      res.json(result);
+    } catch {
+      res.status(503).json({ error: "Cleanup remains queued. Refresh the request to check its progress." });
+    }
+  },
+);
 
 router.post(
   "/admin/deletion-requests/:id/fulfil",
@@ -253,31 +232,26 @@ router.post(
      * RUNBOOK_DATA_DELETION.md and surfaced in the audit metadata via
      * `snapshotMethod: "in-tx"` so the auditor can see the basis. */
     let objectPaths: string[] = [];
-    let snapshotError: string | undefined;
     try {
       await db.transaction(async (tx) => {
         /* Row-lock the candidate first. Concurrent writers that take this
          * lock before inserting a file ref will block here. */
         await tx.execute(sql`SELECT 1 FROM candidates WHERE id = ${request.candidateId} FOR UPDATE`);
-        try {
-          objectPaths = await collectCandidateObjectPaths(tx as any, request.candidateId);
-        } catch (err: any) {
-          /* Snapshot failure is recorded but does NOT abort the cascade — the
-           * regulator's primary requirement is DB deletion. */
-          snapshotError = err?.message ?? String(err);
-        }
-        for (const table of CANDIDATE_LINKED_TABLES) {
-          await tx.execute(
-            sql`DELETE FROM ${sql.identifier(table)} WHERE candidate_id = ${request.candidateId}`,
-          );
-        }
+        objectPaths = [...new Set([
+          ...await collectCandidateObjectPaths(tx as any, request.candidateId),
+          ...await collectCandidateRecordingPaths(tx, request.candidateId),
+        ])];
+        await stageErasureCleanup(tx, {
+          requestId: request.id, candidateId: request.candidateId, paths: objectPaths,
+          origin: "admin", email: request.candidateEmailSnapshot, notify: true,
+        });
+        await purgeCandidateLinkedData(tx, request.candidateId);
         await tx.execute(
           sql`DELETE FROM candidates WHERE id = ${request.candidateId}`,
         );
         await tx.update(deletionRequestsTable).set({
-          status: "fulfilled",
+          status: "in_progress",
           handledByUserId: user.id,
-          handledAt: new Date(),
           handlerNotes: req.body.handlerNotes ?? null,
           updatedAt: new Date(),
         }).where(eq(deletionRequestsTable.id, request.id));
@@ -295,30 +269,13 @@ router.post(
       return;
     }
 
-    /* Phase 3: best-effort object-storage cleanup. Failures are
-     * recorded into the audit row but do not roll back the DB cascade
-     * (the DB is the regulator's primary concern; orphan blobs are
-     * recoverable from S3 ops). */
-    const storageResults: { path: string; ok: boolean; error?: string }[] = [];
-    let prefixDeleted = 0;
-    let prefixError: string | undefined;
-    try {
-      const { ObjectStorageService } = await import("../lib/objectStorage.js");
-      const svc = new ObjectStorageService();
-      for (const p of objectPaths) {
-        const r = await svc.deleteObjectByPath(p);
-        storageResults.push({ path: p, ok: r.ok, error: r.error });
-      }
-      /* Catch-all sweep for the candidate's recording prefix — covers
-       * abandoned multipart parts that never made it into a DB row. */
-      const sweep = await svc.deleteObjectsUnderPrefix(`interview-recordings/${request.candidateId}`);
-      prefixDeleted = sweep.deleted;
-      prefixError = sweep.error;
-    } catch (err: any) {
-      logger.error({
-        err: err?.message, candidateId: request.candidateId, requestId: request.id,
-      }, "[admin-deletion] object-storage cleanup raised — DB cascade already committed");
-      prefixError = err?.message ?? String(err);
+    /* The receipt committed atomically with the DB cascade. A crash here
+     * leaves a recoverable job; neither references nor progress are lost. */
+    let cleanup: Awaited<ReturnType<typeof processErasureCleanup>>;
+    try { cleanup = await processErasureCleanup(request.id); }
+    catch {
+      logger.warn({ requestId: request.id }, "[admin-deletion] cleanup deferred to durable retry");
+      cleanup = { requestId: request.id, cleanupPending: true, cleanup: null };
     }
 
     /* Phase 4: audit row, written OUTSIDE the transaction so a
@@ -335,8 +292,8 @@ router.post(
       subjectLabel: "deleted-candidate",
       channel: "system",
       direction: "internal",
-      action: "candidate.deletion_fulfilled",
-      title: `Erasure fulfilled (${request.jurisdiction})`,
+      action: "candidate.database_erased",
+      title: `Candidate database erased (${request.jurisdiction}); file cleanup tracked separately`,
       body: req.body.handlerNotes ?? null,
       metadata: {
         requestId: request.id,
@@ -345,36 +302,25 @@ router.post(
         tablesCascaded: CANDIDATE_LINKED_TABLES.length,
         objectStorage: {
           snapshotMethod: "in-tx",
-          snapshotError: snapshotError ?? null,
+          snapshotError: null,
           enumerated: objectPaths.length,
-          deleted: storageResults.filter((r) => r.ok).length,
-          failed: storageResults.filter((r) => !r.ok).map((r) => ({ path: r.path, error: r.error })),
-          prefixSweep: { deleted: prefixDeleted, error: prefixError },
+          cleanup: cleanup.cleanup,
           residualRiskNote: "Presigned URLs minted before tx-start and PUT after tx-commit may leak under /uploads/<uuid>/. See docs/RUNBOOK_DATA_DELETION.md.",
         },
       },
     });
 
-    /* Phase 5: candidate-facing confirmation email. */
-    void (async () => {
-      const { sendDeletionFulfilledConfirmationToCandidate } = await import("../lib/deletion-emails.js");
-      await sendDeletionFulfilledConfirmationToCandidate({
-        requestId: request.id,
-        candidateEmailSnapshot: request.candidateEmailSnapshot,
-        jurisdiction: request.jurisdiction,
-        fulfilledAt: new Date(),
-      });
-    })();
+    const cleanupPending = cleanup.cleanupPending;
 
     logger.info({
       actor: user.id, candidateId: request.candidateId, requestId: request.id,
       jurisdiction: request.jurisdiction, tables: CANDIDATE_LINKED_TABLES.length,
-      storage: { enumerated: objectPaths.length, prefixSwept: prefixDeleted },
-    }, "[admin-deletion] fulfilled");
+      storage: { enumerated: objectPaths.length, cleanupPending },
+    }, "[admin-deletion] database erased");
 
     const [updated] = await db.select().from(deletionRequestsTable)
       .where(eq(deletionRequestsTable.id, request.id)).limit(1);
-    res.json({ data: updated });
+    res.json({ data: serializeErasureRequest(updated), cleanupPending });
   },
 );
 
@@ -391,7 +337,11 @@ router.post(
       handledAt: new Date(),
       handlerNotes: req.body.handlerNotes,
       updatedAt: new Date(),
-    }).where(eq(deletionRequestsTable.id, req.params.id)).returning();
+    }).where(and(
+      eq(deletionRequestsTable.id, req.params.id),
+      eq(deletionRequestsTable.status, "pending"),
+      sql`${deletionRequestsTable.storageCleanup} IS NULL`,
+    )).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
     void recordAudit({
       tenantId: null,

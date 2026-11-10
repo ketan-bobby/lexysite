@@ -50,6 +50,7 @@
 
 import OpenAI, { AzureOpenAI } from "openai";
 import { logger } from "./logger";
+import { meteredFetch } from "./vendor-usage";
 
 export type SpeechProvider = "deepgram" | "azure";
 export type LlmProvider = "openai" | "azure";
@@ -67,7 +68,7 @@ export interface LanguageMeta {
   /** Preferred TTS vendor when Azure has no good voice for the language.
       "elevenlabs" → /interviews/tts tries ElevenLabs multilingual first,
       then falls through the normal Azure → OpenAI chain. */
-  ttsProvider?: "elevenlabs";
+  ttsProvider?: "elevenlabs" | "azure";
   /** ISO-639-1 hint for Whisper/gpt-4o-transcribe when it differs from the
       language key's base code (e.g. "fil" → Whisper knows it as "tl"). */
   whisperLang?: string;
@@ -484,7 +485,9 @@ export const SUPPORTED_LANGUAGES: Record<string, LanguageMeta> = {
     region: "global",
     azureLocale: "vi-VN",
     azureVoice: "vi-VN-HoaiMyNeural",
-    ttsProvider: "elevenlabs",
+    // The multilingual-v2 voice mangled Vietnamese in the speech round-trip;
+    // Azure's native HoaiMy voice preserved the full answer and diacritics.
+    ttsProvider: "azure",
   },
   he: {
     label: "Hebrew",
@@ -629,6 +632,11 @@ export function resolveLangMeta(language: string): LanguageMeta & { resolvedKey:
 const openaiClient = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  timeout: 30000,
+  maxRetries: 1,
+  fetch: meteredFetch(
+    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct",
+  ),
 });
 
 function getAzureClient(): AzureOpenAI | null {
@@ -643,7 +651,25 @@ function getAzureClient(): AzureOpenAI | null {
     [endpoint, deployment] = [deployment, endpoint];
   }
 
-  return new AzureOpenAI({ apiKey: key, endpoint, deployment, apiVersion: "2024-12-01-preview" });
+  return new AzureOpenAI({
+    apiKey: key,
+    endpoint,
+    deployment,
+    apiVersion: "2024-12-01-preview",
+    timeout: 30000,
+    maxRetries: 1,
+    fetch: meteredFetch("azure_openai"),
+  });
+}
+
+export function languageInstruction(language: string): string {
+  const meta = resolveLangMeta(language);
+  return `Write all user-facing prose in ${meta.label} (${meta.nativeName}), using its native writing system and regional dialect. Do not switch to English unless the selected language is English or the task explicitly requires translation. Preserve JSON keys, enum values, code, proper names, and technical identifiers unchanged.`;
+}
+
+export function azureChatDeployment(env: NodeJS.ProcessEnv = process.env): string {
+  const deployment = env.AZURE_OPENAI_DEPLOYMENT ?? "";
+  return deployment.startsWith("http") ? (env.AZURE_OPENAI_ENDPOINT ?? "") : deployment;
 }
 
 export function deepgramConfigured(): boolean {
@@ -689,7 +715,7 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
     return null;
   }
   const client = directKey
-    ? (directEmbeddingClient ??= new OpenAI({ apiKey: directKey }))
+    ? (directEmbeddingClient ??= new OpenAI({ apiKey: directKey, fetch: meteredFetch("openai_direct") }))
     : openaiClient;
   try {
     const resp = await client.embeddings.create({
@@ -714,10 +740,9 @@ export async function generateWithAI(
   opts: { model?: string; maxTokens?: number } = {},
 ): Promise<string> {
   const meta = resolveLangMeta(language);
-  const langLabel = meta.label;
   const llmTarget = meta.llmProvider;
 
-  const langInstruction = `You must respond entirely in ${langLabel}. All questions, summaries, and output must be written in ${langLabel}.`;
+  const langInstruction = languageInstruction(language);
   const fullSystem = systemPrompt ? `${systemPrompt}\n\n${langInstruction}` : langInstruction;
 
   const messages: Array<{ role: "system" | "user"; content: string }> = [
@@ -806,6 +831,12 @@ export async function chatCompletionWithAI(
   options: { maxTokens?: number; temperature?: number; seed?: number } = {},
 ): Promise<string> {
   const meta = resolveLangMeta(language);
+  // Route selection alone does not enforce output language. Apply the same
+  // instruction on both providers and on every turn without mutating history.
+  const languageMessages = [
+    ...messages,
+    { role: "system" as const, content: languageInstruction(language) },
+  ];
 
   if (meta.llmProvider === "azure") {
     const azure = getAzureClient();
@@ -813,11 +844,11 @@ export async function chatCompletionWithAI(
       try {
         logger.info({ language, llm: "azure" }, "LLM chat → Azure OpenAI");
         const resp = await azure.chat.completions.create({
-          model: process.env.AZURE_OPENAI_DEPLOYMENT!,
+          model: azureChatDeployment(),
           max_tokens: options.maxTokens ?? 4096,
           temperature: options.temperature ?? 0.8,
           ...(options.seed !== undefined ? { seed: options.seed } : {}),
-          messages,
+          messages: languageMessages,
         });
         return resp.choices[0]?.message?.content ?? "";
       } catch (err: any) {
@@ -836,7 +867,7 @@ export async function chatCompletionWithAI(
     max_tokens: options.maxTokens ?? 4096,
     temperature: options.temperature ?? 0.8,
     ...(options.seed !== undefined ? { seed: options.seed } : {}),
-    messages,
+    messages: languageMessages,
   });
   return resp.choices[0]?.message?.content ?? "";
 }
@@ -862,7 +893,9 @@ export async function synthesizeSpeechAzure(
   const ssml = `<speak version='1.0' xml:lang='${azureLocale}'><voice xml:lang='${azureLocale}' name='${azureVoice}'>${escaped}</voice></speak>`;
 
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
-  const response = await fetch(url, {
+  const response = await meteredFetch("azure_tts", undefined, undefined, {
+    inputCharacters: [...text].length,
+  })(url, {
     method: "POST",
     headers: {
       "Ocp-Apim-Subscription-Key": key,

@@ -1,3 +1,14 @@
+import { requestOptionalScreenShare } from "@/lib/optional-screen-share";
+import { withInterviewLoadTimeout, interviewResumeState, interviewStartView } from "@/lib/interview-session-load";
+import { interviewResumeGreeting, isInterviewGreetingOnly, shouldTranscribeInterviewSegment, shouldUseServerInterviewCapture } from "@/lib/interview-audio-turn";
+import { InterviewAnswerCapture } from "@/lib/interview-answer-capture";
+import { InterviewSpeechEvidence } from "@/lib/interview-speech-evidence";
+import { InterviewAnswerReview } from "@/components/interview-answer-review";
+import { isInterviewAudioClarification } from "@/lib/interview-turn-policy";
+import { InterviewCaptureDiagnosticsReporter, createCaptureDiagnosticAttempt } from "@/lib/interview-capture-diagnostics";
+import type { InterviewCaptureDiagnosticInput } from "@workspace/api-client-react";
+import { InterviewRecordingSegments, recordingSegmentForm } from "@/lib/interview-recording-segments";
+
 /**
  * pages/recruiter/interviews/room.tsx — AI Interview Room
  *
@@ -48,6 +59,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn, pluralize } from "@/lib/utils";
 import { authHeaders } from "@/lib/api";
 import { reportClientError } from "@/lib/report-client-error";
+import { InterviewRecordingMicrophone, waitForInterviewMedia, type RecordingMicrophoneStatus } from "@/lib/interview-recording-microphone";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const DEFAULT_TOTAL_QUESTIONS = 8;
@@ -73,8 +85,9 @@ const FEMALE_VOICE_HINTS = /(female|woman|libby|sonia|hazel|susan|samantha|victo
 const MALE_VOICE_HINTS = /(\bmale\b|\bman\b|david|mark|george|guy|ryan|daniel|alex|fred|oliver|james|thomas|brian|arthur|google uk english male)/i;
 // Choose a consistent (preferably female en-GB) browser TTS voice so the AI
 // interviewer sounds the same across turns; result is memoised once voices load.
-function pickStableTtsVoice(): SpeechSynthesisVoice | null {
-  if (cachedTtsVoice !== undefined) return cachedTtsVoice;
+function pickStableTtsVoice(locale = "en-GB"): SpeechSynthesisVoice | null {
+  const isEnglish = /^en/i.test(locale);
+  if (isEnglish && cachedTtsVoice !== undefined) return cachedTtsVoice;
   const ss = typeof window !== "undefined" ? window.speechSynthesis : undefined;
   const voices = ss?.getVoices?.() ?? [];
   if (voices.length === 0) {
@@ -87,6 +100,12 @@ function pickStableTtsVoice(): SpeechSynthesisVoice | null {
     list.find(v => FEMALE_VOICE_HINTS.test(v.name)) ??
     list.find(v => !MALE_VOICE_HINTS.test(v.name)) ??
     null;
+  if (!isEnglish) {
+    // Never read a native-language question with a cached English voice.
+    const exact = voices.filter(v => v.lang.toLowerCase() === locale.toLowerCase());
+    const native = voices.filter(v => v.lang.split("-")[0] === locale.split("-")[0]);
+    return byPref(exact) ?? byPref(native);
+  }
   const enGB = voices.filter(v => /^en-GB/i.test(v.lang));
   const enAny = voices.filter(v => /^en/i.test(v.lang));
   cachedTtsVoice = byPref(enGB) ?? byPref(enAny) ?? byPref(voices) ?? null;
@@ -175,8 +194,12 @@ async function transcribeSegment(sessionId: string, blob: Blob, lang: string, pr
       ...authHeaders(),
     },
     body: buf,
+    signal: AbortSignal.timeout(90000),
   });
-  if (!res.ok) return "";
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body);
+  }
   const data = await res.json().catch(() => ({} as any));
   return ((data?.transcript as string) || "").trim();
 }
@@ -258,7 +281,9 @@ function StepUpModal(props: {
         {(stage === "enter_code" || stage === "verifying") && (
           <>
             <p className="text-sm text-muted-foreground">
-              We sent a 6-digit code to <span className="font-bold text-foreground">{sentTo}</span>. It expires in 10 minutes.
+              {sentTo
+                ? <>We sent a 6-digit code to <span className="font-bold text-foreground">{sentTo}</span>. It expires in 10 minutes.</>
+                : "Enter a code you already received, or choose Send code if you need a new one. Opening this page does not send another code."}
             </p>
             <input
               autoFocus
@@ -276,7 +301,7 @@ function StepUpModal(props: {
             )}
             <div className="flex gap-2">
               <Button variant="ghost" onClick={onResend} disabled={stage === "verifying"} className="flex-1">
-                Resend code
+                {sentTo ? "Resend code" : "Send code"}
               </Button>
               <Button onClick={onSubmit} disabled={stage === "verifying" || code.length !== 6} className="flex-1 gap-2">
                 {stage === "verifying" && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -310,6 +335,39 @@ function formatHoursLeft(expiresAt: Date): string {
 }
 
 /* ── Webcam feed ─────────────────────────────────────────────────────────── */
+function RecordingMicrophoneNotice({ status, pending, onRetry, onUnmute }: {
+  status: RecordingMicrophoneStatus;
+  pending: boolean;
+  onRetry: () => void;
+  onUnmute: () => void;
+}) {
+  if (status === "ready") return null;
+  return (
+    <div role="status" aria-live="polite" className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="flex-1">
+        <p className="font-medium">
+          {status === "muted" ? "Your microphone is muted" : pending ? "Waiting for microphone access" : "Microphone audio is not being recorded"}
+        </p>
+        <p className="mt-1 text-xs">
+          {status === "muted" ? "Unmute your microphone before speaking." : "Allow microphone access in your browser. Your voice will not be included in the recording until it is connected."}
+          {" "}You can continue by typing your answers.
+        </p>
+        {status === "unavailable" && (
+          <Button type="button" size="sm" variant="outline" className="mt-2" disabled={pending} onClick={onRetry}>
+            Retry microphone
+          </Button>
+        )}
+        {status === "muted" && (
+          <Button type="button" size="sm" variant="outline" className="mt-2" onClick={onUnmute}>
+            Unmute microphone
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Mirrored self-view of the candidate's camera with a REC indicator while recording.
 function WebcamView({ stream, isRecording }: { stream: MediaStream | null; isRecording: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -349,7 +407,7 @@ function WebcamView({ stream, isRecording }: { stream: MediaStream | null; isRec
 
 /* ── AI Avatar ───────────────────────────────────────────────────────────── */
 // Animated interviewer avatar reflecting the conversation state (idle/thinking/speaking/listening).
-function AIAvatar({ state }: { state: "idle" | "thinking" | "speaking" | "listening" }) {
+function AIAvatar({ state, reviewing = false }: { state: "idle" | "thinking" | "speaking" | "listening"; reviewing?: boolean }) {
   return (
     <div className="relative flex flex-col items-center justify-center h-full gap-5">
       {/* Ripple rings when speaking */}
@@ -409,7 +467,7 @@ function AIAvatar({ state }: { state: "idle" | "thinking" | "speaking" | "listen
         })}>
           {state === "speaking"  ? "Speaking…" : ""}
           {state === "thinking"  ? "Thinking…" : ""}
-          {state === "listening" ? "Listening to you" : ""}
+          {state === "listening" ? (reviewing ? "Waiting for your confirmation" : "Listening to you") : ""}
           {state === "idle"      ? "Ready" : ""}
         </p>
       </div>
@@ -487,6 +545,8 @@ export default function InterviewRoom() {
   }, []);
 
   const [phase,          setPhase]          = useState<Phase>("loading");
+  const [sessionLoadAttempt, setSessionLoadAttempt] = useState(0);
+  const [sessionLoadError, setSessionLoadError] = useState<string | null>(null);
   const [convPhase,      setConvPhase]      = useState<ConvPhase>("thinking");
   const [plan,           setPlan]           = useState<any>(null);
   /* Interview language, readable from any closure without staleness. The
@@ -547,6 +607,8 @@ export default function InterviewRoom() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [camError,       setCamError]       = useState(false);
   const [liveStream,     setLiveStream]     = useState<MediaStream | null>(null);
+  const [mediaPending, setMediaPending] = useState(false);
+  const [recordingMicStatus, setRecordingMicStatus] = useState<RecordingMicrophoneStatus>("unavailable");
 
   /* AI + biometric (BIPA) consent gate. `consentRequired` is null until the
      session-scoped status check returns; the camera is NOT requested and the
@@ -588,6 +650,8 @@ export default function InterviewRoom() {
      so the Send button shows a spinner and can't be double-tapped. */
   const [finalizing, setFinalizing] = useState(false);
   const [textAnswer,     setTextAnswer]     = useState("");
+  const [answerNeedsReview, setAnswerNeedsReview] = useState(false);
+  const [answerSaveError, setAnswerSaveError] = useState<string | null>(null);
   const [micEnabled,     setMicEnabled]     = useState(true);
   const [camEnabled,     setCamEnabled]     = useState(true);
 
@@ -613,18 +677,32 @@ export default function InterviewRoom() {
   const [durationHours,    setDurationHours]    = useState<number>(24);
   const [resumed,          setResumed]          = useState(false);
   const [stepUpOpen,       setStepUpOpen]       = useState(false);
-  const [stepUpStage,      setStepUpStage]      = useState<"sending" | "enter_code" | "verifying" | "error">("sending");
+  const [stepUpStage,      setStepUpStage]      = useState<"sending" | "enter_code" | "verifying" | "error">("enter_code");
   const [stepUpMessage,    setStepUpMessage]    = useState<string>("");
   const [stepUpSentTo,     setStepUpSentTo]     = useState<string>("");
   const [stepUpCode,       setStepUpCode]       = useState<string>("");
+  const stepUpSendInFlightRef = useRef(false);
   const [sessionEnded,     setSessionEnded]     = useState<{ reason: "completed" | "expired"; expiresAt?: string } | null>(null);
   const snapshotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const webcamVideoRef   = useRef<HTMLVideoElement | null>(null);
 
   const streamRef         = useRef<MediaStream | null>(null);
+  const mediaRequestRef = useRef<Promise<MediaStream | null> | null>(null);
+  const mediaConsentRef = useRef(false);
+  const mediaGenerationRef = useRef(0);
+  const mediaRetryInFlightRef = useRef(false);
+  const recordingMicrophoneRef = useRef<InterviewRecordingMicrophone | null>(null);
+  const recordingFailedRef = useRef(false);
+  const mediaStoppedRef = useRef(false);
+  const micEnabledRef = useRef(true);
+  const camEnabledRef = useRef(true);
   const screenStreamRef   = useRef<MediaStream | null>(null);
   const recorderRef       = useRef<MediaRecorder | null>(null);
   const chunksRef         = useRef<Blob[]>([]);
+  const recordingSegmentsRef = useRef<InterviewRecordingSegments | null>(null);
+  const answerCaptureRef = useRef<InterviewAnswerCapture | null>(null);
+  const [answerCaptureNotice, setAnswerCaptureNotice] = useState("");
+  const [recordingSaveWarning, setRecordingSaveWarning] = useState(false);
   const uploadTokenRef    = useRef<string | null>(null); /* short-lived JWT for recording upload */
   const audioRef          = useRef<HTMLAudioElement | null>(null);
   /* Shared AudioContext that lives for the whole interview.
@@ -642,7 +720,7 @@ export default function InterviewRoom() {
   const serverMimeRef        = useRef<string>("");
   /* Consecutive empty mobile STT segments — drives the typed-answer fallback */
   const emptySegCountRef     = useRef(0);
-  const finalizeServerSttRef = useRef<(() => Promise<void>) | null>(null);
+  const finalizeServerSttRef = useRef<((allowUnvoicedFinal?: boolean) => Promise<{ needsReview: boolean; evidence: InterviewSpeechEvidence["diagnostic"] }>) | null>(null);
   const browserSTTRef     = useRef<any>(null);
   const transcriptRef     = useRef("");
   const historyRef        = useRef<{ role: "ai" | "candidate"; text: string }[]>([]);
@@ -650,7 +728,7 @@ export default function InterviewRoom() {
   const scrollRef         = useRef<HTMLDivElement>(null);
   const silenceTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const silenceWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const doneSpeakingRef        = useRef<(() => void) | null>(null);
+  const doneSpeakingRef        = useRef<((source?: "manual" | "silence") => void) | null>(null);
   const convPhaseRef           = useRef<ConvPhase>("thinking");
   /* Work-authorization logistics: a SEPARATE, NON-SCORED step asked once at the
      very end of a job interview, just before the closing. The answer is sent to
@@ -667,6 +745,9 @@ export default function InterviewRoom() {
   const [showSilenceWarning, setShowSilenceWarning] = useState(false);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sttActiveRef      = useRef(false);
+  const listeningGenerationRef = useRef(0);
+  const aiTurnGenerationRef = useRef(0);
+  const cancelSpeechRef = useRef<(() => void) | null>(null);
 
   /* ── Mic level analyser ─────────────────────────────────────────────── */
   const analyserRef      = useRef<AnalyserNode | null>(null);
@@ -682,9 +763,35 @@ export default function InterviewRoom() {
      body). The closing path awaits this before /end so the last answer is
      always persisted before background scoring reads session.answers. */
   const pendingSaveTurnRef = useRef<Promise<unknown> | null>(null);
+  const [captureDiagnosticsUnavailable, setCaptureDiagnosticsUnavailable] = useState(false);
+  const captureDiagnosticsRef = useRef<InterviewCaptureDiagnosticsReporter | null>(null);
+  const captureDiagnosticRef = useRef<Omit<InterviewCaptureDiagnosticInput, "eventId" | "event"> | null>(null);
+  useEffect(() => {
+    if (!sessionId) return;
+    captureDiagnosticsRef.current = new InterviewCaptureDiagnosticsReporter(
+      event => apiFetch(`/interviews/${sessionId}/capture-diagnostics`, {
+        method: "POST", body: JSON.stringify(event), signal: AbortSignal.timeout(5000),
+      }),
+      () => setCaptureDiagnosticsUnavailable(true),
+    );
+  }, [sessionId]);
+  const reportCaptureDiagnostic = useCallback((
+    event: InterviewCaptureDiagnosticInput["event"],
+    fields: Partial<Omit<InterviewCaptureDiagnosticInput, "eventId" | "event">> = {},
+  ) => {
+    const context = captureDiagnosticRef.current;
+    if (!context || workAuthActiveRef.current) return;
+    captureDiagnosticsRef.current?.record({ ...context, ...fields, event });
+  }, []);
+  const handleCaptureReviewShown = useCallback((inViewport: boolean) => {
+    reportCaptureDiagnostic("review_shown", { inViewport });
+  }, [reportCaptureDiagnostic]);
   const micAnimFrameRef  = useRef<number | null>(null);
   const [micLevel, setMicLevel] = useState(0);
   const startBtnRef      = useRef<HTMLButtonElement>(null);
+  const [screenShareEnabled, setScreenShareEnabled] = useState(false);
+  const [beginPending, setBeginPending] = useState(false);
+  const beginInFlightRef = useRef(false);
 
   /* When the recruiter intro video finishes, the Start button often sits below
      the fold — bring it into view so the candidate sees the next step instead
@@ -718,11 +825,16 @@ export default function InterviewRoom() {
   }, [history, liveTranscript]);
 
   /* ── Step-up OTP flow ───────────────────────────────────────────────────
-     Triggered whenever the server returns 401 with {stepUp:true}. We open
-     the modal, immediately ask the server to email a code, then let the
-     candidate enter it. On success we just close the modal — the next
-     apiFetch will succeed because the cookie has been re-issued. */
+     A 401 challenge opens the dialog only. Sending/replacing a code is an
+     explicit user action, never a side effect of mounting, retrying or HMR. */
+  const openStepUp = useCallback(() => {
+    setStepUpOpen(true);
+    // Repeated challenges must not replace a code or erase typed input.
+  }, []);
+
   const startStepUp = useCallback(async () => {
+    if (stepUpSendInFlightRef.current) return;
+    stepUpSendInFlightRef.current = true;
     setStepUpOpen(true);
     setStepUpStage("sending");
     setStepUpMessage("");
@@ -744,8 +856,10 @@ export default function InterviewRoom() {
         setStepUpMessage("Too many failed attempts. Please contact the recruiter to reset your session.");
       } else {
         setStepUpStage("error");
-        setStepUpMessage("We couldn't send the verification code. Please refresh and try again.");
+        setStepUpMessage("We couldn't send the verification code. Please try again.");
       }
+    } finally {
+      stepUpSendInFlightRef.current = false;
     }
   }, [sessionId]);
 
@@ -763,6 +877,11 @@ export default function InterviewRoom() {
       });
       setStepUpOpen(false);
       setStepUpCode("");
+      setStepUpStage("enter_code");
+      setStepUpSentTo("");
+      // Verification reissues the cookie; reload data rather than leave the
+      // original failed bootstrap behind an indefinitely spinning screen.
+      setSessionLoadAttempt(attempt => attempt + 1);
     } catch (e: any) {
       const data = e?.data ?? {};
       if (data.error === "otp_incorrect") {
@@ -802,7 +921,7 @@ export default function InterviewRoom() {
     if (!(err instanceof ApiError)) return false;
     const { status, data } = err;
     if (status === 401 && data?.stepUp) {
-      void startStepUp();
+      openStepUp();
       return true;
     }
     if (status === 410 && (data?.error === "session_completed" || data?.error === "session_expired")) {
@@ -823,7 +942,7 @@ export default function InterviewRoom() {
       return true;
     }
     return false;
-  }, [startStepUp, requireConsent]);
+  }, [openStepUp, requireConsent]);
 
   /* Keep the language ref in lockstep with whatever loads first. */
   useEffect(() => {
@@ -833,15 +952,29 @@ export default function InterviewRoom() {
 
   /* load session */
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      setSessionLoadError("This interview link is incomplete.");
+      return;
+    }
+    let cancelled = false;
+    setSessionLoadError(null);
     (async () => {
       try {
-        const s = await apiFetch<any>(`/interviews/${sessionId}`);
-        const p = await apiFetch<any>(`/interviews/plans/${s.planId}`);
+        const s = await withInterviewLoadTimeout(signal =>
+          apiFetch<any>(`/interviews/${sessionId}`, { signal }));
+        if (cancelled) return;
         setSession(s);
-        setPlan(p);
-        setPhase("start");
+        setPhase(current => current === "loading" || current === "error" ? "start" : current);
+        // Optional plan metadata must never delay candidate access or discard
+        // a session that was successfully authenticated.
+        if (s?.planId) {
+          void withInterviewLoadTimeout(signal =>
+            apiFetch<any>(`/interviews/${sessionId}/configuration`, { signal }))
+            .then(p => { if (!cancelled) setPlan(p); })
+            .catch(() => { /* optional; session remains usable */ });
+        }
       } catch (err) {
+        if (cancelled) return;
         /* If session has never been opened, the GET will return 401
            {needsBegin:true} — that's expected. Surface real terminal
            errors via the centralised handler. */
@@ -850,10 +983,13 @@ export default function InterviewRoom() {
           return;
         }
         if (handleApiError(err)) return;
-        setPhase("start");
+        setSessionLoadError(err instanceof ApiError && err.status === 404
+          ? "This interview link could not be found. Please contact the recruiter."
+          : "We couldn't load your interview. Please try again.");
       }
     })();
-  }, [sessionId, handleApiError]);
+    return () => { cancelled = true; };
+  }, [sessionId, handleApiError, sessionLoadAttempt]);
 
   /* Resolve the recruiter "smooth handover" intro independently of the session
      GET. This MUST run on initial load even when the session hasn't begun yet
@@ -906,16 +1042,116 @@ export default function InterviewRoom() {
      has read the disclosure and granted the BIPA biometric release. */
   useEffect(() => {
     if (consentRequired !== false) return;
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => { streamRef.current = stream; setLiveStream(stream); })
-      .catch(() => {
-        setCamError(true);
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(s => { streamRef.current = s; })
-          .catch(() => {});
-      });
-    return () => streamRef.current?.getTracks().forEach(t => t.stop());
+    mediaConsentRef.current = true;
+    let active = true;
+    let ownedStream: MediaStream | null = null;
+    setMediaPending(true);
+    setLiveStream(null);
+    const request = (async (): Promise<MediaStream | null> => {
+      try {
+        const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio });
+        } catch {
+          if (!active || mediaStoppedRef.current) return null;
+          setCamError(true);
+          stream = await navigator.mediaDevices.getUserMedia({ audio });
+        }
+        if (!active || mediaStoppedRef.current) {
+          stream.getTracks().forEach(track => track.stop());
+          return null;
+        }
+        ownedStream = stream;
+        stream.getAudioTracks().forEach(track => { track.enabled = micEnabledRef.current; });
+        stream.getVideoTracks().forEach(track => { track.enabled = camEnabledRef.current; });
+        streamRef.current = stream;
+        const hasCamera = stream.getVideoTracks().some(track => track.readyState === "live");
+        setCamError(!hasCamera);
+        setLiveStream(hasCamera ? stream : null);
+        if (recordingMicrophoneRef.current) {
+          recordingMicrophoneRef.current.attach(stream);
+        } else {
+          const hasMic = stream.getAudioTracks().some(track => track.readyState === "live");
+          setRecordingMicStatus(!recordingFailedRef.current && hasMic ? (micEnabledRef.current ? "ready" : "muted") : "unavailable");
+        }
+        return stream;
+      } catch {
+        if (active) setRecordingMicStatus("unavailable");
+        return null;
+      } finally {
+        if (active) setMediaPending(false);
+      }
+    })();
+    mediaRequestRef.current = request;
+    return () => {
+      active = false;
+      mediaConsentRef.current = false;
+      mediaGenerationRef.current++;
+      mediaRetryInFlightRef.current = false;
+      ownedStream?.getTracks().forEach(track => track.stop());
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      mediaRequestRef.current = null;
+    };
   }, [consentRequired]);
+
+  const retryMicrophone = useCallback(() => {
+    if (mediaPending || mediaRetryInFlightRef.current || !mediaConsentRef.current || mediaStoppedRef.current) return;
+    mediaRetryInFlightRef.current = true;
+    const generation = mediaGenerationRef.current;
+    setMediaPending(true);
+    // Retry only the microphone. Stopping/replacing the camera would leave
+    // the already-started MediaRecorder holding an ended video track.
+    void audioCtxRef.current?.resume().catch(() => {});
+    const request = (async (): Promise<MediaStream | null> => {
+      try {
+        const audio = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        if (generation !== mediaGenerationRef.current || !mediaConsentRef.current || mediaStoppedRef.current) {
+          audio.getTracks().forEach(track => track.stop());
+          return null;
+        }
+        const videoTracks = streamRef.current?.getVideoTracks() ?? [];
+        streamRef.current?.getAudioTracks().forEach(track => track.stop());
+        audio.getAudioTracks().forEach(track => { track.enabled = micEnabledRef.current; });
+        audio.getVideoTracks().forEach(track => track.stop());
+        const stream = new MediaStream([...videoTracks, ...audio.getAudioTracks()]);
+        streamRef.current = stream;
+        setLiveStream(videoTracks.length ? stream : null);
+        if (recordingMicrophoneRef.current) {
+          recordingMicrophoneRef.current.attach(stream);
+        } else {
+          setRecordingMicStatus(!recordingFailedRef.current && audio.getAudioTracks().length
+            ? (micEnabledRef.current ? "ready" : "muted") : "unavailable");
+        }
+        return stream;
+      } catch {
+        if (generation === mediaGenerationRef.current && !mediaStoppedRef.current) {
+          if (recordingMicrophoneRef.current) recordingMicrophoneRef.current.refreshStatus();
+          else setRecordingMicStatus("unavailable");
+        }
+        return null;
+      } finally {
+        if (generation === mediaGenerationRef.current) {
+          mediaRetryInFlightRef.current = false;
+          setMediaPending(false);
+        }
+      }
+    })();
+    mediaRequestRef.current = request;
+  }, [mediaPending]);
+
+  useEffect(() => {
+    mediaStoppedRef.current = false;
+    return () => {
+      mediaStoppedRef.current = true;
+      recordingMicrophoneRef.current?.dispose();
+      recordingMicrophoneRef.current = null;
+      void audioCtxRef.current?.close().catch(() => {});
+    };
+  }, []);
 
   /* Guard against losing the recording: this flow keeps the entire video in
    * memory and only uploads it after the interview ends, so closing the tab
@@ -933,12 +1169,15 @@ export default function InterviewRoom() {
   }, [isRecording, phase]);
 
   const toggleCamera = () => {
-    streamRef.current?.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
-    setCamEnabled(p => !p);
+    camEnabledRef.current = !camEnabledRef.current;
+    streamRef.current?.getVideoTracks().forEach(t => { t.enabled = camEnabledRef.current; });
+    setCamEnabled(camEnabledRef.current);
   };
   const toggleMic = () => {
-    streamRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
-    setMicEnabled(p => !p);
+    micEnabledRef.current = !micEnabledRef.current;
+    streamRef.current?.getAudioTracks().forEach(t => { t.enabled = micEnabledRef.current; });
+    recordingMicrophoneRef.current?.refreshStatus();
+    setMicEnabled(micEnabledRef.current);
   };
 
   /* recording — accepts the screen stream captured in the click handler */
@@ -954,16 +1193,14 @@ export default function InterviewRoom() {
     const dest = ctx.createMediaStreamDestination();
     recordingDestRef.current = dest;
 
-    /* Route mic audio into the recording destination */
-    if (micStream) {
-      try {
-        const micAudioTracks = micStream.getAudioTracks();
-        if (micAudioTracks.length > 0) {
-          const micNode = ctx.createMediaStreamSource(new MediaStream(micAudioTracks));
-          micNode.connect(dest);
-        }
-      } catch { /* mic routing failed — continue without mic in recording */ }
-    }
+    recordingMicrophoneRef.current?.dispose();
+    const microphone = new InterviewRecordingMicrophone(ctx, dest, setRecordingMicStatus);
+    recordingFailedRef.current = false;
+    recordingMicrophoneRef.current = microphone;
+    microphone.attach(micStream);
+    // Resume independently of cloud TTS; typing/browser-voice fallback must not
+    // leave an otherwise connected microphone on a suspended audio graph.
+    void ctx.resume().catch(() => setRecordingMicStatus("unavailable"));
 
     /* Video: prefer screen share, fall back to webcam */
     const videoTracks = screenStream?.getVideoTracks() ?? micStream?.getVideoTracks() ?? [];
@@ -977,22 +1214,59 @@ export default function InterviewRoom() {
     const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
       ? "video/webm;codecs=vp9,opus"
       : MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4";
+    const segments = new InterviewRecordingSegments(async (blob, attemptId, index) => {
+      const form = recordingSegmentForm(blob, attemptId, index, mime);
+      const result = await fetch(`${BASE}/api/interviews/${sessionId}/recording-segments`, {
+        method: "POST", credentials: "include", headers: authHeaders(), body: form,
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!result.ok) throw new Error("Recording checkpoint failed");
+    }, () => setRecordingSaveWarning(true));
+    recordingSegmentsRef.current = segments;
     try {
       const rec = new MediaRecorder(combinedStream, { mimeType: mime, videoBitsPerSecond: 1_500_000 });
-      rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      rec.start(3000);
+      rec.ondataavailable = e => {
+        if (e.data.size > 0) { chunksRef.current.push(e.data); segments.enqueue(e.data); }
+      };
+      rec.start(15000);
       recorderRef.current = rec;
       setIsRecording(true);
+      rec.onerror = () => {
+        recordingFailedRef.current = true;
+        microphone.dispose();
+        if (recordingMicrophoneRef.current === microphone) recordingMicrophoneRef.current = null;
+        setRecordingMicStatus("unavailable");
+      };
     } catch (err) {
+      recordingFailedRef.current = true;
+      microphone.dispose();
+      if (recordingMicrophoneRef.current === microphone) recordingMicrophoneRef.current = null;
+      setRecordingMicStatus("unavailable");
+      void ctx.close().catch(() => {});
       console.error("[recording] MediaRecorder start failed", err);
     }
-  }, []);
+  }, [sessionId]);
 
   const stopAndUpload = useCallback(async (): Promise<void> => {
     return new Promise(resolve => {
+      mediaStoppedRef.current = true;
       const rec = recorderRef.current;
-      if (!rec || rec.state === "inactive") { resolve(); return; }
+      if (!rec || rec.state === "inactive") {
+        recordingMicrophoneRef.current?.dispose();
+        recordingMicrophoneRef.current = null;
+        void audioCtxRef.current?.close().catch(() => {});
+        audioCtxRef.current = null;
+        recordingDestRef.current = null;
+        streamRef.current?.getTracks().forEach(track => track.stop());
+        setLiveStream(null);
+        setIsRecording(false);
+        resolve();
+        return;
+      }
+      const microphone = recordingMicrophoneRef.current;
       rec.onstop = async () => {
+        microphone?.dispose();
+        if (recordingMicrophoneRef.current === microphone) recordingMicrophoneRef.current = null;
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
         /* Stop screen-share tracks */
         screenStreamRef.current?.getTracks().forEach(t => t.stop());
@@ -1175,6 +1449,7 @@ export default function InterviewRoom() {
      in the recording alongside the mic.  No per-clip AudioContext is created
      or destroyed; we reuse audioCtxRef for the whole interview lifetime.       */
   const speakText = useCallback((text: string): Promise<void> => {
+    cancelSpeechRef.current?.();
     return new Promise(resolve => {
       audioRef.current?.pause();
 
@@ -1184,18 +1459,28 @@ export default function InterviewRoom() {
          On iOS Safari a muted <audio> routed through a suspended AudioContext can
          fail to ever fire `onended`, so we guard every path with a watchdog. */
       let done = false;
+      let ownedAudio: HTMLAudioElement | null = null;
+      let ownedUrl: string | null = null;
+      let usingBrowserSpeech = false;
       let watchdog: ReturnType<typeof setTimeout> | null = null;
       const ttsAbort = new AbortController();
       const finish = () => {
         if (done) return;
         done = true;
         if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+        /* A watchdog must STOP playback, not just resolve the promise. Otherwise
+           the mic opens while Lexy's audio continues and hears her as the candidate. */
+        ownedAudio?.pause();
+        if (usingBrowserSpeech) window.speechSynthesis?.cancel();
+        if (ownedUrl) { URL.revokeObjectURL(ownedUrl); ownedUrl = null; }
+        if (cancelSpeechRef.current === finish) cancelSpeechRef.current = null;
         /* Cancel any in-flight TTS so a late response can't start audio AFTER the
            turn already advanced to listening (which would have Lexy talk over the
            candidate and contaminate the STT transcript). */
         try { ttsAbort.abort(); } catch { /* noop */ }
         resolve();
       };
+      cancelSpeechRef.current = finish;
       /* Pre-metadata safety net based on a rough speaking-rate estimate; tightened
          to the real clip length once metadata loads. */
       const estMs = Math.min(60000, Math.max(8000, text.length * 90 + 3000));
@@ -1205,9 +1490,12 @@ export default function InterviewRoom() {
         try {
           if (done) return;                    /* turn already advanced */
           if (!window.speechSynthesis) return; /* watchdog resolves */
+          ownedAudio?.pause();
+          usingBrowserSpeech = true;
           const u = new SpeechSynthesisUtterance(text);
-          u.lang = "en-GB";
-          const pick = pickStableTtsVoice();
+          const locale = resolveSpeechLocale(interviewLangRef.current);
+          u.lang = locale.startsWith("en") ? "en-GB" : locale;
+          const pick = pickStableTtsVoice(u.lang);
           if (pick) u.voice = pick;
           u.onend   = () => finish();
           u.onerror = () => finish();
@@ -1229,6 +1517,8 @@ export default function InterviewRoom() {
           if (done) return; /* watchdog already advanced the turn — drop late audio */
           const url  = URL.createObjectURL(blob);
           const audio = new Audio(url);
+          ownedUrl = url;
+          ownedAudio = audio;
           /* Start muted — Chrome always allows muted autoplay no matter how many
              async hops we are from the user gesture. Unmute once play() resolves
              so the candidate hears full-volume audio from the first frame. */
@@ -1252,8 +1542,8 @@ export default function InterviewRoom() {
             } catch { /* Web Audio setup failed — audio still plays at unity gain */ }
           }
 
-          audio.onended = () => { URL.revokeObjectURL(url); finish(); };
-          audio.onerror = () => { URL.revokeObjectURL(url); finish(); };
+          audio.onended = finish;
+          audio.onerror = finish;
           audio.onloadedmetadata = () => {
             if (Number.isFinite(audio.duration) && audio.duration > 0) {
               if (watchdog) clearTimeout(watchdog);
@@ -1270,8 +1560,8 @@ export default function InterviewRoom() {
           const p = audio.play();
           if (p && typeof (p as any).then === "function") {
             (p as Promise<void>)
-              .then(() => { audio.muted = false; })
-              .catch(() => { audio.muted = false; speakViaSynthesis(); });
+              .then(() => { if (done) audio.pause(); else audio.muted = false; })
+              .catch(() => { if (!done) speakViaSynthesis(); });
           } else {
             audio.muted = false;
           }
@@ -1299,9 +1589,15 @@ export default function InterviewRoom() {
          it on silence via the mic meter, and POST each segment to /transcribe.
      Falls back to text input when neither path can run.                          */
   const startListening = useCallback((language?: string) => {
-    if (useTextInputRef.current) return;
+    if (useTextInputRef.current || convPhaseRef.current !== "listening") return;
+    const generation = ++listeningGenerationRef.current;
+    const isCurrentListening = () => sttActiveRef.current &&
+      listeningGenerationRef.current === generation && convPhaseRef.current === "listening";
 
     sttActiveRef.current = true;
+    setAnswerNeedsReview(false);
+    setAnswerCaptureNotice("");
+    setTextAnswer("");
     transcriptRef.current = "";
     setLiveTranscript("");
     clearSilenceTimer();
@@ -1322,7 +1618,7 @@ export default function InterviewRoom() {
       silenceTimerRef.current = setTimeout(() => {
         clearSilenceTimer();
         if (sttActiveRef.current && convPhaseRef.current === "listening" && doneSpeakingRef.current) {
-          doneSpeakingRef.current();
+          doneSpeakingRef.current("silence");
         }
       }, ms);
     };
@@ -1354,15 +1650,15 @@ export default function InterviewRoom() {
 
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    /* The browser Web Speech API is only reliable for English. For every other
-       language (e.g. Portuguese) Chrome frequently ignores recognition.lang and
-       falls back to its English model, producing fluent-but-wrong English text
-       ("random sentences without any sense"). So we keep the fast/free browser
-       path for English ONLY and route all other languages through the server
-       transcription path (Whisper), which is far more accurate for non-English
-       and matches the project STT policy. */
-    const isEnglishStt = /^en(-|$)/i.test(lang);
-    const useServerStt = isMobileDevice() || !SpeechRecognitionAPI || !isEnglishStt;
+    /* Spoken answers use the existing language-aware server pipeline.
+       Segment text is a preview; a continuous mic-only recording validates the
+       complete answer before it can advance or become grading evidence. */
+    const useServerStt = shouldUseServerInterviewCapture({
+      language: lang, userAgent: navigator.userAgent,
+      mobile: isMobileDevice(), browserSpeechAvailable: !!SpeechRecognitionAPI,
+    });
+    captureDiagnosticRef.current = workAuthActiveRef.current ? null :
+      createCaptureDiagnosticAttempt(historyRef.current.filter(turn => turn.role === "candidate").length + 1);
 
     /* ── Server transcription path (mobile + all non-English) ──────────── */
     if (useServerStt) {
@@ -1371,6 +1667,15 @@ export default function InterviewRoom() {
 
       serverSttActiveRef.current = true;
       const mime = pickAudioMime();
+      try {
+        answerCaptureRef.current?.dispose();
+        answerCaptureRef.current = new InterviewAnswerCapture(stream, mime);
+      } catch {
+        serverSttActiveRef.current = false;
+        enableTextInput("sticky");
+        setAnswerCaptureNotice("Speech capture is unavailable. Please type your answer.");
+        return;
+      }
       serverMimeRef.current = mime;
       segBusyRef.current = false;
       emptySegCountRef.current = 0;
@@ -1396,6 +1701,8 @@ export default function InterviewRoom() {
          sentences from room noise, and those fabrications reset the answer
          timer and stall the interview. The FINAL cut still always transcribes. */
       let segHadVoice = false;
+      let answerHadVoice = false;
+      const speechEvidence = new InterviewSpeechEvidence();
       /* Adaptive noise floor: falls quickly toward quiet readings, creeps up very
          slowly during loud ones (speech has natural gaps, so the floor keeps
          tracking the ambient hum even while the candidate talks). Voice is only
@@ -1403,14 +1710,19 @@ export default function InterviewRoom() {
       let noiseFloor = SPEAK_THRESH;
 
       const startSegRecorder = () => {
-        if (!serverSttActiveRef.current) return;
+        if (!serverSttActiveRef.current || !isCurrentListening()) return;
         try {
           const micStream = new MediaStream(stream.getAudioTracks());
           const rec = mime
             ? new MediaRecorder(micStream, { mimeType: mime })
             : new MediaRecorder(micStream);
           micChunksRef.current = [];
-          rec.ondataavailable = e => { if (e.data && e.data.size > 0) micChunksRef.current.push(e.data); };
+          const segmentChunks = micChunksRef.current;
+          rec.ondataavailable = e => {
+            if (listeningGenerationRef.current === generation && e.data && e.data.size > 0) {
+              segmentChunks.push(e.data);
+            }
+          };
           rec.start();
           micRecRef.current = rec;
           segStart = Date.now();
@@ -1423,26 +1735,26 @@ export default function InterviewRoom() {
 
       /* Stop the current mic recorder, transcribe the captured segment, append the
          text to the live transcript, then (unless final) start a fresh recorder. */
-      const cutSegment = (isFinal: boolean): Promise<void> => new Promise<void>(resolve => {
+      const cutSegment = (isFinal: boolean, manualFinal = false): Promise<void> => new Promise<void>(resolve => {
         const rec = micRecRef.current;
         if (!rec || rec.state === "inactive" || segBusyRef.current) { resolve(); return; }
         segBusyRef.current = true;
         speaking = false;
         const hadVoice = segHadVoice;
         rec.onstop = async () => {
+          if (listeningGenerationRef.current !== generation) { resolve(); return; }
           const chunks = micChunksRef.current;
           micChunksRef.current = [];
           micRecRef.current = null;
           const blob = new Blob(chunks, { type: serverMimeRef.current || "audio/webm" });
           let gotText = false;
           try {
-            /* Voice gate: a non-final segment with zero detected voice is pure
-               room noise — skip STT entirely (it would only hallucinate) and
-               count it as an empty segment. The final cut always transcribes so
-               a soft-spoken answer below the meter threshold is never lost. */
-            const text = (!isFinal && !hadVoice)
-              ? ""
-              : await transcribeSegment(sessionId, blob, lang, transcriptRef.current);
+            const text = shouldTranscribeInterviewSegment(hadVoice, isFinal, manualFinal)
+              ? await transcribeSegment(sessionId, blob, lang, transcriptRef.current)
+              : "";
+            /* A previous question's delayed response must never become the
+               candidate answer for a newer turn. Finalization retains its generation. */
+            if (listeningGenerationRef.current !== generation) { resolve(); return; }
             /* Hallucination-repeat guard: on near-silent audio (candidate not
                speaking, only room noise) Sarvam/Whisper often fabricate the SAME
                plausible sentence for every segment. Drop a segment ONLY when it
@@ -1497,13 +1809,30 @@ export default function InterviewRoom() {
          still being recorded so the final utterance is transcribed. Wait out any
          segment transcription already in flight (so its text lands first), then
          cut the current recorder. */
-      finalizeServerSttRef.current = async () => {
+      finalizeServerSttRef.current = async (allowUnvoicedFinal = true) => {
         serverSttActiveRef.current = false;
+        // Freeze evidence before stopping the recorder. Later microphone activity
+        // while awaiting STT cannot validate audio that is already finalized.
+        const needsReview = speechEvidence.needsReview;
+        const evidence = speechEvidence.diagnostic;
+        const capture = answerCaptureRef.current;
+        answerCaptureRef.current = null;
+        if (!capture) throw new Error("Answer recording is unavailable");
+        const completeAudio = capture.finish().then(blob => ({ blob }), error => ({ error }));
         const start = Date.now();
         while (segBusyRef.current && Date.now() - start < 8000) {
           await new Promise(r => setTimeout(r, 100));
         }
-        await cutSegment(true);
+        await cutSegment(true, allowUnvoicedFinal);
+        const complete = await completeAudio;
+        if ("error" in complete) throw complete.error;
+        if (listeningGenerationRef.current !== generation) throw new Error("Answer capture changed");
+        const verified = shouldTranscribeInterviewSegment(answerHadVoice, true, allowUnvoicedFinal)
+          ? await transcribeSegment(sessionId, complete.blob, lang) : "";
+        if (listeningGenerationRef.current !== generation) throw new Error("Answer capture changed");
+        transcriptRef.current = verified;
+        setLiveTranscript(verified);
+        return { needsReview, evidence };
       };
 
       startSegRecorder();
@@ -1535,7 +1864,7 @@ export default function InterviewRoom() {
         analyserRef.current = analyser;
         const dataArr = new Uint8Array(analyser.frequencyBinCount);
         const poll = () => {
-          if (!analyserRef.current) return;
+          if (!analyserRef.current || !isCurrentListening()) return;
           analyserRef.current.getByteFrequencyData(dataArr);
           const rms = Math.sqrt(dataArr.reduce((s: number, v: number) => s + v * v, 0) / dataArr.length);
           setMicLevel(rms);
@@ -1544,9 +1873,11 @@ export default function InterviewRoom() {
              slowly during louder ones. Voice = clearly above the floor. */
           noiseFloor = rms < noiseFloor ? noiseFloor * 0.7 + rms * 0.3 : Math.min(noiseFloor * 1.002, 40);
           const voiceThresh = Math.max(SPEAK_THRESH, noiseFloor * 1.6 + 3);
+          speechEvidence.observe(rms > voiceThresh, now);
           if (rms > voiceThresh) {
             speaking = true;
             segHadVoice = true;
+            answerHadVoice = true;
             lastVoiceAt = now;
             /* throttle timer re-arming to ~1/s so the countdown stays smooth and
                never fires mid-answer during continuous speech */
@@ -1583,7 +1914,7 @@ export default function InterviewRoom() {
     browserSTTRef.current = recognition;
 
     recognition.onresult = (event: any) => {
-      if (!sttActiveRef.current) return;
+      if (!isCurrentListening() || browserSTTRef.current !== recognition) return;
       let interimText = "";
       let finalText   = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -1625,7 +1956,7 @@ export default function InterviewRoom() {
     };
 
     recognition.onerror = (event: any) => {
-      if (!sttActiveRef.current) return;
+      if (!isCurrentListening() || browserSTTRef.current !== recognition) return;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         sttActiveRef.current = false;
         clearSilenceTimer();
@@ -1636,7 +1967,7 @@ export default function InterviewRoom() {
 
     recognition.onend = () => {
       /* Browser stops recognition after a pause — restart automatically if still listening */
-      if (sttActiveRef.current && convPhaseRef.current === "listening") {
+      if (isCurrentListening() && browserSTTRef.current === recognition) {
         try { recognition.start(); } catch { /* already restarting */ }
       }
     };
@@ -1663,7 +1994,7 @@ export default function InterviewRoom() {
         analyserRef.current = analyser;
         const dataArr = new Uint8Array(analyser.frequencyBinCount);
         const poll = () => {
-          if (!analyserRef.current) return;
+          if (!analyserRef.current || !isCurrentListening()) return;
           analyserRef.current.getByteFrequencyData(dataArr);
           const rms = Math.sqrt(dataArr.reduce((s: number, v: number) => s + v * v, 0) / dataArr.length);
           setMicLevel(rms);
@@ -1675,6 +2006,7 @@ export default function InterviewRoom() {
   }, [plan, useTextInput, clearSilenceTimer]);
 
   const stopListening = useCallback(() => {
+    listeningGenerationRef.current += 1;
     sttActiveRef.current = false;
     serverSttActiveRef.current = false;
     clearSilenceTimer();
@@ -1684,6 +2016,8 @@ export default function InterviewRoom() {
     try { micRecRef.current?.stop(); } catch {}
     micRecRef.current = null;
     micChunksRef.current = [];
+    answerCaptureRef.current?.dispose();
+    answerCaptureRef.current = null;
     segBusyRef.current = false;
     finalizeServerSttRef.current = null;
     /* tear down mic level analyser */
@@ -1702,18 +2036,26 @@ export default function InterviewRoom() {
      NOTE: do NOT close audioCtxRef here — it's the shared recording context
      and must stay alive until stopAndUpload() is called at interview end. */
   const handleInterrupt = useCallback(() => {
+    aiTurnGenerationRef.current += 1;
+    cancelSpeechRef.current?.();
+    stopListening();
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     setConvPhase("listening");
+    convPhaseRef.current = "listening";
     setLiveTranscript("");
     transcriptRef.current = "";
     startListening(interviewLangRef.current);
-  }, [startListening, session, plan]);
+  }, [startListening, stopListening, session, plan]);
 
   /* Core loop: AI generates → speaks → then listens */
-  const totalQuestions = (session as any)?.totalQuestions || (plan as any)?.questions?.length || DEFAULT_TOTAL_QUESTIONS;
+  const totalQuestions = (session as any)?.totalQuestions || (plan as any)?.questions?.length || (intro as any)?.totalQuestions || DEFAULT_TOTAL_QUESTIONS;
   const aiTurn = useCallback(async (hist: { role: "ai" | "candidate"; text: string }[], qNum: number) => {
+    const turnGeneration = ++aiTurnGenerationRef.current;
+    const isCurrentTurn = () => aiTurnGenerationRef.current === turnGeneration;
+    stopListening();
     setConvPhase("thinking");
+    convPhaseRef.current = "thinking";
     /* End the interview when we've run out of questions OR when the candidate
        has signalled they want to wrap up (said goodbye / "that's all"). The
        backend ALSO detects farewell intent and echoes it back via isClosing,
@@ -1732,6 +2074,7 @@ export default function InterviewRoom() {
         && (session as any)?.candidateId && (session as any).candidateId !== "demo") {
       try {
         const { text: waText } = await apiFetch<{ text: string }>(`/interviews/${sessionId}/work-auth-prompt`);
+        if (!isCurrentTurn()) return;
         histBeforeWorkAuthRef.current = hist;          // preserve assessed transcript for the real close
         workAuthActiveRef.current = true;
         setWorkAuthActive(true);
@@ -1740,12 +2083,15 @@ export default function InterviewRoom() {
         historyRef.current = waHist;
         setCurrentAiText(waText);
         setConvPhase("speaking");
+        convPhaseRef.current = "speaking";
         await speakText(waText);
+        if (!isCurrentTurn()) return;
         /* Open the mic to capture the answer (same settle delay as normal turns). */
         noSpeechCountRef.current = 0;
         setConvPhase("thinking");
         convPhaseRef.current = "thinking";
         await new Promise(r => setTimeout(r, 700));
+        if (!isCurrentTurn()) return;
         convPhaseRef.current = "listening";
         setConvPhase("listening");
         setLiveTranscript("");
@@ -1753,6 +2099,7 @@ export default function InterviewRoom() {
         startListening(interviewLangRef.current);
         return;
       } catch {
+        if (!isCurrentTurn()) return;
         /* If the prompt can't be fetched, don't block the interview — mark the
            step done and fall through to the normal closing. */
         workAuthActiveRef.current = false;
@@ -1769,6 +2116,7 @@ export default function InterviewRoom() {
           body: JSON.stringify({ history: hist, questionNumber: qNum, totalQuestions }),
         });
         text = r.text;
+        if (!isCurrentTurn()) return;
         if (r.isClosing) isClosing = true;
       } catch (err) {
         if (handleApiError(err)) return;   /* step-up modal will recover; the candidate can retry */
@@ -1781,7 +2129,9 @@ export default function InterviewRoom() {
       setCurrentAiText(text);
 
       setConvPhase("speaking");
+      convPhaseRef.current = "speaking";
       await speakText(text);
+      if (!isCurrentTurn()) return;
 
       if (isClosing) {
         setConvPhase("finished");
@@ -1818,7 +2168,14 @@ export default function InterviewRoom() {
             new Promise((r) => setTimeout(r, 4000)),
           ]);
         } catch {}
+        await captureDiagnosticsRef.current?.flush();
         try {
+          // Save a last live checkpoint while the consented session cookie is
+          // still valid. Earlier recorder attempts remain separate in storage.
+          if (recordingSegmentsRef.current && recorderRef.current) {
+            try { await recordingSegmentsRef.current.flush(recorderRef.current); }
+            catch { setRecordingSaveWarning(true); }
+          }
           await apiFetch<any>(`/interviews/${sessionId}/end`, { method: "POST" });
         } catch (err) {
           /* /end re-checks AI consent per-request (412 AI_CONSENT_REQUIRED if
@@ -1843,6 +2200,7 @@ export default function InterviewRoom() {
         setConvPhase("thinking"); /* brief "thinking" while mic settles */
         convPhaseRef.current = "thinking";
         await new Promise(r => setTimeout(r, 700));
+        if (!isCurrentTurn()) return;
         /* If the last question fell back to typing only because the candidate
            didn't speak, give voice another chance on this new question. Mic
            hardware failures and explicit "type instead" choices stay in text. */
@@ -1858,6 +2216,7 @@ export default function InterviewRoom() {
         startListening(interviewLangRef.current);
       }
     } catch {
+      if (!isCurrentTurn()) return;
       noSpeechCountRef.current = 0;
       if (useTextInputRef.current && textModeReasonRef.current === "nospeech") {
         disableTextInput();
@@ -1867,7 +2226,13 @@ export default function InterviewRoom() {
       setConvPhase("listening");
       startListening(interviewLangRef.current);
     }
-  }, [sessionId, speakText, stopAndUpload, startListening, session, plan]);
+  }, [sessionId, speakText, stopAndUpload, startListening, stopListening, session, plan]);
+
+  useEffect(() => () => {
+    aiTurnGenerationRef.current += 1;
+    cancelSpeechRef.current?.();
+    stopListening();
+  }, [stopListening]);
 
   /* ── Proctoring: log event to backend + local state ─────────────────────── */
   const logProctorEvent = useCallback(async (type: string, detail: string) => {
@@ -1964,6 +2329,11 @@ export default function InterviewRoom() {
   /* Begin interview — getDisplayMedia MUST be the very first async call so
      Chrome counts it as a direct response to the user's click gesture.       */
   const handleBegin = useCallback(async () => {
+    if (beginInFlightRef.current) return;
+    beginInFlightRef.current = true;
+    setBeginPending(true);
+    let resumeState = interviewResumeState(session ?? {});
+    try {
     /* ── 1. Request screen share ────────────────────────────────────────
        Ask for the full screen (preferably).  If the user cancels or the
        browser blocks it we fall back to webcam-only recording silently. */
@@ -1972,12 +2342,12 @@ export default function InterviewRoom() {
        iOS Safari / Android Chrome don't implement it, so attempting it there
        just throws. Guard on support so mobile silently uses webcam-only and we
        never block the start on an unsupported prompt. */
-    if (navigator.mediaDevices?.getDisplayMedia) {
+    if (screenShareEnabled && navigator.mediaDevices?.getDisplayMedia) {
       try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
+        screenStream = await requestOptionalScreenShare(() => navigator.mediaDevices.getDisplayMedia({
           video: { displaySurface: "monitor" } as any,
           audio: false,   /* we capture audio via the shared AudioContext */
-        });
+        }));
       } catch {
         /* User cancelled or no permission — webcam fallback handled in startRecording */
       }
@@ -1990,8 +2360,10 @@ export default function InterviewRoom() {
        of recording first. We deliberately do NOT redirect to the portal login
        page — this is a public recruiter link and the candidate has no portal
        session. */
+    let beginPlan = plan;
     try {
       const r = await apiFetch<any>(`/interviews/${sessionId}/begin`, { method: "POST" });
+      resumeState = interviewResumeState({ ...(session ?? {}), ...r });
       if (r?.expiresAt) setExpiresAt(new Date(r.expiresAt));
       if (typeof r?.durationHours === "number") setDurationHours(r.durationHours);
       if (r?.resumed) setResumed(true);
@@ -2013,14 +2385,18 @@ export default function InterviewRoom() {
           const s = await apiFetch<any>(`/interviews/${sessionId}`);
           setSession(s);
           if (s?.language) interviewLangRef.current = s.language;
-          if (s?.planId) {
-            try {
-              const p = await apiFetch<any>(`/interviews/plans/${s.planId}`);
-              setPlan(p);
-              if (!s?.language && p?.language) interviewLangRef.current = p.language;
-            } catch { /* plan is optional here */ }
-          }
         } catch { /* proceed — language ref keeps its current value */ }
+      }
+      if (!beginPlan) {
+        try {
+          beginPlan = await withInterviewLoadTimeout(signal =>
+            apiFetch<any>(`/interviews/${sessionId}/configuration`, { signal }));
+          setPlan(beginPlan);
+          if (!r?.language && beginPlan?.language) interviewLangRef.current = beginPlan.language;
+        } catch (err) {
+          if (handleApiError(err)) return;
+          // Optional metadata cannot erase saved progress or block spoken interviews.
+        }
       }
     } catch (err) {
       /* Stop the screen-share we just acquired so nothing keeps capturing. */
@@ -2033,11 +2409,38 @@ export default function InterviewRoom() {
       handleApiError(err);
       return;
     }
+    // Bounded wait: a permission prompt must not hang the interview. If it
+    // resolves later, the consent-gated media effect attaches the mic then.
+    await waitForInterviewMedia(mediaRequestRef.current);
+    if (mediaStoppedRef.current || !mediaConsentRef.current) {
+      screenStream?.getTracks().forEach(track => track.stop());
+      return;
+    }
     setPhase("interview");
+    if (beginPlan?.interviewType === "programming") {
+      const first = beginPlan.questions?.[0];
+      if (first) setProgCode({ [first.id]: first.starterCode?.javascript ?? "// Write your solution here\n" });
+      return;
+    }
     setConvPhase("thinking");
     startRecording(screenStream);
-    await aiTurn([], 1);
-  }, [sessionId, session, startRecording, aiTurn, handleApiError, loadConsentStatus, requireConsent]);
+    setHistory(resumeState.history);
+    historyRef.current = resumeState.history;
+    setQuestionNumber(resumeState.nextQuestion);
+    questionNumRef.current = resumeState.nextQuestion;
+    const welcomeBack = interviewResumeGreeting(interviewLangRef.current, resumeState.nextQuestion, totalQuestions);
+    if (welcomeBack && resumeState.history.length > 0) {
+      setConvPhase("speaking");
+      convPhaseRef.current = "speaking";
+      setCurrentAiText(welcomeBack);
+      await speakText(welcomeBack);
+    }
+    await aiTurn(resumeState.history, resumeState.nextQuestion);
+    } finally {
+      beginInFlightRef.current = false;
+      setBeginPending(false);
+    }
+  }, [sessionId, session, plan, screenShareEnabled, startRecording, aiTurn, speakText, totalQuestions, handleApiError, loadConsentStatus, requireConsent]);
 
   /* ── End interview (used by programming + other) ────────────────────── */
   const handleEnd = useCallback(async () => {
@@ -2112,7 +2515,10 @@ export default function InterviewRoom() {
   /* Track consecutive no-speech timeouts so we don't loop forever */
   const noSpeechCountRef = useRef(0);
 
-  const handleDoneSpeaking = useCallback(async () => {
+  const handleDoneSpeaking = useCallback(async (source: "manual" | "silence" = "manual") => {
+    if (convPhaseRef.current !== "listening") return;
+    // A delayed silence callback cannot submit a pending review or typed answer.
+    if (source === "silence" && useTextInputRef.current) return;
     /* Guard against re-entrant submits — a double-tap, or the silence timer
        firing the same instant the candidate taps Send, must not run twice. */
     if (doneInFlightRef.current) return;
@@ -2126,12 +2532,44 @@ export default function InterviewRoom() {
       /* Mobile server-STT: flush the in-flight recording so the final utterance is
          transcribed into transcriptRef BEFORE we read the answer below. */
       if (serverSttActiveRef.current && finalizeServerSttRef.current) {
-        try { await finalizeServerSttRef.current(); } catch { /* keep going with whatever we have */ }
+        try {
+          const capture = await finalizeServerSttRef.current(source === "manual");
+          if (captureDiagnosticRef.current) {
+            captureDiagnosticRef.current = {
+              ...captureDiagnosticRef.current, ...capture.evidence, source,
+              textPresent: Boolean(transcriptRef.current.trim()),
+              reason: capture.needsReview ? "weak_signal" : "sustained_signal",
+            };
+          }
+          reportCaptureDiagnostic("capture_decision");
+          if (capture.needsReview && transcriptRef.current.trim()) {
+            stopListening();
+            setTextAnswer(transcriptRef.current);
+            setAnswerCaptureNotice("");
+            setAnswerNeedsReview(true);
+            // Per-question review: confirmation advances normally, then voice
+            // returns for the next question. No save or AI turn happens here.
+            enableTextInput("nospeech");
+            return;
+          }
+        }
+        catch (error) {
+          if (captureDiagnosticRef.current) captureDiagnosticRef.current.reason = "capture_failed";
+          reportCaptureDiagnostic("capture_decision", { source, textPresent: Boolean(transcriptRef.current.trim()) });
+          stopListening();
+          if (handleApiError(error)) return;
+          setTextAnswer(transcriptRef.current);
+          setAnswerNeedsReview(true);
+          setAnswerCaptureNotice("We couldn't validate the spoken answer. Please review or type it before sending.");
+          enableTextInput("sticky");
+          return;
+        }
       }
       stopListening();
       const answer = useTextInput ? textAnswer.trim() : transcriptRef.current.trim();
 
       if (!answer) {
+        reportCaptureDiagnostic("empty_capture", { reason: "no_text", textPresent: false, source });
         /* No speech detected — switch to text input immediately on first failure */
         noSpeechCountRef.current += 1;
         if (noSpeechCountRef.current <= 1 && convPhaseRef.current === "listening" && !useTextInput) {
@@ -2155,6 +2593,21 @@ export default function InterviewRoom() {
 
       /* Speech was captured — reset the no-speech counter. */
       noSpeechCountRef.current = 0;
+      const confirmedReview = answerNeedsReview;
+      if (confirmedReview) reportCaptureDiagnostic("review_confirmed", {
+        reason: "confirmed_review", source,
+        edited: textAnswer.trim() !== transcriptRef.current.trim(),
+      });
+      setAnswerNeedsReview(false);
+      if (!workAuthActiveRef.current && isInterviewGreetingOnly(answer)) {
+        transcriptRef.current = "";
+        setLiveTranscript("");
+        setTextAnswer("");
+        setAnswerCaptureNotice("Hello! That greeting hasn't used a question. Please answer the question above.");
+        if (!useTextInput) startListening(interviewLangRef.current);
+        return;
+      }
+      setAnswerCaptureNotice("");
 
       /* ── Work-authorization answer (SEPARATE, NON-SCORED) ────────────────────
          If we're in the work-auth window, route this answer to /work-auth — NOT
@@ -2186,22 +2639,50 @@ export default function InterviewRoom() {
       const qNum    = questionNumRef.current;
       const curHist = historyRef.current;
       const aiQ     = [...curHist].reverse().find(h => h.role === "ai")?.text ?? "";
+      const clarification = isInterviewAudioClarification(aiQ);
+      setAnswerSaveError(null);
 
-      /* Persist the turn in the BACKGROUND so it never sits between the
-         candidate's answer and Lexy's reply. converse() receives the full
-         history below and does not depend on this DB write.
-         Saves are CHAINED (not "latest wins") so two writes can never overlap —
-         the backend's save-turn does a non-atomic read/append/write, and a
-         chain keeps them ordered. The closing path awaits the chain before /end
-         so every turn is persisted before background scoring reads answers. */
+      /* Persist before advancing so a failed save cannot consume a question.
+         Saves remain chained; the server also locks the row and deduplicates
+         retries. Neither a correction nor a substantive answer may be lost. */
       const prevSave = pendingSaveTurnRef.current ?? Promise.resolve();
-      pendingSaveTurnRef.current = prevSave
+      const diagnostic = captureDiagnosticRef.current ? {
+        ...captureDiagnosticRef.current,
+        turnNumber: qNum,
+        source,
+        textPresent: true,
+        reason: confirmedReview ? "confirmed_review" as const : useTextInput ? "typed" as const : captureDiagnosticRef.current.reason,
+      } : null;
+      if (diagnostic) captureDiagnosticsRef.current?.record({ ...diagnostic, event: "submission_requested" });
+      const save = prevSave
         .catch(() => {})
         .then(() => apiFetch(`/interviews/${sessionId}/save-turn`, {
           method: "POST",
           body: JSON.stringify({ questionText: aiQ, answerText: answer, turnNumber: qNum }),
         }))
-        .catch(() => {});
+        .then(result => {
+          if (diagnostic) captureDiagnosticsRef.current?.record({ ...diagnostic, event: "submission_saved" });
+          return result;
+        })
+        .catch(error => {
+          if (diagnostic) captureDiagnosticsRef.current?.record({ ...diagnostic, event: "submission_failed" });
+          throw error;
+        });
+      // Keep a handled promise for the closing chain, but explicitly handle the
+      // current save before advancing the UI or making another model request.
+      pendingSaveTurnRef.current = save.catch(() => {});
+      try {
+        await save;
+      } catch {
+        setAnswerSaveError("Your answer could not be saved. Your text is kept below—please try again.");
+        setTextAnswer(answer);
+        setLiveTranscript(answer);
+        enableTextInput("sticky");
+        setAnswerNeedsReview(true);
+        convPhaseRef.current = "listening";
+        setConvPhase("listening");
+        return;
+      }
 
       const newHist = [...curHist, { role: "candidate" as const, text: answer }];
       setHistory(newHist);
@@ -2210,7 +2691,7 @@ export default function InterviewRoom() {
       setTextAnswer("");
       transcriptRef.current = "";
 
-      const nextQ = qNum + 1;
+      const nextQ = clarification ? qNum : qNum + 1;
       setQuestionNumber(nextQ);
       questionNumRef.current = nextQ;
 
@@ -2221,7 +2702,7 @@ export default function InterviewRoom() {
       doneInFlightRef.current = false;
       setFinalizing(false);
     }
-  }, [sessionId, useTextInput, textAnswer, stopListening, aiTurn]);
+  }, [sessionId, useTextInput, textAnswer, stopListening, aiTurn, answerNeedsReview, reportCaptureDiagnostic, enableTextInput]);
 
   /* Keep doneSpeakingRef current so the silence timer can call it */
   useEffect(() => { doneSpeakingRef.current = handleDoneSpeaking; }, [handleDoneSpeaking]);
@@ -2250,11 +2731,21 @@ export default function InterviewRoom() {
   }, [sessionId, stopListening, aiTurn]);
 
   /* ── Loading ──────────────────────────────────────────────────────────── */
+  const startView = interviewStartView(session ?? {}, totalQuestions);
   if (phase === "loading") return (
     <RoomLayout overlay={stepUpOverlay}>
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-sm text-muted-foreground">Loading your interview session…</p>
+        {sessionLoadError
+          ? <AlertTriangle className="w-10 h-10 text-amber-400" />
+          : <Loader2 className="w-10 h-10 text-primary animate-spin" />}
+        <p className="text-sm text-muted-foreground">
+          {sessionLoadError ?? "Loading your interview session…"}
+        </p>
+        {sessionLoadError && (
+          <Button onClick={() => setSessionLoadAttempt(attempt => attempt + 1)}>
+            Try again
+          </Button>
+        )}
       </div>
     </RoomLayout>
   );
@@ -2467,16 +2958,37 @@ export default function InterviewRoom() {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
                 <Brain className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-2xl font-black">{plan?.title ?? "AI Video Interview"}</h1>
+              <h1 className="text-2xl font-black">{startView.title ?? plan?.title ?? "AI Video Interview"}</h1>
+              {startView.resuming && (
+                <p className="text-sm font-medium text-muted-foreground">{plan?.title ?? "AI Video Interview"}</p>
+              )}
               <p className="text-sm text-muted-foreground">
-                ~30 min · {totalQuestions} questions · conversational AI · video recorded
+                {(session as any)?.totalQuestions || (intro as any)?.totalQuestions
+                  ? `${totalQuestions} questions`
+                  : "Question count shown at start"} · conversational AI · video recorded when available
               </p>
             </div>
+
+            {startView.resuming && (
+              <div role="status" className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                <p className="font-bold">
+                  {startView.saved > 0 ? "Welcome back — your saved answers are still here" : "Welcome back — your interview has already started"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {startView.allAnswered
+                    ? `All ${totalQuestions} answers are saved. Only the closing steps remain.`
+                    : `${startView.saved} of ${totalQuestions} answers saved. Continue with question ${startView.nextQuestion}.`}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reconnect your microphone and camera to continue. This will not restart your interview or reset your saved answers.
+                </p>
+              </div>
+            )}
 
             {/* Recruiter "smooth handover" intro — a recorded greeting from the
                 recruiter who owns this role, shown before Lexy takes over. Only
                 rendered when a ready recruiter video is actually on file. */}
-            {intro?.mode === "video" && intro?.video_url && (
+            {!startView.resuming && intro?.mode === "video" && intro?.video_url && (
               <div className="space-y-2">
                 <p className="text-xs font-bold text-primary uppercase tracking-wider text-center">
                   A message from your recruiter
@@ -2528,15 +3040,19 @@ export default function InterviewRoom() {
             <div className="flex items-start gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
               <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
               <div className="text-sm">
-                <p className="font-bold text-foreground">You have {durationHours} hours to complete this interview</p>
+                <p className="font-bold text-foreground">
+                  {startView.resuming ? "Your original interview deadline still applies" : `You have ${durationHours} hours to complete this interview`}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The {durationHours}-hour timer starts when you press <span className="font-bold">Start</span>. You can refresh or reopen this link from the same browser if you get disconnected — your progress is saved automatically.
+                  {startView.resuming
+                    ? "Continuing does not restart the timer. Your previously saved answers will be retained."
+                    : <>The {durationHours}-hour timer starts when you press <span className="font-bold">Start</span>. You can refresh or reopen this link from the same browser if you get disconnected — your progress is saved automatically.</>}
                 </p>
               </div>
             </div>
 
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-primary uppercase tracking-wider">How it works</p>
+              <p className="text-xs font-bold text-primary uppercase tracking-wider">{startView.resuming ? "When you continue" : "How it works"}</p>
               <ul className="space-y-1.5 text-sm text-muted-foreground">
                 <li className="flex gap-2"><span className="text-primary shrink-0">→</span>Lexy will speak — just listen and respond naturally when ready</li>
                 <li className="flex gap-2"><span className="text-primary shrink-0">→</span>Your mic is always on — no buttons to press, just talk</li>
@@ -2566,6 +3082,8 @@ export default function InterviewRoom() {
                 Camera access denied — interview will proceed without video recording.
               </div>
             )}
+            <RecordingMicrophoneNotice status={recordingMicStatus} pending={mediaPending}
+              onRetry={retryMicrophone} onUnmute={toggleMic} />
 
             {!sttAvailable && (
               <div className="flex items-center gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-400">
@@ -2584,8 +3102,15 @@ export default function InterviewRoom() {
               </div>
             )}
 
-            <Button ref={startBtnRef} onClick={handleBegin} size="lg" className="w-full gap-2 font-bold text-base">
-              <Play className="w-5 h-5" /> Start Interview with Lexy
+            {!isMobileDevice() && typeof navigator.mediaDevices?.getDisplayMedia === "function" && (
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <input type="checkbox" checked={screenShareEnabled} disabled={beginPending}
+                  onChange={(event) => setScreenShareEnabled(event.target.checked)} />
+                <span>Share my screen (optional). If permission is unavailable, the interview continues without screen recording.</span>
+              </label>
+            )}
+            <Button ref={startBtnRef} onClick={handleBegin} disabled={beginPending} size="lg" className="w-full gap-2 font-bold text-base">
+              <Play className="w-5 h-5" /> {beginPending ? startView.pending : startView.action}
             </Button>
           </CardContent>
         </Card>
@@ -2922,7 +3447,7 @@ export default function InterviewRoom() {
         <div className="grid grid-cols-2 gap-3 px-3 pt-2" style={{ height: "min(60vh, 420px)" }}>
           {/* AI panel */}
           <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden">
-            <AIAvatar state={avatarState} />
+            <AIAvatar state={avatarState} reviewing={answerNeedsReview} />
           </div>
 
           {/* Candidate webcam */}
@@ -2933,6 +3458,28 @@ export default function InterviewRoom() {
 
         {/* Transcript + controls */}
         <div className="shrink-0 px-3 pb-3 space-y-2">
+          <RecordingMicrophoneNotice status={recordingMicStatus} pending={mediaPending}
+            onRetry={retryMicrophone} onUnmute={toggleMic} />
+          {answerCaptureNotice && <p role="status" className="text-sm text-amber-300 px-3 py-2">{answerCaptureNotice}</p>}
+          {answerSaveError && <p role="alert" className="text-sm text-amber-300 px-3 py-2">{answerSaveError}</p>}
+          {answerNeedsReview && convPhase === "listening" && (
+            <InterviewAnswerReview answer={textAnswer} onChange={setTextAnswer}
+              onShown={handleCaptureReviewShown}
+              onConfirm={() => { void handleDoneSpeaking("manual"); }}
+              onRetry={() => {
+                reportCaptureDiagnostic("review_retry");
+                setAnswerNeedsReview(false);
+                setMicFallbackNotice(false);
+                stopListening();
+                disableTextInput();
+                noSpeechCountRef.current = 0;
+                startListening(interviewLangRef.current);
+              }}
+              pending={finalizing} />
+          )}
+          {finalizing && <p role="status" className="text-sm text-sky-300 px-3 py-2">Validating your answer before saving…</p>}
+          {recordingSaveWarning && <p role="alert" className="text-sm text-amber-300 px-3 py-2">Some recording checkpoints could not be saved. Keep this page open until the final upload finishes.</p>}
+          {captureDiagnosticsUnavailable && <p role="status" className="text-xs text-muted-foreground px-3">Capture diagnostics could not be saved. Your interview can continue normally.</p>}
           {/* Conversation transcript */}
           <div ref={scrollRef} className="max-h-32 overflow-y-auto space-y-2 px-1">
             {history.slice(-6).map((h, i) => (
@@ -2998,7 +3545,7 @@ export default function InterviewRoom() {
               )}>
                 {convPhase === "speaking"  ? "Lexy is speaking…" : ""}
                 {convPhase === "thinking"  ? "Lexy is thinking…" : ""}
-                {convPhase === "listening" ? (liveTranscript || (useTextInput ? "Type your answer and press Enter…" : "Speak now — mic is open")) : ""}
+                {convPhase === "listening" ? (answerNeedsReview ? "Review your answer before continuing" : liveTranscript || (useTextInput ? "Type your answer and press Enter…" : "Speak now — mic is open")) : ""}
               </p>
 
               {/* Work-auth skip affordance — candidate can always opt out of this optional question */}
@@ -3027,17 +3574,18 @@ export default function InterviewRoom() {
             </div>
 
             {/* Right: controls — always visible */}
-            {useTextInput ? (
+            {answerNeedsReview ? null : useTextInput ? (
               /* text mode — send + toggle-back-to-mic */
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   onClick={() => { setMicFallbackNotice(false); disableTextInput(); noSpeechCountRef.current = 0; startListening(interviewLangRef.current); }}
+                  disabled={finalizing}
                   size="icon" variant="outline"
                   className="h-10 w-10 rounded-xl border-border/50 text-muted-foreground hover:text-foreground"
                   title="Switch to microphone" aria-label="Switch to microphone">
                   <Mic className="w-4 h-4" />
                 </Button>
-                <Button onClick={handleDoneSpeaking} disabled={finalizing || !textAnswer.trim()} size="icon" aria-label="Submit answer"
+                <Button onClick={() => handleDoneSpeaking()} disabled={finalizing || !textAnswer.trim()} size="icon" aria-label="Submit answer"
                   className="h-10 w-10 rounded-xl">
                   {finalizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 </Button>
@@ -3054,12 +3602,13 @@ export default function InterviewRoom() {
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   onClick={() => { setMicFallbackNotice(false); stopListening(); enableTextInput("sticky"); }}
+                  disabled={finalizing}
                   size="icon" variant="outline"
                   className="h-12 w-12 rounded-xl border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
                   title="Switch to typing" aria-label="Switch to typing">
                   <span className="text-base leading-none">⌨</span>
                 </Button>
-                <Button onClick={handleDoneSpeaking} disabled={finalizing} size="icon"
+                <Button onClick={() => handleDoneSpeaking()} disabled={finalizing} size="icon"
                   className="h-12 w-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50"
                   title="Send answer now" aria-label="Send answer now">
                   {finalizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
@@ -3081,7 +3630,7 @@ export default function InterviewRoom() {
           )}
 
           {/* Text input fallback */}
-          {useTextInput && convPhase === "listening" && (
+          {useTextInput && !answerNeedsReview && convPhase === "listening" && (
             <Textarea
               value={textAnswer}
               onChange={e => setTextAnswer(e.target.value)}

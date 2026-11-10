@@ -43,6 +43,7 @@ import { getAuthUserId } from "../lib/auth-token";
 import { getDataScopeTenantIds } from "../lib/tenantUtils";
 import { validate } from "../middlewares/validate";
 import { createFeeLineItemIfEligible, isFeeEligible } from "../lib/fee-ledger";
+import { activePilot } from "../lib/pilot-codes";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -65,22 +66,28 @@ const TENANT_FEE_ROLES = new Set(["platform_admin", "tenant_admin", "recruiter_a
 /* ── Shared enrichment: names for candidate / job / tenant ────────────────── */
 async function enrich(items: Array<typeof feeLineItemsTable.$inferSelect>) {
   if (items.length === 0) return [];
-  const candidateIds = [...new Set(items.map((i) => i.candidateId))];
-  const jobIds = [...new Set(items.map((i) => i.jobId))];
+  const candidateIds = [
+    ...new Set(items.map((i) => i.candidateId).filter((id): id is string => id !== null)),
+  ];
+  const jobIds = [...new Set(items.map((i) => i.jobId).filter((id): id is string => id !== null))];
   const tenantIds = [...new Set(items.map((i) => i.tenantId))];
   const [cands, jobs, tenants] = await Promise.all([
-    db
-      .select({
-        id: candidatesTable.id,
-        firstName: candidatesTable.firstName,
-        lastName: candidatesTable.lastName,
-      })
-      .from(candidatesTable)
-      .where(inArray(candidatesTable.id, candidateIds)),
-    db
-      .select({ id: jobsTable.id, title: jobsTable.title })
-      .from(jobsTable)
-      .where(inArray(jobsTable.id, jobIds)),
+    candidateIds.length
+      ? db
+          .select({
+            id: candidatesTable.id,
+            firstName: candidatesTable.firstName,
+            lastName: candidatesTable.lastName,
+          })
+          .from(candidatesTable)
+          .where(inArray(candidatesTable.id, candidateIds))
+      : Promise.resolve([]),
+    jobIds.length
+      ? db
+          .select({ id: jobsTable.id, title: jobsTable.title })
+          .from(jobsTable)
+          .where(inArray(jobsTable.id, jobIds))
+      : Promise.resolve([]),
     db
       .select({ id: tenantsTable.id, name: tenantsTable.name })
       .from(tenantsTable)
@@ -91,8 +98,8 @@ async function enrich(items: Array<typeof feeLineItemsTable.$inferSelect>) {
   const tMap = new Map(tenants.map((t) => [t.id, t.name]));
   return items.map((i) => ({
     ...i,
-    candidateName: cMap.get(i.candidateId) ?? "Unknown",
-    jobTitle: jMap.get(i.jobId) ?? "Unknown",
+    candidateName: (i.candidateId === null ? undefined : cMap.get(i.candidateId)) ?? "Unknown",
+    jobTitle: (i.jobId === null ? undefined : jMap.get(i.jobId)) ?? "Unknown",
     tenantName: tMap.get(i.tenantId) ?? i.tenantId,
   }));
 }
@@ -398,7 +405,10 @@ router.post("/fee-ledger/corrections", validate({ body: CorrectionBody }), async
         )
         .returning({ id: feeLineItemsTable.id });
       if (waived) ledgerAction = "waived";
-    } else if (["offer_accepted", "hired", "started"].includes(updatedApp.stage)) {
+    } else if (
+      ["offer_accepted", "hired", "started"].includes(updatedApp.stage) &&
+      !(await activePilot(updatedApp.tenantId))
+    ) {
       /* A previously-waived item blocks re-creation (unique on application_id)
          — re-open it to pending_review instead so the ledger reflects the
          corrected eligible origin. Invoiced/paid items are left untouched. */

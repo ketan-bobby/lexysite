@@ -503,7 +503,7 @@ router.get("/hm-share", async (req: Request, res: Response) => {
 });
 
 /* ── PUBLIC: GET /public/hm-share/:token — branded package view ───────────── */
-hmSharePublicRouter.get("/:token", async (req: Request, res: Response) => {
+hmSharePublicRouter.get("/:token", async (req: Request<{ token: string }>, res: Response): Promise<void> => {
   const token = req.params.token;
   // Authorized by the opaque share token + expiry check below — the hiring
   // manager has no Lexy tenant, so there is no tenant column to scope by.
@@ -565,7 +565,7 @@ hmSharePublicRouter.get("/:token", async (req: Request, res: Response) => {
 });
 
 /* ── PUBLIC: GET /public/hm-share/:token/resume — stream résumé ───────────── */
-hmSharePublicRouter.get("/:token/resume", async (req: Request, res: Response) => {
+hmSharePublicRouter.get("/:token/resume", async (req: Request<{ token: string }>, res: Response): Promise<void> => {
   const token = req.params.token;
   // Authorized by the opaque share token + expiry check below (login-less HM).
   classBRead(CLASS_B_READ_EXEMPTION.TOKEN_PRE_AUTHORIZED);
@@ -629,7 +629,7 @@ const DecisionBody = z.object({
   name: z.string().max(200).optional(),
 });
 
-hmSharePublicRouter.post("/:token/decision", validate({ body: DecisionBody }), async (req: Request, res: Response) => {
+hmSharePublicRouter.post("/:token/decision", validate({ body: DecisionBody }), async (req: Request<{ token: string }>, res: Response): Promise<void> => {
   const token = req.params.token;
   const { decision, comment, name } = req.body as z.infer<typeof DecisionBody>;
 
@@ -740,12 +740,13 @@ hmSharePublicRouter.post("/:token/decision", validate({ body: DecisionBody }), a
       try {
         const [recruiter] = await controlDb.select({
           email: usersTable.email,
-          firstName: usersTable.firstName,
+          name: usersTable.name,
         }).from(usersTable).where(eq(usersTable.id, share.createdByUserId)).limit(1);
         if (recruiter?.email) {
           const accent = (share.brandSnapshot as any)?.primaryColor || "#7c3aed";
           const brandName = (share.brandSnapshot as any)?.name || "Lexy";
-          const recruiterGreeting = recruiter.firstName ? `Hi ${escapeHtml(recruiter.firstName)},` : "Hello,";
+          const recruiterFirstName = recruiter.name?.trim().split(/\s+/)[0];
+          const recruiterGreeting = recruiterFirstName ? `Hi ${escapeHtml(recruiterFirstName)},` : "Hello,";
           const commentBlock = comment
             ? `<div style="margin:16px 0;padding:14px 16px;background:#f8fafc;border-left:3px solid ${accent};border-radius:6px;color:#334155;font-size:14px;white-space:pre-wrap;">${escapeHtml(comment)}</div>`
             : "";
@@ -760,7 +761,7 @@ hmSharePublicRouter.post("/:token/decision", validate({ body: DecisionBody }), a
         </div>
       </div></body></html>`;
           const recruiterText =
-            `${recruiter.firstName ? `Hi ${recruiter.firstName},` : "Hello,"}\n\n` +
+            `${recruiterFirstName ? `Hi ${recruiterFirstName},` : "Hello,"}\n\n` +
             `${who} reviewed ${candName}${jobTitle ? ` for ${jobTitle}` : ""} and made a decision: ${label}.\n` +
             (comment ? `\nTheir comment:\n${comment}\n` : "") +
             `\nThis decision has also been recorded in your ${brandName} inbox and on the candidate's timeline.\n`;

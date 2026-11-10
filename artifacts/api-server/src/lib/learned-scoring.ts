@@ -41,6 +41,7 @@
 import { controlDb, tenantScoringWeightsTable, candidateJobIntelligenceTable } from "@workspace/db";
 import { eq, and, isNotNull, desc } from "drizzle-orm";
 import { intelTenantScope } from "./class-b-access";
+import { restrictToRealCandidates } from "./synthetic-fixture-scope";
 import { logger } from "./logger";
 import {
   computeScores,
@@ -264,6 +265,7 @@ export async function loadTenantLabeledRows(tenantId: string): Promise<LabeledRo
         // Per-tenant labeled-row load, scoped via the canonical Class-B accessor.
         intelTenantScope([tenantId]),
         isNotNull(candidateJobIntelligenceTable.outcome),
+        restrictToRealCandidates(candidateJobIntelligenceTable.candidateId),
       ),
     );
 

@@ -43,7 +43,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Which wording accurately describes a transfer that depends on identity verification?",
           options: [
             { id: "a", label: "The transfer is guaranteed today." },
-            { id: "b", label: "Once verification is complete, we can release the transfer; processing then takes up to one business day." },
+            {
+              id: "b",
+              label:
+                "Once verification is complete, we can release the transfer; processing then takes up to one business day.",
+            },
             { id: "c", label: "Verification, transfer, processing, etcetera, will happen." },
           ],
           correctOptionId: "b",
@@ -60,7 +64,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Check whether your answer distinguishes completed, pending and conditional facts. The model is coaching, not a grade.",
           modelAnswer:
             "I have submitted the cancellation, and we are waiting for the warehouse to confirm it. If the order has already been packed, we may not be able to stop delivery; in that case, I will explain how to return it.",
-          checklist: ["Confirms submission", "Marks warehouse confirmation as pending", "Explains the packed-order condition"],
+          checklist: [
+            "Confirms submission",
+            "Marks warehouse confirmation as pending",
+            "Explains the packed-order condition",
+          ],
         },
       ],
     },
@@ -95,8 +103,7 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-paraphrase-detail-check",
           type: "choice",
-          prompt:
-            "Which paraphrase preserves “I may have received the wrong model”?",
+          prompt: "Which paraphrase preserves “I may have received the wrong model”?",
           options: [
             { id: "a", label: "We definitely shipped the wrong model." },
             { id: "b", label: "You think the delivered model may differ from the one ordered." },
@@ -116,7 +123,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Compare identifiers, dates, amount and the reported promise. This is a coaching exercise, not proficiency scoring.",
           modelAnswer:
             "Let me confirm: booking BK-731 moved from 18 to 21 July, and you were charged £30 even though you were told the disruption waiver would cover the change.",
-          checklist: ["Includes BK-731", "Preserves both dates and £30", "Attributes what the customer was told"],
+          checklist: [
+            "Includes BK-731",
+            "Preserves both dates and £30",
+            "Attributes what the customer was told",
+          ],
         },
       ],
     },
@@ -140,8 +151,7 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         },
       ],
       example: {
-        scenario:
-          "A customer says, “The app keeps kicking me out whenever I open invoices.”",
+        scenario: "A customer says, “The app keeps kicking me out whenever I open invoices.”",
         response:
           "To confirm, does the app return you to the sign-in screen when you open any invoice, or only a particular one?",
         whyItWorks:
@@ -151,11 +161,13 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-contextual-vocabulary-check",
           type: "choice",
-          prompt:
-            "A customer says a parcel is “stuck at customs.” What should the agent conclude?",
+          prompt: "A customer says a parcel is “stuck at customs.” What should the agent conclude?",
           options: [
             { id: "a", label: "Customs has permanently confiscated it." },
-            { id: "b", label: "The customer sees no recent movement and the customs status needs checking." },
+            {
+              id: "b",
+              label: "The customer sees no recent movement and the customs status needs checking.",
+            },
             { id: "c", label: "The carrier delivered it." },
           ],
           correctOptionId: "b",
@@ -172,7 +184,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Use an observable description and one focused question. The model is one coaching approach.",
           modelAnswer:
             "I can see why a zero balance is concerning. To work out whether the allowance was used or failed to renew, could you tell me the renewal date shown in the app?",
-          checklist: ["Acknowledges the visible zero balance", "Does not claim data was deleted", "Asks for one diagnostic fact"],
+          checklist: [
+            "Acknowledges the visible zero balance",
+            "Does not claim data was deleted",
+            "Asks for one diagnostic fact",
+          ],
         },
       ],
     },
@@ -196,8 +212,7 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         },
       ],
       example: {
-        scenario:
-          "A customer reports that checkout fails.",
+        scenario: "A customer reports that checkout fails.",
         response:
           "What happens after you select Place order? [Customer: an address error appears.] Does the error appear for both saved addresses or only the new one?",
         whyItWorks:
@@ -207,8 +222,7 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-probing-questions-check",
           type: "choice",
-          prompt:
-            "Which question best distinguishes a device issue from an account issue?",
+          prompt: "Which question best distinguishes a device issue from an account issue?",
           options: [
             { id: "a", label: "Have you tried signing in on another device?" },
             { id: "b", label: "Why is your device broken?" },
@@ -217,7 +231,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
           correctOptionId: "a",
           feedback:
             "Option A tests whether the symptom follows the account or stays with one device. B assumes a cause; C requests excessive information.",
-          checklist: ["Tests a useful distinction", "Avoids blame", "Requests proportionate information"],
+          checklist: [
+            "Tests a useful distinction",
+            "Avoids blame",
+            "Requests proportionate information",
+          ],
         },
         {
           id: "practice-probing-questions-apply",
@@ -228,7 +246,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Each question should narrow the case and affect what you check next. The example is coaching, not a grade.",
           modelAnswer:
             "1. What did you expect the discount to change at checkout? 2. Which promotion or code were you using? 3. Before I review the terms, can you confirm which items were in the basket?",
-          checklist: ["Starts with the expected outcome", "Identifies the promotion", "Confirms relevant basket scope"],
+          checklist: [
+            "Starts with the expected outcome",
+            "Identifies the promotion",
+            "Confirms relevant basket scope",
+          ],
         },
       ],
     },
@@ -263,17 +285,24 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-empathy-deescalation-check",
           type: "choice",
-          prompt:
-            "Which response sets a productive boundary after personal insults?",
+          prompt: "Which response sets a productive boundary after personal insults?",
           options: [
             { id: "a", label: "Insult me again and I will delete your account." },
-            { id: "b", label: "I want to help resolve the delivery issue, and I can continue if we keep the conversation respectful." },
+            {
+              id: "b",
+              label:
+                "I want to help resolve the delivery issue, and I can continue if we keep the conversation respectful.",
+            },
             { id: "c", label: "You're right about everything." },
           ],
           correctOptionId: "b",
           feedback:
             "Option B states the boundary, preserves the goal and avoids retaliation. A threatens an unrelated action; C agrees indiscriminately.",
-          checklist: ["States a respectful boundary", "Returns to the issue", "Avoids threat or false agreement"],
+          checklist: [
+            "States a respectful boundary",
+            "Returns to the issue",
+            "Avoids threat or false agreement",
+          ],
         },
         {
           id: "practice-empathy-deescalation-apply",
@@ -284,7 +313,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "A strong response recognizes the disruption, states the limit and offers real choices. The model is coaching only.",
           modelAnswer:
             "I understand why a same-day cancellation is frustrating, especially after you planned around the visit. There are no appointments left today. I can book tomorrow from 9–11 a.m. or 2–4 p.m.; which causes less disruption?",
-          checklist: ["Acknowledges the scheduling impact", "States today's limit directly", "Offers both available windows"],
+          checklist: [
+            "Acknowledges the scheduling impact",
+            "States today's limit directly",
+            "Offers both available windows",
+          ],
         },
       ],
     },
@@ -319,10 +352,12 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-solutions-complex-cases-check",
           type: "choice",
-          prompt:
-            "What should come before a step that signs a customer out on every device?",
+          prompt: "What should come before a step that signs a customer out on every device?",
           options: [
-            { id: "a", label: "A warning about the effect and confirmation that the customer is ready." },
+            {
+              id: "a",
+              label: "A warning about the effect and confirmation that the customer is ready.",
+            },
             { id: "b", label: "Nothing; perform it without explanation." },
             { id: "c", label: "A promise that no session will end." },
           ],
@@ -340,7 +375,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Check action, owner, timing, notification and fallback. The model is a coaching example, not verified performance.",
           modelAnswer:
             "I have submitted case BL-440 to billing to correct the £12 fee. The correction can take up to three business days, and we will email you when it is complete. If you have no email by the fourth business day, reply to the case email so we can follow up.",
-          checklist: ["Includes case and amount", "Names billing and three business days", "Gives the day-four fallback"],
+          checklist: [
+            "Includes case and amount",
+            "Names billing and three business days",
+            "Gives the day-four fallback",
+          ],
         },
       ],
     },
@@ -378,14 +417,21 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
           prompt:
             "Which detail must remain qualified when retelling “the customer believes the courier left it next door”?",
           options: [
-            { id: "a", label: "That delivery next door is the customer's belief, not a confirmed fact." },
+            {
+              id: "a",
+              label: "That delivery next door is the customer's belief, not a confirmed fact.",
+            },
             { id: "b", label: "That the courier admitted an error." },
             { id: "c", label: "That a neighbour signed for it." },
           ],
           correctOptionId: "a",
           feedback:
             "Option A preserves attribution. The courier admission and neighbour signature were not supplied.",
-          checklist: ["Preserves attribution", "Avoids invented evidence", "Keeps the reported event"],
+          checklist: [
+            "Preserves attribution",
+            "Avoids invented evidence",
+            "Keeps the reported event",
+          ],
         },
         {
           id: "practice-spoken-retelling-apply",
@@ -396,7 +442,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Use the model to coach your own accuracy and organization; it is not speech assessment.",
           modelAnswer:
             "Retelling: Order 551 arrived on 6 August with the charger missing. A replacement charger was requested on 7 August and is expected to dispatch within 48 hours; tracking will arrive by email. Self-review: I included both dates, kept “expected” rather than guaranteed, and named the update channel.",
-          checklist: ["Includes order 551 and both dates", "Keeps the dispatch timing qualified", "Mentions email tracking"],
+          checklist: [
+            "Includes order 551 and both dates",
+            "Keeps the dispatch timing qualified",
+            "Mentions email tracking",
+          ],
         },
       ],
     },
@@ -434,14 +484,21 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
           prompt:
             "A spontaneous response should begin with which move when the customer reports serious inconvenience?",
           options: [
-            { id: "a", label: "A specific acknowledgement followed by the key clarification or safe action." },
+            {
+              id: "a",
+              label: "A specific acknowledgement followed by the key clarification or safe action.",
+            },
             { id: "b", label: "An invented guarantee to sound confident." },
             { id: "c", label: "A long policy quotation before addressing the impact." },
           ],
           correctOptionId: "a",
           feedback:
             "Option A shows the customer they were heard and moves toward resolution. Guarantees and policy dumps can increase frustration.",
-          checklist: ["Acknowledges impact", "Moves toward diagnosis or action", "Avoids unsupported certainty"],
+          checklist: [
+            "Acknowledges impact",
+            "Moves toward diagnosis or action",
+            "Avoids unsupported certainty",
+          ],
         },
         {
           id: "practice-spontaneous-call-simulation-apply",
@@ -452,7 +509,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Compare your structure and factual care with the coaching model. This does not score speaking proficiency.",
           modelAnswer:
             "Response: I understand how disruptive it is to lose account access while travelling. To restore access safely, we first need to complete identity verification. Once submitted, review normally takes up to two hours, and I will explain the verification steps now. Strength: I gave a clear sequence. Revision: I would stress “normally” so the timeframe does not sound guaranteed.",
-          checklist: ["Acknowledges travel impact", "Explains verification before review", "Includes a specific strength and revision"],
+          checklist: [
+            "Acknowledges travel impact",
+            "Explains verification before review",
+            "Includes a specific strength and revision",
+          ],
         },
       ],
     },
@@ -487,17 +548,24 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-written-chat-crm-check",
           type: "choice",
-          prompt:
-            "Which CRM phrase is neutral and useful?",
+          prompt: "Which CRM phrase is neutral and useful?",
           options: [
             { id: "a", label: "Customer was unreasonable and dramatic." },
-            { id: "b", label: "Customer reports three failed deliveries and requests collection-point delivery." },
+            {
+              id: "b",
+              label:
+                "Customer reports three failed deliveries and requests collection-point delivery.",
+            },
             { id: "c", label: "Bad case. Fix it." },
           ],
           correctOptionId: "b",
           feedback:
             "Option B records the customer's report and requested outcome. A is judgmental; C lacks actionable facts.",
-          checklist: ["Uses neutral attribution", "Captures count or sequence", "States requested outcome"],
+          checklist: [
+            "Uses neutral attribution",
+            "Captures count or sequence",
+            "States requested outcome",
+          ],
         },
         {
           id: "practice-written-chat-crm-apply",
@@ -508,7 +576,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Check that another agent could continue without making Priya repeat herself. The model is coaching, not graded.",
           modelAnswer:
             "Priya reports an incorrect tax address on invoice 771. Identity verified; customer confirms payment is not disputed. Sent correction request to Billing under BI-903. Advised customer of email update by Friday.",
-          checklist: ["Includes invoice and escalation references", "Separates address issue from payment", "Includes Friday email update"],
+          checklist: [
+            "Includes invoice and escalation references",
+            "Separates address issue from payment",
+            "Includes Friday email update",
+          ],
         },
       ],
     },
@@ -543,17 +615,24 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
         {
           id: "practice-written-case-email-check",
           type: "choice",
-          prompt:
-            "Which is the clearest way to explain a policy limit?",
+          prompt: "Which is the clearest way to explain a policy limit?",
           options: [
             { id: "a", label: "Computer says no." },
-            { id: "b", label: "The price-match applies within seven days; this request was received on day nine, so it is outside that window." },
+            {
+              id: "b",
+              label:
+                "The price-match applies within seven days; this request was received on day nine, so it is outside that window.",
+            },
             { id: "c", label: "Please read all 18 pages of our terms." },
           ],
           correctOptionId: "b",
           feedback:
             "Option B states the decisive rule and applies it to the case. A is dismissive; C shifts unnecessary work to the customer.",
-          checklist: ["Names the relevant rule", "Applies the case fact", "Uses respectful direct language"],
+          checklist: [
+            "Names the relevant rule",
+            "Applies the case fact",
+            "Uses respectful direct language",
+          ],
         },
         {
           id: "practice-written-case-email-apply",
@@ -564,7 +643,11 @@ export const SUPPORT_COMMUNICATION_PRACTICE: CourseDefinition = {
             "Check all preparation steps and distinguish usual timing from a guarantee. The model is a coaching example only.",
           modelAnswer:
             "Subject: Approved repair for tablet T-440\n\nHello,\n\nYour warranty repair is approved, and the prepaid shipping label is attached. Before sending tablet T-440, please back up your data and remove its protective case.\n\nRepairs usually take 7–10 business days after we receive the tablet. We will email tracking when it is on its way back.\n\nKind regards,\nCustomer Support",
-          checklist: ["Confirms approval and attachment", "Includes both preparation steps", "States qualified timing and return tracking"],
+          checklist: [
+            "Confirms approval and attachment",
+            "Includes both preparation steps",
+            "States qualified timing and return tracking",
+          ],
         },
       ],
     },

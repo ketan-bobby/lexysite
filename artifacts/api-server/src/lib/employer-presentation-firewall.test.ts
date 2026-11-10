@@ -46,7 +46,12 @@ test("HM snapshot fails closed: transcripts, gaps, notes and arbitrary browser f
   );
 
   assert.deepEqual(snapshot, {
-    candidate: { firstName: "Ada", lastName: "Lovelace", currentTitle: "Engineer", skills: ["TypeScript"] },
+    candidate: {
+      firstName: "Ada",
+      lastName: "Lovelace",
+      currentTitle: "Engineer",
+      skills: ["TypeScript"],
+    },
     resumeScreen: { extractedSkills: ["TypeScript"] },
     preparedBy: "Agency",
   });

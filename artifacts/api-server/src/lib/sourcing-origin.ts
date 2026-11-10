@@ -9,7 +9,13 @@
  * through the staff-only workflow in routes/fee-ledger.ts.
  *
  * ─── Channels ────────────────────────────────────────────────────────────────
- *   ai_sourcing — the AI sourcing agent surfaced the candidate  → entry 'sourced'
+ *   ai_sourcing — an external AI sourcing provider surfaced the candidate
+ *                 → entry 'sourced' (fee channel)
+ *   internal_mobility — the employer's own employee bench surfaced the candidate
+ *                 → entry 'sourced' (not a fee channel)
+ *   known_talent_rediscovery — the employer's saved, non-employee pool surfaced
+ *                 the candidate                                 → entry 'sourced'
+ *                 (not a fee channel)
  *   linx        — candidate was pushed to this client via LINX / talent-pool
  *                 submission BEFORE the link was made           → entry 'sourced'
  *   inbound     — candidate applied themselves (public form,
@@ -26,7 +32,13 @@ import { db, talentPoolSubmissionsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "./logger";
 
-export type OriginChannel = "ai_sourcing" | "linx" | "inbound" | "customer";
+export type OriginChannel =
+  | "ai_sourcing"
+  | "internal_mobility"
+  | "known_talent_rediscovery"
+  | "linx"
+  | "inbound"
+  | "customer";
 
 export interface OriginFields {
   entryType: "sourced" | "applied" | "manual";
@@ -37,6 +49,8 @@ export interface OriginFields {
 
 const ENTRY_TYPE_FOR_CHANNEL: Record<OriginChannel, OriginFields["entryType"]> = {
   ai_sourcing: "sourced",
+  internal_mobility: "sourced",
+  known_talent_rediscovery: "sourced",
   linx: "sourced",
   inbound: "applied",
   customer: "manual",

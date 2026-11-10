@@ -48,7 +48,8 @@ const P = "iscf_";
 const id = (s: string) => P + s;
 
 const TENANT = id("tenant");
-const TENANT_IDS = [TENANT];
+const FOREIGN_TENANT = id("foreign_tenant");
+const TENANT_IDS = [TENANT, FOREIGN_TENANT];
 
 let server: Server;
 let baseUrl: string;
@@ -70,7 +71,7 @@ async function api(method: string, path: string, token?: string) {
 }
 
 async function cleanup() {
-  await dbAdmin.delete(interviewSummariesTable).where(eq(interviewSummariesTable.interviewSessionId, id("session")));
+  await dbAdmin.delete(interviewSummariesTable).where(inArray(interviewSummariesTable.interviewSessionId, [id("session"), id("foreign_session")]));
   await dbAdmin.delete(interviewSessionsTable).where(inArray(interviewSessionsTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(interviewPlansTable).where(inArray(interviewPlansTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(applicationsTable).where(inArray(applicationsTable.tenantId, TENANT_IDS));
@@ -82,15 +83,20 @@ async function cleanup() {
 
 async function seed() {
   await cleanup();
-  await dbAdmin.insert(tenantsTable).values([{ id: TENANT, name: "Acme", slug: TENANT, plan: "enterprise" }]);
+  await dbAdmin.insert(tenantsTable).values([
+    { id: TENANT, name: "Acme", slug: TENANT, plan: "enterprise" },
+    { id: FOREIGN_TENANT, name: "Independent synthetic customer", slug: FOREIGN_TENANT, plan: "enterprise" },
+  ]);
   await dbAdmin.insert(usersTable).values([
     { id: id("recruiter"), tenantId: TENANT, email: id("recruiter") + "@t.test", name: "Rec", passwordHash: "x", role: "recruiter", status: "active" },
     // A logged-in CANDIDATE portal user in the SAME tenant — the attacker in
     // the IDOR scenario (they know/guess the session id of their own — or any
     // other candidate's — recruiter-run interview).
     { id: id("canduser"), tenantId: TENANT, email: id("canduser") + "@t.test", name: "Cand", passwordHash: "x", role: "candidate", status: "active" },
+    { id: id("unassigned"), tenantId: TENANT, email: id("unassigned") + "@t.test", name: "Unassigned synthetic recruiter", passwordHash: "x", role: "recruiter", status: "active" },
+    { id: id("foreign_recruiter"), tenantId: FOREIGN_TENANT, email: id("foreign_recruiter") + "@t.test", name: "Foreign synthetic recruiter", passwordHash: "x", role: "recruiter", status: "active" },
   ]);
-  await dbAdmin.insert(jobsTable).values([{ id: id("job"), tenantId: TENANT, title: "Engineer", description: "d", status: "active" }]);
+  await dbAdmin.insert(jobsTable).values([{ id: id("job"), tenantId: TENANT, title: "Engineer", description: "d", status: "active", assignedRecruiterId: id("recruiter") }]);
   await dbAdmin.insert(candidatesTable).values([
     { id: id("cand"), tenantId: TENANT, pool: "tenant", source: "career_site", firstName: "C", lastName: "One", email: id("cand") + "@t.test" },
   ]);
@@ -119,6 +125,25 @@ async function seed() {
       recommendation: "yes", recruiterSummary: "Hire-worthy candidate",
     },
   ]);
+  await dbAdmin.insert(jobsTable).values({
+    id: id("foreign_job"), tenantId: FOREIGN_TENANT, title: "Synthetic foreign role",
+    description: "Isolated fixture", assignedRecruiterId: id("foreign_recruiter"),
+  });
+  await dbAdmin.insert(candidatesTable).values({
+    id: id("foreign_cand"), tenantId: FOREIGN_TENANT, firstName: "Synthetic",
+    lastName: "Foreign", email: id("foreign_cand") + "@example.invalid", pool: "tenant",
+  });
+  await dbAdmin.insert(interviewPlansTable).values({
+    id: id("foreign_plan"), tenantId: FOREIGN_TENANT, jobId: id("foreign_job"), title: "Synthetic foreign interview",
+  });
+  await dbAdmin.insert(interviewSessionsTable).values({
+    id: id("foreign_session"), tenantId: FOREIGN_TENANT, applicationId: "direct",
+    candidateId: id("foreign_cand"), planId: id("foreign_plan"), status: "completed",
+  });
+  await dbAdmin.insert(interviewSummariesTable).values({
+    interviewSessionId: id("foreign_session"), overallScore: 12,
+    recruiterSummary: "FOREIGN_PRIVATE_SUMMARY", recruiterComments: "FOREIGN_PRIVATE_NOTE",
+  });
 }
 
 before(async () => {
@@ -190,6 +215,61 @@ test("FIREWALL: candidate bearer is refused on the staff interview list", async 
 });
 
 /* ── GET /interviews/:id/proctor-report ───────────────────────────────── */
+
+test("summary: authorised recruiters keep their own assessment; foreign and missing sessions share 404", async () => {
+  const own = await api("GET", `/interviews/${id("session")}/summary`, recruiterToken());
+  assert.equal(own.status, 200);
+  assert.equal(own.json.overallScore, 87.5);
+  const foreign = await api("GET", `/interviews/${id("foreign_session")}/summary`, recruiterToken());
+  const missing = await api("GET", `/interviews/${id("missing_session")}/summary`, recruiterToken());
+  assert.deepEqual(foreign, { status: 404, json: { error: "Summary not found" } });
+  assert.deepEqual(missing, foreign);
+  const foreignToken = issueToken({ userId: id("foreign_recruiter"), role: "recruiter", tenantId: FOREIGN_TENANT });
+  const positive = await api("GET", `/interviews/${id("foreign_session")}/summary`, foreignToken);
+  assert.equal(positive.status, 200);
+  assert.equal(positive.json.recruiterSummary, "FOREIGN_PRIVATE_SUMMARY");
+});
+
+test("summary: candidate, anonymous and same-tenant unassigned recruiter cannot read the assessment", async () => {
+  const path = `/interviews/${id("session")}/summary`;
+  assert.equal((await api("GET", path)).status, 401);
+  assert.equal((await api("GET", path, candidateToken())).status, 404);
+  const unassigned = issueToken({ userId: id("unassigned"), role: "recruiter", tenantId: TENANT });
+  assert.equal((await api("GET", path, unassigned)).status, 404);
+  const rows = await api("GET", "/interviews", unassigned);
+  assert.equal(rows.status, 200);
+  assert.deepEqual(rows.json, []);
+});
+
+test("list: two independent customers receive only their own session and assessment", async () => {
+  const foreignToken = issueToken({ userId: id("foreign_recruiter"), role: "recruiter", tenantId: FOREIGN_TENANT });
+  for (const [token, sessionId, forbidden] of [
+    [recruiterToken(), id("session"), "FOREIGN_PRIVATE_SUMMARY"],
+    [foreignToken, id("foreign_session"), "Hire-worthy candidate"],
+  ]) {
+    const response = await api("GET", "/interviews", token);
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.json.map((row: any) => row.id), [sessionId]);
+    assert.equal(JSON.stringify(response.json).includes(forbidden), false);
+    assert.equal(typeof response.json[0].overallScore, "number");
+  }
+});
+
+test("recruiter comments: foreign and unassigned writes are denied without changing stored notes", async () => {
+  const unassigned = issueToken({ userId: id("unassigned"), role: "recruiter", tenantId: TENANT });
+  for (const [sessionId, token] of [[id("foreign_session"), recruiterToken()], [id("session"), unassigned]]) {
+    const [before] = await dbAdmin.select().from(interviewSummariesTable)
+      .where(eq(interviewSummariesTable.interviewSessionId, sessionId));
+    const response = await fetch(`${baseUrl}/interviews/${sessionId}/recruiter-comments`, {
+      method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ comments: "Unauthorised replacement" }),
+    });
+    assert.equal(response.status, 404);
+    const [after] = await dbAdmin.select().from(interviewSummariesTable)
+      .where(eq(interviewSummariesTable.interviewSessionId, sessionId));
+    assert.deepEqual(after, before);
+  }
+});
 
 test("STAFF control: recruiter can read the proctor report", async () => {
   const { status, json } = await api("GET", `/interviews/${id("session")}/proctor-report`, recruiterToken());

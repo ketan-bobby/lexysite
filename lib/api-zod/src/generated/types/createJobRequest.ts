@@ -5,6 +5,8 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { InterviewPath } from "./interviewPath";
+import type { RecruitingMode } from "./recruitingMode";
 
 export interface CreateJobRequest {
   title: string;
@@ -15,4 +17,8 @@ export interface CreateJobRequest {
   salaryMin?: number;
   salaryMax?: number;
   description: string;
+  /** Restrict sourcing to employees of this job's exact client tenant; defaults to false. */
+  internalMobility?: boolean;
+  recruitingMode?: RecruitingMode;
+  interviewPath?: InterviewPath;
 }

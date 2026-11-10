@@ -1,0 +1,89 @@
+{
+  "score": 85,
+  "grade": {
+    "score": 85,
+    "gapAreas": [
+      "Location and current company information are missing",
+      "Years of experience not stated"
+    ],
+    "confidence": "high",
+    "missingSkills": [],
+    "strengthAreas": ["SQL", "PostgreSQL", "API design", "automated testing"],
+    "recommendation": "advance",
+    "extractedSkills": ["SQL", "PostgreSQL", "API design", "automated testing"],
+    "recruiterSummary": "The candidate has all the required skills for the position, including SQL, PostgreSQL, and API design. Additionally, they possess the preferred skill of automated testing. However, there is missing information regarding their location, current company, and years of experience."
+  },
+  "pipelineStage": "screening",
+  "stageChangeEvents": [
+    {
+      "type": "STAGE_CHANGED"
+    },
+    {
+      "type": "STAGE_CHANGED"
+    }
+  ],
+  "usage": [
+    {
+      "provider": "openai_proxy",
+      "model": "gpt-4o",
+      "status": "succeeded",
+      "costStatus": "unknown",
+      "units": {
+        "audio_bytes": null,
+        "input_tokens": 587,
+        "audio_seconds": null,
+        "output_tokens": 158,
+        "input_characters": null,
+        "reasoning_tokens": 0,
+        "cached_input_tokens": 0,
+        "provider_request_id": "add4859a-0163-49b4-99c6-370aa500bb0b",
+        "observed_api_requests": 1
+      }
+    }
+  ],
+  "workflowSteps": [
+    {
+      "key": "screening",
+      "label": "Screening evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "verification",
+      "label": "Verification evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "engagement",
+      "label": "Engagement evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "ai_interview",
+      "label": "AI interview evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "evaluation_review",
+      "label": "Human evaluation review",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "hiring_decision",
+      "label": "Human hiring decision",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    }
+  ],
+  "noSubsequentDispatch": true
+}

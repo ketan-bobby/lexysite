@@ -18,7 +18,8 @@
  *   LEARNED_SCORING_REFRESH_DISABLED=true  to turn off
  */
 import { dbAdmin, candidateJobIntelligenceTable, tenantScoringWeightsTable } from "@workspace/db";
-import { sql, isNotNull } from "drizzle-orm";
+import { sql, isNotNull, and } from "drizzle-orm";
+import { restrictToRealCandidates } from "./synthetic-fixture-scope";
 import { trainTenantWeights } from "./learned-scoring";
 import { trainGlobalPrior } from "./global-prior";
 import { classBRead, CLASS_B_READ_EXEMPTION } from "./class-b-read";
@@ -50,7 +51,12 @@ export async function findTenantsNeedingRetrain(): Promise<string[]> {
       >`(select max(w.created_at) from tenant_scoring_weights w where w.tenant_id = ${candidateJobIntelligenceTable.tenantId})`,
     })
     .from(candidateJobIntelligenceTable)
-    .where(isNotNull(candidateJobIntelligenceTable.outcome))
+    .where(
+      and(
+        isNotNull(candidateJobIntelligenceTable.outcome),
+        restrictToRealCandidates(candidateJobIntelligenceTable.candidateId),
+      ),
+    )
     .groupBy(candidateJobIntelligenceTable.tenantId);
 
   return rows

@@ -8,10 +8,12 @@
  * Day-one feature scope: list + action-prefix filter + date bound. Richer
  * filtering (per-candidate drill-down, CSV export) is a follow-up.
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import {useQuery} from "@tanstack/react-query";
 import { ListChecks, Loader2, RefreshCw } from "lucide-react";
 import { apiBase, apiFetch } from "@/lib/api";
 import { BackToHome } from "@/components/layout/BackToHome";
+import {GraphMailEvidence} from "@/components/mail/GraphMailEvidence";
 
 interface AuditRow {
   id: string;
@@ -24,6 +26,7 @@ interface AuditRow {
   direction: string;
   action: string;
   title: string | null;
+  metadata?:Record<string,unknown>|null;
 }
 
 const ACTION_FILTERS = [
@@ -36,18 +39,20 @@ const ACTION_FILTERS = [
 ];
 
 export default function AuditPage() {
-  const [rows, setRows] = useState<AuditRow[]>([]);
   const [filter, setFilter] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  const load = () => {
-    setLoading(true);
-    const qs = filter ? `?actionPrefix=${encodeURIComponent(filter)}&limit=200` : "?limit=200";
-    apiFetch(`${apiBase}/audit-logs${qs}`)
-      .then((r) => r.json()).then((j) => { setRows(j.items ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
-  useEffect(load, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+  const q=useQuery<{items:AuditRow[]}>({
+    queryKey:["audit-log",filter],retry:false,gcTime:0,staleTime:0,refetchOnMount:"always",
+    queryFn:async()=>{
+      const qs=new URLSearchParams({limit:"200",...(filter?{actionPrefix:filter}:{})});
+      const response=await apiFetch(`${apiBase}/audit-logs?${qs}`);
+      if(!response.ok)throw new Error("Unable to verify current access to the activity log.");
+      const result=await response.json();
+      if(!result||!Array.isArray(result.items))throw new Error("Invalid activity-log response.");
+      return result;
+    },
+  });
+  const rows=q.isSuccess&&!q.isFetching&&!q.isError&&!q.failureReason?q.data.items:[];
+  const load=()=>void q.refetch();
 
   return (
     <div className="min-h-screen text-foreground py-10 px-6">
@@ -87,12 +92,14 @@ export default function AuditPage() {
           ))}
         </div>
 
-        {loading ? (
+        {q.isFetching ? (
           <div className="flex items-center justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        ) : q.isError||q.failureReason ? (
+          <p role="alert" className="text-sm py-12">Activity could not be verified. Cached details are hidden. Use Refresh to try again.</p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground py-12 text-center">No activity in this view yet.</p>
         ) : (
-          <div className="border border-border rounded-2xl overflow-hidden">
+          <div className="border border-border rounded-2xl overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
@@ -112,6 +119,7 @@ export default function AuditPage() {
                     <td className="px-4 py-2.5">
                       <div className="font-medium">{r.action}</div>
                       {r.title && <div className="text-xs text-muted-foreground">{r.title}</div>}
+                      <GraphMailEvidence metadata={r.metadata}/>
                     </td>
                     <td className="px-4 py-2.5 text-xs">{r.actorLabel ?? r.actorType}</td>
                     <td className="px-4 py-2.5 text-xs">{r.subjectLabel ?? r.subjectType ?? "—"}</td>

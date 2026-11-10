@@ -26,7 +26,7 @@ import {
   jobsTable,
   usersTable,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, or, isNull, ne } from "drizzle-orm";
 import { rankWithStaleness } from "../lib/staleness.js";
 import { generateWithAI } from "../lib/ai";
 import { FAIRNESS_DIRECTIVE, redactPii } from "../lib/fairness";
@@ -52,6 +52,15 @@ const ResumeScreenBody = z.object({
 }).passthrough();
 
 const router: IRouter = Router();
+
+type CandidateRoleMatch = {
+  id: string;
+  jobId: string;
+  fitScore: number | null;
+  recommendation: string | null;
+  jobTitle: string | null;
+  jobStatus: string | null;
+};
 
 async function getCallerUser(req: any) {
   const userId = getAuthUserId(req);
@@ -171,12 +180,12 @@ router.get("/talent-matches/by-candidate/:candidateId", async (req, res) => {
   // agency-wide (not narrowed to the recruiter's assigned reqs) by design.
   readScopeExemption(TALENT_REDISCOVERY);
   const candidateId = req.params.candidateId;
-  const rows = await db
+  const rows: CandidateRoleMatch[] = await db
     .select({
       id: talentMatchesTable.id,
       jobId: talentMatchesTable.jobId,
-      fitScore: talentMatchesTable.fitScore as unknown as number | null,
-      recommendation: talentMatchesTable.recommendation as unknown as string | null,
+      fitScore: talentMatchesTable.fitScore,
+      recommendation: talentMatchesTable.recommendation,
       jobTitle: jobsTable.title,
       jobStatus: jobsTable.status,
     })
@@ -237,8 +246,8 @@ router.get("/talent-matches/by-candidate/:candidateId", async (req, res) => {
   const intelRows = await db
     .select({
       jobId: candidateJobIntelligenceTable.jobId,
-      fitScore: candidateJobIntelligenceTable.fitScore as unknown as number | null,
-      recommendation: candidateJobIntelligenceTable.nextBestAction as unknown as string | null,
+      fitScore: candidateJobIntelligenceTable.fitScore,
+      recommendation: candidateJobIntelligenceTable.nextBestAction,
       jobTitle: jobsTable.title,
       jobStatus: jobsTable.status,
       jobTenantId: jobsTable.tenantId,
@@ -327,8 +336,17 @@ router.post("/talent-match/rediscover", validate({ body: TalentMatchRediscoverBo
   readScopeExemption(TALENT_REDISCOVERY);
   /* Restrict the candidate pool to the job's tenant — previously this
      function rediscovered across all tenants. */
+  const employeeCond = (gate.job as any).internalMobility === true
+    ? eq(candidatesTable.isCurrentEmployee, true)
+    : or(isNull(candidatesTable.isCurrentEmployee), ne(candidatesTable.isCurrentEmployee, true));
   const candidates = await db.select().from(candidatesTable)
-    .where(eq(candidatesTable.tenantId, gate.job.tenantId as string))
+    .where(and(
+      eq(candidatesTable.tenantId, gate.job.tenantId as string),
+      eq(candidatesTable.pool, "tenant"),
+      employeeCond,
+      or(isNull(candidatesTable.doNotContact), ne(candidatesTable.doNotContact, true)),
+      isNull(candidatesTable.dataErasedAt),
+    ))
     .limit(Number(limit));
   const [icp] = await db.select().from(icpTable).where(eq(icpTable.jobId, jobId)).limit(1);
   const matches = candidates.map(c => {

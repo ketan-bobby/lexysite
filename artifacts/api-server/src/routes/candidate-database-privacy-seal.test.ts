@@ -43,6 +43,7 @@ import {
 } from "@workspace/db";
 import { issueToken } from "../lib/auth-token";
 import tenantsRouter from "./tenants";
+import candidatesRouter from "./candidates";
 
 const P = "cdbps_";
 const id = (s: string) => P + s;
@@ -56,8 +57,9 @@ const CAND = {
   matchOnly: id("candMatchOnly"),
   dnc: id("candDnc"),
   erased: id("candErased"),
+  pending: id("candPending"),
 };
-const BARRED = [CAND.paused, CAND.hide, CAND.block, CAND.matchOnly, CAND.dnc, CAND.erased];
+const BARRED = [CAND.paused, CAND.hide, CAND.block, CAND.matchOnly, CAND.dnc, CAND.erased, CAND.pending];
 const ALL_SEEDED = [CAND.ok, ...BARRED];
 
 let server: Server;
@@ -100,6 +102,7 @@ async function seed() {
     { id: CAND.matchOnly, tenantId: T, firstName: "MatchOnly", lastName: "Seeker", email: CAND.matchOnly + "@js.test", pool: "platform", source: "career_site", matchOnlyVisibility: true },
     { id: CAND.dnc, tenantId: T, firstName: "DoNot", lastName: "Contact", email: CAND.dnc + "@js.test", pool: "platform", source: "career_site", doNotContact: true },
     { id: CAND.erased, tenantId: T, firstName: "Erased", lastName: "Seeker", email: CAND.erased + "@js.test", pool: "platform", source: "career_site", dataErasedAt: new Date() },
+    { id: CAND.pending, tenantId: T, firstName: "Pending", lastName: "Profile", email: CAND.pending + "@js.test", pool: "pending_profile", source: "career_site" },
   ]);
 }
 
@@ -108,6 +111,7 @@ before(async () => {
   const app = express();
   app.use(express.json());
   app.use(tenantsRouter); // mounted at root, exactly as routes/index.ts does
+  app.use(candidatesRouter);
   await new Promise<void>((resolve) => {
     server = app.listen(0, () => {
       const addr = server.address();
@@ -148,4 +152,17 @@ test("free-text search cannot surface a hidden job-seeker by name", async () => 
   const ids = new Set<string>((r.json.candidates ?? []).map((c: any) => c.id));
   assert.ok(!ids.has(CAND.hide), "LEAK: a name search surfaced a hide-from-employer job-seeker");
   assert.ok(!ids.has(CAND.block), "LEAK: a name search surfaced a blocklisted job-seeker");
+});
+
+test("candidate detail retains a compliant same-tenant platform control", async () => {
+  const r = await api("GET", `/candidates/${CAND.ok}`, tAdmin());
+  assert.equal(r.status, 200);
+  assert.equal(r.json.id, CAND.ok);
+});
+
+test("candidate detail cannot bypass discovery privacy by using a known ID", async () => {
+  for (const candidateId of [...BARRED, id("missing")]) {
+    const r = await api("GET", `/candidates/${candidateId}`, tAdmin());
+    assert.deepEqual(r, { status: 404, json: { error: "Not found" } }, candidateId);
+  }
 });

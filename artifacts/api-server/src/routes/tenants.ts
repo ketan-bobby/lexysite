@@ -42,6 +42,7 @@ import { applyCandidatePrivacyFilter, applyCandidateHardExclusions } from "./can
 import { eq, count, isNull, and, inArray, gt, sql } from "drizzle-orm";
 import { resolveUser, requireRole } from "../middlewares/resolveUser";
 import { validate } from "../middlewares/validate";
+import { activePilot } from "../lib/pilot-codes";
 import { MAX_PAGE_SIZE } from "../lib/query-limits";
 import { logger } from "../lib/logger";
 import { REGIONS, isRegion, assertChildRegionMatches, type Region } from "../lib/region";
@@ -406,6 +407,9 @@ router.patch("/tenants/:tenantId/billing",
   resolveUser,
   requireRole("platform_admin"),
   async (req, res) => {
+    if (req.body.plan !== undefined && await activePilot(req.params.tenantId as string)) {
+      res.status(409).json({error:"End the complimentary pilot before changing this account's plan."}); return;
+    }
     const body = req.body as z.infer<typeof BillingPatchBody>;
     const update: Record<string, unknown> = { updatedAt: new Date() };
     if (body.plan !== undefined)            update.plan = body.plan;
@@ -839,7 +843,7 @@ router.get("/tenants/:tenantId/members", resolveUser, requireRole("platform_admi
   const members = await db.select().from(usersTable)
     .where(and(
       eq(usersTable.tenantId, req.params.tenantId),
-      inArray(usersTable.role, STAFF_ROLES as unknown as string[]),
+      inArray(usersTable.role, STAFF_ROLES),
     ));
 
   const pending = await db.select().from(staffInviteTokensTable).where(and(

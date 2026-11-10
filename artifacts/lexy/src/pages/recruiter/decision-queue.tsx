@@ -68,6 +68,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isTrustGated, TRUST_GATE_LABEL } from "@/lib/trust-gate";
 import { authHeaders } from "@/lib/api";
+import { readIntelligenceActionResult } from "@/lib/intelligence-action-result";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -214,17 +215,27 @@ function QueueCard({
   const patternMatched = simAnalytics.similarHireSource === "embedding";
 
   const triggerMutation = useMutation({
+    retry: false,
     mutationFn: async () => {
-      const res = await fetch(`${BASE}/api/intelligence/trigger-action`, {
-        credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ jobId: record.jobId, candidateId: record.candidateId }),
-      });
-      return res.json();
+      let res: Response;
+      try {
+        res = await fetch(`${BASE}/api/intelligence/trigger-action`, {
+          credentials: "include",
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ jobId: record.jobId, candidateId: record.candidateId }),
+        });
+      } catch {
+        throw new Error(
+          "Connection lost before the action could be confirmed. Check Agent Activity before trying again.",
+        );
+      }
+      return readIntelligenceActionResult(res);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["intelligence", "all"] });
+    onSuccess: (result) => {
+      if (result.triggered) {
+        queryClient.invalidateQueries({ queryKey: ["intelligence"] });
+      }
     },
   });
 
@@ -424,6 +435,21 @@ function QueueCard({
                 {record.lastUpdated ? new Date(record.lastUpdated).toLocaleDateString() : "—"}
               </span>
             </div>
+            {triggerMutation.isError && (
+              <p role="alert" className="mt-2 text-xs text-destructive">
+                {triggerMutation.error.message}
+              </p>
+            )}
+            {triggerMutation.isSuccess && (
+              <p role="status" className="mt-2 text-xs text-muted-foreground">
+                {triggerMutation.data.message}
+                {triggerMutation.data.runId && (
+                  <span className="block break-all">
+                    Run reference: {triggerMutation.data.runId}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
       </CardContent>

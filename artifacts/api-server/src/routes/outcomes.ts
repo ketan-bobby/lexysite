@@ -19,6 +19,7 @@
  * All routes resolve the caller via bearer token and gate on getAllowedTenantIds.
  */
 import { Router, type IRouter } from "express";
+import { hasControlledOffer } from "../lib/controlled-offers";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import {
@@ -162,6 +163,10 @@ router.put("/outcomes/:applicationId/extend-offer", resolveUser, validate({ body
 
     const app = await getGatedApp(req.params.applicationId, user);
     if (!app) { res.status(404).json({ error: "Not found" }); return; }
+    if (await hasControlledOffer(app.jobId, app.candidateId)) {
+      res.status(409).json({ error: "Use this application's employer-owned offer process: the controlled native flow or the designated external employer/ATS." });
+      return;
+    }
 
     const allowedFrom = ["hm_review", "offer", "offer_recommended"];
     if (!allowedFrom.includes(app.stage)) {
@@ -223,6 +228,10 @@ router.put("/outcomes/:applicationId/accept-offer", resolveUser, validate({ body
 
     const app = await getGatedApp(req.params.applicationId, user);
     if (!app) { res.status(404).json({ error: "Not found" }); return; }
+    if (await hasControlledOffer(app.jobId, app.candidateId)) {
+      res.status(409).json({ error: "This application has an employer-owned offer process. Record its response through the native offer link or the external employer/ATS, not this legacy acceptance/fee action." });
+      return;
+    }
 
     if (app.stage !== "offer_extended") {
       res.status(400).json({ error: `Cannot accept offer from stage '${app.stage}'. Offer must be extended first.` });
@@ -567,10 +576,17 @@ router.put("/outcomes/:applicationId/pulse", resolveUser, validate({ body: Pulse
 /* ── GET /outcomes/coverage ───────────────────────────────────────────────── */
 /* Label-coverage indicator: how many hires have post-hire quality data, plus a
  * terminal-outcome breakdown so admins can see label completeness. Tenant-scoped. */
+const OUTCOME_COVERAGE_STAFF_ROLES = new Set([
+  "platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager", "interviewer",
+]);
+
 router.get("/outcomes/coverage", resolveUser, async (req, res) => {
   try {
     const user = await getCallerUser(req);
     if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!OUTCOME_COVERAGE_STAFF_ROLES.has(user.role)) {
+      res.status(403).json({ error: "Staff access required" }); return;
+    }
 
     let tenantPredicate;
     if (user.role !== "platform_admin") {
@@ -604,6 +620,8 @@ router.get("/outcomes/coverage", resolveUser, async (req, res) => {
       avgQuality:       sql<number | null>`avg(${candidateOutcomesTable.hireQualityScore}) filter (where ${candidateOutcomesTable.hireQualityScore} is not null)`,
     })
       .from(candidateOutcomesTable)
+      // classb-scope [guard-invisible]: whereClause combines the explicit
+      // data-scope tenant predicate, recruiter assignments and compliance seal.
       .where(whereClause);
 
     const hires = Number(row?.hires ?? 0);

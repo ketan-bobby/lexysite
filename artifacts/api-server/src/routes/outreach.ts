@@ -39,6 +39,7 @@
  * interested → interview invite via sendInterviewInviteFromReply().
  */
 import { Router, type IRouter } from "express";
+import {inboxReplyOperationId,sendRecordedCommunication} from "../lib/recorded-communication";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import { getAuthUserId } from "../lib/auth-token";
@@ -104,8 +105,9 @@ const InboxReplyBody = z.object({
   subject: z.string().optional(),
   body: z.string().min(1),
 });
-import { sendEmail } from "../lib/email";
 import { dispatchOutreachMessage } from "../lib/outreach-dispatch";
+import { createWorkflowOutreachDraft, storedOutreachWorkflow } from "../lib/workflow-outreach";
+import { WorkflowConflict } from "../lib/recruiting-workflows";
 import { realEmailOrEmpty } from "../lib/real-email";
 import { generateFirstTouchDraft } from "../lib/outreach-generate";
 import { buildMessageContext, renderContextBlock } from "../lib/ai-message-context";
@@ -241,11 +243,23 @@ async function resolveCandidateCtx(candidateId: string): Promise<
    They share the `/outreach` prefix with this router, so without this
    skip the candidate's tokenless click would hit resolveUser first and
    get a JSON 401 instead of the confirm page. */
+const OUTREACH_STAFF_ROLES = new Set([
+  "platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager", "interviewer",
+]);
+
 router.use("/outreach", (req, res, next) => {
   if (req.path.startsWith("/reply/") || req.path.startsWith("/reply-msg/")) {
     return next();
   }
-  return resolveUser(req, res, next);
+  return resolveUser(req, res, () => {
+    // Authentication and tenant membership do not grant staff privileges.
+    // Candidate response links above retain their separate token authority.
+    if (!OUTREACH_STAFF_ROLES.has(req.resolvedUser!.role)) {
+      res.status(403).json({ error: "Staff access required" });
+      return;
+    }
+    next();
+  });
 });
 
 /* Helpers: respond 404 (never 403) on cross-tenant access to avoid leaking
@@ -257,13 +271,33 @@ router.use("/outreach", (req, res, next) => {
    treated as accessible (legacy rows predating tenant scoping). Returns true when
    allowed. */
 async function canAccessTenant(
-  user: { role: string; tenantId: string | null },
+  user: { id: string; role: string; tenantId: string | null },
   tenantId: string | null | undefined,
 ): Promise<boolean> {
   const allowed = await getDataScopeTenantIds(user);
   if (allowed === null) return true;       // platform_admin
   if (!tenantId) return true;              // legacy untenanted row
   return allowed.includes(tenantId);
+}
+
+async function canAccessStepMessageParent(
+  user: { id: string; role: string; tenantId: string | null },
+  message: typeof outreachStepMessagesTable.$inferSelect,
+  enrollment: typeof outreachEnrollmentsTable.$inferSelect,
+): Promise<boolean> {
+  // A tenantless draft is not authorised by an unrelated enrollment. Verify
+  // the whole parent association before returning or mutating its contents.
+  if (message.campaignId !== enrollment.campaignId) return false;
+  if (!(await canAccessTenant(user, enrollment.tenantId))) return false;
+  const [campaign] = await db.select({ id: outreachCampaignsTable.id })
+    .from(outreachCampaignsTable)
+    .where(and(
+      eq(outreachCampaignsTable.id, enrollment.campaignId),
+      eq(outreachCampaignsTable.tenantId, enrollment.tenantId),
+      eq(outreachCampaignsTable.jobId, enrollment.jobId),
+    )).limit(1);
+  if (!campaign) return false;
+  return recruiterOwnsResource(user, { kind: "campaignId", value: campaign.id });
 }
 
 /* Plain-recruiter ownership ceiling for an outreach row: its requisition must be
@@ -532,10 +566,34 @@ router.post("/outreach/messages/:id/approve", async (req, res) => {
   if (claimed.length === 0) {
     // Lost the race to a concurrent approve/send — return current state idempotently.
     const [cur] = await db.select().from(outreachMessagesTable).where(eq(outreachMessagesTable.id, m.id)).limit(1);
+    const bound = await storedOutreachWorkflow(m.id, {
+      body: m.body, subject: m.subject, candidateEmail: email,
+    }, user.id);
+    if (bound && !["sent", "opened", "replied", "suppressed"].includes(cur?.status ?? "")) {
+      res.status(409).json({
+        error: "Workflow outreach approval is in progress or needs review; delivery is not confirmed.",
+      }); return;
+    }
     res.json(await enrichMessage(cur)); return;
   }
 
-  const dispatch = await dispatchOutreachMessage(m.id, m.body, m.subject, email);
+  let dispatch;
+  try {
+    dispatch = await dispatchOutreachMessage(m.id, m.body, m.subject, email);
+  } catch (error) {
+    if (!(error instanceof WorkflowConflict)) throw error;
+    // A control/activation refusal precedes the physical claim. Release only
+    // this approval attempt; unknown provider outcomes are NOT rolled back.
+    await db.update(outreachMessagesTable)
+      .set({ approvedAt: null, approvedBy: null })
+      .where(and(
+        eq(outreachMessagesTable.id, m.id),
+        eq(outreachMessagesTable.status, "pending_approval"),
+        eq(outreachMessagesTable.approvedBy, user.id),
+        eq(outreachMessagesTable.approvedAt, claimed[0].approvedAt!),
+      ));
+    res.status(error.status).json({ error: error.message }); return;
+  }
 
   // Mirror the orchestrator's post-send bookkeeping: advance the sourced
   // candidate to shortlisted and flip drafted→sent so it isn't re-queued.
@@ -629,6 +687,19 @@ router.post("/outreach/messages/:id/reject", validate({ body: RejectMessageBody 
   // Regeneration failures are non-fatal — the reject itself still succeeds.
   let regenerated: any = null;
   try {
+    const bound = await storedOutreachWorkflow(m.id, {
+      body: m.body, subject: m.subject, candidateEmail: undefined,
+    }, user.id);
+    if (bound) {
+      // The old draft's approval does not authorise another model call or
+      // first-touch generation. Preserve the rejection and require a fresh,
+      // separately authorised workflow draft; unbound assisted behavior below
+      // remains unchanged.
+      logger.info({ messageId: m.id, workflowId: bound.input.workflowId },
+        "Workflow-owned draft rejected; automatic regeneration held");
+      res.json({ ...(await enrichMessage(updated)), regenerated: null });
+      return;
+    }
     const candidateCtx = await resolveCandidateCtx(m.candidateId);
     if (candidateCtx) {
       const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, m.jobId)).limit(1);
@@ -670,9 +741,9 @@ router.post("/outreach/messages/:id/reject", validate({ body: RejectMessageBody 
           isNotNull(outreachMessagesTable.approvedAt),
         ))
         .limit(1);
-      const gateOpen = !!priorApproved;
+      const gateOpen = !!priorApproved && !bound;
 
-      const [newMsg] = await db.insert(outreachMessagesTable).values({
+      const newValues = {
         jobId: m.jobId,
         candidateId: m.candidateId,
         tenantId: (m as any).tenantId,
@@ -683,7 +754,10 @@ router.post("/outreach/messages/:id/reject", validate({ body: RejectMessageBody 
         callToAction: draft.callToAction,
         followUpSchedule: draft.followUpSchedule,
         estimatedOpenRate: draft.estimatedOpenRate?.toString(),
-      }).returning();
+      };
+      // Workflow-owned drafts returned above before generation. This branch is
+      // assisted-only; the former bound ternary was unreachable.
+      const newMsg = (await db.insert(outreachMessagesTable).values(newValues).returning())[0];
 
       // When the gate is open, send the regenerated draft immediately via the
       // shared dispatcher (same path as orchestrator/approve). The candidate
@@ -751,10 +825,9 @@ router.post("/outreach/step-messages/:id/approve", async (req, res) => {
   if (!m) { res.status(404).json({ error: "Not found" }); return; }
   const [enr] = await db.select().from(outreachEnrollmentsTable).where(eq(outreachEnrollmentsTable.id, m.enrollmentId)).limit(1);
   if (!enr) { res.status(404).json({ error: "Not found" }); return; }
-  if (!(await canAccessTenant(user, enr.tenantId))) {
-    res.status(404).json({ error: "Not found" }); return;
-  }
-  if (enr.campaignId && !(await recruiterOwnsResource(user, { kind: "campaignId", value: enr.campaignId }))) {
+  // classb-scope [guard-invisible]: tenantless draft requires an authorised,
+  // internally consistent enrollment/campaign chain before even idempotent reads.
+  if (!(await canAccessStepMessageParent(user, m, enr))) {
     res.status(404).json({ error: "Not found" }); return;
   }
   // Idempotent: already authorized or sent → return current state.
@@ -790,10 +863,8 @@ router.post("/outreach/step-messages/:id/reject", validate({ body: RejectMessage
   if (!m) { res.status(404).json({ error: "Not found" }); return; }
   const [enr] = await db.select().from(outreachEnrollmentsTable).where(eq(outreachEnrollmentsTable.id, m.enrollmentId)).limit(1);
   if (!enr) { res.status(404).json({ error: "Not found" }); return; }
-  if (!(await canAccessTenant(user, enr.tenantId))) {
-    res.status(404).json({ error: "Not found" }); return;
-  }
-  if (enr.campaignId && !(await recruiterOwnsResource(user, { kind: "campaignId", value: enr.campaignId }))) {
+  // classb-scope [guard-invisible]: authorise the verified parent chain first.
+  if (!(await canAccessStepMessageParent(user, m, enr))) {
     res.status(404).json({ error: "Not found" }); return;
   }
   if (m.status === "sent") { res.status(409).json({ error: "Message already sent; cannot reject." }); return; }
@@ -838,10 +909,8 @@ router.patch("/outreach/step-messages/:id", validate({ body: EditMessageBody }),
   if (!m) { res.status(404).json({ error: "Not found" }); return; }
   const [enr] = await db.select().from(outreachEnrollmentsTable).where(eq(outreachEnrollmentsTable.id, m.enrollmentId)).limit(1);
   if (!enr) { res.status(404).json({ error: "Not found" }); return; }
-  if (!(await canAccessTenant(user, enr.tenantId))) {
-    res.status(404).json({ error: "Not found" }); return;
-  }
-  if (enr.campaignId && !(await recruiterOwnsResource(user, { kind: "campaignId", value: enr.campaignId }))) {
+  // classb-scope [guard-invisible]: authorise the verified parent chain first.
+  if (!(await canAccessStepMessageParent(user, m, enr))) {
     res.status(404).json({ error: "Not found" }); return;
   }
   if (m.status !== "pending_approval") {
@@ -1252,6 +1321,11 @@ router.post("/outreach/campaigns/:id/enroll", validate({ body: EnrollCampaignBod
   }
   const tenantId = campaign.tenantId;
   if (!tenantId) { res.status(400).json({ error: "Campaign has no tenant" }); return; }
+  // A campaign is tied to one requisition. Refuse inconsistent enrollments
+  // here rather than creating drafts which cannot pass the parent-chain gate.
+  if (campaign.jobId !== jobId) {
+    res.status(404).json({ error: "Job not found" }); return;
+  }
   /* Validate the supplied jobId — it must belong to the same tenant as the
      campaign. Without this check, a recruiter could enroll a candidate
      against another tenant's job and pollute their pipeline. */
@@ -1373,22 +1447,32 @@ router.post("/outreach/enrollments/:id/simulate-next", async (req, res) => {
     const nextStep = enrollment.currentStep + 1;
     if (nextStep > 4) { res.status(400).json({ error: "Already at final step" }); return; }
 
-    // Reset lastSentAt to 20 days ago so delay check passes for ALL steps
-    await db.update(outreachEnrollmentsTable)
-      .set({ lastSentAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), updatedAt: new Date() })
-      .where(eq(outreachEnrollmentsTable.id, id));
-
-    // Remove any existing scheduled/failed message for the next step so it regenerates cleanly
-    const existing = await db.select().from(outreachStepMessagesTable)
+    // A simulation must not erase provider uncertainty or race a real claim.
+    const prepared=await db.transaction(async tx=>{
+      const [current]=await tx.select().from(outreachEnrollmentsTable)
+        .where(and(eq(outreachEnrollmentsTable.id,id),
+          eq(outreachEnrollmentsTable.tenantId,enrollment.tenantId),
+          eq(outreachEnrollmentsTable.jobId,enrollment.jobId),
+          eq(outreachEnrollmentsTable.campaignId,enrollment.campaignId))).for("update");
+      if(!current||current.currentStep!==enrollment.currentStep||
+        current.status==="stopped"||current.status==="replied")return false;
+    const existing = await tx.select().from(outreachStepMessagesTable)
       .where(and(
         eq(outreachStepMessagesTable.enrollmentId, id),
         eq(outreachStepMessagesTable.stepNumber, nextStep),
-      ));
+      )).for("update");
+    if(existing.some(m=>m.status!=="scheduled"||m.failedReason!==null))return false;
     for (const m of existing) {
-      if (m.status === "scheduled" || m.status === "failed") {
-        await db.delete(outreachStepMessagesTable)
+        await tx.delete(outreachStepMessagesTable)
           .where(eq(outreachStepMessagesTable.id, m.id));
-      }
+    }
+    await tx.update(outreachEnrollmentsTable)
+      .set({ lastSentAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), updatedAt: new Date() })
+      .where(eq(outreachEnrollmentsTable.id,id));
+    return true;
+    });
+    if(!prepared){
+      res.status(409).json({error:"The existing step has history or an outcome requiring review. Simulation cannot erase or resend it."});return;
     }
 
     // Generate + send for the campaign (will pick up this enrollment due to reset lastSentAt)
@@ -1531,24 +1615,21 @@ router.post("/outreach/inbox/:id/reply", validate({ body: InboxReplyBody }), asy
     || (item.subject.toLowerCase().startsWith("re:") ? item.subject : `Re: ${item.subject}`);
 
   // Manual 1:1 reply: send from the recruiter's OWN Outlook mailbox (Graph)
-  // when connected; falls back to SES automatically inside sendEmail.
+  // when connected; only safe known rejection/non-attempt permits SES fallback.
   const replierUserId = getAuthUserId(req) ?? undefined;
 
-  const result = await sendEmail({
+  const result = await sendRecordedCommunication({
+    id:inboxReplyOperationId({tenantId:item.tenantId,inboxId:item.id,
+      senderId:replierUserId??user.id,subject,body}),
+    tenantId:item.tenantId,candidateId:candIdForAudit,type:"follow_up",
     to: candEmail,
     subject,
-    text: body,
+    body,
     senderUserId: replierUserId,
-    useRecruiterMailbox: Boolean(replierUserId),
-    audit: {
-      tenantId: item.tenantId,
       actorLabel: "Recruiter (inbox reply)",
-      subjectType: "candidate" as any,
-      subjectId: candIdForAudit,
       subjectLabel: candName ?? candEmail,
       action: "outreach.inbox_reply.sent",
       metadata: { inboxItemId: item.id, candidateId: candIdForAudit },
-    },
   });
 
   if (!result.ok) {

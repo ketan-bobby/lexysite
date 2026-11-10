@@ -16,8 +16,10 @@
 import { db, candidatesTable, verificationRecordsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateJSON } from "./ai.js";
+import { withUsageActivity } from "./vendor-usage-context";
 import { logger } from "./logger.js";
 import { getSubtreeTenantIds } from "./tenantUtils.js";
+import { preserveSyntheticFixture } from "./synthetic-fixture-scope";
 
 export interface VerificationAgentContext {
   name: string;
@@ -122,11 +124,13 @@ export async function runCandidateVerification(args: { candidateId: string; tena
     source: c.source || null,
   };
 
-  const { verificationResult, verificationStatus } = await runVerificationAgent(ctx);
+  const { verificationResult, verificationStatus } = await withUsageActivity(
+    args.tenantId, "assessment", () => runVerificationAgent(ctx),
+  );
 
   await db.update(candidatesTable).set({
     verificationStatus: verificationStatus as any,
-    verificationResult,
+    verificationResult: preserveSyntheticFixture(verificationResult),
     updatedAt: new Date(),
   }).where(eq(candidatesTable.id, candidateId)).catch(err => logger.warn({ err, candidateId }, "[verification] failed to write candidate row (non-fatal)"));
 

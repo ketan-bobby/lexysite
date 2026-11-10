@@ -30,19 +30,18 @@
 import {
   dbAdmin,
   candidatesTable,
-  applicationsTable,
   jobsTable,
   icpTable,
   sourcedCandidatesTable,
 } from "@workspace/db";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { emitRunEvent, updateRunSummary, completeAgentRun, isRunCancelled } from "./recorder";
 import { logger } from "../logger";
 import { upsertIntelligence } from "../intelligence";
 import { runSourcingProviders } from "../sourcing-providers.js";
 import { scoreExternalCandidates, classifyLocationMatches } from "../external-sourcing.js";
 import { findExistingCandidate } from "../candidate-dedup.js";
-import { originFields } from "../sourcing-origin";
+import { ensureSourcedApplication } from "../sourced-application";
 import { buildSearchContext, searchInternalDatabase } from "../../routes/sourcing";
 
 /** Sentinel thrown to unwind the run when a recruiter cancels. */
@@ -66,6 +65,130 @@ export interface RealRunOptions {
     classifyLocations?: typeof classifyLocationMatches;
     searchInternal?: typeof searchInternalDatabase;
   };
+}
+
+type InternalDiscoveryMode = "known_talent" | "internal_mobility";
+
+function skippedExternalResults(reason: string) {
+  const skipped = (source: string) => ({
+    candidates: [] as any[],
+    query: `${source}: ${reason}`,
+    skipped: reason,
+  });
+  return {
+    github: skipped("GitHub"),
+    pdl: skipped("PDL"),
+    serp: skipped("SERP"),
+    enrichlayer: skipped("EnrichLayer"),
+  };
+}
+
+function candidateIdentityKeys(candidate: any): string[] {
+  const keys: string[] = [];
+  if (candidate?.candidateId) keys.push(`id:${candidate.candidateId}`);
+  const email = typeof candidate?.email === "string" ? candidate.email.trim().toLowerCase() : "";
+  if (email && !email.endsWith("@unknown.local") && !email.endsWith("@import.local")) {
+    keys.push(`email:${email}`);
+  }
+  const linkedin =
+    typeof candidate?.linkedinUrl === "string"
+      ? candidate.linkedinUrl.trim().toLowerCase().replace(/\/+$/, "")
+      : "";
+  if (linkedin) keys.push(`linkedin:${linkedin}`);
+  const phone = typeof candidate?.phone === "string" ? candidate.phone.replace(/\D/g, "") : "";
+  if (phone) keys.push(`phone:${phone}`);
+  const name = `${candidate?.firstName ?? ""} ${candidate?.lastName ?? ""}`.trim().toLowerCase();
+  const location =
+    typeof candidate?.location === "string" ? candidate.location.trim().toLowerCase() : "";
+  if (name && location) keys.push(`name-location:${name}|${location}`);
+  return keys;
+}
+
+/** Merge duplicate internal/provider identities before ranking and persistence. */
+function dedupeSourcingCandidates(candidates: any[]): any[] {
+  const unique: any[] = [];
+  const keyToIndex = new Map<string, number>();
+  for (const candidate of candidates) {
+    const keys = candidateIdentityKeys(candidate);
+    const matchedIndexes = [
+      ...new Set(
+        keys
+          .map((key) => keyToIndex.get(key))
+          .filter((index): index is number => index !== undefined),
+      ),
+    ];
+    if (matchedIndexes.length === 0) {
+      const index = unique.push(candidate) - 1;
+      for (const key of keys) keyToIndex.set(key, index);
+      continue;
+    }
+
+    const index = Math.min(...matchedIndexes);
+    const group = [...matchedIndexes.map((matchedIndex) => unique[matchedIndex]), candidate];
+    const winner = group.reduce(
+      (best, item) => ((item.matchScore ?? 0) > (best.matchScore ?? 0) ? item : best),
+      group[0],
+    );
+    const canonicalIdentity = group.find((item) => item.candidateId);
+    const internalIdentity = group.find((item) => item.isInternalCandidate);
+    unique[index] = {
+      ...group[0],
+      ...winner,
+      ...(canonicalIdentity ? { candidateId: canonicalIdentity.candidateId } : {}),
+      ...(internalIdentity ? { isInternalCandidate: true, source: "internal" } : {}),
+    };
+    for (const duplicateIndex of matchedIndexes
+      .filter((matchedIndex) => matchedIndex !== index)
+      .sort((a, b) => b - a)) {
+      unique.splice(duplicateIndex, 1);
+    }
+    keyToIndex.clear();
+    unique.forEach((item, itemIndex) => {
+      for (const key of candidateIdentityKeys(item)) keyToIndex.set(key, itemIndex);
+    });
+  }
+  return unique;
+}
+
+/** Resolve provider identities before ranking so protected rows cannot consume shortlist slots. */
+async function resolveEligibleExternalCandidates(
+  candidates: any[],
+  tenantId: string,
+): Promise<any[]> {
+  const eligible: any[] = [];
+  for (const candidate of candidates) {
+    const existing: any = await findExistingCandidate({
+      tenantId,
+      email: candidate.email,
+      phone: candidate.phone,
+      linkedinUrl: candidate.linkedinUrl,
+      firstName: candidate.firstName,
+      lastName: candidate.lastName,
+      location: candidate.location,
+    });
+    if (existing) {
+      if (
+        existing.pool !== "tenant" ||
+        existing.isCurrentEmployee ||
+        existing.doNotContact ||
+        existing.dataErasedAt
+      ) {
+        continue;
+      }
+      eligible.push({
+        ...candidate,
+        candidateId: existing.id,
+        reusedExistingCandidate: true,
+      });
+    } else {
+      eligible.push({
+        ...candidate,
+        candidateId: undefined,
+        reusedExistingCandidate: false,
+      });
+    }
+  }
+  return eligible;
 }
 
 /**
@@ -97,8 +220,9 @@ export async function runRealSourcingRun(
   opts: RealRunOptions = {},
 ): Promise<void> {
   const shortlistSize = Math.min(Math.max(opts.shortlistSize ?? 8, 1), 25);
-  const tenantId = run.tenantId;
   const jobId = run.workOrderId;
+  let tenantId = run.tenantId;
+  let mode: InternalDiscoveryMode = "known_talent";
   const runProviders = opts.deps?.runProviders ?? runSourcingProviders;
   const scoreCandidates = opts.deps?.scoreCandidates ?? scoreExternalCandidates;
   const classifyLocations = opts.deps?.classifyLocations ?? classifyLocationMatches;
@@ -139,6 +263,8 @@ export async function runRealSourcingRun(
     });
     const [job] = await dbAdmin.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
     if (!job) throw new Error("Work order not found");
+    tenantId = job.tenantId ?? run.tenantId;
+    mode = (job as any).internalMobility === true ? "internal_mobility" : "known_talent";
     const [icp] = await dbAdmin
       .select()
       .from(icpTable)
@@ -155,26 +281,34 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "step_completed",
       stepName: "analyzing",
-      message: icp
-        ? `Requirements parsed — searching against the ideal candidate profile (v${(icp as any).version ?? 1})`
-        : "No ICP on file — searching on job title and skills",
+      message:
+        mode === "internal_mobility"
+          ? icp
+            ? `Internal Mobility — employee-only search against the ideal candidate profile (v${(icp as any).version ?? 1})`
+            : "Internal Mobility — no ICP on file; searching current employees on job title and skills only"
+          : icp
+            ? `Requirements parsed — searching against the ideal candidate profile (v${(icp as any).version ?? 1})`
+            : "No ICP on file — searching on job title and skills",
     });
 
     // ── Stage 2: Searching (internal bench + external providers) ────────────
     await emitSequenced({
       type: "step_started",
       stepName: "searching",
-      message: "Searching internal bench and external candidate sources",
+      message:
+        mode === "internal_mobility"
+          ? "Internal Mobility — searching this work order's current employees only; external discovery is disabled"
+          : "Known Talent Rediscovery and External Discovery — searching saved non-employee talent and external sources",
       count: 0,
     });
     // Internal search reads via dbAdmin (fire-and-forget context) but stays
     // scoped to the job's tenant AND pool='tenant' inside the chokepoint.
     const [internalRes, providerResults] = await Promise.all([
-      searchInternal(ctx, tenantId, dbAdmin as any)
+      searchInternal(ctx, tenantId, dbAdmin as any, mode)
         .then((r: any) => {
           emitProgress(
             "searching",
-            `Internal bench: ${r.candidates.length} matching candidate${r.candidates.length === 1 ? "" : "s"}`,
+            `${mode === "internal_mobility" ? "Internal Mobility" : "Known Talent Rediscovery"}: ${r.candidates.length} matching candidate${r.candidates.length === 1 ? "" : "s"}`,
             r.candidates.length,
           );
           return r;
@@ -183,80 +317,116 @@ export async function runRealSourcingRun(
           logger.warn({ err }, "[agent-runs] internal search failed — continuing external-only");
           emitProgress(
             "searching",
-            "Internal bench search failed — continuing with external sources",
+            mode === "internal_mobility"
+              ? "Internal Mobility employee search failed — external discovery remains disabled"
+              : "Known Talent Rediscovery search failed — continuing with External Discovery",
           );
           return { candidates: [] as any[], query: "internal: failed" };
         }),
       // allowSimulatedFallback:false — a real run must NEVER persist
       // fabricated people; a keyless provider reports skipped/empty instead.
-      runProviders(ctx, {
-        allowSimulatedFallback: false,
-        // Live per-provider progress so a minutes-long fan-out isn't a silent gap.
-        onProviderEvent: (e) => {
-          if (e.phase === "started") {
-            emitProgress("searching", `Searching ${e.label}…`);
-          } else if (e.skipped) {
-            emitProgress("searching", `${e.label}: skipped — ${e.skipped}`);
-          } else {
-            emitProgress(
-              "searching",
-              `${e.label}: ${e.count ?? 0} profile${(e.count ?? 0) === 1 ? "" : "s"} found`,
-              e.count,
-            );
-          }
-        },
-      }),
+      mode === "internal_mobility"
+        ? Promise.resolve(skippedExternalResults("Disabled by Internal Mobility job setting"))
+        : runProviders(ctx, {
+            allowSimulatedFallback: false,
+            // Live per-provider progress so a minutes-long fan-out isn't a silent gap.
+            onProviderEvent: (e) => {
+              if (e.phase === "started") {
+                emitProgress("searching", `External Discovery — searching ${e.label}…`);
+              } else if (e.skipped) {
+                emitProgress(
+                  "searching",
+                  `External Discovery — ${e.label}: skipped — ${e.skipped}`,
+                );
+              } else {
+                emitProgress(
+                  "searching",
+                  `External Discovery — ${e.label}: ${e.count ?? 0} profile${(e.count ?? 0) === 1 ? "" : "s"} found`,
+                  e.count,
+                );
+              }
+            },
+          }),
     ]);
     // Let any queued progress emits land before the stage-completed event so
     // the stream stays chronological.
     await progressChain;
-    const externalAll = [
+    const externalDiscovered = [
       ...providerResults.github.candidates,
       ...providerResults.pdl.candidates,
       ...providerResults.serp.candidates,
       ...providerResults.enrichlayer.candidates,
       // Defense in depth: drop anything tagged simulated regardless of origin.
     ].filter((c: any) => !(c?.rawData?.simulated || c?.simulated));
+    const externalAll = await resolveEligibleExternalCandidates(externalDiscovered, tenantId);
     const found = internalRes.candidates.length + externalAll.length;
+    const sourceSummary = {
+      mode,
+      label: mode === "internal_mobility" ? "Internal Mobility" : "Known Talent Rediscovery",
+      internalLabel:
+        mode === "internal_mobility" ? "Internal Mobility" : "Known Talent Rediscovery",
+      externalLabel: mode === "internal_mobility" ? null : "External Discovery",
+      internalMobility: mode === "internal_mobility",
+      externalEnabled: mode !== "internal_mobility",
+      bySource: {
+        internal: internalRes.candidates.length,
+        github: providerResults.github.candidates.length,
+        pdl: providerResults.pdl.candidates.length,
+        serp: providerResults.serp.candidates.length,
+        enrichlayer: providerResults.enrichlayer.candidates.length,
+      },
+      total: found,
+      icpMissing: !icp,
+      noMatches: found === 0,
+    };
     await checkpoint();
     await emitSequenced({
       type: "step_completed",
       stepName: "searching",
-      message: `Found ${found} candidate profiles (${internalRes.candidates.length} internal, ${externalAll.length} external)`,
+      message:
+        mode === "internal_mobility" && found === 0
+          ? `Internal Mobility found no current employees${icp ? "" : " (no ICP on file; job title and skills were searched)"} — no external fallback was used`
+          : mode === "internal_mobility"
+            ? `Found ${internalRes.candidates.length} current-employee profiles through Internal Mobility`
+            : `Found ${found} candidate profiles (${internalRes.candidates.length} Known Talent Rediscovery, ${externalAll.length} External Discovery)`,
       count: found,
-      payload: {
-        bySource: {
-          internal: internalRes.candidates.length,
-          github: providerResults.github.candidates.length,
-          pdl: providerResults.pdl.candidates.length,
-          serp: providerResults.serp.candidates.length,
-          enrichlayer: providerResults.enrichlayer.candidates.length,
-        },
-      },
+      payload: { bySource: sourceSummary.bySource, sourceSummary },
     });
-    await updateRunSummary(run.id, { found });
+    await updateRunSummary(run.id, { found, sourceSummary });
 
     // ── Stage 3: Screening (LLM/ICP scoring + DNC filter) ────────────────────
     await emitSequenced({
       type: "step_started",
       stepName: "screening",
       message: icp
-        ? `Scoring ${externalAll.length} external profiles against the ideal candidate profile`
-        : `Screening ${externalAll.length} external profiles (no ICP — provider scores stand)`,
-      count: externalAll.length,
+        ? `Scoring ${found} ${mode === "internal_mobility" ? "Internal Mobility" : "Known Talent Rediscovery and External Discovery"} profiles against the ideal candidate profile`
+        : `Screening ${found} profiles (no ICP — internal title/skill scores and provider scores stand)`,
+      count: found,
     });
-    if (icp && externalAll.length > 0) {
+    if (icp && found > 0) {
       emitProgress(
         "screening",
-        `AI is scoring ${externalAll.length} profiles against the ideal candidate profile — this can take a minute`,
-        externalAll.length,
+        `AI is scoring ${found} internal and external profiles against the ideal candidate profile — this can take a minute`,
+        found,
       );
     }
     const externalScored =
       icp && externalAll.length > 0
         ? await scoreCandidates(externalAll as any[], icp as any)
         : externalAll;
-    if (icp && externalAll.length > 0) {
+    const internalScored =
+      icp && internalRes.candidates.length > 0
+        ? await scoreCandidates(internalRes.candidates as any[], icp as any)
+        : internalRes.candidates;
+    const internalFinal = internalScored.map((candidate: any) => {
+      const original = internalRes.candidates.find((item: any) => item.id === candidate.id);
+      return {
+        ...candidate,
+        candidateId: original?.candidateId ?? candidate.candidateId,
+        isInternalCandidate: true,
+      };
+    });
+    if (icp && found > 0) {
       emitProgress("screening", "AI scoring complete — applying do-not-contact filter");
     }
 
@@ -274,7 +444,10 @@ export async function runRealSourcingRun(
     const dncEmails = new Set(
       dncRows.map((r) => (r.email ?? "").trim().toLowerCase()).filter(Boolean),
     );
-    const screened = (externalScored as any[]).filter((c) => {
+    const screened = dedupeSourcingCandidates([
+      ...internalFinal,
+      ...(externalScored as any[]),
+    ]).filter((c) => {
       const e = (c?.email ?? "").trim().toLowerCase();
       return !(e !== "" && dncEmails.has(e));
     });
@@ -282,7 +455,7 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "step_completed",
       stepName: "screening",
-      message: `${screened.length} candidates scored against requirements`,
+      message: `${screened.length} candidates scored against requirements across ${sourceSummary.internalLabel}${mode === "internal_mobility" ? "" : " and External Discovery"}`,
       count: screened.length,
     });
     await updateRunSummary(run.id, { screened: screened.length });
@@ -291,7 +464,10 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "step_started",
       stepName: "ranking",
-      message: "Ranking candidates by fit",
+      message:
+        mode === "internal_mobility"
+          ? "Ranking Internal Mobility candidates by fit"
+          : "Ranking Known Talent Rediscovery and External Discovery candidates by fit",
     });
     const ranked = [...screened].sort(
       (a: any, b: any) => (b.matchScore ?? 0) - (a.matchScore ?? 0),
@@ -320,13 +496,14 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "step_started",
       stepName: "shortlist",
-      message: `Preparing shortlist — top ${shortlistFlagged.length}`,
+      message: `Preparing ${sourceSummary.label} shortlist — top ${shortlistFlagged.length}`,
       count: shortlistFlagged.length,
     });
     const createdIds = await persistShortlist({
       run,
       tenantId,
       jobId,
+      mode,
       candidates: shortlistFlagged,
       checkpoint,
     });
@@ -334,9 +511,9 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "step_completed",
       stepName: "shortlist",
-      message: `Shortlist ready — top ${createdIds.length} candidates added to the pipeline`,
+      message: `Shortlist ready — ${createdIds.length} ${sourceSummary.label} candidates added to the pipeline`,
       count: createdIds.length,
-      payload: { candidateIds: createdIds },
+      payload: { candidateIds: createdIds, sourceSummary },
     });
     await updateRunSummary(run.id, { shortlisted: createdIds.length });
 
@@ -344,8 +521,9 @@ export async function runRealSourcingRun(
     await emitSequenced({
       type: "run_completed",
       stepName: "shortlist",
-      message: `Sourcing complete — ${createdIds.length} candidates shortlisted from ${found} sourced`,
+      message: `${sourceSummary.label} complete — ${createdIds.length} candidates shortlisted from ${found} sourced`,
       count: createdIds.length,
+      payload: { sourceSummary },
     });
     await completeAgentRun(run.id, "completed");
   } catch (err: any) {
@@ -373,10 +551,11 @@ async function persistShortlist(args: {
   run: { id: string; tenantId: string; workOrderId: string };
   tenantId: string;
   jobId: string;
+  mode: InternalDiscoveryMode;
   candidates: any[];
   checkpoint: () => Promise<void>;
 }): Promise<string[]> {
-  const { run, tenantId, jobId, candidates, checkpoint } = args;
+  const { run, tenantId, jobId, mode, candidates, checkpoint } = args;
   const created: string[] = [];
 
   for (const c of candidates) {
@@ -393,51 +572,122 @@ async function persistShortlist(args: {
           ? c.email.trim().toLowerCase()
           : "";
 
-      // Shared identity resolution (LinkedIn → email → phone → name+location)
-      // so a re-run or a previously imported person never duplicates.
+      // Internal search already resolved this identity from the exact tenant's
+      // pool. Reuse it directly, with a second tenant/pool/employee/compliance
+      // check as defense in depth; never create a new row for an internal hit.
       let candidateId: string | null = null;
-      const existing: any = await findExistingCandidate({
-        tenantId,
-        email: realEmail || c.email,
-        phone: c.phone,
-        linkedinUrl: c.linkedinUrl,
-        firstName: c.firstName,
-        lastName: c.lastName,
-        location: c.location,
-      }).catch(() => null);
-      if (existing) {
-        candidateId = existing.id;
+      let reusedExistingCandidate = c.reusedExistingCandidate === true;
+      if (c.isInternalCandidate) {
+        const employeeCond =
+          mode === "internal_mobility"
+            ? eq(candidatesTable.isCurrentEmployee, true)
+            : or(
+                isNull(candidatesTable.isCurrentEmployee),
+                ne(candidatesTable.isCurrentEmployee, true),
+              );
+        const [internalCandidate] = await dbAdmin
+          .select({ id: candidatesTable.id })
+          .from(candidatesTable)
+          .where(
+            and(
+              eq(candidatesTable.id, c.candidateId),
+              eq(candidatesTable.tenantId, tenantId),
+              eq(candidatesTable.pool, "tenant"),
+              employeeCond,
+              or(isNull(candidatesTable.doNotContact), ne(candidatesTable.doNotContact, true)),
+              isNull(candidatesTable.dataErasedAt),
+            ),
+          )
+          .limit(1);
+        if (!internalCandidate) continue;
+        candidateId = internalCandidate.id;
         // Keep the score fresh on re-source — the ICP may have changed.
         if (matchScore != null) {
           await dbAdmin
             .update(candidatesTable)
             .set({ talentMatchScore: matchScore, updatedAt: new Date() } as any)
-            .where(eq(candidatesTable.id, existing.id))
+            .where(eq(candidatesTable.id, internalCandidate.id))
             .catch(() => undefined);
         }
       } else {
-        const [inserted] = await dbAdmin
-          .insert(candidatesTable)
-          .values({
+        // Shared identity resolution (LinkedIn → email → phone → name+location)
+        // so a re-run or a previously imported person never duplicates.
+        let existing: any = null;
+        if (c.reusedExistingCandidate && c.candidateId) {
+          const [resolved] = await dbAdmin
+            .select()
+            .from(candidatesTable)
+            .where(
+              and(
+                eq(candidatesTable.id, c.candidateId),
+                eq(candidatesTable.tenantId, tenantId),
+                eq(candidatesTable.pool, "tenant"),
+                or(
+                  isNull(candidatesTable.isCurrentEmployee),
+                  ne(candidatesTable.isCurrentEmployee, true),
+                ),
+                or(isNull(candidatesTable.doNotContact), ne(candidatesTable.doNotContact, true)),
+                isNull(candidatesTable.dataErasedAt),
+              ),
+            )
+            .limit(1);
+          existing = resolved ?? null;
+        } else {
+          existing = await findExistingCandidate({
             tenantId,
-            firstName: c.firstName || "Unknown",
-            lastName: c.lastName || "",
-            // email is NOT NULL — placeholder when the source had none.
-            email:
-              realEmail ||
-              `sourced-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@unknown.local`,
-            location: c.location || null,
-            currentTitle: c.currentTitle || null,
-            currentCompany: c.currentCompany || null,
-            linkedinUrl: c.linkedinUrl || null,
-            githubUrl: c.githubProfile || null,
-            skills: c.skills || [],
-            source: c.source || "sourcing_agent",
-            talentMatchScore: matchScore,
-          })
-          .returning({ id: candidatesTable.id })
-          .catch(() => [null as any]);
-        candidateId = inserted?.id ?? null;
+            email: realEmail || c.email,
+            phone: c.phone,
+            linkedinUrl: c.linkedinUrl,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            location: c.location,
+          });
+        }
+        if (existing) {
+          // A provider result must not turn an employee, erased profile,
+          // do-not-contact row, or non-tenant pool record into a rediscovered
+          // shortlist entry. Dedup is tenant-scoped and these rows fail closed.
+          if (
+            existing.pool !== "tenant" ||
+            existing.isCurrentEmployee ||
+            existing.doNotContact ||
+            existing.dataErasedAt
+          ) {
+            continue;
+          }
+          candidateId = existing.id;
+          reusedExistingCandidate = true;
+          if (matchScore != null) {
+            await dbAdmin
+              .update(candidatesTable)
+              .set({ talentMatchScore: matchScore, updatedAt: new Date() } as any)
+              .where(eq(candidatesTable.id, existing.id))
+              .catch(() => undefined);
+          }
+        } else {
+          const [inserted] = await dbAdmin
+            .insert(candidatesTable)
+            .values({
+              tenantId,
+              firstName: c.firstName || "Unknown",
+              lastName: c.lastName || "",
+              // email is NOT NULL — placeholder when the source had none.
+              email:
+                realEmail ||
+                `sourced-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@unknown.local`,
+              location: c.location || null,
+              currentTitle: c.currentTitle || null,
+              currentCompany: c.currentCompany || null,
+              linkedinUrl: c.linkedinUrl || null,
+              githubUrl: c.githubProfile || null,
+              skills: c.skills || [],
+              source: c.source || "sourcing_agent",
+              talentMatchScore: matchScore,
+            })
+            .returning({ id: candidatesTable.id })
+            .catch(() => [null as any]);
+          candidateId = inserted?.id ?? null;
+        }
       }
       if (!candidateId) continue;
 
@@ -469,29 +719,26 @@ async function persistShortlist(args: {
       }
 
       // Job-scoped sourced-stage application (dedup on candidate+job). Written
-      // at 'sourced' so no downstream automation fires; origin = ai_sourcing.
+      // at 'sourced' so no downstream automation fires; internal-origin channels
+      // remain distinct from external AI sourcing and are not fee channels.
       try {
-        const [existingApp] = await dbAdmin
-          .select({ id: applicationsTable.id })
-          .from(applicationsTable)
-          .where(
-            and(eq(applicationsTable.candidateId, candidateId), eq(applicationsTable.jobId, jobId)),
-          )
-          .limit(1);
-        if (!existingApp) {
-          await dbAdmin.insert(applicationsTable).values({
-            tenantId,
-            jobId,
-            candidateId,
-            stage: "sourced",
-            matchScore,
-            ...originFields(
-              "ai_sourcing",
-              { source: c.source, jobId, via: "agent_run", runId: run.id, matchScore },
-              "sourcing_agent",
-            ),
-          } as any);
-        }
+        const originChannel = c.isInternalCandidate
+          ? mode === "internal_mobility"
+            ? "internal_mobility"
+            : "known_talent_rediscovery"
+          : reusedExistingCandidate
+            ? "known_talent_rediscovery"
+            : "ai_sourcing";
+        await ensureSourcedApplication({
+          dbc: dbAdmin,
+          tenantId,
+          jobId,
+          candidateId,
+          channel: originChannel,
+          evidence: { source: c.source, jobId, via: "agent_run", runId: run.id, matchScore },
+          setBy: "sourcing_agent",
+          matchScore,
+        });
       } catch {
         /* best-effort: never block the run on app-row creation */
       }

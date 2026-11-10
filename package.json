@@ -2,7 +2,8 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {    
+  "scripts": {
+    "test:session-replicas": "pnpm --filter @workspace/api-server run test:session-replicas",    
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
@@ -10,6 +11,14 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:assisted-baseline": "node scripts/check-assisted-baseline.mjs",
+    "test:offer-browser": "pnpm --filter @workspace/lexy run test:offer-browser",
+    "test:offer-session-access": "pnpm --filter @workspace/api-server exec tsx scripts/check-offer-session-access.ts",
+    "test:mail-hold-session-access": "pnpm --filter @workspace/api-server exec tsx scripts/check-mail-hold-session-access.ts",
+    "test:offer-session-recovery": "pnpm --filter @workspace/api-server exec tsx scripts/check-offer-session-recovery.ts",
+    "test:offer-session-journal": "pnpm --filter @workspace/api-server exec tsx --test scripts/offer-session-journal.test.ts",
+    "test:smoke-target-guard": "node --test artifacts/api-server/scripts/smoke-target-guard.test.mjs",
+    "test:panel-invitation-browser": "pnpm --filter @workspace/lexy run test:panel-invitation-browser",
     "prepare": "husky"
   },
   "private": true,

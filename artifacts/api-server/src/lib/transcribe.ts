@@ -21,6 +21,8 @@
  * garbage; it lives here too since it is part of the transcription pipeline.
  */
 import OpenAI from "openai";
+import { meteredFetch } from "./vendor-usage";
+import { observeWebsocketStt } from "./vendor-usage-websocket";
 import nodeCrypto from "node:crypto";
 import { resolveLangMeta, azureSpeechConfigured } from "./ai";
 import { logger } from "./logger";
@@ -276,6 +278,12 @@ function defaultWhisperTranscribe(env: NodeJS.ProcessEnv) {
       baseURL: env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       timeout: WHISPER_TIMEOUT_MS,
       maxRetries: 1,
+      fetch: meteredFetch(
+        env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct",
+        undefined,
+        undefined,
+        { model: sttModelFor(env), audioBytes: file.size },
+      ),
     });
     const createParams: any = { model: sttModelFor(env), file, response_format: "text", temperature: 0 };
     if (language) createParams.language = language;
@@ -318,7 +326,9 @@ function defaultElevenLabsTranscribe(env: NodeJS.ProcessEnv) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ELEVENLABS_TIMEOUT_MS);
     try {
-      const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      const res = await meteredFetch("elevenlabs", undefined, undefined, {
+        model: ELEVENLABS_STT_MODEL, audioBytes: file.size,
+      })("https://api.elevenlabs.io/v1/speech-to-text", {
         method: "POST",
         headers: { "xi-api-key": env.ELEVENLABS_API_KEY as string },
         body: form,
@@ -371,7 +381,9 @@ function defaultDeepgramTranscribe(env: NodeJS.ProcessEnv) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), DEEPGRAM_TIMEOUT_MS);
     try {
-      const res = await fetch(`https://api.deepgram.com/v1/listen?${params.toString()}`, {
+      const res = await meteredFetch("deepgram", undefined, undefined, {
+        model: DEEPGRAM_STT_MODEL, audioBytes: buf.length,
+      })(`https://api.deepgram.com/v1/listen?${params.toString()}`, {
         method: "POST",
         headers: {
           Authorization: `Token ${env.DEEPGRAM_API_KEY as string}`,
@@ -426,7 +438,9 @@ function defaultSarvamTranscribe(env: NodeJS.ProcessEnv) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), SARVAM_TIMEOUT_MS);
     try {
-      const res = await fetch("https://api.sarvam.ai/speech-to-text", {
+      const res = await meteredFetch("sarvam", undefined, undefined, {
+        model: SARVAM_STT_MODEL, audioBytes: file.size,
+      })("https://api.sarvam.ai/speech-to-text", {
         method: "POST",
         headers: { "api-subscription-key": env.SARVAM_API_KEY as string },
         body: form,
@@ -518,7 +532,7 @@ function defaultIflytekTranscribe(env: NodeJS.ProcessEnv) {
     const pcm = await toPcm16k(buf);
     if (pcm.length < 320) return ""; /* <10ms of audio — nothing to send */
 
-    return await new Promise<string>((resolve, reject) => {
+    return observeWebsocketStt(pcm.length, () => new Promise<string>((resolve, reject) => {
       const ws = new WebSocket(iflytekSignedUrl(env));
       const pieces: string[] = [];
       let settled = false;
@@ -578,7 +592,7 @@ function defaultIflytekTranscribe(env: NodeJS.ProcessEnv) {
           finish(e as Error);
         }
       };
-    });
+    }));
   };
 }
 
@@ -592,7 +606,9 @@ export async function transcribeAudio(
 ): Promise<TranscribeResult> {
   const env = deps.env ?? process.env;
   const azureConfigured = deps.azureConfigured ?? azureSpeechConfigured;
-  const azureFetch = deps.azureFetch ?? (fetch as unknown as TranscribeDeps["azureFetch"]);
+  const azureFetch =
+    deps.azureFetch ??
+    (meteredFetch("azure_stt") as unknown as TranscribeDeps["azureFetch"]);
   const whisperTranscribe = deps.whisperTranscribe ?? defaultWhisperTranscribe(env);
   const deepgramTranscribe = deps.deepgramTranscribe ?? defaultDeepgramTranscribe(env);
   const elevenLabsTranscribe = deps.elevenLabsTranscribe ?? defaultElevenLabsTranscribe(env);

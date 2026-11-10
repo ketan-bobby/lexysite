@@ -3,7 +3,7 @@ import { apiFetch, apiBase } from "@/lib/api";
 import {
   LearningGrowthResponse,
   LearningGrowthInterestsInput,
-  LearningGrowthGoalsInput
+  LearningGrowthGoalsInput,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -26,7 +26,7 @@ export function useGetLearningGrowth() {
         throw new Error("Failed to load learning growth plan");
       }
       return res.json();
-    }
+    },
   });
 }
 
@@ -40,10 +40,11 @@ export function useSaveLearningGrowthInterests() {
       const res = await apiFetch(`${apiBase}/portal/learning-growth/interests`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
-        if (res.status === 409) throw new Error("A newer version of your profile exists. Please refresh and try again.");
+        if (res.status === 409)
+          throw new Error("A newer version of your profile exists. Please refresh and try again.");
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to save interests");
       }
@@ -51,7 +52,7 @@ export function useSaveLearningGrowthInterests() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(getGetLearningGrowthQueryKey(userId), data);
-    }
+    },
   });
 }
 
@@ -65,10 +66,11 @@ export function useConfirmLearningGrowthGoals() {
       const res = await apiFetch(`${apiBase}/portal/learning-growth/goals`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
-        if (res.status === 409) throw new Error("A newer version of your profile exists. Please refresh and try again.");
+        if (res.status === 409)
+          throw new Error("A newer version of your profile exists. Please refresh and try again.");
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to confirm goals");
       }
@@ -76,10 +78,10 @@ export function useConfirmLearningGrowthGoals() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(getGetLearningGrowthQueryKey(userId), data);
-      
+
       // Invalidate relevant career profile keys
       queryClient.invalidateQueries({ queryKey: ["career-profile"] });
       queryClient.invalidateQueries({ queryKey: ["portal", "career-profile"] });
-    }
+    },
   });
 }

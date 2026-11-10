@@ -1,0 +1,878 @@
+{
+  "captured_at": "2026-10-05 15:56:42.522894+00",
+  "evidence_scope": "workspace/development, not production or invoices",
+  "validated_costs": false,
+  "units": {
+    "Low": {
+      "discovery": 0.1,
+      "profile_text": 0.0225,
+      "embedding": 0.001,
+      "profile": 0.1235,
+      "speech": 0.5,
+      "conversation": 0.1,
+      "assessment": 0.0225,
+      "interview": 0.6224999999999999,
+      "task": 0.005,
+      "email": 0.001,
+      "video": 0.5
+    },
+    "Base": {
+      "discovery": 0.5,
+      "profile_text": 0.077625,
+      "embedding": 0.005,
+      "profile": 0.5826250000000001,
+      "speech": 2.475,
+      "conversation": 0.40249999999999997,
+      "assessment": 0.077625,
+      "interview": 2.955125,
+      "task": 0.0115,
+      "email": 0.003,
+      "video": 2
+    },
+    "High": {
+      "discovery": 1.25,
+      "profile_text": 0.22125,
+      "embedding": 0.02,
+      "profile": 1.49125,
+      "speech": 12.15,
+      "conversation": 1.7999999999999998,
+      "assessment": 0.5549999999999999,
+      "interview": 14.504999999999999,
+      "task": 0.04125,
+      "email": 0.01,
+      "video": 5
+    }
+  },
+  "cases": [
+    {
+      "workload": "Starter proposed-use",
+      "scenario": "Low",
+      "cost": 42.9,
+      "margin": 0.8565217391304348,
+      "quote_floor_75": 171.6
+    },
+    {
+      "workload": "Starter proposed-use",
+      "scenario": "Base",
+      "cost": 178.805,
+      "margin": 0.40198996655518393,
+      "quote_floor_75": 732.5625
+    },
+    {
+      "workload": "Starter proposed-use",
+      "scenario": "High",
+      "cost": 628.3199999999999,
+      "margin": -1.1014046822742474,
+      "quote_floor_75": 2815.2272727272725
+    },
+    {
+      "workload": "Growth proposed-use",
+      "scenario": "Low",
+      "cost": 169.5,
+      "margin": 0.7878598247809763,
+      "quote_floor_75": 678.0
+    },
+    {
+      "workload": "Growth proposed-use",
+      "scenario": "Base",
+      "cost": 762.065,
+      "margin": 0.04622653316645801,
+      "quote_floor_75": 3141.979166666667
+    },
+    {
+      "workload": "Growth proposed-use",
+      "scenario": "High",
+      "cost": 2740.72,
+      "margin": -2.430187734668335,
+      "quote_floor_75": 12348.863636363636
+    },
+    {
+      "workload": "Starter independent-bucket stress",
+      "scenario": "Low",
+      "cost": 105.1,
+      "margin": 0.648494983277592,
+      "quote_floor_75": 420.4
+    },
+    {
+      "workload": "Starter independent-bucket stress",
+      "scenario": "Base",
+      "cost": 456.765,
+      "margin": -0.5276421404682273,
+      "quote_floor_75": 1890.7291666666667
+    },
+    {
+      "workload": "Starter independent-bucket stress",
+      "scenario": "High",
+      "cost": 1904.845,
+      "margin": -5.370719063545151,
+      "quote_floor_75": 8617.613636363636
+    },
+    {
+      "workload": "Growth independent-bucket stress",
+      "scenario": "Low",
+      "cost": 480.49999999999994,
+      "margin": 0.3986232790988737,
+      "quote_floor_75": 1921.9999999999998
+    },
+    {
+      "workload": "Growth independent-bucket stress",
+      "scenario": "Base",
+      "cost": 2151.865,
+      "margin": -1.6931977471839796,
+      "quote_floor_75": 8932.8125
+    },
+    {
+      "workload": "Growth independent-bucket stress",
+      "scenario": "High",
+      "cost": 9123.345,
+      "margin": -10.418454317897371,
+      "quote_floor_75": 41360.795454545456
+    },
+    {
+      "workload": "Enterprise example workload",
+      "scenario": "Low",
+      "cost": 563.0,
+      "margin": null,
+      "quote_floor_75": 2252.0
+    },
+    {
+      "workload": "Enterprise example workload",
+      "scenario": "Base",
+      "cost": 1926.65,
+      "margin": null,
+      "quote_floor_75": 8027.708333333334
+    },
+    {
+      "workload": "Enterprise example workload",
+      "scenario": "High",
+      "cost": 6324.75,
+      "margin": null,
+      "quote_floor_75": 28748.863636363636
+    }
+  ],
+  "tradeoffs": [
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": 71.60000000000002,
+      "profiles": 579
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 5,
+      "headroom": 68.48750000000001,
+      "profiles": 554
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": 65.37500000000001,
+      "profiles": 529
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 20,
+      "headroom": 59.15000000000002,
+      "profiles": 478
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": 9.350000000000023,
+      "profiles": 75
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": 56.65,
+      "profiles": 458
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 5,
+      "headroom": 53.537499999999994,
+      "profiles": 433
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": 50.425,
+      "profiles": 408
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 20,
+      "headroom": 44.2,
+      "profiles": 357
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": -5.599999999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": 41.69999999999999,
+      "profiles": 337
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 5,
+      "headroom": 38.58749999999999,
+      "profiles": 312
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": 35.47499999999999,
+      "profiles": 287
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 20,
+      "headroom": 29.24999999999999,
+      "profiles": 236
+    },
+    {
+      "tier": "starter",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": -20.550000000000004,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": 28.26000000000002,
+      "profiles": 48
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 5,
+      "headroom": 13.484375000000028,
+      "profiles": 23
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": -1.2912499999999767,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 20,
+      "headroom": -30.842499999999973,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": -267.25249999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": 13.310000000000002,
+      "profiles": 22
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 5,
+      "headroom": -1.4656249999999886,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": -16.241249999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 20,
+      "headroom": -45.79249999999999,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": -282.2025,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": -1.6400000000000077,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 5,
+      "headroom": -16.415625,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": -31.191250000000004,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 20,
+      "headroom": -60.7425,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": -297.1525,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": -99.39499999999998,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 5,
+      "headroom": -171.92,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": -244.44499999999996,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 20,
+      "headroom": -389.4949999999999,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": -1549.895,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": -114.345,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 5,
+      "headroom": -186.87,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": -259.395,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 20,
+      "headroom": -404.44499999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": -1564.845,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": -129.29500000000002,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 5,
+      "headroom": -201.82000000000002,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": -274.34499999999997,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 20,
+      "headroom": -419.3949999999999,
+      "profiles": 0
+    },
+    {
+      "tier": "starter",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": -1579.795,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": 194.20000000000005,
+      "profiles": 1572
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": 187.97500000000005,
+      "profiles": 1522
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 25,
+      "headroom": 178.63750000000005,
+      "profiles": 1446
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": 131.95000000000005,
+      "profiles": 1068
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.7,
+      "interviews": 500,
+      "headroom": -117.0499999999999,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": 154.25,
+      "profiles": 1248
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": 148.025,
+      "profiles": 1198
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 25,
+      "headroom": 138.6875,
+      "profiles": 1122
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": 92.0,
+      "profiles": 744
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.75,
+      "interviews": 500,
+      "headroom": -156.99999999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": 114.29999999999995,
+      "profiles": 925
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": 108.07499999999996,
+      "profiles": 875
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 25,
+      "headroom": 98.73749999999995,
+      "profiles": 799
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": 52.049999999999955,
+      "profiles": 421
+    },
+    {
+      "tier": "growth",
+      "scenario": "Low",
+      "target": 0.8,
+      "interviews": 500,
+      "headroom": -196.95,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": 64.46000000000004,
+      "profiles": 110
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": 34.908750000000055,
+      "profiles": 59
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 25,
+      "headroom": -9.418124999999975,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": -231.05249999999995,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.7,
+      "interviews": 500,
+      "headroom": -1413.1025,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": 24.50999999999999,
+      "profiles": 42
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": -5.041249999999991,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 25,
+      "headroom": -49.36812500000002,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": -271.0025,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.75,
+      "interviews": 500,
+      "headroom": -1453.0525,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": -15.440000000000055,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": -44.991250000000036,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 25,
+      "headroom": -89.31812500000007,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": -310.95250000000004,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "Base",
+      "target": 0.8,
+      "interviews": 500,
+      "headroom": -1493.0025,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 0,
+      "headroom": -304.895,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 10,
+      "headroom": -449.94499999999994,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 25,
+      "headroom": -667.52,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 100,
+      "headroom": -1755.395,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.7,
+      "interviews": 500,
+      "headroom": -7557.3949999999995,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 0,
+      "headroom": -344.845,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 10,
+      "headroom": -489.895,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 25,
+      "headroom": -707.47,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 100,
+      "headroom": -1795.345,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.75,
+      "interviews": 500,
+      "headroom": -7597.344999999999,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 0,
+      "headroom": -384.7950000000001,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 10,
+      "headroom": -529.845,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 25,
+      "headroom": -747.4200000000001,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 100,
+      "headroom": -1835.295,
+      "profiles": 0
+    },
+    {
+      "tier": "growth",
+      "scenario": "High",
+      "target": 0.8,
+      "interviews": 500,
+      "headroom": -7637.294999999999,
+      "profiles": 0
+    }
+  ],
+  "formula_count": 2003,
+  "catalog_rows": 303,
+  "unknown_fx": true
+}

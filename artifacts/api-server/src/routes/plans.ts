@@ -38,6 +38,7 @@ import { logger } from "../lib/logger";
 import { z } from "zod";
 import { validate } from "../middlewares/validate";
 import { rateLimit } from "../middlewares/rateLimit";
+import { activePilot } from "../lib/pilot-codes";
 
 const StartTrialBody = z.object({
   name: z.string().min(1),
@@ -134,7 +135,7 @@ router.get("/plans/me/usage", resolveUser, async (req, res) => {
     checkSubClientCreationAllowed(tenant.id),
   ]);
 
-  const plan = getPlan(tenant.plan);
+  const plan = jobsCheck.plan;
   // expiresAt MUST be anchored to planActivatedAt so the UI matches the gating
   // logic in lib/plan-enforcement.ts. Falling back to createdAt for legacy rows
   // that pre-date the planActivatedAt column.
@@ -188,7 +189,7 @@ router.get("/plans/admin/tenants", resolveUser, async (req, res) => {
       checkJobCreationAllowed(t.id),
       checkInterviewCreationAllowed(t.id),
     ]);
-    const plan = getPlan(t.plan);
+    const plan = jobsCheck.plan;
     return {
       tenant: {
         id: t.id, name: t.name, slug: t.slug, plan: t.plan, status: t.status,
@@ -227,6 +228,9 @@ router.get("/plans/admin/tenants", resolveUser, async (req, res) => {
  * older path, we 409 when the tenant has a non-null paid_through_at.
  * Clear it via the billing PATCH first (or perform the change there). */
 router.patch("/plans/admin/tenants/:tenantId/plan", validate({ body: AdminSetPlanBody }), resolveUser, async (req, res) => {
+  if (req.resolvedUser?.role === "platform_admin" && await activePilot(req.params.tenantId as string)) {
+    res.status(409).json({error:"End the complimentary pilot before changing this account's plan."}); return;
+  }
   const user = req.resolvedUser!;
   if (user.role !== "platform_admin") { res.status(403).json({ error: "Forbidden — platform_admin only" }); return; }
   const { planCode } = req.body ?? {};

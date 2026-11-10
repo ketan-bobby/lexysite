@@ -14,6 +14,7 @@
  */
 import { ConfidentialClientApplication, CryptoProvider, LogLevel } from "@azure/msal-node";
 import { logger } from "./logger.js";
+import { CALENDAR_SCOPE, hasCalendarScope, hasGraphScope } from "./outlook-calendar-core";
 import { encryptSecret, decryptSecret } from "./crypto-secrets.js";
 import {
   getMailAccount,
@@ -66,11 +67,12 @@ export async function buildConsentUrl(opts: {
   state: string;
   challenge: string;
   loginHint?: string;
+  calendar?: boolean;
 }): Promise<string | null> {
   const pca = newClient();
   if (!pca) return null;
   return pca.getAuthCodeUrl({
-    scopes: GRAPH_SCOPES,
+    scopes: opts.calendar ? [...GRAPH_SCOPES, CALENDAR_SCOPE] : GRAPH_SCOPES,
     redirectUri: opts.redirectUri,
     responseMode: "query",
     codeChallenge: opts.challenge,
@@ -95,12 +97,17 @@ function extractRefreshToken(
     const rts = cache.RefreshToken || {};
     const keys = Object.keys(rts);
     if (keys.length === 0) return null;
-    let key = keys[0];
+    let key: string | undefined;
     if (homeAccountId) {
-      const match = keys.find((k) => k.toLowerCase().startsWith(homeAccountId.toLowerCase()));
-      if (match) key = match;
-    }
-    return rts[key]?.secret ?? null;
+      const home = homeAccountId.toLowerCase();
+      key = keys.find((k) =>
+        rts[k]?.home_account_id
+          ? String(rts[k].home_account_id).toLowerCase() === home
+          : k.toLowerCase().startsWith(`${home}-`),
+      );
+    } else if (keys.length === 1) key = keys[0];
+    const secret = key ? rts[key]?.secret : null;
+    return typeof secret === "string" && secret.length ? secret : null;
   } catch {
     return null;
   }
@@ -113,13 +120,14 @@ export async function redeemCodeAndStore(opts: {
   code: string;
   verifier: string;
   redirectUri: string;
+  calendar?: boolean;
 }): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
   const pca = newClient();
   if (!pca) return { ok: false, error: "not_configured" };
   try {
     const res = await pca.acquireTokenByCode({
       code: opts.code,
-      scopes: GRAPH_SCOPES,
+      scopes: opts.calendar ? [...GRAPH_SCOPES, CALENDAR_SCOPE] : GRAPH_SCOPES,
       redirectUri: opts.redirectUri,
       codeVerifier: opts.verifier,
     });
@@ -128,9 +136,22 @@ export async function redeemCodeAndStore(opts: {
     const claims = (account?.idTokenClaims ?? {}) as Record<string, any>;
     const email = String(
       account?.username || claims.email || claims.preferred_username || "",
-    ).toLowerCase();
+    ).trim().toLowerCase();
+    if (!email || !homeAccountId) return { ok: false, error: "account_identity_missing" };
     const refreshToken = extractRefreshToken(pca, homeAccountId);
     if (!refreshToken) return { ok: false, error: "no_refresh_token" };
+    if (opts.calendar) {
+      if (!hasCalendarScope(res.scopes.join(" "))) return { ok: false, error: "calendar_consent_required" };
+      if (!["Mail.Send", "Mail.Read"].every((scope) => hasGraphScope(res.scopes.join(" "), scope))) {
+        return { ok: false, error: "mail_consent_required" };
+      }
+      const current = await getMailAccount(opts.userId);
+      if (current && (current.homeAccountId
+        ? current.homeAccountId.toLowerCase() !== homeAccountId.toLowerCase()
+        : current.email.trim().toLowerCase() !== email)) {
+        return { ok: false, error: "calendar_account_mismatch" };
+      }
+    }
     await upsertMailAccountTokens({
       userId: opts.userId,
       tenantId: opts.tenantId,
@@ -138,12 +159,12 @@ export async function redeemCodeAndStore(opts: {
       email,
       homeAccountId,
       refreshTokenEnc: encryptSecret(refreshToken),
-      scopes: GRAPH_SCOPES.join(" "),
+      scopes: res.scopes.join(" "),
     });
     logger.info({ userId: opts.userId }, "[graph] mailbox connected");
     return { ok: true, email };
   } catch (err: any) {
-    logger.error({ err: err?.message }, "[graph] code redemption failed");
+    logger.error({ reason: safeFailureReason(err) }, "[graph] code redemption failed");
     return { ok: false, error: "token_exchange_failed" };
   }
 }
@@ -151,9 +172,11 @@ export async function redeemCodeAndStore(opts: {
 /**
  * Get a fresh Graph access token for a recruiter from their stored refresh token,
  * rotating the stored token if Microsoft issued a new one. Returns null (and
- * marks the mailbox unhealthy) on any failure so callers fall back to SES.
+ * marks the mailbox unhealthy) on mail failure so mail callers fall back to SES.
+ * Calendar-only failures never change mailbox health.
  */
-export async function getAccessTokenForUser(userId: string): Promise<string | null> {
+export async function getAccessTokenForUser(userId: string, scopes = ["Mail.Send", "Mail.Read"]): Promise<string | null> {
+  const calendarOnly = scopes.includes(CALENDAR_SCOPE);
   const acct = await getMailAccount(userId);
   if (!acct || acct.status === "revoked" || !acct.refreshTokenEnc) return null;
   const pca = newClient();
@@ -163,17 +186,17 @@ export async function getAccessTokenForUser(userId: string): Promise<string | nu
   try {
     refreshToken = decryptSecret(acct.refreshTokenEnc);
   } catch {
-    await markMailAccountError(userId, "decrypt_failed");
+    if (!calendarOnly) await markMailAccountError(userId, "decrypt_failed");
     return null;
   }
 
   try {
     const res = await pca.acquireTokenByRefreshToken({
       refreshToken,
-      scopes: ["Mail.Send", "Mail.Read"],
+      scopes,
     });
     if (!res?.accessToken) {
-      await markMailAccountError(userId, "no_access_token");
+      if (!calendarOnly) await markMailAccountError(userId, "no_access_token");
       return null;
     }
     const rotated = extractRefreshToken(pca, acct.homeAccountId);
@@ -192,8 +215,22 @@ export async function getAccessTokenForUser(userId: string): Promise<string | nu
   } catch (err: any) {
     const msg = String(err?.errorCode || err?.subError || err?.message || "");
     const revoked = /invalid_grant|interaction_required|expired|revoked|consent/i.test(msg);
-    await markMailAccountError(userId, msg || "refresh_failed", revoked);
-    logger.warn({ userId, msg }, "[graph] token refresh failed");
+    const reason = safeFailureReason(err);
+    if (!calendarOnly) await markMailAccountError(userId, reason, revoked);
+    logger.warn({ userId, reason }, "[graph] token refresh failed");
     return null;
   }
+}
+
+/** Provider exception messages can contain private request data. Persist codes only. */
+function safeFailureReason(error: { errorCode?: string; subError?: string } | null): string {
+  const allowed = new Set([
+    "invalid_grant", "interaction_required", "consent_required", "login_required",
+    "invalid_client", "invalid_scope", "temporarily_unavailable", "no_tokens_found",
+    "refresh_token_expired", "client_mismatch",
+  ]);
+  for (const code of [error?.errorCode, error?.subError]) {
+    if (typeof code === "string" && allowed.has(code.toLowerCase())) return code.toLowerCase();
+  }
+  return "token_request_failed";
 }

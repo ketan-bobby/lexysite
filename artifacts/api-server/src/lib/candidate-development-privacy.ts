@@ -18,9 +18,7 @@ export type DevelopmentalCaller = {
 /** All candidate records owned by this actual candidate user, never by email
  * or tenant. A user may legitimately be linked to more than one candidate row.
  */
-export async function ownedCandidateDevelopmentIds(
-  caller: DevelopmentalCaller,
-): Promise<string[]> {
+export async function ownedCandidateDevelopmentIds(caller: DevelopmentalCaller): Promise<string[]> {
   if (caller.role !== "candidate") return [];
   const rows = await db
     .select({ id: candidatesTable.id })
@@ -38,10 +36,7 @@ export async function callerOwnsCandidateDevelopmentData(
   const [row] = await db
     .select({ id: candidatesTable.id })
     .from(candidatesTable)
-    .where(and(
-      eq(candidatesTable.id, candidateId),
-      eq(candidatesTable.userId, caller.id),
-    ))
+    .where(and(eq(candidatesTable.id, candidateId), eq(candidatesTable.userId, caller.id)))
     .limit(1);
   /* Keep the predicate user-FK based. Do not substitute a caller-supplied
    * tenant or an email match: either permits an administrator/peer shadowing

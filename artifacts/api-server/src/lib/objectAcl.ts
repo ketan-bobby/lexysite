@@ -9,8 +9,8 @@
  *
  * ─── How it works ────────────────────────────────────────────────────────────
  * When an object is uploaded, callers optionally set an ObjectAclPolicy via
- * setObjectAclPolicy(). The policy is serialised to JSON and stored as the
- * S3 tag "acl-policy" on the object.
+ * setObjectAclPolicy(). JSON is versioned and base64url-encoded in "acl-policy"
+ * because raw JSON is not a valid S3 tag value. Legacy JSON remains readable.
  *
  * canAccessObject() reads the tag and enforces:
  *   • public visibility + READ request → always allowed (no auth required)
@@ -27,10 +27,7 @@
  *                       trySetObjectEntityAclPolicy() writes it after upload.
  *   routes/storage.ts — passes the policy to canAccessObjectEntity() before serving.
  */
-import {
-  PutObjectTaggingCommand,
-  GetObjectTaggingCommand,
-} from "@aws-sdk/client-s3";
+import { PutObjectTaggingCommand, GetObjectTaggingCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "./s3";
 import type { S3ObjectRef } from "./objectStorage";
 
@@ -48,32 +45,58 @@ export enum ObjectPermission {
 export interface ObjectAclPolicy {
   owner: string;
   visibility: "public" | "private";
+  /** Server-written résumé binding; never inferred from a user-supplied pointer. */
+  resumeCandidateId?: string;
+  resumeUploadTenantId?: string;
+}
+
+/** S3 tags reject raw JSON punctuation and cap each value at 256 characters.
+ * Keep bindings separate so long synthetic/legacy IDs do not overflow one tag. */
+export function objectAclPolicyTags(aclPolicy: ObjectAclPolicy): { Key: string; Value: string }[] {
+  const { resumeUploadTenantId, resumeCandidateId, ...policy } = aclPolicy;
+  return [
+    { Key: ACL_TAG_KEY, Value: `v1:${Buffer.from(JSON.stringify(policy)).toString("base64url")}` },
+    ...(resumeCandidateId ? [{ Key: "resume-candidate", Value: resumeCandidateId }] : []),
+    ...(resumeUploadTenantId ? [{ Key: "resume-upload-tenant", Value: resumeUploadTenantId }] : []),
+  ];
 }
 
 export async function setObjectAclPolicy(
   obj: S3ObjectRef,
   aclPolicy: ObjectAclPolicy,
 ): Promise<void> {
-  await s3Client.send(new PutObjectTaggingCommand({
-    Bucket: obj.bucket,
-    Key: obj.key,
-    Tagging: {
-      TagSet: [{ Key: ACL_TAG_KEY, Value: JSON.stringify(aclPolicy) }],
-    },
-  }));
-}
-
-export async function getObjectAclPolicy(
-  obj: S3ObjectRef,
-): Promise<ObjectAclPolicy | null> {
-  try {
-    const result = await s3Client.send(new GetObjectTaggingCommand({
+  await s3Client.send(
+    new PutObjectTaggingCommand({
       Bucket: obj.bucket,
       Key: obj.key,
-    }));
+      Tagging: {
+        TagSet: objectAclPolicyTags(aclPolicy),
+      },
+    }),
+  );
+}
+
+export async function getObjectAclPolicy(obj: S3ObjectRef): Promise<ObjectAclPolicy | null> {
+  try {
+    const result = await s3Client.send(
+      new GetObjectTaggingCommand({
+        Bucket: obj.bucket,
+        Key: obj.key,
+      }),
+    );
     const tag = (result.TagSet ?? []).find((t) => t.Key === ACL_TAG_KEY);
     if (!tag?.Value) return null;
-    return JSON.parse(tag.Value) as ObjectAclPolicy;
+    const value = tag.Value.startsWith("v1:")
+      ? Buffer.from(tag.Value.slice(3), "base64url").toString("utf8")
+      : tag.Value;
+    const policy = JSON.parse(value) as ObjectAclPolicy;
+    const tenant = (result.TagSet ?? []).find((t) => t.Key === "resume-upload-tenant")?.Value;
+    const candidate = (result.TagSet ?? []).find((t) => t.Key === "resume-candidate")?.Value;
+    return {
+      ...policy,
+      ...(tenant ? { resumeUploadTenantId: tenant } : {}),
+      ...(candidate ? { resumeCandidateId: candidate } : {}),
+    };
   } catch {
     return null;
   }
@@ -91,10 +114,7 @@ export async function canAccessObject({
   const aclPolicy = await getObjectAclPolicy(objectFile);
   if (!aclPolicy) return false;
 
-  if (
-    aclPolicy.visibility === "public" &&
-    requestedPermission === ObjectPermission.READ
-  ) {
+  if (aclPolicy.visibility === "public" && requestedPermission === ObjectPermission.READ) {
     return true;
   }
 

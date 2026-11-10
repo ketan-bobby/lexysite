@@ -1,0 +1,42 @@
+{
+  "messageId": "f5850bb4-a1bb-4445-a9bf-ea5f8b42fff4",
+  "status": "sent",
+  "sentAt": "2026-10-09T15:29:10.872Z",
+  "providerAccepted": true,
+  "inboxReceiptConfirmed": false,
+  "replyRecorded": false,
+  "interviewSessionsCreated": 0,
+  "executionPermissionRevoked": true,
+  "providerUsage": [
+    {
+      "provider": "openai_proxy",
+      "model": "gpt-4o",
+      "status": "succeeded",
+      "costStatus": "unknown",
+      "units": {
+        "audio_bytes": null,
+        "input_tokens": 800,
+        "audio_seconds": null,
+        "output_tokens": 313,
+        "input_characters": null,
+        "reasoning_tokens": 0,
+        "cached_input_tokens": 0,
+        "provider_request_id": "b6a762c6-7b66-4e19-92f7-ddba4d2a1f44",
+        "observed_api_requests": 1
+      }
+    },
+    {
+      "provider": "aws_ses",
+      "model": null,
+      "status": "succeeded",
+      "costStatus": "unknown",
+      "units": {
+        "audio_bytes": null,
+        "input_characters": null,
+        "observed_api_requests": 1,
+        "observed_email_recipients": 1
+      }
+    }
+  ],
+  "next": "Owner must receive and click Interested; no reply has been simulated."
+}

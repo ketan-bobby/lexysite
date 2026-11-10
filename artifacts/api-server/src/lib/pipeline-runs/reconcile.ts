@@ -39,7 +39,9 @@ export const STALE_PIPELINE_RUN_MINUTES = 15;
  * Flip orphaned (running/queued, older than the threshold) pipeline runs to the
  * terminal `interrupted` status. Returns the number of rows reconciled.
  */
-export async function reconcileStalePipelineRuns(): Promise<number> {
+export async function reconcileStalePipelineRuns(
+  options: { strict?: boolean } = {},
+): Promise<number> {
   try {
     const cutoff = new Date(Date.now() - STALE_PIPELINE_RUN_MINUTES * 60_000);
     const reconciled = await dbAdmin
@@ -73,6 +75,7 @@ export async function reconcileStalePipelineRuns(): Promise<number> {
     return reconciled.length;
   } catch (err) {
     logger.error({ err }, "[pipeline-runs] reconcileStalePipelineRuns failed");
+    if (options.strict) throw err;
     return 0;
   }
 }

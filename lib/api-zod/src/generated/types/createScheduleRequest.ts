@@ -5,12 +5,24 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateScheduleRequestType } from "./createScheduleRequestType";
 
 export interface CreateScheduleRequest {
+  /** Stable UUID for one opened draft. Reuse on retries; changed saved details return 409. Omit only for legacy clients without retry protection. */
+  requestId?: string;
   applicationId: string;
-  interviewerId?: string;
-  scheduledAt: string;
+  interviewerId?: string | null;
+  /** @maxLength 200 */
+  interviewerName?: string | null;
+  /** @maxLength 2000 */
+  location?: string | null;
+  scheduledAt: Date;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
   durationMinutes: number;
-  type: string;
-  notes?: string;
+  type: CreateScheduleRequestType;
+  /** @maxLength 10000 */
+  notes?: string | null;
 }

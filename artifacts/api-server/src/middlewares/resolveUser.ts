@@ -52,7 +52,7 @@ declare global {
   }
 }
 
-export async function resolveUser(req: Request, res: Response, next: NextFunction) {
+export async function resolveUser<Params>(req: Request<Params>, res: Response, next: NextFunction) {
   /* Header first; httpOnly session cookie as fallback (Phase 1 of the
    * cookie-auth migration — see lib/auth-token.ts tokenFromRequest). */
   const authHeader = tokenFromRequest(req);
@@ -76,8 +76,14 @@ export async function resolveUser(req: Request, res: Response, next: NextFunctio
    * 500. The users table is identity data, not tenant-scoped, so RLS is not
    * relevant here — matching what withTenantContext does for its own lookup. */
   const [u] = await controlDb.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  if (!u) {
+  if (!u || u.accountErasedAt) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  // Suspension invalidates access immediately, including previously issued
+  // tokens. A valid signature identifies a user; it does not authorize them.
+  if (u.status === "suspended") {
+    res.status(403).json({ error: "This account is suspended. Contact your administrator." });
     return;
   }
 
@@ -106,7 +112,7 @@ export async function resolveUser(req: Request, res: Response, next: NextFunctio
 }
 
 export function requireRole(...roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return <Params>(req: Request<Params>, res: Response, next: NextFunction) => {
     const user = req.resolvedUser;
     if (!user) {
       res.status(401).json({ error: "Unauthorized" });

@@ -28,6 +28,7 @@
  * no candidate rows cross tenants through this layer.
  */
 import OpenAI from "openai";
+import { meteredFetch } from "./vendor-usage";
 import { logger } from "./logger";
 import {
   getHiringVelocity,
@@ -367,6 +368,7 @@ function defaultChat(): ChatFn {
     defaultClient = new OpenAI({
       apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY,
       baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      fetch: meteredFetch(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct"),
     });
   }
   const client = defaultClient;

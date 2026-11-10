@@ -35,16 +35,18 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   dbAdmin,
   tenantsTable,
   usersTable,
   jobsTable,
   candidatesTable,
+  applicationsTable,
   jobPipelinesTable,
 } from "@workspace/db";
 import { issueToken } from "../lib/auth-token";
+import { isFeeEligible } from "../lib/fee-ledger";
 import sourcingRouter from "./sourcing";
 
 const P = "isfs_";
@@ -53,6 +55,7 @@ const id = (s: string) => P + s;
 // The company doing the internal search.
 const COMPANY = id("company");
 const TENANT_IDS = [COMPANY];
+const JOB_ID = id("job");
 
 let server: Server;
 let baseUrl: string;
@@ -71,6 +74,7 @@ async function api(method: string, path: string, token: string, body?: unknown) 
 }
 
 async function cleanup() {
+  await dbAdmin.delete(applicationsTable).where(inArray(applicationsTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(jobPipelinesTable).where(inArray(jobPipelinesTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(candidatesTable).where(inArray(candidatesTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(jobsTable).where(inArray(jobsTable.tenantId, TENANT_IDS));
@@ -88,7 +92,7 @@ async function seed() {
   ]);
   // Approved job, NO ICP, NO location → deterministic title/skill fallback, no AI.
   await dbAdmin.insert(jobsTable).values([
-    { id: id("job"), tenantId: COMPANY, title: "Senior Backend Engineer", description: "d", status: "active" },
+    { id: JOB_ID, tenantId: COMPANY, title: "Senior Backend Engineer", description: "d", status: "active" },
   ]);
   await dbAdmin.insert(candidatesTable).values([
     // (1) POSITIVE CONTROL — a legitimately tenant-owned candidate (saved/employee).
@@ -112,6 +116,24 @@ async function seed() {
       id: id("pendingCollide"), tenantId: COMPANY, pool: "pending_profile", source: "career_site",
       firstName: "Pending", lastName: "JobSeeker", email: id("pendingCollide") + "@t.test",
       currentTitle: "Senior Backend Engineer", skills: ["node", "postgres"],
+    },
+    {
+      id: id("currentEmployee"), tenantId: COMPANY, pool: "tenant", source: "hris_sync",
+      isCurrentEmployee: true, firstName: "Current", lastName: "Employee",
+      email: id("currentEmployee") + "@t.test", currentTitle: "Senior Backend Engineer",
+      skills: ["node", "postgres"],
+    },
+    {
+      id: id("dncEmployee"), tenantId: COMPANY, pool: "tenant", source: "hris_sync",
+      isCurrentEmployee: true, doNotContact: true, firstName: "DNC", lastName: "Employee",
+      email: id("dncEmployee") + "@t.test", currentTitle: "Senior Backend Engineer",
+      skills: ["node", "postgres"],
+    },
+    {
+      id: id("erasedEmployee"), tenantId: COMPANY, pool: "tenant", source: "hris_sync",
+      isCurrentEmployee: true, dataErasedAt: new Date(), firstName: "Erased", lastName: "Employee",
+      email: id("erasedEmployee") + "@t.test", currentTitle: "Senior Backend Engineer",
+      skills: ["node", "postgres"],
     },
   ]);
 }
@@ -155,4 +177,89 @@ test("FIREWALL: a personal platform profile whose tenantId COLLIDES with the com
     !candidateIds.has(id("pendingCollide")),
     "LEAK: a pool='pending_profile' self-register profile with a colliding tenantId surfaced in the employer's internal search",
   );
+});
+
+test("unchecked jobs rediscover known non-employees but never current employees", async () => {
+  const { status, json } = await api("POST", "/sourcing/internal", admin(), { jobId: JOB_ID });
+  assert.equal(status, 200, JSON.stringify(json));
+  const candidateIds = new Set<string>((json.candidates ?? []).map((c: any) => c.candidateId));
+  assert.ok(candidateIds.has(id("owned")), "known tenant candidate remains discoverable");
+  assert.ok(!candidateIds.has(id("currentEmployee")), "current employee is not in known-talent mode");
+  assert.ok(!candidateIds.has(id("dncEmployee")), "DNC employee is excluded");
+  assert.ok(!candidateIds.has(id("erasedEmployee")), "erased employee is excluded");
+});
+
+test("stored Internal Mobility setting wins over a client flag and returns only safe same-tenant employees", async () => {
+  await dbAdmin
+    .update(jobsTable)
+    .set({ internalMobility: true } as any)
+    .where(eq(jobsTable.id, JOB_ID));
+  const { status, json } = await api("POST", "/sourcing/internal", admin(), {
+    jobId: JOB_ID,
+    internalMobility: false,
+  });
+  assert.equal(status, 200, JSON.stringify(json));
+  const candidateIds = new Set<string>((json.candidates ?? []).map((c: any) => c.candidateId));
+  assert.deepEqual([...candidateIds], [id("currentEmployee")]);
+  assert.equal(json.internalMobility, true);
+  assert.equal(json.sourceSummary?.externalEnabled, false);
+});
+
+test("/sourcing/search links Internal Mobility selections to this job", async () => {
+  await dbAdmin
+    .update(jobsTable)
+    .set({ internalMobility: true } as any)
+    .where(eq(jobsTable.id, JOB_ID));
+  const { status, json } = await api("POST", "/sourcing/search", admin(), {
+    jobId: JOB_ID,
+    internalMobility: false,
+  });
+  assert.equal(status, 200, JSON.stringify(json));
+  assert.equal(json.internalMobility, true);
+  assert.ok(
+    (json.candidates ?? []).some((candidate: any) => candidate.candidateId === id("currentEmployee")),
+    JSON.stringify(json),
+  );
+  const secondRun = await api("POST", "/sourcing/search", admin(), {
+    jobId: JOB_ID,
+    internalMobility: false,
+  });
+  assert.equal(secondRun.status, 200, JSON.stringify(secondRun.json));
+  const linkedApplications = await dbAdmin
+    .select()
+    .from(applicationsTable)
+    .where(
+      and(
+        eq(applicationsTable.jobId, JOB_ID),
+        eq(applicationsTable.candidateId, id("currentEmployee")),
+      ),
+    );
+  assert.equal(linkedApplications.length, 1, "repeat sourcing is idempotent for this exact job/candidate");
+  const [application] = linkedApplications;
+  assert.ok(application, "the employee selection has an application link");
+  assert.equal(application.jobId, JOB_ID);
+  assert.equal(application.stage, "sourced");
+  assert.equal((application.originEvidence as any)?.channel, "internal_mobility");
+});
+
+test("/sourcing/search keeps capped Known Talent rediscovery out of fee attribution", async () => {
+  await dbAdmin
+    .update(jobsTable)
+    .set({ internalMobility: false } as any)
+    .where(eq(jobsTable.id, JOB_ID));
+  const { status, json } = await api("POST", "/sourcing/search", admin(), {
+    jobId: JOB_ID,
+    maxPerSource: 1,
+    sources: [],
+  });
+  assert.equal(status, 200, JSON.stringify(json));
+  const [application] = await dbAdmin
+    .select()
+    .from(applicationsTable)
+    .where(eq(applicationsTable.candidateId, id("owned")));
+  assert.ok(application, "the one returned known-talent candidate is linked");
+  assert.equal(application.jobId, JOB_ID);
+  assert.equal((application.originEvidence as any)?.channel, "known_talent_rediscovery");
+  assert.equal(application.entryType, "sourced");
+  assert.equal(isFeeEligible(application.entryType, application.originEvidence), false);
 });

@@ -30,10 +30,10 @@
  * withTenantContext the `db` proxy falls through to dbAdmin so RLS never filters
  * — isolating the app-layer ownership gate.
  *
- * Fixture ids all prefixed `srp_` for safe teardown. The single authorized-path
- * test writes one tiny object to S3 and deletes it under its prefix in teardown.
+ * Fixture ids all prefixed `srp_` for safe teardown. The authorized path uses
+ * a test-only S3 adapter; no object is written to or deleted from live storage.
  */
-import { test, before, after } from "node:test";
+import { test, before, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
@@ -46,7 +46,8 @@ import {
   interviewSessionsTable,
 } from "@workspace/db";
 import { issueToken } from "../lib/auth-token";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { s3Client } from "../lib/s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import storageRouter from "./storage";
 
 const P = "srp_";
@@ -64,6 +65,10 @@ const SESSION_IDS = [SESSION_A, SESSION_B];
 
 let server: Server;
 let baseUrl: string;
+const storageStub = mock.method(s3Client, "send", async (command: unknown) => {
+  assert.ok(command instanceof PutObjectCommand, "only the expected recording write is mocked");
+  return { ETag: "regression-test-etag" };
+});
 
 const tok = {
   // candUserA is the FK owner of candA → SESSION_A.
@@ -102,8 +107,7 @@ async function cleanup() {
   await dbAdmin.delete(candidatesTable).where(inArray(candidatesTable.id, CAND_IDS));
   await dbAdmin.delete(usersTable).where(inArray(usersTable.id, USER_IDS));
   await dbAdmin.delete(tenantsTable).where(inArray(tenantsTable.id, TENANT_IDS));
-  // Remove any S3 objects the authorized-path test wrote.
-  try { await new ObjectStorageService().deleteObjectsUnderPrefix(`recordings/${SESSION_A}`); } catch { /* best-effort */ }
+  // The storage adapter is mocked; cleanup must not scan or delete real objects.
 }
 
 async function seed() {
@@ -156,21 +160,26 @@ before(async () => {
 after(async () => {
   await cleanup();
   await new Promise<void>((resolve) => server.close(() => resolve()));
+  storageStub.mock.restore();
 });
 
 // ── no auth / cookie → 401 ───────────────────────────────────────────────────
 test("no bearer token → 401 (before any storage I/O)", async () => {
+  const callsBefore = storageStub.mock.callCount();
   const { status } = await uploadPart(SESSION_A, 2);
   assert.equal(status, 401);
+  assert.equal(storageStub.mock.callCount(), callsBefore);
 });
 
 // ── valid session/capability → works ─────────────────────────────────────────
 test("session's own candidate → 200 (authorized owner)", async () => {
+  const callsBefore = storageStub.mock.callCount();
   const { status, json } = await uploadPart(SESSION_A, 2, tok.candUserA());
   assert.equal(status, 200);
   assert.equal(json?.ok, true);
   assert.equal(json?.sessionId, SESSION_A);
   assert.match(String(json?.objectPath), new RegExp(`^/objects/recordings/${SESSION_A}/part_0002\\.`));
+  assert.equal(storageStub.mock.callCount(), callsBefore + 1);
 });
 
 // ── wrong session's part → 404 ───────────────────────────────────────────────

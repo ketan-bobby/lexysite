@@ -35,7 +35,7 @@ const MAX_BODY = 8000; // truncate very large bodies so a single message can't b
 export type AuditChannel = "email" | "in_app" | "sms" | "webhook" | "system";
 export type AuditDirection = "outbound" | "inbound" | "internal";
 export type AuditActorType = "system" | "agent" | "user" | "candidate" | "external";
-export type AuditSubjectType = "user" | "candidate" | "system" | "external";
+export type AuditSubjectType = "user" | "candidate" | "tenant" | "system" | "external";
 
 export interface RecordAuditInput {
   tenantId?: string | null;

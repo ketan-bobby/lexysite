@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lexy — AWS live-test setup checklist</title>
+    <style>
+      body {
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+        color: #172235;
+        background: #f3f5f8;
+        margin: 0;
+      }
+      main {
+        max-width: 900px;
+        margin: 32px auto;
+        padding: 36px;
+        background: white;
+        border: 1px solid #dce2eb;
+        border-radius: 12px;
+      }
+      h1 {
+        line-height: 1.2;
+        font-size: 30px;
+      }
+      h2 {
+        margin-top: 32px;
+        font-size: 23px;
+      }
+      h3 {
+        font-size: 18px;
+      }
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        background: #eef2f7;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 8px;
+        line-height: 1.45;
+      }
+      li {
+        margin: 8px 0;
+      }
+      .notice {
+        border-left: 4px solid #7255cc;
+        padding: 12px 18px;
+        background: #f5f1ff;
+      }
+      .small {
+        color: #536176;
+        font-size: 14px;
+      }
+      a {
+        color: #5144a1;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      td,
+      th {
+        border: 1px solid #dce2eb;
+        padding: 10px;
+        text-align: left;
+      }
+      @media (max-width: 650px) {
+        main {
+          margin: 0;
+          padding: 20px;
+          border-radius: 0;
+        }
+        h1 {
+          font-size: 26px;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        main {
+          margin: 0;
+          border: 0;
+          padding: 0;
+        }
+        pre {
+          white-space: pre-wrap;
+          overflow: visible;
+        }
+        h2,
+        h3 {
+          break-after: avoid;
+        }
+        pre {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Lexy — AWS live-test setup checklist</h1>
+      <p class="small">
+        Prepared 10 October 2026 · For the AWS administrator and Lexy application administrator
+      </p>
+      <div class="notice">
+        <strong>Scope:</strong> enable signed email-delivery callbacks and secure private résumé
+        tagging. Preserve existing models, provider routing, commercial tiers and native hiring.
+        Offers remain human-approved and human-operated. This document does not authorize a send,
+        rotate a key, change AWS policies, publish the app or prove live delivery.
+      </div>
+
+      <h2>1. Current findings</h2>
+      <table>
+        <tr>
+          <th>Item</th>
+          <th>Observed status</th>
+        </tr>
+        <tr>
+          <td>SES_CONFIGURATION_SET</td>
+          <td>
+            Secret is present. Its value and AWS destination configuration were not inspected.
+          </td>
+        </tr>
+        <tr>
+          <td>INBOUND_EMAIL_SECRET</td>
+          <td>
+            Configured as an ordinary shared environment variable, not a Secret. Secure its storage
+            without blindly changing its value.
+          </td>
+        </tr>
+        <tr>
+          <td>SES_SNS_TOPIC_ARNS</td>
+          <td>Not configured in the development/shared environment checked.</td>
+        </tr>
+        <tr>
+          <td>Published callback URL</td>
+          <td>
+            This Replit project reports no published deployment and no production URL. A stable,
+            reachable published API endpoint is a prerequisite.
+          </td>
+        </tr>
+        <tr>
+          <td>Private résumé permissions</td>
+          <td>
+            Earlier live probes received AccessDenied for GetObjectTagging and PutObjectTagging. No
+            new live permission probe was run for this checklist.
+          </td>
+        </tr>
+      </table>
+      <p>
+        Production-specific variables and the AWS console must be checked by the administrator;
+        secret presence is not proof of valid credentials, permissions or working event publishing.
+      </p>
+
+      <h2>2. Email callbacks — application administrator</h2>
+      <ol>
+        <li>
+          Establish the published HTTPS API URL for the environment that owns the test offer and
+          database records. This may be a controlled pilot publication, not a market launch. Do not
+          register a workspace <code>.replit.dev</code> URL as the permanent AWS destination. If an
+          existing API is hosted elsewhere, verify that its current code, configuration and records
+          match the intended environment.
+        </li>
+        <li>
+          The application route is <code>POST /api/webhooks/ses-events</code>. The endpoint template
+          is <code>&lt;PUBLISHED_API_BASE_URL&gt;/api/webhooks/ses-events</code>; this is a
+          placeholder, not a configured URL.
+        </li>
+        <li>
+          Move <code>INBOUND_EMAIL_SECRET</code> into the project's secure Secrets storage,
+          coordinating removal of the duplicate ordinary variable and application
+          restart/republication. Preserve the existing value if existing signed outreach links must
+          remain valid. Any rotation must be coordinated with integrations using this secret and
+          affected signed links; never paste it into chat, tickets or this document.
+        </li>
+        <li>
+          Set <code>SES_SNS_TOPIC_ARNS</code> to the exact permitted topic ARN, or a comma-separated
+          list of exact ARNs. No wildcard. Topic ARNs are configuration metadata, not credentials.
+        </li>
+        <li>
+          Keep <code>SES_CONFIGURATION_SET</code>, the SES sender and the existing region unchanged.
+          Apply the required settings to the actual published API environment, not only development.
+          The webhook captures its settings at startup.
+        </li>
+        <li>
+          The application requires the shared secret on every request, including SNS subscription
+          confirmation. Prefer a trusted HTTPS relay that adds <code>X-Webhook-Secret</code> to
+          requests forwarded to Lexy. Direct SNS can use the supported
+          <code>?secret=&lt;SECRET&gt;</code> transport, but full URLs then contain a credential:
+          restrict access and ensure URL/query logging is redacted throughout the transport. Never
+          circulate the populated URL.
+        </li>
+        <li>
+          If the publication is private/password-protected, ordinary SNS requests cannot simply sign
+          in. Use a properly configured external-access mechanism or trusted relay. Replit's
+          production external access token and Lexy's webhook secret are different credentials; one
+          does not replace the other. A relay can supply both the platform authorization and
+          application header without exposing credentials in URLs.
+        </li>
+        <li>
+          Do not enable <code>ALLOW_UNSIGNED_SES_EVENTS</code>, remove SNS signature validation or
+          weaken the topic allowlist to make a test pass.
+        </li>
+      </ol>
+
+      <h2>3. Email callbacks — AWS administrator</h2>
+      <ol>
+        <li>
+          In the existing SES region, identify the configuration set named by the current
+          <code>SES_CONFIGURATION_SET</code>. Add or verify an
+          <strong>enabled SNS event destination</strong> using a <strong>Standard</strong> topic,
+          not FIFO.
+        </li>
+        <li>
+          Enable
+          <strong
+            >Send, Delivery, DeliveryDelay, Bounce, Complaint, Reject and Rendering Failure</strong
+          >
+          events. Open/click tracking is not required. Keep other existing event destinations
+          intact.
+        </li>
+        <li>
+          Merge the following statement into the topic's access policy, substituting the actual
+          account, topic ARN and configuration-set ARN locally. Do not replace unrelated existing
+          policy statements.
+        </li>
+      </ol>
+      <pre><code>{
+  "Sid": "AllowExactSesConfigurationSet",
+  "Effect": "Allow",
+  "Principal": { "Service": "ses.amazonaws.com" },
+  "Action": "sns:Publish",
+  "Resource": "arn:aws:sns:&lt;REGION&gt;:&lt;ACCOUNT_ID&gt;:&lt;TOPIC_NAME&gt;",
+  "Condition": {
+    "StringEquals": {
+      "AWS:SourceAccount": "&lt;ACCOUNT_ID&gt;",
+      "AWS:SourceArn": "arn:aws:ses:&lt;REGION&gt;:&lt;ACCOUNT_ID&gt;:configuration-set/&lt;CONFIGURATION_SET_NAME&gt;"
+    }
+  }
+}</code></pre>
+      <ol start="4">
+        <li>
+          For an encrypted topic, verify the chosen KMS configuration also permits the required
+          SES/SNS publishing path. Do not resolve this by granting broad wildcard access or exposing
+          the topic publicly.
+        </li>
+        <li>
+          Create an HTTPS subscription to the reachable endpoint or approved relay. Keep SNS's
+          signed JSON envelope intact; disable <strong>Raw message delivery</strong> if that option
+          is exposed. Lexy accepts SNS's default <code>text/plain</code> JSON and
+          <code>application/json</code>.
+        </li>
+        <li>
+          Verify the subscription is <strong>Confirmed</strong> in AWS, not PendingConfirmation. A
+          webhook's HTTP acknowledgment alone is not proof AWS completed the subscription. Inspect
+          SNS delivery diagnostics if it remains pending.
+        </li>
+      </ol>
+
+      <h2>4. Private résumé storage — AWS administrator</h2>
+      <ol>
+        <li>
+          Identify the IAM user/role actually used by Lexy's S3 client through its current AWS
+          credentials. Do not modify an unrelated SES identity or request a new access key merely
+          for this permission fix.
+        </li>
+        <li>
+          Resolve the current bucket and private prefix from the administrator's secure
+          configuration. Confirm the actual résumé object keys before applying the resource scope.
+          Do not post credential values in chat.
+        </li>
+        <li>
+          Add the following narrowly scoped permission statement to that principal's existing
+          policy. Preserve its existing object read/write permissions.
+        </li>
+      </ol>
+      <pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "LexyPrivateResumeTagging",
+    "Effect": "Allow",
+    "Action": [
+      "s3:GetObjectTagging",
+      "s3:PutObjectTagging"
+    ],
+    "Resource": "arn:aws:s3:::&lt;CONFIGURED_BUCKET&gt;/&lt;CONFIGURED_PRIVATE_PREFIX&gt;/resumes/*"
+  }]
+}</code></pre>
+      <ol start="4">
+        <li>
+          If AccessDenied persists, inspect explicit bucket-policy denies, permission boundaries and
+          organization SCPs. A new Allow cannot override an explicit Deny. Also retain any existing
+          KMS permissions if the bucket uses SSE-KMS.
+        </li>
+        <li>
+          Keep S3 Block Public Access enabled. Do not grant <code>s3:*</code>, make résumés public,
+          add broad ACL permissions, bypass tag-based ownership checks or alter old candidate
+          bindings.
+        </li>
+      </ol>
+
+      <h2>5. Evidence required before marking the checks passed</h2>
+      <h3>Email callback check</h3>
+      <ul>
+        <li>
+          Obtain explicit human authorization for one fresh synthetic offer delivered to an
+          approved, controlled real test inbox. Do not resend an old offer or fabricate historic
+          delivery tags.
+        </li>
+        <li>
+          Record the original SES message ID, exact offer version and send attempt; confirm AWS
+          emits a signed, allowlisted callback matching them and the intended recipient.
+        </li>
+        <li>
+          Verify Lexy changes from provider acceptance to the actual delivery/failure state. “SES
+          accepted,” “subscription confirmed,” and “mail arrived” are distinct facts.
+        </li>
+        <li>
+          Verify callback processing does not change offer approval, terms, candidate acceptance,
+          employment or fees. Duplicate callbacks must not duplicate effects. Use only isolated test
+          records for any failure/retry exercise.
+        </li>
+      </ul>
+      <h3>Private résumé check</h3>
+      <ul>
+        <li>
+          Under the same application IAM principal, prove GetObjectTagging and PutObjectTagging
+          succeed for a disposable object in the scoped résumé namespace.
+        </li>
+        <li>
+          Use fictional PDF and DOCX documents to verify new upload, ownership tagging, candidate
+          attachment and permitted reads.
+        </li>
+        <li>
+          Prove unauthenticated, foreign-tenant and unauthorized staff reads fail;
+          erased/replaced/hidden documents stay inaccessible. Use disposable fixtures rather than
+          modifying old Linx work orders or documents.
+        </li>
+        <li>
+          Remove the exact owned test records and objects afterward. Retain request IDs and
+          outcomes, not credentials, signed URLs or private résumé content.
+        </li>
+      </ul>
+      <p>
+        The machine-to-machine résumé importer has a separate
+        <code>LEXY_IMPORT_API_KEY</code> requirement; that is not necessary to fix normal
+        authenticated résumé uploads and is not part of this two-item checklist.
+      </p>
+
+      <h2>6. What the tech team should report back</h2>
+      <ul>
+        <li>
+          Published API URL and its visibility/access arrangement — without credentials or secret
+          query parameters.
+        </li>
+        <li>
+          Configuration-set name, enabled event types, approved SNS topic ARN and Confirmed
+          subscription status.
+        </li>
+        <li>
+          Confirmation that the webhook secret is securely stored and applied to the correct
+          environment — <strong>not its value</strong>.
+        </li>
+        <li>
+          Confirmation that the actual S3 principal has the two scoped tagging permissions, plus a
+          successful disposable-object probe and request IDs.
+        </li>
+      </ul>
+      <p>
+        After these are supplied, the live checks still need to run. Administrator configuration
+        confirmation is not itself a completed end-to-end test.
+      </p>
+
+      <h2>References</h2>
+      <ul>
+        <li>
+          <a
+            href="https://docs.aws.amazon.com/ses/latest/dg/event-publishing-add-event-destination-sns.html"
+            >AWS: SNS destinations for SES event publishing and exact topic policy</a
+          >
+        </li>
+        <li>
+          <a href="https://docs.replit.com/core-concepts/project-editor/app-setup/secrets"
+            >Replit: Secrets</a
+          >
+        </li>
+        <li>
+          <a href="https://docs.replit.com/features/deployment-customization/external-access-tokens"
+            >Replit: External access tokens</a
+          >
+        </li>
+      </ul>
+      <p class="small">
+        Checked against Lexy's email transport, signed SES webhook route, private object ACL
+        implementation, prior live-test evidence and current deployment/configuration metadata. No
+        AWS console changes, live provider requests, emails or key rotations were performed while
+        preparing this checklist.
+      </p>
+    </main>
+  </body>
+</html>

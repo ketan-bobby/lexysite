@@ -29,12 +29,11 @@ import { Router, type IRouter } from "express";
 import { controlDb, db, auditLogsTable, usersTable } from "@workspace/db";
 import { and, desc, eq, sql, gte, lte } from "drizzle-orm";
 import { getAuthUserId } from "../lib/auth-token";
+import {isAuditViewerRole} from "../lib/audit-view-policy";
 
 const router: IRouter = Router();
 
 async function getCallerUser(req: any) {
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const userId = getAuthUserId(req);
   if (!userId) return null;
   const [u] = await controlDb.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
@@ -56,6 +55,8 @@ async function getCallerUser(req: any) {
 router.get("/audit-logs", async (req: any, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if(!isAuditViewerRole(user.role)){res.status(403).json({error:"Staff access required"});return;}
+  res.setHeader("Cache-Control","private, no-store");
 
   const q = req.query as Record<string, string | undefined>;
   const limit = Math.min(Number(q.limit ?? 100), 500);

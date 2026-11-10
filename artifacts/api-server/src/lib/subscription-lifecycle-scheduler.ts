@@ -61,6 +61,7 @@ import { sendEmail, plainToHtml } from "./email.js";
 import { graceDaysFor } from "./plan-enforcement.js";
 import { getSubtreeTenantIds } from "./tenantUtils.js";
 import { getPlan, getCountryPrice, type PlanCode } from "./plans.js";
+import { activePilot } from "./pilot-codes";
 
 const TICK_MS = 24 * 60 * 60 * 1000; // daily
 
@@ -275,6 +276,7 @@ async function sweepSeatOverage(
 ): Promise<void> {
   const periodKey = new Date().toISOString().slice(0, 7); // YYYY-MM
   for (const t of tenants) {
+    if (await activePilot(t.id)) continue;
     if (t.status === "trial" || t.status === "suspended") continue;
     const plan = getPlan(t.plan);
     const included = plan.limits.maxStaffSeats;
@@ -345,6 +347,7 @@ async function tick() {
   let alerts = 0;
 
   for (const t of candidates) {
+    if (await activePilot(t.id)) continue;
     if (!t.paidThroughAt) continue;
     // The trial-expiry-scheduler owns `trial` tenants — never touch them here.
     if (t.status === "trial") continue;

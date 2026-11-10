@@ -21,6 +21,7 @@
  *   /recruiter/candidates  (registered in App.tsx)
  */
 import { authHeaders } from "@/lib/api";
+import { CareerCampaignReport } from "@/components/CareerCampaignReport";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListCandidates } from "@workspace/api-client-react";
@@ -1155,6 +1156,8 @@ export default function CandidatesList() {
             }
           </p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+        {poolFilter !== "platform" && <CareerCampaignReport />}
         <Button
           variant="outline"
           size="sm"
@@ -1165,6 +1168,7 @@ export default function CandidatesList() {
           <RefreshCw className={cn("w-4 h-4", intelFetching && "animate-spin")} />
           {intelFetching ? "Refreshing…" : "Refresh"}
         </Button>
+        </div>
       </div>
 
       {/* Blocked-work door banner (from the dashboard Morning Report) */}

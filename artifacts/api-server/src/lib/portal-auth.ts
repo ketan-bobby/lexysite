@@ -17,7 +17,7 @@
  */
 import { db } from "@workspace/db";
 import { usersTable, candidatesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getAuthUserId } from "./auth-token";
 
 export interface CandidateSession {
@@ -45,12 +45,12 @@ export async function resolveCandidateSession(req: { headers: { authorization?: 
   if (!userId) return null;
   const [u] = await db.select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId })
     .from(usersTable)
-    .where(eq(usersTable.id, userId))
+    .where(and(eq(usersTable.id, userId), eq(usersTable.status, "active"), isNull(usersTable.accountErasedAt)))
     .limit(1);
   if (!u || u.role !== "candidate") return null;
   const [cand] = await db.select({ id: candidatesTable.id })
     .from(candidatesTable)
-    .where(eq(candidatesTable.userId, u.id))
+    .where(and(eq(candidatesTable.userId, u.id), isNull(candidatesTable.dataErasedAt)))
     .limit(1);
   if (!cand) return null;
   return { userId: u.id, candidateId: cand.id, tenantId: u.tenantId };

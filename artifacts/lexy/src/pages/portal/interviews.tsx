@@ -19,6 +19,10 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { apiBase, apiFetch } from "@/lib/api";
+import { CandidateOfferedTimes } from "@/components/scheduling/CandidateOfferedTimes";
+import { CandidateGoogleMeet } from "@/components/scheduling/CandidateGoogleMeet";
+import { CandidateZoomLink } from "@/components/scheduling/CandidateZoomLink";
+import { TimeChangeRequest } from "@/components/scheduling/TimeChangeRequest";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +32,7 @@ import {
   Video, Calendar, Clock, Play, FileText, Star, AlertCircle, Loader2,
 } from "lucide-react";
 import { format, parseISO, isFuture } from "date-fns";
+import { formatInterviewInstant } from "@/lib/interview-time-display";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -49,6 +54,7 @@ interface Interview {
    * candidate's career baseline. Results show only for "mock" / "baseline".
    */
   source: "schedule" | "session" | "mock" | "baseline";
+  confirmationVersion?: string | null;
 }
 
 /* ─── Type labels + colour maps ─────────────────────────────────────────── */
@@ -130,12 +136,20 @@ export default function PortalInterviews() {
   const [completed, setCompleted] = useState<Interview[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   /* Fetch interviews on mount and split into upcoming vs completed. */
   useEffect(() => {
-    apiFetch(`${apiBase}/portal/interviews`)
-      .then(r => r.json())
+    const controller = new AbortController();
+    setError(null);
+    apiFetch(`${apiBase}/portal/interviews`, { signal: controller.signal })
+      .then(async r => {
+        const body = await r.json();
+        if (!r.ok) throw new Error("Unable to load interviews.");
+        return body;
+      })
       .then(res => {
+        if (controller.signal.aborted) return;
         if (res.error) { setError(res.error); setLoading(false); return; }
 
         const allScheduled: Interview[] = res.data?.scheduled ?? [];
@@ -160,10 +174,12 @@ export default function PortalInterviews() {
         setLoading(false);
       })
       .catch(() => {
+        if (controller.signal.aborted) return;
         setError("Unable to load interviews. Please try again.");
         setLoading(false);
       });
-  }, []);
+    return () => controller.abort();
+  }, [reloadKey]);
 
   return (
     <AppLayout>
@@ -237,7 +253,9 @@ export default function PortalInterviews() {
                             <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {format(parseISO(iv.scheduledAt), "EEEE, MMM d 'at' h:mm a")}
+                                {iv.source === "schedule"
+                                  ? formatInterviewInstant(iv.scheduledAt)
+                                  : format(parseISO(iv.scheduledAt), "EEEE, MMM d 'at' h:mm a")}
                               </span>
                               {iv.duration && (
                                 <span className="flex items-center gap-1">
@@ -249,17 +267,33 @@ export default function PortalInterviews() {
                         </div>
 
                         {/* Actions: prep or join */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {iv.source === "schedule" && ["pending", "confirmed"].includes(iv.status) && (
+                            <TimeChangeRequest scheduleId={iv.id} />
+                          )}
+                          {iv.source === "schedule" && iv.status === "pending" && iv.confirmationVersion && (
+                            <CandidateOfferedTimes
+                              schedule={{ id: iv.id }}
+                              onConfirmed={() => setReloadKey(value => value + 1)}
+                            />
+                          )}
+                          {iv.source === "schedule" && iv.status === "confirmed" && (
+                            <>
+                              <span className="text-sm text-muted-foreground">Time confirmed in Lexy · Calendar details from your recruiter</span>
+                              <CandidateGoogleMeet scheduleId={iv.id} scheduledAt={iv.scheduledAt} durationMinutes={iv.duration} />
+                              <CandidateZoomLink scheduleId={iv.id} />
+                            </>
+                          )}
                           <Link href="/portal/prep">
                             <Button variant="outline" className="gap-1.5">
                               Prep <Star className="w-3.5 h-3.5" />
                             </Button>
                           </Link>
-                          <Link href={`/interviews/${iv.id}/room`}>
+                          {iv.source !== "schedule" && <Link href={`/interviews/${iv.id}/room`}>
                             <Button className="gap-1.5 shadow-md shadow-primary/20">
                               <Play className="w-3.5 h-3.5" /> Join Interview
                             </Button>
-                          </Link>
+                          </Link>}
                         </div>
                       </div>
                     </CardContent>

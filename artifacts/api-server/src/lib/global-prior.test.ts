@@ -1,3 +1,4 @@
+import type { DimensionScoreRow } from "./learned-scoring";
 /**
  * global-prior.test.ts — Cross-tenant global scoring prior (Task #27)
  *
@@ -102,11 +103,11 @@ test("mergeDimStats(poolA,poolB) Pearson == Pearson over concatenated rows", () 
 });
 
 test("poolAggregates sums tenant aggregates element-wise and counts tenants", () => {
-  const rowsA = [
+  const rowsA: DimensionScoreRow[] = [
     { fit: 80, quality: 70, trust: 60, conversion: 50, hired: 1 },
     { fit: 20, quality: 30, trust: 40, conversion: 50, hired: 0 },
   ];
-  const rowsB = [
+  const rowsB: DimensionScoreRow[] = [
     { fit: 90, quality: 85, trust: 70, conversion: 60, hired: 1 },
     { fit: 10, quality: 20, trust: 30, conversion: 40, hired: 0 },
     { fit: 55, quality: 50, trust: 45, conversion: 40, hired: 1 },
@@ -167,7 +168,7 @@ test("ISOLATION: pooled GlobalAggregate exposes no identifier fields", () => {
 /** Build a strongly-predictive global aggregate with `n` samples where fit
  *  correlates with the hire label far more than the other dimensions. */
 function predictiveAggregate(n: number): GlobalAggregate {
-  const rows = [];
+  const rows: DimensionScoreRow[] = [];
   for (let i = 0; i < n; i++) {
     const hired = i % 2 === 0 ? 1 : 0;
     rows.push({

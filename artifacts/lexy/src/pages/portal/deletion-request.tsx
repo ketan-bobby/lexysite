@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { Trash2, ShieldAlert, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiBase, apiFetch } from "@/lib/api";
+import { erasureAccountStatus } from "@/lib/erasure-account-status";
 import { BackToHome } from "@/components/layout/BackToHome";
 
 const JURISDICTIONS: Array<{ v: "il_aivi" | "gdpr" | "ccpa" | "other"; l: string; clock: string }> = [
@@ -26,7 +27,7 @@ const JURISDICTIONS: Array<{ v: "il_aivi" | "gdpr" | "ccpa" | "other"; l: string
   { v: "other",   l: "Other — please describe in the reason field",        clock: "30-day default" },
 ];
 
-interface ExistingRequest { id: string; status: string; jurisdiction: string; createdAt: string; handledAt: string | null; }
+interface ExistingRequest { id: string; status: string; jurisdiction: string; createdAt: string; handledAt: string | null; cleanup?: { state: string; remaining: number; account?: string | null } | null; }
 
 export default function DeletionRequest() {
   const [jurisdiction, setJurisdiction] = useState<"il_aivi" | "gdpr" | "ccpa" | "other">("gdpr");
@@ -86,6 +87,13 @@ export default function DeletionRequest() {
                     r.status === "denied" ? "bg-red-500/10 text-red-500" :
                     "bg-amber-500/10 text-amber-500"
                   }`}>{r.status}</span>
+                  {r.cleanup && <p className="text-sm text-muted-foreground mt-2">
+                    Candidate database records erased. {r.cleanup.state === "complete"
+                      ? "File cleanup completed."
+                      : r.cleanup.state === "needs_review" ? "Some files require privacy-team review."
+                        : "File cleanup is pending and will retry automatically."}
+                  </p>}
+                  {r.cleanup && erasureAccountStatus(r.cleanup.account) && <p className="text-sm text-muted-foreground">{erasureAccountStatus(r.cleanup.account)}</p>}
                 </li>
               ))}
             </ul>
@@ -144,7 +152,8 @@ export default function DeletionRequest() {
               <div className="text-sm">
                 <strong>This is irreversible.</strong> We will delete your candidate profile, resume,
                 interview recordings and transcripts, and any voluntary demographic information you provided.
-                We retain an immutable audit log entry (without personal data) for legal-hold purposes.
+                Required deletion-request, decision and billing records are retained for audit and legal purposes.
+                File cleanup is checked separately before we send the final deletion confirmation.
               </div>
             </div>
 
@@ -155,7 +164,7 @@ export default function DeletionRequest() {
                 onChange={(e) => setConfirmed(e.target.checked)}
                 className="mt-1 w-4 h-4 rounded border-border"
               />
-              <span className="text-sm">I understand this is permanent and I want to proceed.</span>
+              <span className="text-sm">I understand erasure is permanent. My candidate-only login will close if no other live profile uses it; shared staff identities and required legal records are retained.</span>
             </label>
 
             {error && <p className="text-sm text-red-500">{error}</p>}

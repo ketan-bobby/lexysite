@@ -567,7 +567,7 @@ router.post("/linx/requests/:id/decline", validate({ body: DeclineBody }), async
  * queue. STATUS FIELD ONLY — no billing/invoicing/fees (handled entirely
  * outside the system). Idempotent when already in the target state. */
 function makeTerminalRoute(target: "filled" | "closed") {
-  return async (req: Request, res: Response) => {
+  return async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     try {
       const gate = await gateLinxAdmin(req, res);
       if (!gate) return;
@@ -575,13 +575,13 @@ function makeTerminalRoute(target: "filled" | "closed") {
       const requestId = req.params.id;
 
       /* filled may also upgrade a premature 'closed' (a hire trumps it). */
-      const fromStatuses = target === "filled" ? ["accepted", "closed"] : ["accepted"];
+      const fromStatuses = target === "filled" ? ["accepted", "closed"] as const : ["accepted"] as const;
       const [updated] = await db.update(linxRequestsTable)
         .set({ status: target, resolvedAt: new Date() })
         .where(and(
           eq(linxRequestsTable.id, requestId),
           eq(linxRequestsTable.linxTenantId, linxTenantId),
-          inArray(linxRequestsTable.status, fromStatuses as any),
+          inArray(linxRequestsTable.status, fromStatuses),
         ))
         .returning();
       if (updated) { res.json({ request: mapRequest(updated) }); return; }

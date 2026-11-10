@@ -190,7 +190,7 @@ router.get("/source-quality", resolveUser, async (req, res) => {
 });
 
 /* ── GET /learning/score-correlation ─────────────────────────────────────── */
-router.get("/score-correlation", resolveUser, async (req, res) => {
+router.get("/score-correlation", resolveUser, async (req, res): Promise<void> => {
   const user = await requireRole(req, res, STAFF_ROLES);
   if (!user) return;
   try {
@@ -208,12 +208,12 @@ router.get("/score-correlation", resolveUser, async (req, res) => {
       .where(and(isNotNull(candidateJobIntelligenceTable.outcome), cjiTenantScope(allowed)));
 
     if (rows.length < 3) {
-      return res.json({
+      res.json({
         data: {
           correlations: {},
           message: "Insufficient outcome data for correlation analysis — need at least 3 labelled outcomes",
         },
-      });
+      }); return;
     }
 
     // Pearson correlation between each dimension and a binary "hired" flag

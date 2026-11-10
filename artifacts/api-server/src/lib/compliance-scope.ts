@@ -3,7 +3,10 @@
  * ============================================================================
  *
  * ONE place that defines the compliance-mandatory candidate filter used by
- * every count/aggregate surface. Modeled on the reference implementation in
+ * every count/aggregate surface. These reporting predicates also exclude
+ * explicitly cleared synthetic fixtures via synthetic-fixture-scope.ts.
+ * Contact eligibility itself remains defined by erased/DNC only.
+ * Modeled on the reference implementation in
  * routes/analytics.ts (the `/analytics/overview` `visibleCandidateIds` path),
  * but stripped down to ONLY the compliance conditions.
  *
@@ -50,11 +53,12 @@
  * interview session for a sourced-only lead), is KEPT. A naive positive
  * `candidate_id IN (SELECT id FROM candidates WHERE compliant)` would silently
  * drop those unrelated rows too — a non-compliance behavior change. Because the
- * only rows this predicate removes are the compliance-barred ones, applying it
- * where there are currently zero erased/DNC candidates produces ZERO movement.
+ * compliance exclusions remove only the compliance-barred ones. The additional
+ * synthetic-fixture reporting exclusion is separate from contact eligibility.
  */
 import { sql, type SQL, type AnyColumn } from "drizzle-orm";
 import { candidatesTable } from "@workspace/db";
+import { restrictToRealCandidates } from "./synthetic-fixture-scope";
 
 /**
  * THE single canonical definition of a contact-barred (non-compliant)
@@ -76,17 +80,19 @@ export function compliantCandidatePredicate(): SQL {
 }
 
 /**
- * Restrict a foreign candidate-id column (e.g. applications.candidate_id,
+ * Restrict a reporting foreign candidate-id column (e.g. applications.candidate_id,
  * candidate_outcomes.candidate_id, interview_sessions.candidate_id,
- * candidate_job_intelligence.candidate_id) to compliant candidates.
+ * candidate_job_intelligence.candidate_id) to compliant, non-synthetic candidates.
  *
  * Null-safe and orphan-safe: keeps rows with a NULL candidate id or a
- * candidate id absent from `candidates`; removes ONLY rows whose linked
- * candidate is erased or do-not-contact.
+ * candidate id absent from `candidates`; removes rows whose linked candidate
+ * is erased, do-not-contact, or explicitly cleared as a synthetic fixture.
  */
 export function restrictToCompliantCandidates(candidateIdCol: AnyColumn | SQL): SQL {
+  // Aggregate/reporting eligibility also excludes explicitly cleared synthetic
+  // fixtures. Keep compliantCandidatePredicate contact-only: pilots still run.
   return sql`(${candidateIdCol} IS NULL OR ${candidateIdCol} NOT IN (
     SELECT ${candidatesTable.id} FROM ${candidatesTable}
     WHERE ${contactBarredCandidateSql()}
-  ))`;
+  )) AND ${restrictToRealCandidates(candidateIdCol)}`;
 }

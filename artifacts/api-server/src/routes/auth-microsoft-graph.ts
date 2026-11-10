@@ -31,6 +31,9 @@ import {
   redeemCodeAndStore,
 } from "../lib/graph-auth";
 import { getMailAccount, deleteMailAccount } from "../lib/recruiter-mail";
+import { calendarStaff } from "../lib/calendar-staff";
+import { CalendarError, hasCalendarScope } from "../lib/outlook-calendar-core";
+import { openGraphConsent, sealGraphConsent } from "../lib/graph-consent-state";
 
 const router: IRouter = Router();
 
@@ -72,17 +75,20 @@ router.get("/auth/microsoft-graph/start", async (req, res) => {
   if (!isGraphConfigured()) return res.status(503).json({ error: "not_configured" });
 
   try {
+    const caller = await calendarStaff(v.payload.sub);
+    const calendar = req.query.calendar === "true";
     const { verifier, challenge } = await generatePkce();
     const state = newGuid();
     res.cookie(
       STATE_COOKIE,
-      JSON.stringify({ state, verifier, userId: v.payload.sub, tenantId: v.payload.tenantId ?? "" }),
+      sealGraphConsent({ state, verifier, userId: caller.id, tenantId: caller.tenantId ?? "", calendar, issuedAt: Date.now() }),
       { httpOnly: true, secure: true, sameSite: "lax", maxAge: 10 * 60 * 1000, path: COOKIE_PATH },
     );
-    const url = await buildConsentUrl({ redirectUri: redirectUriFor(req), state, challenge });
+    const url = await buildConsentUrl({ redirectUri: redirectUriFor(req), state, challenge, calendar });
     if (!url) return res.status(503).json({ error: "not_configured" });
     return res.json({ url });
   } catch (err: any) {
+    if (err instanceof CalendarError) return res.status(err.status).json({ error: err.message, code: err.code });
     logger.error({ err: err?.message }, "[graph] failed to build consent URL");
     return res.status(500).json({ error: "start_failed" });
   }
@@ -102,15 +108,16 @@ router.get("/auth/microsoft-graph/callback", async (req, res) => {
   const stateParam = typeof req.query.state === "string" ? req.query.state : "";
   if (!code) return res.redirect(settingsRedirect(req, "error", "missing_code"));
 
-  let cookie: { state?: string; verifier?: string; userId?: string; tenantId?: string } = {};
-  try {
-    cookie = rawCookie ? JSON.parse(rawCookie) : {};
-  } catch {
-    cookie = {};
-  }
-  if (!cookie.state || !cookie.verifier || !cookie.userId || cookie.state !== stateParam) {
+  const cookie = openGraphConsent(rawCookie, stateParam);
+  if (!cookie) {
     logger.warn("[graph] callback state/verifier/user mismatch — possible CSRF or expired flow");
     return res.redirect(settingsRedirect(req, "error", "state_mismatch"));
+  }
+  try {
+    const caller = await calendarStaff(cookie.userId);
+    if ((caller.tenantId ?? "") !== cookie.tenantId) return res.redirect(settingsRedirect(req, "error", "account_changed"));
+  } catch {
+    return res.redirect(settingsRedirect(req, "error", "staff_required"));
   }
 
   const result = await redeemCodeAndStore({
@@ -119,20 +126,24 @@ router.get("/auth/microsoft-graph/callback", async (req, res) => {
     code,
     verifier: cookie.verifier,
     redirectUri: redirectUriFor(req),
+    calendar: cookie.calendar,
   });
   return res.redirect(
-    result.ok ? settingsRedirect(req, "connected") : settingsRedirect(req, "error", result.error),
+    result.ok
+      ? `${settingsRedirect(req, "connected")}${cookie.calendar ? "&calendar=connected" : ""}`
+      : settingsRedirect(req, "error", result.error),
   );
 });
 
 /* ── GET /auth/microsoft-graph/status (AUTH) ───────────────────────────────── */
-router.get("/auth/microsoft-graph/status", async (req, res) => {
+router.get("/auth/microsoft-graph/status", async (req, res): Promise<void> => {
   const v = verifyToken(tokenFromRequest(req));
-  if (!v.ok) return res.status(401).json({ error: "unauthenticated" });
+  if (!v.ok) { res.status(401).json({ error: "unauthenticated" }); return; }
   const acct = await getMailAccount(v.payload.sub);
   res.json({
     configured: isGraphConfigured(),
     connected: Boolean(acct && acct.status === "connected"),
+    calendarConnected: Boolean(acct && acct.status === "connected" && hasCalendarScope(acct.scopes)),
     status: acct?.status ?? null,
     email: acct?.email ?? null,
     // Only surface an error string when the mailbox is actually unhealthy.
@@ -141,9 +152,9 @@ router.get("/auth/microsoft-graph/status", async (req, res) => {
 });
 
 /* ── POST /auth/microsoft-graph/disconnect (AUTH) ──────────────────────────── */
-router.post("/auth/microsoft-graph/disconnect", async (req, res) => {
+router.post("/auth/microsoft-graph/disconnect", async (req, res): Promise<void> => {
   const v = verifyToken(tokenFromRequest(req));
-  if (!v.ok) return res.status(401).json({ error: "unauthenticated" });
+  if (!v.ok) { res.status(401).json({ error: "unauthenticated" }); return; }
   await deleteMailAccount(v.payload.sub);
   res.json({ ok: true });
 });

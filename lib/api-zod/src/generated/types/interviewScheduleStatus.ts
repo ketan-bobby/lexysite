@@ -11,6 +11,7 @@ export type InterviewScheduleStatus =
 
 export const InterviewScheduleStatus = {
   pending: "pending",
+  scheduled: "scheduled",
   confirmed: "confirmed",
   rescheduled: "rescheduled",
   cancelled: "cancelled",

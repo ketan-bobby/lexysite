@@ -20,14 +20,28 @@
  * underlying feature is not configured in the target environment (e.g. no
  * Stripe price ID).
  *
- * Usage:
+ * Legacy, mutating, loopback-only tool; NOT a production release acceptance gate.
+ * No automatic cleanup is provided. Verify isolated backing services first.
+ * Usage (only after accepting those effects):
+ *   SMOKE_ALLOW_MUTATIONS=true \
  *   SMOKE_BASE_URL=http://localhost:5000 \
+ *   SMOKE_CONFIRMED_ORIGIN=http://localhost:5000 \
  *   SMOKE_EMAIL=smoke+local@lexy.ai \
  *   SMOKE_PASSWORD='Sm0ke!Pass123' \
  *     node artifacts/api-server/scripts/smoke-critical-journeys.mjs
  */
 
-const BASE = (process.env.SMOKE_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+import { smokeTarget } from "./smoke-target-guard.mjs";
+
+// Run before any network request or identity generation. Never echo supplied
+// URL values, which could accidentally contain credentials.
+let BASE;
+try {
+  BASE = smokeTarget(process.env);
+} catch (error) {
+  console.error(`[smoke preflight] ${error.message}`);
+  process.exit(1);
+}
 const STAMP = Date.now();
 const ADMIN_EMAIL    = process.env.SMOKE_EMAIL    || `smoke-admin+${STAMP}@lexy.test`;
 const ADMIN_PASSWORD = process.env.SMOKE_PASSWORD || `Sm0ke!Pass${STAMP}`;
@@ -61,6 +75,8 @@ async function api(method, path, { token, body, expect = [200, 201] } = {}) {
   const r = await fetch(`${BASE}${path}`, {
     method,
     headers,
+    // Do not forward this mutating run (or its credentials) to another target.
+    redirect: "error",
     body: body == null ? undefined : JSON.stringify(body),
   });
   let json = null;

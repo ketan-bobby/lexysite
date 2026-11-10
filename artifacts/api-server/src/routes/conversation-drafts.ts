@@ -33,7 +33,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { approveAndSendDraft } from "../lib/agents/outreach-conversation";
 import { recordAudit } from "../lib/audit";
 import { getAuthUserId } from "../lib/auth-token";
-import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
+import { getDataScopeTenantIds, getRecruiterAssignedJobIds, type CallerUser } from "../lib/tenantUtils";
 import { recruiterOwnsResource } from "../lib/ownership";
 import { validate } from "../middlewares/validate";
 
@@ -65,7 +65,7 @@ async function getCallerUser(req: any) {
    helper (null = platform_admin, no restriction). A null row tenantId is
    treated as accessible (legacy rows). */
 async function canAccessTenant(
-  user: { role: string; tenantId: string | null },
+  user: CallerUser,
   tenantId: string | null | undefined,
 ): Promise<boolean> {
   const allowed = await getDataScopeTenantIds(user);
@@ -153,7 +153,7 @@ router.post("/conversation-drafts/:id/send", validate({ body: SendDraftBody }), 
       subject: req.body?.subject,
       body: req.body?.body,
     });
-    res.json({ ok: true, draftId: id, ...out });
+    res.json({ draftId: id, ...out });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err?.message || String(err) });
   }

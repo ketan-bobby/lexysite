@@ -29,7 +29,7 @@ export interface RateLimitOptions {
   /** Maximum requests per key per window. */
   max: number;
   /** Optional override for the bucket key. Defaults to userId || req.ip. */
-  keyFn?: (req: Request) => string;
+  keyFn?: (req: Request<unknown>) => string;
   /** Optional shared bucket name. When set, the per-route suffix is replaced
    *  with this constant so multiple routes can share a single budget
    *  (e.g. /auth/login + /auth/candidate-login share `auth-login`). When
@@ -46,9 +46,16 @@ export interface RateLimitOptions {
   store?: RateLimitStore;
 }
 
+/** Read a scalar route key without coercing wildcard arrays into an ID. */
+export function stringRouteParam(req: Pick<Request<unknown>, "params">, name: string): string | undefined {
+  if (typeof req.params !== "object" || req.params === null) return undefined;
+  const value: unknown = Reflect.get(req.params, name);
+  return typeof value === "string" ? value : undefined;
+}
+
 export function rateLimit(opts: RateLimitOptions) {
   const { windowMs, max, keyFn, scope, mode = "fixed" } = opts;
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async <Params>(req: Request<Params>, res: Response, next: NextFunction) => {
     const store = opts.store ?? getDefaultStore();
     const userKey = keyFn
       ? keyFn(req)

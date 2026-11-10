@@ -22,13 +22,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@workspace/react-hooks/use-toast";
 import { apiFetch } from "@/lib/api";
-import { Mail, Loader2, CheckCircle2, AlertTriangle, Plug, Unplug } from "lucide-react";
+import { GooglePanelConsent } from "@/components/scheduling/GooglePanelConsent";
+import { CalendarPanelConsent } from "@/components/scheduling/CalendarPanelConsent";
+import { CalendarWorkingHours } from "@/components/scheduling/CalendarWorkingHours";
+import {SignOutAllDevices} from "@/components/settings/SignOutAllDevices";
+import { Mail, Calendar, Loader2, CheckCircle2, AlertTriangle, Plug, Unplug } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface MailStatus {
   configured: boolean;
   connected: boolean;
+  calendarConnected: boolean;
   status: string | null;
   email: string | null;
   lastError: string | null;
@@ -38,7 +43,7 @@ export default function RecruiterSettings() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery<MailStatus>({
+  const { data, isLoading, isError, refetch } = useQuery<MailStatus>({
     queryKey: ["ms-graph-status"],
     queryFn: async () => {
       const res = await apiFetch(`${BASE}/api/auth/microsoft-graph/status`);
@@ -54,24 +59,27 @@ export default function RecruiterSettings() {
     const outcome = params.get("outlook");
     if (!outcome) return;
     if (outcome === "connected") {
-      toast({ title: "Outlook connected", description: "Your emails will now send from your own mailbox." });
+      toast({ title: params.get("calendar") === "connected" ? "Outlook Calendar connected" : "Outlook connected", description: params.get("calendar") === "connected" ? "Calendar coordination is available. Your mailbox connection is retained." : "Your emails will now send from your own mailbox." });
       qc.invalidateQueries({ queryKey: ["ms-graph-status"] });
     } else {
       toast({
         title: "Couldn't connect Outlook",
-        description: "Please try again. Lexy will keep sending from the shared sender meanwhile.",
+        description: params.get("reason") === "calendar_account_mismatch"
+          ? "Choose the same Microsoft account as your connected mailbox. The existing connection was not changed."
+          : "Consent was not completed. Calendar access may need Microsoft administrator approval. Existing email sending is unchanged.",
         variant: "destructive",
       });
     }
     const url = new URL(window.location.href);
     url.searchParams.delete("outlook");
     url.searchParams.delete("reason");
+    url.searchParams.delete("calendar");
     window.history.replaceState({}, "", url.toString());
   }, [toast, qc]);
 
   const connect = useMutation({
-    mutationFn: async () => {
-      const res = await apiFetch(`${BASE}/api/auth/microsoft-graph/start`);
+    mutationFn: async (calendar?: boolean) => {
+      const res = await apiFetch(`${BASE}/api/auth/microsoft-graph/start${calendar ? "?calendar=true" : ""}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error === "not_configured" ? "not_configured" : "start_failed");
@@ -99,8 +107,9 @@ export default function RecruiterSettings() {
       if (!res.ok) throw new Error("disconnect_failed");
     },
     onSuccess: () => {
-      toast({ title: "Outlook disconnected", description: "Lexy will send from the shared sender." });
+      toast({ title: "Outlook disconnected", description: "Email and calendar access were disconnected. Existing Outlook events remain; Lexy will send email from the shared sender." });
       qc.invalidateQueries({ queryKey: ["ms-graph-status"] });
+      qc.removeQueries({ queryKey: ["outlook-calendar"] });
     },
     onError: () =>
       toast({ title: "Couldn't disconnect", description: "Please try again.", variant: "destructive" }),
@@ -115,10 +124,14 @@ export default function RecruiterSettings() {
         <div>
           <h1 className="page-title">Settings</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage how your candidate emails are sent.
+            Manage your Outlook email and interview calendar connection.
           </p>
+          <a href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/settings/ats`} className="mt-3 inline-block text-sm text-primary underline">
+            Manage ATS connections · Zoho Recruit
+          </a>
         </div>
 
+        <SignOutAllDevices />
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -135,7 +148,9 @@ export default function RecruiterSettings() {
               automatically.
             </p>
 
-            {isLoading ? (
+            {isError ? (
+              <div role="alert" className="text-sm text-destructive">Connection status could not be loaded. <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button></div>
+            ) : isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" /> Loading…
               </div>
@@ -166,7 +181,7 @@ export default function RecruiterSettings() {
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <Unplug className="w-4 h-4 mr-1.5" /> Disconnect
+                      <Unplug className="w-4 h-4 mr-1.5" /> Disconnect Outlook
                     </>
                   )}
                 </Button>
@@ -185,7 +200,7 @@ export default function RecruiterSettings() {
                   <Badge variant="outline" className="text-[11px]">
                     Not connected
                   </Badge>
-                  <Button size="sm" onClick={() => connect.mutate()} disabled={connect.isPending}>
+                  <Button size="sm" onClick={() => connect.mutate(false)} disabled={connect.isPending}>
                     {connect.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
@@ -199,6 +214,29 @@ export default function RecruiterSettings() {
             )}
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Calendar className="w-4 h-4 text-primary" /> Outlook Calendar</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Check your own availability and manage private interview holds from the Interview Coordinator.
+              Email permission does not include calendar access. Microsoft will request <strong>Calendars.ReadWrite</strong>;
+              your organization may require administrator consent. Choose the same account as your mailbox.
+            </p>
+            {isLoading ? <p className="text-sm text-muted-foreground">Checking calendar permission…</p> : isError ? <p role="alert" className="text-sm text-destructive">Calendar status is unavailable. Retry the connection status above.</p> : (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <Badge variant="outline">{data?.calendarConnected ? "Calendar connected" : "Calendar permission not granted"}</Badge>
+                <Button disabled={!data?.configured || connect.isPending} onClick={() => connect.mutate(true)}>
+                  {connect.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Calendar className="w-4 h-4 mr-2" />}
+                  {data?.calendarConnected ? "Reconnect Calendar" : "Connect Outlook Calendar"}
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">Calendar holds do not invite candidates. Use Lexy’s existing invitation flow for candidate emails. Disconnecting Outlook above removes both email and calendar access; it does not delete your events.</p>
+          </CardContent>
+        </Card>
+        <CalendarPanelConsent />
+        <GooglePanelConsent />
+        <CalendarWorkingHours />
       </div>
     </AppLayout>
   );

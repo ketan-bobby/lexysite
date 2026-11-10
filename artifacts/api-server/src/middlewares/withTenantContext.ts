@@ -48,6 +48,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import { verifyToken, tokenFromRequest } from "../lib/auth-token";
 import { logger } from "../lib/logger";
+import { withUsageActivity, requestUsageActivity } from "../lib/vendor-usage-context";
 
 /**
  * Paths under /api that MUST NOT acquire an RLS-bound connection because
@@ -83,6 +84,7 @@ import { logger } from "../lib/logger";
  * `/invites/abc123/accept` but NOT the bare `/invites` create endpoint.
  */
 const BYPASS_PREFIXES = [
+  "/controlled-offers/public/", // Secret, expiring offer links; handler repeats token and privacy checks.
   /* Already-bypassed before fail-closed: */
   "/public/",            // unauthenticated marketing/careers/signup endpoints
   "/billing/webhook",    // Stripe webhook (signature-verified raw body)
@@ -140,6 +142,9 @@ const BYPASS_PREFIXES = [
  * widen the bypass surface.
  */
 const BYPASS_REGEXES: RegExp[] = [
+  // Writes authenticate the active interview cookie; reads additionally require staff.
+  /^\/interviews\/[A-Za-z0-9_-]+\/capture-diagnostics$/,
+  /^\/interviews\/[A-Za-z0-9_-]+\/recording-segments(?:\/[0-9a-f-]{36})?$/i,
   // GET /interviews/:interviewId (candidate fetches the interview shell)
   /^\/interviews\/[A-Za-z0-9_-]+$/,
   // GET /interviews/:interviewId/intro — recruiter "smooth handover" intro,
@@ -174,6 +179,9 @@ const BYPASS_REGEXES: RegExp[] = [
   // cookie-flow list above because the path suffix doesn't match that pattern.
   /^\/interviews\/[A-Za-z0-9_-]+\/work-auth-prompt$/,
   /^\/interviews\/[A-Za-z0-9_-]+\/work-auth$/,
+  // Candidate configuration: authenticated session cookie; plan id and tenant
+  // are resolved server-side. Staff /interviews/plans routes remain non-bypassed.
+  /^\/interviews\/[A-Za-z0-9_-]+\/configuration$/,
   // Invite-by-URL-token flows: the token is a crypto.randomUUID() carried in
   // the URL (candidate has no bearer). Matched UUID-strict so authenticated
   // sibling routes (/invites/bulk-career-invite, /invites/career-campaign-status,
@@ -261,10 +269,10 @@ export async function withTenantContext(
    * does this same lookup downstream, so the longer-term optimisation is
    * to stash the row on `req` and have `resolveUser` reuse it — tracked as
    * a follow-up in RLS_PILOT.md. */
-  let userRow: { id: string; tenantId: string | null; role: string } | undefined;
+  let userRow: { id: string; tenantId: string | null; role: string; status: string; accountErasedAt: Date | null } | undefined;
   try {
     const [row] = await dbAdmin
-      .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role })
+      .select({ id: usersTable.id, tenantId: usersTable.tenantId, role: usersTable.role, status: usersTable.status, accountErasedAt: usersTable.accountErasedAt })
       .from(usersTable)
       .where(eq(usersTable.id, verified.payload.sub))
       .limit(1);
@@ -281,6 +289,11 @@ export async function withTenantContext(
     // forgot to, the `db` Proxy will throw on first use instead of
     // silently using dbAdmin.
     return runFailClosed(req.path, next);
+  }
+
+  if (userRow.accountErasedAt || userRow.status === "suspended") {
+    res.status(403).json({ error: "This account is suspended. Contact your administrator." });
+    return;
   }
 
   const tenantId = userRow.tenantId;
@@ -423,6 +436,6 @@ export async function withTenantContext(
 
   requestDbContext.run(
     { db: requestDb, tenantId, isPlatformAdmin },
-    () => next(),
+    () => withUsageActivity(tenantId, requestUsageActivity(req.path, userRow.role === "candidate"), next),
   );
 }

@@ -16,10 +16,10 @@ import {
   candidatesTable,
   candidateAchievementsTable,
   candidateActionEventsTable,
-  candidateNotificationsTable,
 } from "@workspace/db";
 import { eq, and, sql, gte, isNull } from "drizzle-orm";
-import { sendEmail } from "./email.js";
+import { sendCadencedCommunication } from "./cadenced-communication";
+import { persistWeeklyDigestRecap, recoverWeeklyDigestRecaps } from "./weekly-digest-recap";
 import { logger } from "./logger.js";
 import { getLatestPeerSnapshot } from "./peer-percentile.js";
 import { awardAchievements } from "./achievement-engine.js";
@@ -157,7 +157,14 @@ function buildDigestEmail(p: DigestPayload): { subject: string; html: string } {
 export async function runWeeklyDigest(): Promise<{ sent: number; skipped: number }> {
   logger.info("[weekly-digest] Starting weekly digest run");
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000);
+  try {
+    const recovery = await recoverWeeklyDigestRecaps();
+    logger.info(recovery, "[weekly-digest] In-app recap recovery complete; no emails sent");
+  } catch {
+    logger.warn("[weekly-digest] Recap recovery unavailable; existing digest processing continues");
+  }
+  const periodEnd = new Date();
+  const sevenDaysAgo = new Date(periodEnd.getTime() - 7 * 86_400_000);
 
   /* Reads the whole platform pool to email each candidate THEIR OWN weekly
      digest — self-directed candidate messaging, not an employer-facing read,
@@ -255,15 +262,14 @@ export async function runWeeklyDigest(): Promise<{ sent: number; skipped: number
 
     const { subject, html } = buildDigestEmail(payload);
 
-    const result = await sendEmail({
+    const result = await sendCadencedCommunication({
+      weeklyRecap: { userId: cand.userId ?? null, periodEnd },
+      kind:"weekly_digest",intervalDays:MIN_DAYS_BETWEEN_DIGESTS,ownerTenantId:cand.tenantId,
+      tenantId:"platform",candidateId:cand.id,
       to: cand.email,
       subject,
-      html,
-      audit: {
-        tenantId: "platform",
+      html,htmlOnly:true,body:"Candidate-owned weekly digest",
         actorLabel: "Weekly Digest Scheduler",
-        subjectType: "candidate",
-        subjectId: cand.id,
         subjectLabel: `${payload.firstName} ${cand.lastName ?? ""}`.trim(),
         action: "weekly_digest.send",
         metadata: {
@@ -274,32 +280,24 @@ export async function runWeeklyDigest(): Promise<{ sent: number; skipped: number
           peerBandCountry: payload.bandCountry,
           peerBandGlobal: payload.bandGlobal,
         },
-      },
     });
 
-    if (result.ok) {
+    if (result.ok&&!result.simulated&&!result.suppressed) {
+      try{
       await db
         .update(candidatesTable)
         .set({ weeklyDigestLastSentAt: new Date() } as any)
-        .where(eq(candidatesTable.id, cand.id));
+        .where(and(eq(candidatesTable.id, cand.id),eq(candidatesTable.tenantId,cand.tenantId),
+          eq(candidatesTable.pool,"platform"),isNull(candidatesTable.dataErasedAt)));
+      }catch{
+        // The separately committed acceptance receipt still fences another send.
+        logger.warn({candidateId:cand.id},"[weekly-digest] Accepted receipt retained; legacy timestamp update needs review");
+      }
 
-      /* Mirror the digest into the candidate's in-app notification center so
-         it lands as a Sunday "recap moment" in the bell icon even when their
-         email client is closed (or SES isn't configured in dev). One row per
-         send — keyed by the email send itself, so the 6-day floor naturally
-         prevents notification spam. */
+      // Persist only against the original accepted, identity-bound receipt.
+      // A failed write is recovered on a later tick without repeating email.
       try {
-        /* Force tenantId="platform" for platform-pool candidates so the
-           bell-icon notification stays in the same partition as every other
-           platform-pool record (recruiter-views, achievements, etc.) — even
-           if a legacy candidate row carries a non-platform tenantId from
-           early-days seeding. Avoids cross-tenant partition drift. */
-        const notifTenantId =
-          (cand as any).pool === "platform" ? "platform" : ((cand as any).tenantId ?? "platform");
-        await db.insert(candidateNotificationsTable).values({
-          tenantId: notifTenantId,
-          candidateId: cand.id,
-          type: "weekly_digest",
+        if (result.operationId) await persistWeeklyDigestRecap(result.operationId, {
           title: subject,
           message: (() => {
             /* Brochure-aligned recap: "3 mocks completed · 14 recruiters
@@ -323,16 +321,15 @@ export async function runWeeklyDigest(): Promise<{ sent: number; skipped: number
               ? `${parts.join(" · ")}.`
               : "Your week on Lexy — keep going.";
           })(),
-          isRead: false,
-          actionUrl: "/portal",
-        } as any);
-      } catch (err: any) {
-        logger.warn({ err: err?.message, candidateId: cand.id }, "[weekly-digest] in-app notification insert failed");
+        });
+      } catch {
+        logger.warn({candidateId: cand.id }, "[weekly-digest] in-app notification insert failed");
       }
 
       sent++;
     } else {
-      logger.warn({ candidateId: cand.id, err: result.error }, "[weekly-digest] send failed");
+      skipped++;
+      logger.info({ candidateId: cand.id, reason: result.reason }, "[weekly-digest] Email not counted as accepted");
     }
   }
 

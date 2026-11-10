@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CreditCard, Zap, AlertTriangle, CheckCircle2, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { PilotAccountCard, fetchPilotMe, type PilotInfo } from "@/components/recruiter/pilot-codes";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 
 const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
@@ -104,6 +105,8 @@ export default function Subscription() {
   const [credits, setCredits] = useState<CreditsResponse | null>(null);
   const [manualBilling, setManualBilling] = useState<ManualBilling | null>(null);
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
+  const [pilot, setPilot] = useState<{ pilot: PilotInfo | null; complimentary: boolean }>({ pilot: null, complimentary: false });
+  const [reloadN, setReloadN] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -113,7 +116,7 @@ export default function Subscription() {
     (async () => {
       try {
         // Step 1: load usage so we know the tenant's region.
-        const [usageRes, creditsRes, billingRes] = await Promise.all([
+        const [usageRes, creditsRes, billingRes, pilotRes] = await Promise.all([
           authedFetch(`${apiBase}/plans/me/usage`).then((r) => r.json()),
           authedFetch(`${apiBase}/credits/me/usage`).then((r) => r.json()),
           // Manual-billing read-out; safe to fail silently — the page is
@@ -121,11 +124,13 @@ export default function Subscription() {
           // here just means the session expired and the usage call will
           // surface the real error.
           authedFetch(`${apiBase}/billing/me/subscriptions`).then((r) => r.ok ? r.json() : null).catch(() => null),
+          fetchPilotMe(),
         ]);
         if (cancelled) return;
         setUsage(usageRes);
         setCredits(creditsRes);
         setManualBilling(billingRes?.manualBilling ?? null);
+        setPilot(pilotRes);
         // Step 2: load the plan catalog with regional pricing applied so
         // upgrade prices reflect what the tenant will actually be charged.
         const region = usageRes?.tenant?.region ?? "us";
@@ -136,7 +141,7 @@ export default function Subscription() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, reloadN]);
 
   /**
    * Navigate the user to a Stripe-hosted page. Stripe Checkout and the Stripe
@@ -185,6 +190,7 @@ export default function Subscription() {
     );
   }
 
+  const comp = pilot.complimentary;
   const expiresIn = usage.expiresAt
     ? formatDistanceToNow(parseISO(usage.expiresAt), { addSuffix: true })
     : null;
@@ -233,10 +239,10 @@ export default function Subscription() {
               Your current plan, usage this period, and billing.
             </p>
           </div>
-          <Button variant="outline" disabled={busy === "portal"} onClick={openPortal}>
+          {!comp && <Button variant="outline" disabled={busy === "portal"} onClick={openPortal}>
             {busy === "portal" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ExternalLink className="w-4 h-4 mr-2" />}
             Manage billing
-          </Button>
+          </Button>}
         </div>
 
         {errorMsg && (
@@ -245,14 +251,14 @@ export default function Subscription() {
           </div>
         )}
 
-        {usage.planExpired && (
+        {!comp && usage.planExpired && (
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
             Your {usage.plan.name} plan has expired. Upgrade below to keep posting jobs and running interviews.
           </div>
         )}
 
-        {!usage.planExpired && thresholds.length > 0 && (
+        {!comp && !usage.planExpired && thresholds.length > 0 && (
           <div className={
             "rounded-lg border px-4 py-3 text-sm " +
             (anyAtCap
@@ -285,6 +291,10 @@ export default function Subscription() {
           </div>
         )}
 
+        <PilotAccountCard pilot={pilot.pilot} complimentary={comp}
+          canRedeem={user?.role === "tenant_admin" || user?.role === "platform_admin"}
+          onChanged={() => setReloadN((n) => n + 1)} />
+
         {/* Current plan card */}
         <Card className={`border ${planAccent[usage.plan.code] ?? "border-border"}`}>
           <CardHeader>
@@ -308,7 +318,7 @@ export default function Subscription() {
                     THAT as the expiry and label the relationship as
                     sales-managed so the user knows not to look for a
                     self-serve renew button. */}
-                {manualBilling?.paidThroughAt ? (
+                {comp ? null : manualBilling?.paidThroughAt ? (
                   <div className="text-xs text-muted-foreground mt-1 text-right">
                     <p>Paid through {format(parseISO(manualBilling.paidThroughAt), "MMM d, yyyy")}</p>
                     <p className="text-[10px] opacity-70">Managed by your account team — contact sales to renew or change plan.</p>
@@ -380,7 +390,7 @@ export default function Subscription() {
             sales@l3xy.io. The Stripe Checkout flow in routes/billing.ts is
             kept for the rare case where sales sends a customer back to a
             direct checkout link. */}
-        <div>
+        {!comp && <div>
           <h2 className="text-lg font-semibold mb-3">Available plans</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {allPlans.map((p) => (
@@ -412,7 +422,7 @@ export default function Subscription() {
               </Card>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
     </AppLayout>
   );

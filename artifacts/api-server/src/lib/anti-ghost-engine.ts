@@ -50,7 +50,8 @@ import { logger } from "./logger";
 import { sendEmail, plainToHtml } from "./email";
 import { guardrailOngoingMessage } from "./ongoing-guardrail";
 
-const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+import { meteredFetch } from "./vendor-usage";
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL, fetch: meteredFetch(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct") });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS

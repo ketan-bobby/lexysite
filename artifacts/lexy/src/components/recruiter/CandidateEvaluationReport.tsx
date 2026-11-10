@@ -226,6 +226,8 @@ export function CandidateEvaluationReport({
 
   const evaluation = evalQuery.data?.evaluation ?? null;
   const isDraft = evaluation?.approvalState === "draft";
+  const needsReview = evaluation?.reviewEditsStatus === "requires_review";
+  const unverifiedEvidence = evaluation?.evidenceProvenanceVerified === false;
   const [working, setWorking] = useState<Working | null>(null);
   const [selectKeys, setSelectKeys] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -283,15 +285,26 @@ export function CandidateEvaluationReport({
       const res = await apiFetch(`${apiBase}/evaluations/${evaluation.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ humanEdits, competencyKeys: working.competencyKeys }),
+        body: JSON.stringify({
+          humanEdits,
+          competencyKeys: working.competencyKeys,
+          expectedUpdatedAt: evaluation.updatedAt,
+        }),
       });
-      if (res.status === 409) throw new Error("This evaluation was approved — reopen it to edit.");
+      if (res.status === 409)
+        throw new Error((await res.json()).error || "This report changed. Reload before editing.");
       if (!res.ok) throw new Error("Failed to save changes");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // Use the actual saved response before clearing dirty, so the effect
+      // cannot briefly reset the editor to the pre-save cached report.
+      if (result?.evaluation) {
+        qc.setQueryData(evalKey, result);
+        setWorking(toWorking(result.evaluation));
+        setSelectKeys([...result.evaluation.competencyKeys]);
+      }
       setDirty(false);
-      invalidate();
       toast({ title: "Changes saved" });
     },
     onError: (e: Error) =>
@@ -302,6 +315,7 @@ export function CandidateEvaluationReport({
     const res = await apiFetch(`${apiBase}/evaluations/${evaluation!.id}/${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedUpdatedAt: evaluation!.updatedAt }),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Action failed");
     return res.json();
@@ -554,7 +568,7 @@ export function CandidateEvaluationReport({
                     variant="outline"
                     size="sm"
                     onClick={() => saveMut.mutate()}
-                    disabled={saveMut.isPending || !dirty}
+                    disabled={saveMut.isPending || (!dirty && !needsReview) || unverifiedEvidence}
                   >
                     {saveMut.isPending ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : null}
                     Save changes
@@ -562,7 +576,7 @@ export function CandidateEvaluationReport({
                   <Button
                     size="sm"
                     onClick={() => approveMut.mutate()}
-                    disabled={approveMut.isPending || dirty}
+                    disabled={approveMut.isPending || dirty || needsReview || unverifiedEvidence}
                   >
                     {approveMut.isPending ? (
                       <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
@@ -597,6 +611,16 @@ export function CandidateEvaluationReport({
               </Button>
             </div>
           </div>
+          {isDraft && (needsReview || unverifiedEvidence) && (
+            <p
+              role="alert"
+              className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm"
+            >
+              {unverifiedEvidence
+                ? "This historical report has no verified job-specific evidence. Regenerate it before editing or approving."
+                : "Previously saved notes are withheld because their source is not verified. Save your job-specific review again before approval. Private intake, preparation and learning notes must not be copied into this report."}
+            </p>
+          )}
           {isDraft && (
             <p className="mt-3 text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />

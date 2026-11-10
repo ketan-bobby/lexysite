@@ -301,7 +301,7 @@ export async function simulateSourcingRun(
 
 /** One demo candidate's placement: which stage, whether verified, and whether
  *  it deliberately lacks a real email. */
-type DemoSlot = { stage: string; verified: boolean; noEmail: boolean };
+type DemoSlot = { stage: NonNullable<typeof applicationsTable.$inferInsert.stage>; verified: boolean; noEmail: boolean };
 
 /**
  * Build a deterministic, honest demo funnel spread for `count` candidates:

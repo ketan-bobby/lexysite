@@ -221,7 +221,10 @@ router.get("/auth/microsoft/callback", async (req, res) => {
     const { userId, role, tenantId } = await resolveOrProvision(req, res, { emailLower, name, tid });
     if (!userId) return; // resolveOrProvision already issued a redirect
 
-    const token = issueToken({ userId, role, tenantId, region: await getTenantRegion(tenantId) });
+    const [sessionAccount] = await db.select({version:usersTable.credentialVersion})
+      .from(usersTable).where(eq(usersTable.id,userId)).limit(1);
+    if (!sessionAccount) return res.redirect(loginErrorRedirect(req,"account_unavailable"));
+    const token = issueToken({ userId, role, tenantId, credentialVersion:sessionAccount.version, region: await getTenantRegion(tenantId) });
 
     // The httpOnly session cookie is the production auth channel.
     setSessionTokenCookie(res, token, req);
@@ -253,10 +256,10 @@ const REFUSED = { userId: null, role: "", tenantId: "" } as const;
 function gateExistingUser(
   req: Request,
   res: import("express").Response,
-  user: { id: string; role: string; tenantId: string; status?: string | null },
+  user: { id: string; role: string; tenantId: string; status?: string | null; accountErasedAt?: Date | null },
   tid: string,
 ): { userId: string; role: string; tenantId: string } | null {
-  if ((user.status ?? "") === "suspended") {
+  if (user.accountErasedAt || (user.status ?? "") === "suspended") {
     res.redirect(loginErrorRedirect(req, "account_suspended"));
     return null;
   }
@@ -284,7 +287,7 @@ async function resolveOrProvision(
   { emailLower, name, tid }: { emailLower: string; name: string; tid: string },
 ): Promise<{ userId: string | null; role: string; tenantId: string }> {
   const [existing] = await controlDb
-    .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status })
+    .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status, accountErasedAt: usersTable.accountErasedAt })
     .from(usersTable)
     .where(eq(usersTable.email, emailLower))
     .limit(1);
@@ -346,7 +349,7 @@ async function resolveOrProvision(
     // our SELECT and INSERT (users.email is unique → 23505). Re-resolve.
     if (err?.code === "23505" || /unique|duplicate/i.test(String(err?.message))) {
       const [again] = await controlDb
-        .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status })
+        .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status, accountErasedAt: usersTable.accountErasedAt })
         .from(usersTable)
         .where(eq(usersTable.email, emailLower))
         .limit(1);

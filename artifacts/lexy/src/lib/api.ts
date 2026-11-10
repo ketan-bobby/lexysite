@@ -78,27 +78,40 @@ let sessionEnding = false;
  * lockstep.
  *
  * Steps:
- *  1. Clear the localStorage "user" cache (also fires the `storage` event
+ *  1. Revoke the selected server session, retaining the DEV bearer until sent.
+ *     Explicit logout keeps the UI signed in with an error if this fails.
+ *  2. Clear the localStorage "user" cache (also fires the `storage` event
  *     in other same-origin tabs → they drop the session too).
- *  2. DEV ONLY: clear the mirrored Bearer token.
- *  3. Ask the server to clear the httpOnly cookie. Fails gracefully — an
- *     already-invalid session makes this a no-op 401/403/network error and
- *     must never throw or block the redirect (.catch + .finally).
+ *  3. DEV ONLY: clear the mirrored Bearer token. Automatic unauthorized teardown
+ *     may still leave the page when the server is unavailable.
  *  4. Redirect to the login page (skipped if we're already on it, so a 401
  *     fired from the login page itself can never loop).
  */
-export function endSession(): void {
+export async function endSession(requireRevocation = false): Promise<void> {
   if (sessionEnding) return;
   sessionEnding = true;
+  // Capture the DEV bearer fallback BEFORE clearing local storage. Cookie-only
+  // production and iframe development must revoke the actual selected session.
+  try {
+    const response=await fetch(`${BASE}/api/auth/logout`, {
+      method:"POST",credentials:"include",headers:authHeaders(),
+      signal:AbortSignal.timeout(15_000),
+    });
+    if(requireRevocation && !response.ok) throw new Error("Sign-out could not be confirmed");
+  } catch {
+    if(requireRevocation) {
+      sessionEnding=false;
+      throw new Error("Sign-out could not be confirmed. Please retry.");
+    }
+    // An automatic 401 teardown is already unauthorized; don't trap the user.
+  }
   try {
     localStorage.removeItem("user");
     if (import.meta.env.DEV) localStorage.removeItem("token");
   } catch {
     /* storage unavailable (private mode) — still redirect */
   }
-  fetch(`${BASE}/api/auth/logout`, { method: "POST", credentials: "include" })
-    .catch(() => {})
-    .finally(() => {
+  {
       const loginPath = import.meta.env.BASE_URL + "login";
       if (window.location.pathname !== loginPath) {
         window.location.href = loginPath;
@@ -106,7 +119,7 @@ export function endSession(): void {
         // Already on the login page — nothing to do; allow future calls.
         sessionEnding = false;
       }
-    });
+  }
 }
 
 export async function apiFetch(

@@ -12,7 +12,8 @@
  * Both layouts share the same auth context and route-based active-state logic.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@tanstack/react-query";
@@ -22,8 +23,9 @@ import {
   Building2, Bell, Zap, Ghost, Video, UserCheck, ShieldOff,
   Database, Bot, ClipboardCheck, FileUp, HelpCircle, Sparkles, RotateCcw,
   AlertTriangle, Send, ScrollText, Scale, Handshake, MessageCircleQuestion,
-  Receipt,
+  Receipt, X, MailWarning,
 } from "lucide-react";
+import { FileCheck2 as OfferInboxIcon } from "lucide-react";
 import { useTour } from "@/lib/tour/TourProvider";
 import { tours } from "@/lib/tour/tours";
 import { resetAllHotspots } from "@/lib/tour/Hotspot";
@@ -43,6 +45,8 @@ import { apiBase, authHeaders } from "@/lib/api";
 /* ─── Internal authenticated fetch (returns JSON, throws on non-OK) ─────── */
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+// Notification display cap only; this is not a candidate score threshold.
+const NOTIFICATION_BADGE_MAX = 99;
 
 /**
  * Lightweight fetch helper used only inside AppLayout for polling endpoints
@@ -93,6 +97,7 @@ const platformAdminNav = [
       { title: "Overview",        href: "/platform",               icon: LayoutDashboard },
       { title: "Clients",         href: "/clients",                icon: Building2       },
       { title: "Candidate Pool",  href: "/candidates?pool=platform", icon: Database      },
+      { title: "Candidate Registrations", href: "/platform/candidate-registrations", icon: UserCheck },
       { title: "Open Work Orders", href: "/open-work-orders",     icon: ClipboardCheck  },
       { title: "Engagement",       href: "/engagement",             icon: Zap             },
       { title: "AI Agents",       href: "/agents",                 icon: Bot             },
@@ -102,6 +107,7 @@ const platformAdminNav = [
       { title: "Pricing",         href: "/platform/pricing",       icon: CreditCard      },
       { title: "Trial Requests",  href: "/platform/trial-requests", icon: Inbox          },
       { title: "System Errors",   href: "/platform/system-errors", icon: AlertTriangle   },
+      { title: "Mail Holds",      href: "/platform/mail-holds",    icon: MailWarning     },
       { title: "Fairness",        href: "/admin/fairness",         icon: Scale           },
       { title: "AI Job Queue",    href: "/admin/ai-jobs",          icon: Bot             },
       { title: "Settings",        href: "/admin",                  icon: Settings        },
@@ -286,7 +292,7 @@ function NavItem({
  * narrow viewports or scrolled out of view. Pulses cyan until the welcome
  * tour is completed.
  */
-function FloatingHelpButton() {
+function FloatingHelpButton({ phoneSlot = null }: { phoneSlot?: HTMLElement | null }) {
   const [location] = useLocation();
   const { user } = useAuth();
   const { start, resetAll, hasCompleted } = useTour();
@@ -306,21 +312,24 @@ function FloatingHelpButton() {
   const canRunWelcome = !!user && sidebarRoles.includes(user.role);
   const showPulse = canRunWelcome && !hasCompleted("welcome");
 
-  return (
-    <>
-    {canAskBot && <HelpBot open={helpBotOpen} onClose={() => setHelpBotOpen(false)} />}
+  const inHeader = !!phoneSlot;
+  const menu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           data-tour="help-button"
           aria-label="Help and product tour"
           className={cn(
-            "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-            "bg-primary text-primary-foreground",
-            "border border-primary/40 hover:scale-105 active:scale-95 transition-transform",
+            inHeader
+              ? "relative w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
+              : cn(
+                  "fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center",
+                  "bg-primary text-primary-foreground",
+                  "border border-primary/40 hover:scale-105 active:scale-95 transition-transform",
+                ),
           )}
         >
-          <HelpCircle className="w-6 h-6" />
+          <HelpCircle className={inHeader ? "w-5 h-5" : "w-6 h-6"} />
           {showPulse && (
             <>
               <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
@@ -371,6 +380,11 @@ function FloatingHelpButton() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+  return (
+    <>
+    {canAskBot && <HelpBot open={helpBotOpen} onClose={() => setHelpBotOpen(false)} />}
+    {phoneSlot ? createPortal(menu, phoneSlot) : menu}
     </>
   );
 }
@@ -380,11 +394,55 @@ function FloatingHelpButton() {
 export function AppLayout({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   const { user, logout } = useAuth();
   const [location, navigate] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches,
+  );
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const on = () => setIsDesktop(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const closePhoneRail = () => {
+    setSidebarOpen(false);
+    toggleRef.current?.focus();
+  };
+  const [helpSlot, setHelpSlot] = useState<HTMLElement | null>(null);
+  const phoneRailClosed = !isDesktop && !sidebarOpen;
+  const phoneRailOpen = !isDesktop && sidebarOpen;
+  // Phone: the rail is an overlay. Escape closes it; navigating closes it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !window.matchMedia("(min-width: 768px)").matches) {
+        setSidebarOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    if (!window.matchMedia("(min-width: 768px)").matches) setSidebarOpen(false);
+  }, [location]);
 
   const isPlatformAdmin = user?.role === "platform_admin";
   const isHiringManager = user?.role === "hiring_manager";
   const isInterviewer   = user?.role === "interviewer";
+  const { data: notificationCount, isError: notificationCountError } = useQuery<{ count: number }>({
+    queryKey: ["staff-notification-count", user?.id],
+    queryFn: () => layoutApiFetch("/user-notifications/unread-count"),
+    enabled: !!user && user.role !== "candidate",
+    refetchInterval: 30_000,
+    staleTime: 5_000,
+  });
+  const unreadNotifications = !notificationCountError && Number.isInteger(notificationCount?.count)
+    ? Math.max(0, notificationCount!.count) : 0;
 
   /* Poll the AI agent status every 10 seconds to update the status pill. */
   const { data: agentData } = useQuery<any>({
@@ -581,7 +639,7 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
         </nav>
 
         {/* Page content */}
-        <main className="flex-1 w-full p-4 md:p-8 animate-in fade-in duration-500">
+        <main className="flex-1 min-w-0 w-full p-4 md:p-8 animate-in fade-in duration-500">
           {children}
         </main>
         <FloatingHelpButton />
@@ -634,6 +692,11 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
               <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/settings/intro-video")}>
                 <Video className="w-4 h-4 mr-2" /> My Introduction Video
               </DropdownMenuItem>
+              {user.role !== "candidate" && (
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/settings/calendar")}>
+                  <Settings className="w-4 h-4 mr-2" /> Calendar preferences
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10" onClick={logout}>
                 <LogOut className="w-4 h-4 mr-2" /> Log out
               </DropdownMenuItem>
@@ -641,7 +704,7 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
           </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 w-full p-4 md:p-8 animate-in fade-in duration-500">
+        <main className="flex-1 min-w-0 w-full p-4 md:p-8 animate-in fade-in duration-500">
           {children}
         </main>
         <FloatingHelpButton />
@@ -654,14 +717,30 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
     <div className="app-bg min-h-screen flex" style={style}>
 
       {/* ── Collapsible sidebar ─────────────────────────────────────────── */}
-      <aside className={cn(
-        "frosted-rail transition-all duration-300 flex flex-col fixed inset-y-0 z-40",
-        sidebarOpen ? "w-64" : "w-[72px]",
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={closePhoneRail}
+          aria-hidden="true"
+        />
+      )}
+      <aside id="app-sidebar" aria-label="Main navigation" inert={phoneRailClosed} aria-hidden={phoneRailClosed || undefined} className={cn(
+        "frosted-rail transition-all duration-300 flex flex-col fixed inset-y-0 z-40 max-w-[85vw]",
+        "w-64 md:max-w-none",
+        sidebarOpen ? "md:w-64 translate-x-0" : "md:w-[72px] -translate-x-full md:translate-x-0",
       )}>
 
         {/* Logo row */}
         <div className="h-16 flex items-center px-4 border-b border-sidebar-border shrink-0">
           <Logo collapsed={!sidebarOpen} isPlatformAdmin={user.role === "platform_admin"} />
+          <button
+            type="button"
+            onClick={closePhoneRail}
+            aria-label="Close navigation"
+            className="ml-auto md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Scrollable nav area */}
@@ -709,6 +788,18 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
               </div>
             </div>
           ))}
+
+          {["tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"].includes(user.role) && (
+            <div className="px-3">
+              <div className="space-y-0.5">
+                <NavItem
+                  item={{ title: "Offer Inbox", href: "/offer-inbox", icon: OfferInboxIcon }}
+                  isActive={location.startsWith("/offer-inbox")}
+                  collapsed={!sidebarOpen}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Recruiter-admin extra section (read-only Clients directory) */}
           {user.role === "recruiter_admin" && (
@@ -809,6 +900,12 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
                 <Video className="w-4 h-4 mr-2" /> My Introduction Video
               </DropdownMenuItem>
               <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => navigate("/settings/calendar")}
+              >
+                <Settings className="w-4 h-4 mr-2" /> Calendar preferences
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 className="cursor-pointer text-destructive focus:bg-destructive/10"
                 onClick={logout}
               >
@@ -821,8 +918,8 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
 
       {/* ── Main content area (offset by sidebar width) ─────────────────── */}
       <div className={cn(
-        "flex-1 flex flex-col min-h-screen transition-all duration-300",
-        sidebarOpen ? "ml-64" : "ml-[72px]",
+        "flex-1 min-w-0 flex flex-col min-h-screen transition-all duration-300",
+        sidebarOpen ? "md:ml-64" : "md:ml-[72px]",
       )}>
 
         {/* Sticky top header bar */}
@@ -830,7 +927,11 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
           <div className="flex items-center gap-4">
             {/* Toggle sidebar collapse */}
             <button
+              ref={toggleRef}
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? "Collapse navigation" : "Open navigation"}
+              aria-expanded={sidebarOpen}
+              aria-controls="app-sidebar"
               className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
             >
               <Menu className="w-5 h-5" />
@@ -855,7 +956,18 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
 
           <div className="flex items-center gap-3">
             {/* Quick search — ⌘K command palette over candidates/work orders/pages */}
-            <QuickSearch role={user.role} />
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Quick search (⌘K)"
+              className="hidden md:flex items-center gap-2 h-9 px-4 rounded-xl bg-foreground/5 border border-foreground/8 text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/8 transition-all"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Quick search…</span>
+              <kbd className="ml-2 bg-foreground/10 px-1.5 rounded text-[10px] font-sans text-faint dark:text-inherit">⌘K</kbd>
+            </button>
+
+            {/* Phone-only home for the help launcher (see FloatingHelpButton) */}
+            <div ref={setHelpSlot} className="flex md:hidden" />
 
             {/* AI agent status pill — updates every 10s */}
             <div className={cn(
@@ -868,23 +980,33 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
 
             <ThemeToggle />
 
-            {/* Notification bell — links to candidate notifications page */}
+            {/* Staff notification bell — real unread count, no fabricated activity dot. */}
             <button
               className="relative w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-all"
+              aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ""}`}
               onClick={() => navigate(isCandidate ? "/portal/notifications" : "/notifications")}
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full shadow-[0_0_6px_2px] shadow-primary/60 animate-pulse" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-primary text-primary-foreground rounded-full text-[10px] leading-4 text-center">
+                  {unreadNotifications > NOTIFICATION_BADGE_MAX ? "99+" : unreadNotifications}
+                </span>
+              )}
             </button>
           </div>
         </header>
 
         {/* Page content — fades in on mount */}
-        <main className="flex-1 p-6 md:p-8 animate-in fade-in duration-500 w-full">
+        <main inert={phoneRailOpen} className="flex-1 min-w-0 p-4 md:p-8 animate-in fade-in duration-500 w-full">
           {children}
         </main>
       </div>
-      <FloatingHelpButton />
+      <FloatingHelpButton phoneSlot={isDesktop ? null : helpSlot} />
+      <QuickSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        pages={effectiveNav.flatMap(g => g.items.map(({ title, href, icon }) => ({ title, href, icon })))}
+      />
     </div>
   );
 }

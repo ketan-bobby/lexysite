@@ -5,9 +5,12 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { InterviewPath } from "./interviewPath";
 import type { JobEmploymentType } from "./jobEmploymentType";
+import type { JobProgressionAuthority } from "./jobProgressionAuthority";
 import type { JobStatus } from "./jobStatus";
 import type { JobWorkType } from "./jobWorkType";
+import type { RecruitingMode } from "./recruitingMode";
 
 export interface Job {
   id: string;
@@ -25,6 +28,14 @@ export interface Job {
   workOrderNumber?: string | null;
   clientWorkOrderNumber?: string | null;
   isConfidential?: boolean;
+  /** When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates. */
+  internalMobility: boolean;
+  recruitingMode: RecruitingMode;
+  interviewPath: InterviewPath;
+  /** Server-owned capability; always false during configuration-only rollout. */
+  autonomyExecutionEnabled: boolean;
+  /** Selecting a recruiting mode does not grant automatic progression authority. */
+  progressionAuthority: JobProgressionAuthority;
   createdById?: string | null;
   createdByRole?: string | null;
   assignedRecruiterId?: string | null;

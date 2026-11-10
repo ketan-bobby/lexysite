@@ -31,6 +31,8 @@ import {
 } from "@workspace/db";
 import { and, eq, desc, inArray, sql, type SQL } from "drizzle-orm";
 import { generateJSON } from "./ai";
+import { interviewEvaluationWarning, isValidInterviewScore } from "./interview-turn-policy";
+import { readEvaluationReviewEdits, type EvaluationEditBinding } from "./evaluation-review-edits";
 import { FAIRNESS_DIRECTIVE, redactPii } from "./fairness";
 import { logger } from "./logger";
 import { intelTenantScope, type TenantScope } from "./class-b-access";
@@ -102,6 +104,8 @@ export interface EvaluationContent {
   observations: EvalObservation[];
   developmentOpportunities: EvalDevelopment[];
   riskAssessment: { concerns: string[]; toValidate: string[] };
+  /** Server-derived evidence gaps; a narrative edit cannot erase them. */
+  assessmentQualityWarnings?: string[];
   verification: EvalVerification;
   recommendation: { band: RecommendationBand; rationale: string };
   /** Evidence provenance shown to the recruiter (not scores). */
@@ -186,9 +190,9 @@ export async function gatherEvaluationInputs(
   const sessionRows = await db
     .select({
       session: interviewSessionsTable,
-        appJobId: applicationsTable.jobId,
-        appCandidateId: applicationsTable.candidateId,
-        planJobId: interviewPlansTable.jobId,
+      appJobId: applicationsTable.jobId,
+      appCandidateId: applicationsTable.candidateId,
+      planJobId: interviewPlansTable.jobId,
       summary: interviewSummariesTable,
     })
     .from(interviewSessionsTable)
@@ -207,9 +211,7 @@ export async function gatherEvaluationInputs(
   // is usable only when its linked application OR its plan proves this exact
   // job. Missing provenance fails closed.
   const match = sessionRows.find(
-    (r) =>
-      (r.appJobId === jobId && r.appCandidateId === candidateId) ||
-      r.planJobId === jobId,
+    (r) => (r.appJobId === jobId && r.appCandidateId === candidateId) || r.planJobId === jobId,
   );
   if (match) {
     interview = { session: match.session, summary: match.summary ?? null };
@@ -243,7 +245,8 @@ function primaryScore(inputs: EvaluationInputs): number | null {
   if (Object.keys(safeSignals).length > 0) {
     const safeScores = computeScores(safeSignals, {});
     if (typeof safeScores.fitScore === "number") return safeScores.fitScore;
-    if (typeof safeScores.hireProbability === "number") return Math.round(safeScores.hireProbability);
+    if (typeof safeScores.hireProbability === "number")
+      return Math.round(safeScores.hireProbability);
   }
   return null;
 }
@@ -374,7 +377,7 @@ function perQuestionScoreLine(inputs: EvaluationInputs): string {
     ? (inputs.interview!.session.answers as any[])
     : [];
   const scores = answers
-    .map((a) => (typeof a?.score === "number" ? Math.round(a.score) : null))
+    .map((a) => (isValidInterviewScore(a?.score) ? Math.round(a.score) : null))
     .filter((s): s is number => s !== null);
   if (scores.length === 0) return "";
   return `Per-question scores (same 0-100 grader as the overall score): ${scores.join(", ")}`;
@@ -567,7 +570,16 @@ Rules:
     ? (inputs.interview!.session.answers as unknown[]).length
     : 0;
 
+  const interviewWarning = inputs.interview?.summary
+    ? interviewEvaluationWarning(
+        inputs.interview.summary.overallScore,
+        inputs.interview.summary.recommendation,
+        (inputs.interview.session.answers ?? []) as { score?: unknown; answer?: unknown }[],
+        inputs.interview.session.totalQuestions,
+      )
+    : null;
   const content: EvaluationContent = {
+    assessmentQualityWarnings: interviewWarning ? [interviewWarning] : [],
     headline: str(parsed.headline) || `Evaluation for ${inputs.job.title}`,
     executiveSummary: str(parsed.executiveSummary),
     roleAlignment: str(parsed.roleAlignment),
@@ -576,7 +588,10 @@ Rules:
     observations: cleanObservations(parsed.observations),
     developmentOpportunities: cleanDevelopment(parsed.developmentOpportunities),
     riskAssessment: {
-      concerns: strArray(parsed?.riskAssessment?.concerns),
+      concerns: [
+        ...strArray(parsed?.riskAssessment?.concerns),
+        ...(interviewWarning ? [interviewWarning] : []),
+      ],
       toValidate: strArray(parsed?.riskAssessment?.toValidate),
     },
     verification,
@@ -631,21 +646,20 @@ export interface EvaluationHumanEdits {
  */
 export function mergeEvaluation(
   aiContent: EvaluationContent,
-  humanEdits: EvaluationHumanEdits | null | undefined,
+  humanEdits: unknown,
   competencyKeys: string[],
+  binding?: EvaluationEditBinding,
 ): EvaluationContent & { recruiterComments: string } {
-  /* Human edits are recruiter workspace content, not evidence provenance. Do
-     not let an arbitrary note/override cross into the client-rendered content:
-     a historical overlay may contain career-intake, prep, or coaching detail.
-     The stored edit remains intact for the recruiter; public renderers receive
-     only the job-bound AI evidence drafted from the sealed inputs above. */
-  const he: EvaluationHumanEdits = {};
+  /* Historical overlays can contain private developmental material. Accept
+     only newly authorized edits bound to this exact report and AI draft;
+     preserve legacy blobs in storage but never in browser/PDF output. */
+  const he = readEvaluationReviewEdits(aiContent, humanEdits, binding) ?? {};
   const aiByKey = new Map<string, EvalCompetency>();
   for (const c of aiContent.competencies ?? []) aiByKey.set(c.key, c);
 
   const libByKey = new Map(resolveCompetencies(competencyKeys).map((c) => [c.key, c]));
   const competencies: EvalCompetency[] = competencyKeys.map((key) => {
-    const base: EvalCompetency = aiByKey.get(key) ?? {
+    const original: EvalCompetency = aiByKey.get(key) ?? {
       key,
       label: libByKey.get(key)?.label ?? key,
       score: null,
@@ -653,18 +667,23 @@ export function mergeEvaluation(
       evidence: "",
       rationale: "",
     };
+    const base: EvalCompetency = {
+      key,
+      label: original.label,
+      score: original.score,
+      insufficientEvidence: original.insufficientEvidence,
+      evidence: original.evidence,
+      rationale: original.rationale,
+    };
     const ov = he.competencyOverrides?.[key];
     if (!ov) return base;
-    const score = ov.score !== undefined ? ov.score : base.score;
+    const rawScore = ov.score !== undefined ? ov.score : base.score;
+    const insufficient = rawScore == null || ov.insufficientEvidence === true;
+    const score = insufficient ? null : rawScore;
     return {
       ...base,
       score,
-      insufficientEvidence:
-        ov.insufficientEvidence !== undefined
-          ? ov.insufficientEvidence
-          : score == null
-            ? true
-            : false,
+      insufficientEvidence: insufficient,
       evidence: ov.evidence !== undefined ? ov.evidence : base.evidence,
       rationale: ov.rationale !== undefined ? ov.rationale : base.rationale,
     };
@@ -675,11 +694,29 @@ export function mergeEvaluation(
     executiveSummary: he.executiveSummary ?? aiContent.executiveSummary,
     roleAlignment: he.roleAlignment ?? aiContent.roleAlignment,
     competencies,
-    behavioralInsights: he.behavioralInsights ?? aiContent.behavioralInsights,
-    observations: he.observations ?? aiContent.observations,
-    developmentOpportunities: he.developmentOpportunities ?? aiContent.developmentOpportunities,
+    behavioralInsights: (he.behavioralInsights ?? aiContent.behavioralInsights).map((b) => ({
+      dimension: b.dimension,
+      descriptor: b.descriptor,
+    })),
+    observations: (he.observations ?? aiContent.observations).map((o) => ({
+      observed: o.observed,
+      whyItMatters: o.whyItMatters,
+      followUps: o.followUps,
+    })),
+    developmentOpportunities: (
+      he.developmentOpportunities ?? aiContent.developmentOpportunities
+    ).map((d) => ({
+      area: d.area,
+      impact: d.impact,
+      coaching: d.coaching,
+    })),
     riskAssessment: {
-      concerns: he.riskAssessment?.concerns ?? aiContent.riskAssessment.concerns,
+      concerns: [
+        ...new Set([
+          ...(he.riskAssessment?.concerns ?? aiContent.riskAssessment.concerns),
+          ...(aiContent.assessmentQualityWarnings ?? []),
+        ]),
+      ],
       toValidate: he.riskAssessment?.toValidate ?? aiContent.riskAssessment.toValidate,
     },
     verification: {
@@ -687,10 +724,25 @@ export function mergeEvaluation(
       summary: he.verification?.summary ?? aiContent.verification.summary,
     },
     recommendation: {
-      band: he.recommendation?.band ?? aiContent.recommendation.band,
+      band: aiContent.recommendation.band,
       rationale: he.recommendation?.rationale ?? aiContent.recommendation.rationale,
     },
-    evidenceBasis: aiContent.evidenceBasis,
+    evidenceBasis: {
+      hasInterview: aiContent.evidenceBasis.hasInterview,
+      interviewAnswers: aiContent.evidenceBasis.interviewAnswers,
+      hasIntelligence: aiContent.evidenceBasis.hasIntelligence,
+      hasResume: aiContent.evidenceBasis.hasResume,
+      ...(aiContent.evidenceBasis.provenance
+        ? {
+            provenance: {
+              kind: aiContent.evidenceBasis.provenance.kind,
+              jobId: aiContent.evidenceBasis.provenance.jobId,
+              candidateId: aiContent.evidenceBasis.provenance.candidateId,
+              interviewSessionId: aiContent.evidenceBasis.provenance.interviewSessionId,
+            },
+          }
+        : {}),
+    },
     recruiterComments: he.recruiterComments ?? "",
   };
 }

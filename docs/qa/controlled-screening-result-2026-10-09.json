@@ -1,0 +1,84 @@
+{
+  "execution": {
+    "runId": "045a3f10-7039-448c-a74d-1bd3ee5945e0",
+    "status": "completed"
+  },
+  "workflowStatus": "ready",
+  "steps": [
+    {
+      "key": "screening",
+      "label": "Screening evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "verification",
+      "label": "Verification evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "engagement",
+      "label": "Engagement evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "ai_interview",
+      "label": "AI interview evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "evaluation_review",
+      "label": "Human evaluation review",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "hiring_decision",
+      "label": "Human hiring decision",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    }
+  ],
+  "runtimeEvidence": [
+    {
+      "id": "eca37488dade21ed25e2b70e5f9fd7e459a9085a7a5cb2dddfeab182cc406528",
+      "stepKey": "screening",
+      "sourceType": "agent_screen",
+      "sourceId": "1e392825-962d-4867-aea7-0402ac440eb4",
+      "occurredAt": "2026-10-09T13:41:16.979Z",
+      "scope": "job",
+      "summary": "Job-specific agent screen recorded · score 85/100 · advance.",
+      "attentionRequired": false,
+      "readyForReview": true,
+      "reason": null
+    }
+  ],
+  "screeningReadiness": {
+    "ready": true,
+    "reason": null
+  },
+  "livePilot": {
+    "eligible": true,
+    "stepKey": "screening",
+    "active": true,
+    "attempted": true,
+    "sendAttempted": false,
+    "expiresAt": "2026-10-09T14:41:14.517Z",
+    "testRecipient": {
+      "active": false,
+      "expiresAt": null,
+      "controlledEmail": null
+    }
+  },
+  "reviewed": false,
+  "note": "Native assessment only. No human evidence approval or subsequent dispatch."
+}

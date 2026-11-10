@@ -32,6 +32,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import CandidateRegistrations from "@/pages/admin/candidate-registrations";
+import MailHolds from "@/pages/admin/mail-holds";
 
 import Login from "@/pages/login";
 import MicrosoftCallback from "@/pages/auth-microsoft-callback";
@@ -84,6 +86,7 @@ import DNCManager from "@/pages/recruiter/dnc/index";
 import CandidatePortalLogin from "@/pages/portal/login";
 import AcceptInvite from "@/pages/accept-invite";
 import NotFound from "@/pages/not-found";
+import PublicInterviewBooking from "@/pages/public-interview-booking";
 import CareerHub from "@/pages/portal/career";
 import PortalLearningGrowth from "@/pages/portal/learning-growth";
 import PortalLearningGrowthCourseDetail from "@/pages/portal/learning-growth/course-detail";
@@ -107,6 +110,7 @@ import HirePulse from "@/pages/hire-pulse";
 import AuditPage from "@/pages/recruiter/audit";
 import CareerRegister from "@/pages/career-register";
 import ResetPassword from "@/pages/reset-password";
+import ControlledOfferPage from "@/pages/controlled-offer";
 import HmPackagePage from "@/pages/hm-package";
 import HiringDashboard from "@/pages/hiring/dashboard";
 import HiringJobs from "@/pages/hiring/jobs";
@@ -126,6 +130,9 @@ import AcceptTeamInvite from "@/pages/accept-team-invite";
 import ResumeImport from "@/pages/recruiter/import";
 import MyTeam from "@/pages/recruiter/team";
 import RecruiterSettings from "@/pages/recruiter/settings";
+import AtsSettings from "@/pages/ats-settings";
+import CalendarPreferences from "@/pages/calendar-preferences";
+import OfferInbox from "@/pages/recruiter/offer-inbox";
 import IntroVideo from "@/pages/recruiter/intro-video";
 
 const queryClient = new QueryClient({
@@ -179,6 +186,8 @@ function Router() {
       <Route path="/auth/trial-exchange" component={TrialExchange} />
 
       <Route path="/platform"><ProtectedRoute component={PlatformDashboard} roles={["platform_admin"]} /></Route>
+      <Route path="/platform/candidate-registrations"><ProtectedRoute component={CandidateRegistrations} roles={["platform_admin"]} /></Route>
+      <Route path="/platform/mail-holds"><ProtectedRoute component={MailHolds} roles={["platform_admin"]} /></Route>
       <Route path="/dashboard"><ProtectedRoute component={Dashboard} roles={recruiterRoles} /></Route>
       <Route path="/jobs"><ProtectedRoute component={JobsList} roles={recruiterRoles} /></Route>
       <Route path="/jobs/:id"><ProtectedRoute component={JobDetail} roles={[...recruiterRoles, "hiring_manager"]} /></Route>
@@ -192,6 +201,7 @@ function Router() {
       <Route path="/interviews/:id/proctor-report" component={ProctoringReport} />
       <Route path="/interviews/:id"><ProtectedRoute component={InterviewDetail} roles={recruiterRoles} /></Route>
       <Route path="/coordinator"><ProtectedRoute component={Coordinator} roles={recruiterRoles} /></Route>
+      <Route path="/recruiter/coordinator"><ProtectedRoute component={Coordinator} roles={recruiterRoles} /></Route>
       <Route path="/outreach"><ProtectedRoute component={OutreachCampaigns} roles={recruiterRoles} /></Route>
       <Route path="/outreach/inbox"><ProtectedRoute component={OutreachInbox} roles={recruiterRoles} /></Route>
       <Route path="/sourcing"><ProtectedRoute component={Sourcing} roles={recruiterRoles} /></Route>
@@ -218,7 +228,10 @@ function Router() {
       <Route path="/dnc"><ProtectedRoute component={DNCManager} roles={recruiterRoles} /></Route>
       <Route path="/team"><ProtectedRoute component={MyTeam} roles={recruiterRoles} /></Route>
       <Route path="/recruiter/settings"><ProtectedRoute component={RecruiterSettings} roles={recruiterRoles} /></Route>
+      <Route path="/settings/calendar"><ProtectedRoute component={CalendarPreferences} roles={[...recruiterRoles, "hiring_manager", "interviewer"]} /></Route>
+      <Route path="/settings/ats"><ProtectedRoute component={AtsSettings} roles={["platform_admin", "tenant_admin", "recruiter_admin"]} /></Route>
       <Route path="/settings/intro-video"><ProtectedRoute component={IntroVideo} roles={[...recruiterRoles, "hiring_manager", "interviewer"]} /></Route>
+      <Route path="/offer-inbox"><ProtectedRoute component={OfferInbox} roles={["tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"]} /></Route>
       <Route path="/clients"><ProtectedRoute component={ClientsList} roles={[...adminRoles, "recruiter_admin"]} /></Route>
       <Route path="/clients/:id"><ProtectedRoute component={ClientDetail} roles={[...adminRoles, "recruiter_admin"]} /></Route>
       <Route path="/open-work-orders"><ProtectedRoute component={OpenWorkOrders} roles={["platform_admin"]} /></Route>
@@ -262,7 +275,9 @@ function Router() {
           moved from /lexy to the domain root. Keep until those one-hour
           reset tokens have naturally expired. */}
       <Route path="/lexy/portal/reset-password" component={ResetPassword} />
+      <Route path="/offer/:token" component={ControlledOfferPage} />
       <Route path="/hm/:token" component={HmPackagePage} />
+      <Route path="/book-interview" component={PublicInterviewBooking} />
 
       {/* ── Hiring Manager portal ─────────────────────────────── */}
       <Route path="/hiring/dashboard"><ProtectedRoute component={HiringDashboard} roles={hiringManagerRoles} /></Route>

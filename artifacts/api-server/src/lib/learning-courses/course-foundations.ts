@@ -42,14 +42,22 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
           prompt:
             "Which response is clearest when a refund was approved yesterday and normally reaches the card within five business days?",
           options: [
-            { id: "a", label: "Your refund was approved yesterday and should reach your card within five business days." },
+            {
+              id: "a",
+              label:
+                "Your refund was approved yesterday and should reach your card within five business days.",
+            },
             { id: "b", label: "Refunds have been being processed and may eventuate." },
             { id: "c", label: "We approve it yesterday, wait five days." },
           ],
           correctOptionId: "a",
           feedback:
             "Option A uses plain words, correct past tense for the approval and a specific, qualified delivery window. B is vague and complex; C has inaccurate tense and sounds abrupt.",
-          checklist: ["Names the completed action", "States the expected timing", "Uses a complete sentence"],
+          checklist: [
+            "Names the completed action",
+            "States the expected timing",
+            "Uses a complete sentence",
+          ],
         },
         {
           id: "foundations-plain-accurate-sentences-apply",
@@ -60,7 +68,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Compare your wording with the coaching example. More than one clear answer can work; this practice is not an assessment grade.",
           modelAnswer:
             "We could not ship your item because of a system error. It is now scheduled to ship Friday, and we will send you the tracking link then.",
-          checklist: ["Uses familiar words", "Explains the current status", "Includes Friday as the next step"],
+          checklist: [
+            "Uses familiar words",
+            "Explains the current status",
+            "Includes Friday as the next step",
+          ],
         },
       ],
     },
@@ -99,13 +111,20 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Read once: “I changed my plan on Monday, but the app still shows the old allowance.” What is confirmed?",
           options: [
             { id: "a", label: "The plan change failed permanently." },
-            { id: "b", label: "The customer requested a change Monday and currently sees the old allowance." },
+            {
+              id: "b",
+              label: "The customer requested a change Monday and currently sees the old allowance.",
+            },
             { id: "c", label: "The customer changed plans today." },
           ],
           correctOptionId: "b",
           feedback:
             "Option B preserves only stated facts. The cause and final status are not yet known, and Monday should not be replaced with today.",
-          checklist: ["Keeps the stated day", "Does not invent a cause", "Captures the visible problem"],
+          checklist: [
+            "Keeps the stated day",
+            "Does not invent a cause",
+            "Captures the visible problem",
+          ],
         },
         {
           id: "foundations-reading-for-intent-detail-apply",
@@ -116,7 +135,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Unhide the scenario and compare exact facts. The model is a coaching example, not a score.",
           modelAnswer:
             "Intent: understand or correct the £18 fee. Details: fee appeared after checkout; customer chose standard delivery; page appeared to say delivery was free. Emotion: surprised or frustrated. I would verify the offer and order before promising a refund.",
-          checklist: ["Captures £18", "Notes when the fee appeared", "Avoids promising an unverified outcome"],
+          checklist: [
+            "Captures £18",
+            "Notes when the fee appeared",
+            "Avoids promising an unverified outcome",
+          ],
         },
       ],
     },
@@ -140,8 +163,7 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         },
       ],
       example: {
-        scenario:
-          "Two orders appear on the account, and the customer says, “Cancel the blue one.”",
+        scenario: "Two orders appear on the account, and the customer says, “Cancel the blue one.”",
         response:
           "I can help with that. To make sure I cancel the right order, do you mean the blue jacket in order 4831?",
         whyItWorks:
@@ -172,7 +194,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Check that your confirmation protects against changing the wrong order or address. The example is coaching, not a grade.",
           modelAnswer:
             "Before I update it, please confirm that you want order 7702 changed from 14 Market Street to 40 Market Street. Is that correct?",
-          checklist: ["Includes order 7702", "States both addresses", "Requests confirmation before action"],
+          checklist: [
+            "Includes order 7702",
+            "States both addresses",
+            "Requests confirmation before action",
+          ],
         },
       ],
     },
@@ -217,7 +243,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
           correctOptionId: "a",
           feedback:
             "Pending describes an initiated but incomplete transaction. Refund and cancellation are different actions and would misstate the status.",
-          checklist: ["Distinguishes payment states", "Avoids an unsupported promise", "Uses customer-friendly wording"],
+          checklist: [
+            "Distinguishes payment states",
+            "Avoids an unsupported promise",
+            "Uses customer-friendly wording",
+          ],
         },
         {
           id: "foundations-support-vocabulary-apply",
@@ -228,7 +258,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Your answer should preserve the meaning without exposing internal jargon. The model is one coaching example.",
           modelAnswer:
             "We could not confirm your sign-in details. Please reset your password using the link on the sign-in page, then try again.",
-          checklist: ["Explains what failed", "Gives a concrete next step", "Avoids internal shorthand"],
+          checklist: [
+            "Explains what failed",
+            "Gives a concrete next step",
+            "Avoids internal shorthand",
+          ],
         },
       ],
     },
@@ -263,11 +297,13 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         {
           id: "foundations-summarize-reconstruct-check",
           type: "choice",
-          prompt:
-            "Which sentence is safest when the cause of a missed delivery is unknown?",
+          prompt: "Which sentence is safest when the cause of a missed delivery is unknown?",
           options: [
             { id: "a", label: "The driver deliberately skipped the address." },
-            { id: "b", label: "Tracking shows a missed delivery; the reason is not yet confirmed." },
+            {
+              id: "b",
+              label: "Tracking shows a missed delivery; the reason is not yet confirmed.",
+            },
             { id: "c", label: "The customer gave the wrong address." },
           ],
           correctOptionId: "b",
@@ -284,7 +320,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Compare whether your summary preserves dates, amounts and the requested outcome. This is practice, not a proficiency result.",
           modelAnswer:
             "Mina upgraded on 3 May. On 5 May, she was charged £25 for the old plan and £35 for the new plan. She wants the possible duplicate reviewed before her next bill.",
-          checklist: ["Includes both dates", "Includes both amounts", "Describes the charge as needing review"],
+          checklist: [
+            "Includes both dates",
+            "Includes both amounts",
+            "Describes the charge as needing review",
+          ],
         },
       ],
     },
@@ -308,8 +348,7 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         },
       ],
       example: {
-        scenario:
-          "A parent paid for next-day delivery, but the birthday gift has not arrived.",
+        scenario: "A parent paid for next-day delivery, but the birthday gift has not arrived.",
         response:
           "I understand why this delay is especially disappointing when the gift is for a birthday. I will check the carrier status now and explain the available options.",
         whyItWorks:
@@ -319,12 +358,15 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         {
           id: "foundations-empathy-ownership-check",
           type: "choice",
-          prompt:
-            "Which response combines empathy with responsible ownership?",
+          prompt: "Which response combines empathy with responsible ownership?",
           options: [
             { id: "a", label: "Calm down; deliveries are sometimes late." },
             { id: "b", label: "I guarantee it will arrive in an hour." },
-            { id: "c", label: "I can see why the delay is frustrating. I will check the latest scan and then outline your options." },
+            {
+              id: "c",
+              label:
+                "I can see why the delay is frustrating. I will check the latest scan and then outline your options.",
+            },
           ],
           correctOptionId: "c",
           feedback:
@@ -340,7 +382,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Look for specific acknowledgement and an immediate, realistic next step. The model is a coaching example only.",
           modelAnswer:
             "I understand how urgent this is when you have already contacted us twice and need to submit today. I will review the lock reason now and, if I cannot remove it, connect you with the account team and explain the expected response time.",
-          checklist: ["Acknowledges repeat contact", "Recognizes today's deadline", "States an action without promising success"],
+          checklist: [
+            "Acknowledges repeat contact",
+            "Recognizes today's deadline",
+            "States an action without promising success",
+          ],
         },
       ],
     },
@@ -364,8 +410,7 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         },
       ],
       example: {
-        scenario:
-          "Privately say: “The first payment failed, but the second payment was accepted.”",
+        scenario: "Privately say: “The first payment failed, but the second payment was accepted.”",
         response:
           "Suggested phrasing: “The FIRST payment failed / but the SECOND payment was accepted.” Text reflection: I will slow down around “second payment” so the contrast is clear.",
         whyItWorks:
@@ -385,18 +430,25 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
           correctOptionId: "b",
           feedback:
             "Option B separates the condition from the next instruction. The other breaks split phrases that belong together.",
-          checklist: ["Keeps phrases intact", "Separates sequential actions", "Supports a comfortable pace"],
+          checklist: [
+            "Keeps phrases intact",
+            "Separates sequential actions",
+            "Supports a comfortable pace",
+          ],
         },
         {
           id: "foundations-intelligibility-pacing-apply",
           type: "reflection",
           prompt:
             "Privately read “Your current balance is sixty, not sixteen, pounds” or mark it silently. Add pause and emphasis marks, then write one pacing adjustment you would make. No recording is made.",
-          feedback:
-            "Use the model as a self-coaching example, not an assessment of your speech.",
+          feedback: "Use the model as a self-coaching example, not an assessment of your speech.",
           modelAnswer:
             "“Your current balance is SIXTY / not SIXTEEN / pounds.” I would slow down on the two numbers, finish each word clearly and pause around the correction.",
-          checklist: ["Marks the contrasting numbers", "Adds meaningful pauses", "Names one specific self-adjustment"],
+          checklist: [
+            "Marks the contrasting numbers",
+            "Adds meaningful pauses",
+            "Names one specific self-adjustment",
+          ],
         },
       ],
     },
@@ -431,11 +483,13 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         {
           id: "foundations-call-opening-close-check",
           type: "choice",
-          prompt:
-            "Which closing gives the clearest expectation after an escalation?",
+          prompt: "Which closing gives the clearest expectation after an escalation?",
           options: [
             { id: "a", label: "Someone will probably contact you." },
-            { id: "b", label: "The billing team owns the review and will email you by 3 p.m. tomorrow." },
+            {
+              id: "b",
+              label: "The billing team owns the review and will email you by 3 p.m. tomorrow.",
+            },
             { id: "c", label: "That's all. Bye." },
           ],
           correctOptionId: "b",
@@ -452,7 +506,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Check your typed close against the operational details. The example is coaching, not speech scoring.",
           modelAnswer:
             "I have sent the password reset link, and it will expire in 30 minutes. Please try it before then. If it does not work, reply to the case email so we can continue helping without starting again.",
-          checklist: ["Confirms the sent link", "Includes the 30-minute limit", "Explains what to do if it fails"],
+          checklist: [
+            "Confirms the sent link",
+            "Includes the 30-minute limit",
+            "Explains what to do if it fails",
+          ],
         },
       ],
     },
@@ -480,15 +538,13 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
           "Read, hide, write: “Asha Menon, order QF-0427, delivery to Flat 6, 18 Cedar Road, Leeds LS7 4AB.”",
         response:
           "Customer: Asha Menon | Order: QF-0427 | Address: Flat 6, 18 Cedar Road, Leeds LS7 4AB",
-        whyItWorks:
-          "Labels and chunking make each exact field easier to compare with the source.",
+        whyItWorks: "Labels and chunking make each exact field easier to compare with the source.",
       },
       exercises: [
         {
           id: "foundations-read-hide-write-check",
           type: "choice",
-          prompt:
-            "Which note accurately preserves reference 008-14B?",
+          prompt: "Which note accurately preserves reference 008-14B?",
           options: [
             { id: "a", label: "Reference: 8-14B" },
             { id: "b", label: "Reference: 008-14B" },
@@ -508,7 +564,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Accuracy comes from comparison and correction. This text routine is not audio dictation and is not graded.",
           modelAnswer:
             "Nora Iqbal | Appointment CX-0912 | From: Tuesday, 9:15 a.m. | To: Thursday, 2:40 p.m. Self-check: verify spelling, reference, both days and both times.",
-          checklist: ["Preserves the reference", "Labels old and new times", "Records a specific self-correction or confirms an exact match"],
+          checklist: [
+            "Preserves the reference",
+            "Labels old and new times",
+            "Records a specific self-correction or confirms an exact match",
+          ],
         },
       ],
     },
@@ -543,17 +603,23 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
         {
           id: "foundations-readable-chat-email-check",
           type: "choice",
-          prompt:
-            "Which chat update is easiest to act on?",
+          prompt: "Which chat update is easiest to act on?",
           options: [
             { id: "a", label: "Do this: settings account security reset." },
-            { id: "b", label: "Open Settings, choose Account, then select Security > Reset password." },
+            {
+              id: "b",
+              label: "Open Settings, choose Account, then select Security > Reset password.",
+            },
             { id: "c", label: "You should know where the password thing is." },
           ],
           correctOptionId: "b",
           feedback:
             "Option B gives ordered, named navigation steps. A is compressed and ambiguous; C is dismissive and provides no route.",
-          checklist: ["Uses ordered steps", "Names controls exactly", "Maintains a respectful tone"],
+          checklist: [
+            "Uses ordered steps",
+            "Names controls exactly",
+            "Maintains a respectful tone",
+          ],
         },
         {
           id: "foundations-readable-chat-email-apply",
@@ -564,7 +630,11 @@ export const SUPPORT_COMMUNICATION_FOUNDATIONS: CourseDefinition = {
             "Compare clarity, tone and all three case facts. The model is a coaching example, not an assessment grade.",
           modelAnswer:
             "Subject: Next steps for case 6148\n\nHello,\n\nYour case is now with our returns team. They will reply within two business days. Please keep the damaged item until the team tells you how to return it.\n\nKind regards,\nCustomer Support",
-          checklist: ["Includes case 6148", "States two business days", "Says to keep the item until instructed"],
+          checklist: [
+            "Includes case 6148",
+            "States two business days",
+            "Says to keep the item until instructed",
+          ],
         },
       ],
     },

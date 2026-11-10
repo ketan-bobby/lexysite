@@ -125,7 +125,7 @@ export async function getPolicy(
 
     // Specificity: role+stage > role > stage > tenant-wide (isDefault)
     const specific = rows.find(r => r.roleId === (roleId ?? null) && r.stage === (stage ?? null) && roleId && stage);
-    const roleOnly  = rows.find(r => r.roleId === (roleId ?? null) && isNull && !r.stage && roleId);
+    const roleOnly  = rows.find(r => r.roleId === (roleId ?? null) && !r.stage && roleId);
     const tenantWide = rows.find(r => r.isDefault && !r.roleId && !r.stage);
     const match = specific ?? roleOnly ?? tenantWide ?? rows[0];
 

@@ -23,6 +23,7 @@
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL not set"); process.exit(2);
@@ -74,19 +75,10 @@ function hasActiveAiConsent(candidateId) {
   return rows.length > 0;
 }
 
-const CANDIDATE_LINKED_TABLES = [
-  "ai_decision_log","applications","candidate_achievements","candidate_action_events",
-  "candidate_activity_streaks","candidate_ai_consent","candidate_career_profiles",
-  "candidate_connection_events","candidate_connection_insights","candidate_demographics",
-  "candidate_external_clicks","candidate_import_records","candidate_job_intelligence",
-  "candidate_market_events_sent","candidate_notifications","candidate_progress_snapshots",
-  "candidate_recommendation_progress","candidate_rejections","candidate_skill_scores",
-  "communication_events","connection_events","connection_scores","ghosting_alerts",
-  "ghosting_risk_flags","interview_sessions","invite_tokens","nurture_pool",
-  "outreach_conversation_drafts","outreach_enrollments","outreach_messages",
-  "prep_plans","prep_sessions","recruiter_inbox_items","resume_screens","talent_matches",
-  "talent_pool_submissions","trust_events","verification_records",
-];
+const erasureSource = readFileSync(new URL("../src/lib/candidate-erasure.ts", import.meta.url), "utf8");
+const inventory = erasureSource.match(/export const CANDIDATE_LINKED_TABLES\s*=\s*\[([\s\S]*?)\]\s*as const/);
+if (!inventory) throw new Error("Missing shared candidate erasure inventory");
+const CANDIDATE_LINKED_TABLES = [...inventory[1].matchAll(/"([a-z0-9_]+)"/g)].map((match) => match[1]);
 
 function ensureTenant() {
   const id = `t_test_${randomUUID().slice(0, 8)}`;

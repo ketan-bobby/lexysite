@@ -141,7 +141,7 @@ const PushToClientBody = z.object({
   note: z.string().optional().nullable(),
   jobPostingId: z.string().optional().nullable(),
 }).passthrough();
-import { candidatesTable, applicationsTable, interviewSessionsTable, communicationEventsTable, interviewSchedulesTable, candidateNotificationsTable, sourcedCandidatesTable, usersTable, tenantsTable, candidateCareerProfilesTable, candidateRejectionsTable, talentPoolSubmissionsTable, inviteTokensTable, jobsTable, candidateJobIntelligenceTable } from "@workspace/db";
+import { candidatesTable, applicationsTable, interviewSessionsTable, communicationEventsTable, interviewSchedulesTable, candidateNotificationsTable, sourcedCandidatesTable, sourceEnum, usersTable, tenantsTable, candidateCareerProfilesTable, candidateRejectionsTable, talentPoolSubmissionsTable, inviteTokensTable, jobsTable, candidateJobIntelligenceTable } from "@workspace/db";
 import { getAuthUserId } from "../lib/auth-token";
 import { callerOwnsCandidateDevelopmentData } from "../lib/candidate-development-privacy";
 import { resolveCandidateId } from "../lib/portal-auth";
@@ -400,6 +400,7 @@ export function applyCandidateHardExclusions<T extends Record<string, any>>(rows
 import { eq, count, desc, and, inArray, sql, or } from "drizzle-orm";
 import { generateJSON } from "../lib/ai";
 import { enrichCandidateFromResume, screenCandidateResume, rescoreCandidateForJob } from "../lib/enrich-candidate";
+import { assertResumeUploadOwned, bindCandidateResume } from "../lib/candidate-resume-access";
 import { scoreCandidateForJob } from "../lib/icp-generator";
 import { computeCandidateMerge } from "../lib/candidate-merge";
 import { orchestrator } from "../lib/agents/orchestrator";
@@ -451,7 +452,7 @@ async function getCallerUser(req: any) {
   const userId = getAuthUserId(req);
   if (!userId) return null;
   const [u] = await controlDb.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  return u ?? null;
+  return u?.status === "active" ? u : null;
 }
 
 /* Tenant visibility scoping (own tenant + ALL descendant tenants) lives in
@@ -476,9 +477,9 @@ function appCountForTenants(candId: string, scope: string[] | null) {
 }
 
 /* ── CV parse (single — no auth needed, stateless) ───────────────────────── */
-router.post("/candidates/parse-cv", cvUpload.single("cv"), async (req, res) => {
+router.post("/candidates/parse-cv", cvUpload.single("cv"), async (req, res): Promise<void> => {
   const file = req.file;
-  if (!file) return res.status(400).json({ error: "No file uploaded" });
+  if (!file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
   const mime = file.mimetype;
   let text = "";
@@ -496,14 +497,14 @@ router.post("/candidates/parse-cv", cvUpload.single("cv"), async (req, res) => {
       const result = await mammoth.extractRawText({ buffer: file.buffer });
       text = result.value;
     } else {
-      return res.status(400).json({ error: "Unsupported file type. Please upload a PDF or Word document." });
+      res.status(400).json({ error: "Unsupported file type. Please upload a PDF or Word document." }); return;
     }
   } catch (err) {
-    return res.status(422).json({ error: "Could not extract text from this file." });
+    res.status(422).json({ error: "Could not extract text from this file." }); return;
   }
 
   if (!text.trim()) {
-    return res.status(422).json({ error: "The file appears to be empty or has no readable text." });
+    res.status(422).json({ error: "The file appears to be empty or has no readable text." }); return;
   }
 
   const truncated = text.slice(0, 6000);
@@ -654,8 +655,7 @@ Return a JSON object with these fields:
 - pool: "platform" | "tenant" | null — "platform" if they say "platform pool" or "Lexy candidates"; "tenant" if "my pipeline" or "my candidates"; null otherwise
 - interpretation: string — a concise human-readable description of what you understood (1 sentence, start with "Showing candidates…")
 
-Only include non-empty arrays. Be liberal in matching location names (include alternate spellings).`,
-    { skills: [], locations: [], countries: [], activityStatus: null, maxDaysSinceActive: null, experienceLevel: null, keywords: [], pool: null, interpretation: "Showing matching candidates" }
+Only include non-empty arrays. Be liberal in matching location names (include alternate spellings).`
   );
 
   /* Step 2 — Load all candidates visible to this caller ───────────────────
@@ -1316,7 +1316,9 @@ async function linkCandidateToJob(
   });
   await db.insert(sourcedCandidatesTable).values({
     tenantId,
-    source: source ?? "manual",
+    // Canonical candidate sources are free text (e.g. cv_upload), whereas this
+    // table accepts source categories only. Preserve the original in rawData below.
+    source: sourceEnum.enumValues.find(value => value === source) ?? "manual",
     normalizedCandidateId: candidate.id,
     rawData: {
       jobId: jid,
@@ -1339,7 +1341,7 @@ async function linkCandidateToJob(
   return matchScore;
 }
 
-router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, res) => {
+router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, res): Promise<void> => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -1348,7 +1350,7 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
   const { firstName, lastName, email, phone, location, currentTitle, currentCompany, linkedinUrl, githubUrl, skills, source, jobId, resumeObjectPath, confirmDuplicate, mergeIntoExisting } = req.body;
 
   if (!firstName || !lastName) {
-    return res.status(400).json({ error: "firstName and lastName are required" });
+    res.status(400).json({ error: "firstName and lastName are required" }); return;
   }
 
   // If a jobId is supplied, verify the caller may access that work order BEFORE
@@ -1383,6 +1385,10 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
       .limit(1);
     if (existing) {
       // Diff the newly uploaded/entered info against the stored record.
+      if (resumeObjectPath) {
+        try { await assertResumeUploadOwned(resumeObjectPath, user, existing.id); }
+        catch { res.status(403).json({ error: "Upload a résumé you own before attaching it." }); return; }
+      }
       const { values, changes } = computeCandidateMerge(existing, {
         firstName, lastName, phone, location, currentTitle, currentCompany,
         linkedinUrl, githubUrl, resumeUrl: resumeObjectPath, skills,
@@ -1399,23 +1405,24 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
             .returning();
           merged = updated ?? existing;
         }
+        if (resumeObjectPath && merged.resumeUrl === resumeObjectPath) await bindCandidateResume(resumeObjectPath, user, merged.id);
         const talentMatchScore = await linkCandidateToJob(merged, jobId ? String(jobId) : null, tenantId, source);
         if (jobId && merged.resumeUrl) {
           screenCandidateResume(merged.id, String(jobId))
             .catch((err) => logger.error({ err, candidateId: merged.id }, "[candidates] auto-screen failed"));
         }
         const [apps] = await db.select({ count: count() }).from(applicationsTable).where(eq(applicationsTable.candidateId, merged.id));
-        return res.status(200).json({ ...mapCandidate(merged, Number(apps.count)), talentMatchScore, merged: true });
+        res.status(200).json({ ...mapCandidate(merged, Number(apps.count)), talentMatchScore, merged: true }); return;
       }
 
       // Otherwise surface a prompt: who it is + what would change on merge.
       const [apps] = await db.select({ count: count() }).from(applicationsTable).where(eq(applicationsTable.candidateId, existing.id));
-      return res.status(409).json({
+      res.status(409).json({
         error: "A candidate with this email already exists in your account.",
         reason: "email_match",
         existing: mapCandidate(existing, Number(apps.count)),
         proposedChanges: changes,
-      });
+      }); return;
     }
   }
 
@@ -1454,18 +1461,22 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
         if (phoneDigits && existingPhoneTail === phoneDigits) matchedOn.push("phone number");
         if (liUrl && existing.linkedinUrl && existing.linkedinUrl.trim().toLowerCase() === liUrl) matchedOn.push("LinkedIn URL");
         const [apps] = await db.select({ count: count() }).from(applicationsTable).where(eq(applicationsTable.candidateId, existing.id));
-        return res.status(409).json({
+        res.status(409).json({
           error: `A candidate with the same name and ${matchedOn.join(" / ") || "contact info"} already exists. Submit again to confirm this is a different person.`,
           reason: "potential_duplicate",
           matchedOn,
           existing: mapCandidate(existing, Number(apps.count)),
-        });
+        }); return;
       }
     }
   }
 
 
   let candidate: typeof candidatesTable.$inferSelect;
+  if (resumeObjectPath) {
+    try { await assertResumeUploadOwned(resumeObjectPath, user); }
+    catch { res.status(403).json({ error: "Upload a résumé you own before attaching it." }); return; }
+  }
   try {
     [candidate] = await db.insert(candidatesTable).values({
       tenantId,
@@ -1506,25 +1517,28 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
             const [updated] = await db.update(candidatesTable).set(values).where(eq(candidatesTable.id, existing.id)).returning();
             merged = updated ?? existing;
           }
+          if (resumeObjectPath && merged.resumeUrl === resumeObjectPath) await bindCandidateResume(resumeObjectPath, user, merged.id);
           const talentMatchScore = await linkCandidateToJob(merged, jobId ? String(jobId) : null, tenantId, source);
           if (jobId && merged.resumeUrl) {
             screenCandidateResume(merged.id, String(jobId))
               .catch((err) => logger.error({ err, candidateId: merged.id }, "[candidates] auto-screen failed"));
           }
           const [apps] = await db.select({ count: count() }).from(applicationsTable).where(eq(applicationsTable.candidateId, merged.id));
-          return res.status(200).json({ ...mapCandidate(merged, Number(apps.count)), talentMatchScore, merged: true });
+          res.status(200).json({ ...mapCandidate(merged, Number(apps.count)), talentMatchScore, merged: true }); return;
         }
         const [apps] = await db.select({ count: count() }).from(applicationsTable).where(eq(applicationsTable.candidateId, existing.id));
-        return res.status(409).json({
+        res.status(409).json({
           error: "A candidate with this email already exists in your account.",
           reason: "email_match",
           existing: mapCandidate(existing, Number(apps.count)),
           proposedChanges: changes,
-        });
+        }); return;
       }
     }
     throw insErr;
   }
+
+  if (candidate.resumeUrl) await bindCandidateResume(candidate.resumeUrl, user, candidate.id);
 
   void logCandidateEvent({
     candidateId: candidate.id,
@@ -1551,7 +1565,7 @@ router.post("/candidates", validate({ body: CreateCandidateBody }), async (req, 
 });
 
 /* ── POST /candidates/bulk-import ────────────────────────────────────────── */
-router.post("/candidates/bulk-import", validate({ body: BulkImportBody }), async (req, res) => {
+router.post("/candidates/bulk-import", validate({ body: BulkImportBody }), async (req, res): Promise<void> => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
 
@@ -1573,10 +1587,10 @@ router.post("/candidates/bulk-import", validate({ body: BulkImportBody }), async
   const bulkEmployeeDefault = coerceEmployeeFlag(bulkEmployeeRaw);
 
   if (!Array.isArray(rows) || rows.length === 0) {
-    return res.status(400).json({ error: "rows must be a non-empty array" });
+    res.status(400).json({ error: "rows must be a non-empty array" }); return;
   }
   if (rows.length > 500) {
-    return res.status(400).json({ error: "Maximum 500 rows per import" });
+    res.status(400).json({ error: "Maximum 500 rows per import" }); return;
   }
 
   // When importing against a work order, the caller must own it (tenant scope)
@@ -1867,6 +1881,11 @@ router.post("/candidates/:candidateId/reviewed", validate({ body: MarkReviewedBo
 router.get("/candidates/:candidateId", async (req, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  // Candidate portal access does not confer staff directory access, even to a
+  // same-tenant row. Resolve current role before looking up the requested ID.
+  if (!["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"].includes(user.role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
   const [c] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, req.params.candidateId)).limit(1);
   if (!c) { res.status(404).json({ error: "Not found" }); return; }
 
@@ -1883,6 +1902,16 @@ router.get("/candidates/:candidateId", async (req, res) => {
   if (user?.role === "recruiter" && !(await recruiterCanAccessCandidate(user, c.id))) {
     /* 404 (not 403) — same existence-disclosure posture as the cross-tenant
        branch above: an unassigned candidate must look "not found" to a recruiter. */
+    res.status(404).json({ error: "Not found" }); return;
+  }
+
+  // Pool and tenant are independent: an in-scope tenant ID does not override
+  // a platform job-seeker's privacy controls. Seal before counts/portal metadata.
+  const visible = await applyCandidatePrivacyFilter(
+    applyCandidateHardExclusions([c]),
+    user.role === "platform_admin" ? null : user.tenantId,
+  );
+  if (!visible.length) {
     res.status(404).json({ error: "Not found" }); return;
   }
 
@@ -1986,7 +2015,7 @@ router.post("/candidates/:candidateId/message", validate({ body: SendCandidateMe
       await db.insert(communicationEventsTable).values({
         tenantId: c.tenantId,
         candidateId: c.id,
-        type: "message",
+        type: "follow_up",
         channel: "email",
         subject,
         body,
@@ -2049,7 +2078,7 @@ router.post("/recruiter/view-candidate", validate({ body: ViewCandidateBody }), 
 router.put("/candidates/:candidateId", validate({ body: UpdateCandidateBody }), async (req, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [existing] = await db.select({ tenantId: candidatesTable.tenantId }).from(candidatesTable)
+  const [existing] = await db.select({ tenantId: candidatesTable.tenantId, resumeUrl: candidatesTable.resumeUrl }).from(candidatesTable)
     .where(eq(candidatesTable.id, req.params.candidateId)).limit(1);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
@@ -2063,11 +2092,16 @@ router.put("/candidates/:candidateId", validate({ body: UpdateCandidateBody }), 
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
+  if (req.body.resumeUrl && req.body.resumeUrl !== existing.resumeUrl) {
+    try { await assertResumeUploadOwned(req.body.resumeUrl, user, String(req.params.candidateId)); }
+    catch { res.status(403).json({ error: "Upload a résumé you own before attaching it." }); return; }
+  }
   const [c] = await db.update(candidatesTable)
     .set({ ...req.body, updatedAt: new Date() })
     .where(eq(candidatesTable.id, req.params.candidateId))
     .returning();
   if (!c) { res.status(404).json({ error: "Not found" }); return; }
+  if (req.body.resumeUrl && req.body.resumeUrl !== existing.resumeUrl) await bindCandidateResume(req.body.resumeUrl, user, c.id);
   res.json(mapCandidate(c));
 });
 
@@ -2092,6 +2126,8 @@ router.post("/candidates/:candidateId/resume", validate({ body: CandidateResumeB
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
+  try { await assertResumeUploadOwned(objectPath, user, String(req.params.candidateId)); }
+  catch { res.status(403).json({ error: "Upload a résumé you own before attaching it." }); return; }
   const [c] = await db.update(candidatesTable)
     .set({ resumeUrl: objectPath, updatedAt: new Date() })
     .where(eq(candidatesTable.id, req.params.candidateId))
@@ -2101,6 +2137,7 @@ router.post("/candidates/:candidateId/resume", validate({ body: CandidateResumeB
   // Parse the freshly-uploaded resume and union any extracted skills into the
   // profile so "uploaded a resume" actually populates skills (feeds Talent
   // Match). Re-read so the response reflects the enriched skills. Best-effort.
+  await bindCandidateResume(objectPath, user, c.id);
   const merged = await enrichCandidateFromResume(c.id, objectPath);
 
   // The Talent Match score was computed at link time, before the resume existed
@@ -2624,7 +2661,7 @@ async function callerHasPlatformPoolAccess(user: any): Promise<boolean> {
    gated upstream by getDataScopeTenantIds tenant scope. This mirrors the
    list-narrowing linkage in GET /candidates so by-id routes enforce the same
    ownership ceiling instead of leaking unassigned candidates by id. */
-async function recruiterCanAccessCandidate(
+export async function recruiterCanAccessCandidate(
   user: { id: string; role: string; tenantId: string | null },
   candidateId: string,
 ): Promise<boolean> {
@@ -2970,7 +3007,9 @@ router.post("/candidates/:candidateId/push-to-client", validate({ body: PushToCl
     return;
   }
 
-  // Insert snapshot into talent_pool_submissions
+  // Insert snapshot into talent_pool_submissions. Structured experience,
+  // work-style and language fields are not on the canonical candidate row.
+  // Leave them null rather than copying candidate-private career/intake data.
   await db.execute(sql`
     INSERT INTO talent_pool_submissions
       (id, full_name, email, phone, current_title, location,
@@ -2983,9 +3022,9 @@ router.post("/candidates/:candidateId/push-to-client", validate({ body: PushToCl
       ${candidate.phone ?? null},
       ${candidate.currentTitle ?? null},
       ${candidate.location ?? null},
-      ${candidate.experienceLevel ?? null},
-      ${candidate.workStyle ?? null},
-      ${candidate.languages ? sql`${JSON.stringify(candidate.languages)}::jsonb` : sql`NULL`},
+      NULL,
+      NULL,
+      NULL,
       ${null},
       ${candidate.linkedinUrl ?? null},
       ${candidate.resumeUrl ?? null},

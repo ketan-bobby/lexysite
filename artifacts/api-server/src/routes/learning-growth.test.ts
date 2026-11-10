@@ -68,19 +68,26 @@ async function request(method: string, path: string, authToken?: string, body?: 
 }
 
 async function cleanup() {
-  await dbAdmin.delete(candidateLearningProfilesTable)
-    .where(inArray(candidateLearningProfilesTable.candidateId, [candidateA, candidateB, candidateC]))
+  await dbAdmin
+    .delete(candidateLearningProfilesTable)
+    .where(
+      inArray(candidateLearningProfilesTable.candidateId, [candidateA, candidateB, candidateC]),
+    )
     .catch(() => {});
-  await dbAdmin.delete(candidateCareerProfilesTable)
+  await dbAdmin
+    .delete(candidateCareerProfilesTable)
     .where(inArray(candidateCareerProfilesTable.candidateId, [candidateA, candidateB, candidateC]))
     .catch(() => {});
-  await dbAdmin.delete(candidatesTable)
+  await dbAdmin
+    .delete(candidatesTable)
     .where(inArray(candidatesTable.id, [candidateA, candidateB, candidateC]))
     .catch(() => {});
-  await dbAdmin.delete(usersTable)
+  await dbAdmin
+    .delete(usersTable)
     .where(inArray(usersTable.id, [userA, userB, userC, recruiter, tenantAdmin]))
     .catch(() => {});
-  await dbAdmin.delete(tenantsTable)
+  await dbAdmin
+    .delete(tenantsTable)
     .where(inArray(tenantsTable.id, [tenantOne, tenantTwo]))
     .catch(() => {});
 }
@@ -92,19 +99,84 @@ before(async () => {
     { id: tenantTwo, name: "Learning Tenant Two", slug: tenantTwo, plan: "enterprise" },
   ]);
   await dbAdmin.insert(usersTable).values([
-    { id: userA, tenantId: tenantOne, email: `${userA}@test.invalid`, name: "Candidate A", passwordHash: "x", role: "candidate" },
-    { id: userB, tenantId: tenantOne, email: `${userB}@test.invalid`, name: "Candidate B", passwordHash: "x", role: "candidate" },
-    { id: userC, tenantId: tenantTwo, email: `${userC}@test.invalid`, name: "Candidate C", passwordHash: "x", role: "candidate" },
-    { id: recruiter, tenantId: tenantOne, email: `${recruiter}@test.invalid`, name: "Recruiter", passwordHash: "x", role: "recruiter" },
-    { id: tenantAdmin, tenantId: tenantOne, email: `${tenantAdmin}@test.invalid`, name: "Admin", passwordHash: "x", role: "tenant_admin" },
+    {
+      id: userA,
+      tenantId: tenantOne,
+      email: `${userA}@test.invalid`,
+      name: "Candidate A",
+      passwordHash: "x",
+      role: "candidate",
+    },
+    {
+      id: userB,
+      tenantId: tenantOne,
+      email: `${userB}@test.invalid`,
+      name: "Candidate B",
+      passwordHash: "x",
+      role: "candidate",
+    },
+    {
+      id: userC,
+      tenantId: tenantTwo,
+      email: `${userC}@test.invalid`,
+      name: "Candidate C",
+      passwordHash: "x",
+      role: "candidate",
+    },
+    {
+      id: recruiter,
+      tenantId: tenantOne,
+      email: `${recruiter}@test.invalid`,
+      name: "Recruiter",
+      passwordHash: "x",
+      role: "recruiter",
+    },
+    {
+      id: tenantAdmin,
+      tenantId: tenantOne,
+      email: `${tenantAdmin}@test.invalid`,
+      name: "Admin",
+      passwordHash: "x",
+      role: "tenant_admin",
+    },
   ]);
   await dbAdmin.insert(candidatesTable).values([
-    { id: candidateA, tenantId: tenantOne, userId: userA, firstName: "Candidate", lastName: "A", email: `${candidateA}@test.invalid`, pool: "tenant" },
-    { id: candidateB, tenantId: tenantOne, userId: userB, firstName: "Candidate", lastName: "B", email: `${candidateB}@test.invalid`, pool: "tenant" },
-    { id: candidateC, tenantId: tenantTwo, userId: userC, firstName: "Candidate", lastName: "C", email: `${candidateC}@test.invalid`, pool: "tenant" },
+    {
+      id: candidateA,
+      tenantId: tenantOne,
+      userId: userA,
+      firstName: "Candidate",
+      lastName: "A",
+      email: `${candidateA}@test.invalid`,
+      pool: "tenant",
+    },
+    {
+      id: candidateB,
+      tenantId: tenantOne,
+      userId: userB,
+      firstName: "Candidate",
+      lastName: "B",
+      email: `${candidateB}@test.invalid`,
+      pool: "tenant",
+    },
+    {
+      id: candidateC,
+      tenantId: tenantTwo,
+      userId: userC,
+      firstName: "Candidate",
+      lastName: "C",
+      email: `${candidateC}@test.invalid`,
+      pool: "tenant",
+    },
   ]);
   await dbAdmin.insert(candidateCareerProfilesTable).values([
-    { id: id("profile_a"), candidateId: candidateA, baselineInterviewCompleted: false, careerGoal3yr: "Original three-year suggestion", careerGoal5yr: "Original five-year suggestion" },
+    {
+      id: id("profile_a"),
+      candidateId: candidateA,
+      baselineInterviewCompleted: false,
+      careerGoal3yr: "Original three-year suggestion",
+      careerGoal5yr: "Original five-year suggestion",
+    },
     { id: id("profile_b"), candidateId: candidateB, baselineInterviewCompleted: false },
     { id: id("profile_c"), candidateId: candidateC, baselineInterviewCompleted: false },
   ]);
@@ -139,9 +211,17 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
   process.env.LEARNING_PILOT_CANDIDATE_IDS = "*";
   const unauthenticated = await request("GET", "/portal/learning-growth");
   assert.equal(unauthenticated.status, 401);
-  const recruiterRead = await request("GET", "/portal/learning-growth", token(recruiter, "recruiter", tenantOne));
+  const recruiterRead = await request(
+    "GET",
+    "/portal/learning-growth",
+    token(recruiter, "recruiter", tenantOne),
+  );
   assert.equal(recruiterRead.status, 403);
-  const adminRead = await request("GET", "/portal/learning-growth", token(tenantAdmin, "tenant_admin", tenantOne));
+  const adminRead = await request(
+    "GET",
+    "/portal/learning-growth",
+    token(tenantAdmin, "tenant_admin", tenantOne),
+  );
   assert.equal(adminRead.status, 403);
 
   const off = await request("GET", "/portal/learning-growth", tokenA);
@@ -156,14 +236,29 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
     goals: { immediateGoal: "", careerGoal3yr: "", careerGoal5yr: "", confirmedAt: null },
     plan: null,
   });
-  assert.equal((await request("PUT", "/portal/learning-growth/interests", tokenA, validInterests)).status, 404);
-  assert.equal((await request("PUT", "/portal/learning-growth/goals", tokenA, {
-    revision: 0, immediateGoal: "Find a role", careerGoal3yr: "Grow", careerGoal5yr: "Lead",
-  })).status, 404);
+  assert.equal(
+    (await request("PUT", "/portal/learning-growth/interests", tokenA, validInterests)).status,
+    404,
+  );
+  assert.equal(
+    (
+      await request("PUT", "/portal/learning-growth/goals", tokenA, {
+        revision: 0,
+        immediateGoal: "Find a role",
+        careerGoal3yr: "Grow",
+        careerGoal5yr: "Lead",
+      })
+    ).status,
+    404,
+  );
 
   process.env.LEARNING_PILOT_ENABLED = "true";
   process.env.LEARNING_PILOT_CANDIDATE_IDS = candidateA;
-  assert.equal((await request("GET", "/portal/learning-growth", tokenB)).body.available, false, "empty/nonmatching allowlist denies access");
+  assert.equal(
+    (await request("GET", "/portal/learning-growth", tokenB)).body.available,
+    false,
+    "empty/nonmatching allowlist denies access",
+  );
   const initial = await request("GET", "/portal/learning-growth", tokenA);
   assert.equal(initial.status, 200);
   assert.equal(initial.body.stage, "interests");
@@ -175,7 +270,11 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
     ...validInterests,
     baselineInterviewCompleted: true,
   });
-  assert.equal(unknownInterestField.status, 400, "caller cannot bypass baseline with a mutation field");
+  assert.equal(
+    unknownInterestField.status,
+    400,
+    "caller cannot bypass baseline with a mutation field",
+  );
   const invalidOther = await request("PUT", "/portal/learning-growth/interests", tokenA, {
     ...validInterests,
     careerAreas: ["other"],
@@ -201,7 +300,12 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
   assert.equal(saved.body.revision, 1);
   assert.equal(saved.body.stage, "baseline");
   assert.deepEqual(saved.body.interests.immediateRoles, ["Customer support"]);
-  const staleInsert = await request("PUT", "/portal/learning-growth/interests", tokenA, validInterests);
+  const staleInsert = await request(
+    "PUT",
+    "/portal/learning-growth/interests",
+    tokenA,
+    validInterests,
+  );
   assert.equal(staleInsert.status, 409);
 
   const bypassGoal = await request("PUT", "/portal/learning-growth/goals", tokenA, {
@@ -213,7 +317,10 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
   });
   assert.equal(bypassGoal.status, 400);
   const whitespaceGoal = await request("PUT", "/portal/learning-growth/goals", tokenA, {
-    revision: 1, immediateGoal: " ", careerGoal3yr: "Grow", careerGoal5yr: "Lead",
+    revision: 1,
+    immediateGoal: " ",
+    careerGoal3yr: "Grow",
+    careerGoal5yr: "Lead",
   });
   assert.equal(whitespaceGoal.status, 400);
   const prerequisite = await request("PUT", "/portal/learning-growth/goals", tokenA, {
@@ -222,9 +329,14 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
     careerGoal3yr: "Become a support specialist",
     careerGoal5yr: "Lead a support team",
   });
-  assert.equal(prerequisite.status, 409, "saved interests cannot substitute for authoritative baseline completion");
+  assert.equal(
+    prerequisite.status,
+    409,
+    "saved interests cannot substitute for authoritative baseline completion",
+  );
 
-  await dbAdmin.update(candidateCareerProfilesTable)
+  await dbAdmin
+    .update(candidateCareerProfilesTable)
     .set({ baselineInterviewCompleted: true })
     .where(eq(candidateCareerProfilesTable.candidateId, candidateA));
   const confirmed = await request("PUT", "/portal/learning-growth/goals", tokenA, {
@@ -246,24 +358,40 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
     ["Customer Support Communication Foundations", "Customer Support Communication in Practice"],
     "an exact normalized customer-support immediate role is eligible",
   );
-  const [canonical] = await dbAdmin.select({
-    three: candidateCareerProfilesTable.careerGoal3yr,
-    five: candidateCareerProfilesTable.careerGoal5yr,
-  }).from(candidateCareerProfilesTable).where(eq(candidateCareerProfilesTable.candidateId, candidateA));
-  assert.deepEqual(canonical, { three: "Become a support specialist", five: "Lead a support team" });
+  const [canonical] = await dbAdmin
+    .select({
+      three: candidateCareerProfilesTable.careerGoal3yr,
+      five: candidateCareerProfilesTable.careerGoal5yr,
+    })
+    .from(candidateCareerProfilesTable)
+    .where(eq(candidateCareerProfilesTable.candidateId, candidateA));
+  assert.deepEqual(canonical, {
+    three: "Become a support specialist",
+    five: "Lead a support team",
+  });
 
   const staleGoal = await request("PUT", "/portal/learning-growth/goals", tokenA, {
-    revision: 1, immediateGoal: "Different", careerGoal3yr: "Different", careerGoal5yr: "Different",
+    revision: 1,
+    immediateGoal: "Different",
+    careerGoal3yr: "Different",
+    careerGoal5yr: "Different",
   });
   assert.equal(staleGoal.status, 409);
 
-  await dbAdmin.update(candidateCareerProfilesTable).set({
-    careerGoal3yr: "Edited in the existing career profile",
-  }).where(eq(candidateCareerProfilesTable.candidateId, candidateA));
+  await dbAdmin
+    .update(candidateCareerProfilesTable)
+    .set({
+      careerGoal3yr: "Edited in the existing career profile",
+    })
+    .where(eq(candidateCareerProfilesTable.candidateId, candidateA));
   const invalidated = await request("GET", "/portal/learning-growth", tokenA);
   assert.equal(invalidated.body.stage, "goals");
   assert.equal(invalidated.body.goals.confirmedAt, null);
-  assert.equal(invalidated.body.plan, null, "later canonical career-profile edits invalidate confirmation");
+  assert.equal(
+    invalidated.body.plan,
+    null,
+    "later canonical career-profile edits invalidate confirmation",
+  );
   const reconfirmed = await request("PUT", "/portal/learning-growth/goals", tokenA, {
     revision: 2,
     immediateGoal: "Start in support",
@@ -280,18 +408,35 @@ test("graduate learning pilot enforces owner privacy, gating, concurrency, canon
   });
   assert.equal(softwareOnly.status, 200);
   assert.equal(softwareOnly.body.stage, "ready");
-  assert.deepEqual(softwareOnly.body.plan.plannedCourses, [], "software-only interest is never steered to support courses");
+  assert.deepEqual(
+    softwareOnly.body.plan.plannedCourses,
+    [],
+    "software-only interest is never steered to support courses",
+  );
 
-  const explicitCustomerService = await request("PUT", "/portal/learning-growth/interests", tokenA, {
-    ...validInterests,
-    revision: 4,
-    careerAreas: ["customer_service"],
-    immediateRoles: [],
-  });
+  const explicitCustomerService = await request(
+    "PUT",
+    "/portal/learning-growth/interests",
+    tokenA,
+    {
+      ...validInterests,
+      revision: 4,
+      careerAreas: ["customer_service"],
+      immediateRoles: [],
+    },
+  );
   assert.equal(explicitCustomerService.status, 200);
   assert.equal(explicitCustomerService.body.plan.plannedCourses.length, 2);
-  assert.ok(explicitCustomerService.body.plan.plannedCourses.every((course: { status: string }) => course.status === "planned"));
-  assert.ok(explicitCustomerService.body.plan.plannedCourses.every((course: { description: string }) => course.description.includes("not yet launchable")));
+  assert.ok(
+    explicitCustomerService.body.plan.plannedCourses.every(
+      (course: { status: string }) => course.status === "planned",
+    ),
+  );
+  assert.ok(
+    explicitCustomerService.body.plan.plannedCourses.every((course: { description: string }) =>
+      course.description.includes("not yet launchable"),
+    ),
+  );
   const persisted = await request("GET", "/portal/learning-growth", tokenA);
   assert.equal(persisted.body.revision, 5);
   assert.deepEqual(persisted.body.interests.careerAreas, ["customer_service"]);

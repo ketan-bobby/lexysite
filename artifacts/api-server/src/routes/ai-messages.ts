@@ -54,7 +54,7 @@ const CANDIDATE_FACING: ReadonlySet<string> = new Set([
 ]);
 
 /** Resolve the tenant scope once; null = platform_admin (all tenants). */
-async function tenantScope(user: { role: string; tenantId: string | null }) {
+async function tenantScope(user: Parameters<typeof getDataScopeTenantIds>[0]) {
   return getDataScopeTenantIds(user);
 }
 

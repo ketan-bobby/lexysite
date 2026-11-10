@@ -32,6 +32,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User } from "@workspace/api-client-react";
 import { authHeaders, endSession } from "@/lib/api";
+import { toast } from "@workspace/react-hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -124,13 +125,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    setLocalUser(null);
     // Shared session-end flow (also used by apiFetch's global 401
     // interceptor): clears the localStorage "user" cache + dev token,
     // asks the server to clear the httpOnly cookie (the client can't
-    // remove an httpOnly cookie itself; failure never blocks), THEN
+    // remove an httpOnly cookie itself; explicit failure is shown), THEN
     // navigates to /login.
-    endSession();
+    void endSession(true).then(()=>setLocalUser(null)).catch(()=>{
+      toast({title:"Sign-out not confirmed",description:"Your session could not be revoked. Please retry sign-out.",variant:"destructive"});
+    });
   };
 
   return (

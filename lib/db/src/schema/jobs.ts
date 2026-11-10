@@ -26,6 +26,8 @@ export const jobStatusEnum = pgEnum("job_status", ["draft", "active", "paused", 
 export const workTypeEnum = pgEnum("work_type", ["remote", "hybrid", "onsite"]);
 export const employmentTypeEnum = pgEnum("employment_type", ["full_time", "part_time", "contract", "internship"]);
 export const jdSourceEnum = pgEnum("jd_source", ["ai", "paste", "upload"]);
+export const recruitingModeEnum = pgEnum("recruiting_mode", ["human_assisted", "lexy_autonomous"]);
+export const interviewPathEnum = pgEnum("interview_path", ["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"]);
 
 export const jobsTable = pgTable("jobs", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -50,6 +52,10 @@ export const jobsTable = pgTable("jobs", {
   jdFileName: text("jd_file_name"),
   language: text("language").notNull().default("en"),
   isConfidential: boolean("is_confidential").notNull().default(false),
+  internalMobility: boolean("internal_mobility").notNull().default(false),
+  // Planned configuration only. No execution authority is derived from these fields.
+  recruitingMode: recruitingModeEnum("recruiting_mode").notNull().default("human_assisted"),
+  interviewPath: interviewPathEnum("interview_path").notNull().default("recruiter_choice"),
   assignedRecruiterId: text("assigned_recruiter_id"),
   assignedHiringManagerId: text("assigned_hiring_manager_id"),
   approvedById: text("approved_by_id"),

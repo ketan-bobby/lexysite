@@ -31,6 +31,8 @@ test("pre-launch sourced row (NULL evidence) is NEVER eligible", () => {
 test("sourced row with non-fee channel is not eligible", () => {
   assert.equal(isFeeEligible("sourced", { channel: "customer" }), false);
   assert.equal(isFeeEligible("sourced", { channel: "inbound" }), false);
+  assert.equal(isFeeEligible("sourced", { channel: "internal_mobility" }), false);
+  assert.equal(isFeeEligible("sourced", { channel: "known_talent_rediscovery" }), false);
   assert.equal(isFeeEligible("sourced", { channel: "" }), false);
   assert.equal(isFeeEligible("sourced", {}), false);
 });
@@ -67,6 +69,8 @@ test("originFields evidence always carries the channel + recordedAt", () => {
 test("originFields output is fee-eligible exactly for the two fee channels", () => {
   for (const [channel, expected] of [
     ["ai_sourcing", true],
+    ["internal_mobility", false],
+    ["known_talent_rediscovery", false],
     ["linx", true],
     ["inbound", false],
     ["customer", false],

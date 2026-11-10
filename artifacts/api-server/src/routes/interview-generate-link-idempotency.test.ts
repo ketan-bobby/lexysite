@@ -26,7 +26,9 @@
  * route falls back to canned questions when it's unavailable, so a mint is
  * hermetic regardless.
  */
-import { test, before, after } from "node:test";
+import { test, before, after, mock } from "node:test";
+import { SESv2Client } from "@aws-sdk/client-sesv2";
+import { Completions } from "openai/resources/chat/completions";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
@@ -40,6 +42,7 @@ import {
   interviewPlansTable,
   interviewSessionsTable,
   creditUsageEventsTable,
+  auditLogsTable,
 } from "@workspace/db";
 import { issueToken } from "../lib/auth-token";
 import interviewsRouter from "./interviews";
@@ -53,6 +56,19 @@ const ADMIN = id("admin");
 
 let server: Server;
 let baseUrl: string;
+// Exercise the real invite handler, but never send email from a regression test.
+const emailStub = mock.method(SESv2Client.prototype, "send", async () => ({
+  MessageId: "regression-test-message",
+}));
+const questionStub = mock.method(Completions.prototype, "create", async () => ({
+  choices: [{
+    message: {
+      content: JSON.stringify([
+        { id: "test-question", text: "Explain a technical tradeoff.", category: "technical", order: 1 },
+      ]),
+    },
+  }],
+}));
 
 const tok = () => issueToken({ userId: ADMIN, role: "tenant_admin", tenantId: T });
 
@@ -76,6 +92,7 @@ async function api(
 }
 
 async function cleanup() {
+  await dbAdmin.delete(auditLogsTable).where(eq(auditLogsTable.subjectLabel, CAND + "@t.test"));
   await dbAdmin.delete(interviewSessionsTable).where(eq(interviewSessionsTable.tenantId, T));
   await dbAdmin.delete(interviewPlansTable).where(eq(interviewPlansTable.tenantId, T));
   await dbAdmin.delete(creditUsageEventsTable).where(eq(creditUsageEventsTable.tenantId, T));
@@ -151,6 +168,8 @@ before(async () => {
 after(async () => {
   await cleanup();
   await new Promise<void>((resolve) => server.close(() => resolve()));
+  emailStub.mock.restore();
+  questionStub.mock.restore();
 });
 
 test("idempotent: a live session is returned unchanged — no new session, no new credit", async () => {
@@ -193,6 +212,21 @@ test("fresh mint on a clean identity records exactly one session and one credit"
   assert.equal(r.json.reused, false);
   assert.ok(r.json.sessionId);
 
+  assert.equal((await sessionsForIdentity()).length, 1);
+  assert.equal(await interviewCreditCount(), 1);
+});
+
+test("an unsent link mints a normal session without dispatching a candidate invitation", async () => {
+  await seedBase();
+  const sendsBefore = emailStub.mock.calls.length;
+  const r = await api("POST", "/interviews/generate-link", tok(), {
+    jobId: JOB, candidateId: CAND, interviewType: "general", questionCount: 3, sendInvite: false,
+  });
+  assert.equal(r.status, 201);
+  assert.ok(r.json.sessionId);
+  assert.equal(r.json.emailSent, false);
+  assert.equal(r.json.emailedTo, null);
+  assert.equal(emailStub.mock.calls.length, sendsBefore, "did not call the email provider");
   assert.equal((await sessionsForIdentity()).length, 1);
   assert.equal(await interviewCreditCount(), 1);
 });

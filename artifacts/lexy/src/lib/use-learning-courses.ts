@@ -19,7 +19,7 @@ import {
   LearningLessonProgress,
   LearningCourseLessonTrack,
   LearningCourseLesson,
-  LearningLessonInputAction
+  LearningLessonInputAction,
 } from "@workspace/api-client-react";
 
 export type {
@@ -40,11 +40,15 @@ export type {
   LearningLessonProgress,
   LearningCourseLessonTrack,
   LearningCourseLesson,
-  LearningLessonInputAction
+  LearningLessonInputAction,
 };
 
 export const getGetLearningCoursesQueryKey = (userId: string) => ["learning-courses", userId];
-export const getGetLearningCourseDetailQueryKey = (userId: string, courseId: string) => ["learning-course", userId, courseId];
+export const getGetLearningCourseDetailQueryKey = (userId: string, courseId: string) => [
+  "learning-course",
+  userId,
+  courseId,
+];
 
 export function useGetLearningCourses() {
   const { user } = useAuth();
@@ -64,7 +68,7 @@ export function useGetLearningCourses() {
         throw new Error(errorData.error || errorData.message || "Failed to load learning courses");
       }
       return res.json();
-    }
+    },
   });
 }
 
@@ -86,7 +90,7 @@ export function useGetLearningCourse(courseId: string) {
         throw new Error(errorData.error || errorData.message || "Failed to load course details");
       }
       return res.json();
-    }
+    },
   });
 }
 
@@ -100,7 +104,7 @@ export function useEnrollLearningCourse(courseId: string) {
       const res = await apiFetch(`${apiBase}/portal/learning-growth/courses/${courseId}/enroll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -111,7 +115,7 @@ export function useEnrollLearningCourse(courseId: string) {
     onSuccess: (data) => {
       queryClient.setQueryData(getGetLearningCourseDetailQueryKey(userId, courseId), data);
       queryClient.invalidateQueries({ queryKey: getGetLearningCoursesQueryKey(userId) });
-    }
+    },
   });
 }
 
@@ -122,13 +126,17 @@ export function useSubmitLearningLesson(courseId: string, lessonId: string) {
 
   return useMutation<LearningCourseDetail, Error, LearningLessonInput>({
     mutationFn: async (data) => {
-      const res = await apiFetch(`${apiBase}/portal/learning-growth/courses/${courseId}/lessons/${lessonId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      const res = await apiFetch(
+        `${apiBase}/portal/learning-growth/courses/${courseId}/lessons/${lessonId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        },
+      );
       if (!res.ok) {
-        if (res.status === 409) throw new Error("A newer version of this lesson exists. Please discard edits to reload.");
+        if (res.status === 409)
+          throw new Error("A newer version of this lesson exists. Please discard edits to reload.");
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to save lesson");
       }
@@ -137,6 +145,6 @@ export function useSubmitLearningLesson(courseId: string, lessonId: string) {
     onSuccess: (data) => {
       queryClient.setQueryData(getGetLearningCourseDetailQueryKey(userId, courseId), data);
       queryClient.invalidateQueries({ queryKey: getGetLearningCoursesQueryKey(userId) });
-    }
+    },
   });
 }

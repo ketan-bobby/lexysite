@@ -128,7 +128,20 @@ before(async () => {
 
   const ok: express.RequestHandler = (_req, res) => res.status(200).json({ ok: true });
 
-  app.get("/job/:jobId", enforceOwnership(), ok);
+  app.get("/job/:jobId", enforceOwnership(), (req, res) => {
+    const jobId: string = req.params.jobId;
+    // @ts-expect-error Named IDs must not be widened into wildcard arrays.
+    const arrayId: string[] = req.params.jobId;
+    void arrayId;
+    res.json({ ok: true, jobId });
+  });
+  app.get("/wild/*jobId", enforceOwnership({ kinds: ["jobId"] }), (req, res) => {
+    const segments: string[] = req.params.jobId;
+    // @ts-expect-error A wildcard remains an array, not a scalar ownable ID.
+    const scalarId: string = req.params.jobId;
+    void scalarId;
+    res.json({ segments });
+  });
   app.get("/candidate/:candidateId", enforceOwnership(), ok);
   app.get("/app/:applicationId", enforceOwnership(), ok);
   // `:id` alias → treated as a campaignId (mirrors outreach /campaigns/:id).
@@ -141,7 +154,10 @@ before(async () => {
   app.post("/optional-job", enforceOwnership({ kinds: ["jobId"], requireId: false }), ok);
   // Exempt route: opts OUT of ownership entirely (used INSTEAD of enforceOwnership),
   // so a plain recruiter with an unowned id still passes.
-  app.get("/exempt/:jobId", exemptFromOwnership("GET /exempt/:jobId", OWNERSHIP_EXEMPTION.NO_OWNABLE_RESOURCE), ok);
+  app.get("/exempt/:jobId", exemptFromOwnership("GET /exempt/:jobId", OWNERSHIP_EXEMPTION.NO_OWNABLE_RESOURCE), (req, res) => {
+    const jobId: string = req.params.jobId;
+    res.json({ ok: true, jobId });
+  });
 
   await new Promise<void>((resolve) => {
     server = app.listen(0, () => {
@@ -161,6 +177,11 @@ after(async () => {
 test("recruiter + owned job → 200", async () => {
   const r = await api(`/job/${id("jobOwned")}`, "recruiter");
   assert.equal(r.status, 200);
+});
+
+test("wildcard arrays remain malformed ownable IDs for recruiters", async () => {
+  const response = await api(`/wild/${id("jobOwned")}/other`, "recruiter");
+  assert.equal(response.status, 400);
 });
 
 /* ── (2) plain recruiter + UNOWNED, same tenant → 404 ────────────────────── */

@@ -30,7 +30,7 @@
 import { db } from "@workspace/db";
 import { candidatesTable, communicationEventsTable, tenantsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
-import { sendEmail } from "./email.js";
+import { sendCadencedCommunication } from "./cadenced-communication";
 import { logger } from "./logger.js";
 import { buildJobChangeEmail, tenantBrand, LEXY_BRAND, type Brand } from "./linkedin-profile-monitor.js";
 
@@ -166,7 +166,7 @@ export interface SelfReportResult {
  * (currentTitle/currentCompany) when a change is detected, regardless of
  * whether an email goes out.
  */
-export async function processSelfReportedJobChange(input: SelfReportChangeInput): Promise<SelfReportResult> {
+export async function processSelfReportedJobChange(input: SelfReportChangeInput,send=sendCadencedCommunication): Promise<SelfReportResult> {
   const { candidateId } = input;
 
   /* Load the canonical candidate row — it is both the fallback "prior value"
@@ -191,6 +191,7 @@ export async function processSelfReportedJobChange(input: SelfReportChangeInput)
     .limit(1);
 
   if (!candidate) return { changed: false, emailSent: false, reason: "candidate_not_found" };
+  if (candidate.dataErasedAt) return {changed:false,emailSent:false,reason:"erased"};
 
   /* Prior value: career-profile stored value when present, else the canonical
    * candidates row (covers first-time profile creation). */
@@ -226,14 +227,14 @@ export async function processSelfReportedJobChange(input: SelfReportChangeInput)
   await db.update(candidatesTable).set(sync).where(eq(candidatesTable.id, candidateId));
 
   /* ── Quiet gates — email suppressed, sync already done ─────────────────── */
-  if (candidate.dataErasedAt)          return { changed: true, emailSent: false, reason: "erased" };
   if (candidate.doNotContact)          return { changed: true, emailSent: false, reason: "do_not_contact" };
   if (candidate.discoveryPaused)       return { changed: true, emailSent: false, reason: "discovery_paused" };
   if (!isRealEmail(candidate.email))   return { changed: true, emailSent: false, reason: "no_real_email" };
 
   /* Cooldown: at most one re-engagement email per 30 days (shares the
-   * follow_up communication_events type with the LinkedIn monitor, so the two
-   * paths can never double-email the same person). */
+   * follow_up communication_events type with the default-disabled LinkedIn
+   * monitor). The reservation below rechecks this snapshot atomically for
+   * concurrent self-report calls before any provider request. */
   const [recent] = await db
     .select({ maxSentAt: sql<string>`MAX(${communicationEventsTable.sentAt})` })
     .from(communicationEventsTable)
@@ -275,36 +276,27 @@ export async function processSelfReportedJobChange(input: SelfReportChangeInput)
 
   const email = buildJobChangeEmail(firstName, newTitle, newCompany, brand);
 
-  const sendResult = await sendEmail({
+  const sendResult = await send({
+    kind:"self_report",intervalDays:SELF_REPORT_COOLDOWN_DAYS,
+    ownerTenantId:candidate.tenantId,
+    expectedPool:candidate.pool,
+    expectedTitle:titleChanged?input.newTitle:candidate.currentTitle,
+    expectedCompany:companyChanged?input.newCompany:candidate.currentCompany,
+    tenantId:candidate.tenantId??"platform",candidateId,
     to:      candidate.email!,
     subject: email.subject,
-    html:    email.html,
-    audit: {
-      tenantId:     candidate.tenantId,
+    html:    email.html,htmlOnly:true,
+    body:`Self-reported job change (${newTitle ?? "?"}${newCompany ? ` @ ${newCompany}` : ""})`,
       actorLabel:   "Self-Report Re-engagement",
-      subjectType:  "candidate",
-      subjectId:    candidateId,
       subjectLabel: fullName,
       action:       "self_report.job_change",
       metadata:     { source: "candidate_self_report", newTitle, newCompany },
-    },
   });
 
-  if (!sendResult.ok) {
-    logger.warn({ candidateId, error: sendResult.error }, "[self-report] Congratulations email send failed");
-    return { changed: true, emailSent: false, reason: "send_failed" };
+  if (!sendResult.ok||sendResult.simulated||sendResult.suppressed) {
+    logger.info({ candidateId, reason: sendResult.reason }, "[self-report] Congratulations email not counted as accepted");
+    return { changed: true, emailSent: false, reason: sendResult.reason??"send_failed" };
   }
-
-  await db.insert(communicationEventsTable).values({
-    tenantId:    candidate.tenantId,
-    candidateId,
-    type:        "follow_up",
-    channel:     "email",
-    status:      "sent",
-    subject:     email.subject,
-    body:        `Self-reported job change (${newTitle ?? "?"}${newCompany ? ` @ ${newCompany}` : ""})`,
-    sentAt:      new Date(),
-  } as any);
 
   logger.info({ candidateId, newTitle, newCompany }, "[self-report] Job-change congratulations sent");
   return { changed: true, emailSent: true };

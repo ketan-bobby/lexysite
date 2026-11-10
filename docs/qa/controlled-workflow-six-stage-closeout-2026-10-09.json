@@ -1,0 +1,54 @@
+{
+  "scope": "Isolated synthetic controlled-inbox pilot only",
+  "workflowStatus": "completed",
+  "stages": [
+    {
+      "key": "screening",
+      "status": "completed",
+      "coverage": "Synthetic predecessor evidence; not fresh proof of real provider screening."
+    },
+    {
+      "key": "verification",
+      "status": "completed",
+      "coverage": "Workflow-only synthetic clearance; canonical identity remains pending."
+    },
+    {
+      "key": "engagement",
+      "status": "completed",
+      "coverage": "Real controlled-inbox interest response and separately authorised review/invitation sequence."
+    },
+    {
+      "key": "ai_interview",
+      "status": "completed",
+      "coverage": "Completed recorded interview, saved answers and assessment; operational completion reviewed."
+    },
+    {
+      "key": "evaluation_review",
+      "status": "completed",
+      "coverage": "Owner-authorised test-only sign-off acknowledging the saved assessment concerns, not endorsing a real hire."
+    },
+    {
+      "key": "hiring_decision",
+      "status": "completed",
+      "coverage": "Owner-authorised synthetic decision: do not proceed to any real hire or offer."
+    }
+  ],
+  "checks": {
+    "ordinaryRecruiterFinalDecisionDenied": true,
+    "humanApproverFinalDecisionAccepted": true,
+    "atomicEvidenceRetryAndRevisionTestsPassed": true,
+    "reviewControlNoProviderSideEffectsTestPassed": true,
+    "stage5SignoffAuditExactlyOnce": true,
+    "stage6TestDecisionAuditExactlyOnce": true,
+    "identityPipelineOutcomesAssessmentAndContactStateUnchanged": true,
+    "syntheticProfileExcludedFromRealReporting": true,
+    "realHireOrOfferCreated": false
+  },
+  "savedAssessment": { "overallScore": 46, "recommendation": "yes", "unchanged": true },
+  "limitations": [
+    "Completing this test workflow is not production certification of every provider, identity check or hiring outcome.",
+    "The final workflow decision is currently recorded as an audited human note, not a structured employment outcome.",
+    "The full assisted/autonomous regression suite was not rerun in this closeout; focused approval, ordering and idempotency checks passed."
+  ],
+  "noRepeatedInterviewInvitationAssessmentOrProviderRequest": true
+}

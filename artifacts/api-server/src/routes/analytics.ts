@@ -81,6 +81,7 @@ import {
 } from "../lib/compliance-scope";
 import { PLATFORM_READ_EXEMPTION, platformReadExemption } from "../lib/platform-pool-read";
 import { PLACEHOLDER_DOMAINS } from "../lib/real-email";
+import { restrictToRealCandidates } from "../lib/synthetic-fixture-scope";
 import { TERMINAL_NEGATIVE_STAGES, TERMINAL_NEGATIVE_STAGE_SET } from "../lib/pipeline-stages";
 import {
   runLinkedInProfileMonitor,
@@ -221,6 +222,7 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
       hasPlatformAccess = tRow?.a === true;
     }
     const candidateConds: any[] = [
+      restrictToRealCandidates(candidatesTable.id),
       isNull(candidatesTable.dataErasedAt),
       sql`${candidatesTable.doNotContact} IS NOT TRUE`,
       sql`${candidatesTable.pool} IS DISTINCT FROM 'pending_profile'`,
@@ -493,6 +495,7 @@ router.get("/analytics/overview", resolveUser, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to load analytics overview" });
   }
+  return;
 });
 
 router.get("/analytics/funnel", resolveUser, async (req, res) => {
@@ -598,6 +601,7 @@ router.get("/analytics/funnel", resolveUser, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to load funnel data" });
   }
+  return;
 });
 
 router.get("/analytics/trend", resolveUser, async (req, res) => {
@@ -667,6 +671,7 @@ router.get("/analytics/trend", resolveUser, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to load trend data" });
   }
+  return;
 });
 
 router.get("/analytics/score-distribution", resolveUser, async (req, res) => {
@@ -719,6 +724,7 @@ router.get("/analytics/score-distribution", resolveUser, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to load score distribution" });
   }
+  return;
 });
 
 /* ── GET /analytics/dashboard ─────────────────────────────────────────────── */
@@ -1153,6 +1159,7 @@ router.get("/analytics/dashboard", resolveUser, async (req, res) => {
     logger.error({ err }, "[dashboard] failed");
     res.status(500).json({ error: "Failed to load dashboard data" });
   }
+  return;
 });
 
 /* ── GET /analytics/engagement ────────────────────────────────────────────── */
@@ -1374,6 +1381,7 @@ router.get("/analytics/engagement", resolveUser, async (req, res) => {
     logger.error({ err }, "[engagement] failed");
     res.status(500).json({ error: "Failed to load engagement metrics" });
   }
+  return;
 });
 
 /* ── POST /engagement/run-reengagement ───────────────────────────────────── */
@@ -1419,6 +1427,7 @@ router.post(
       logger.error({ err }, "[scan-linkedin] failed");
       res.status(500).json({ error: "Scan failed" });
     }
+    return;
   },
 );
 
@@ -1438,6 +1447,7 @@ router.get("/engagement/linkedin-status", resolveUser, async (req: any, res) => 
   } catch (err: any) {
     res.status(500).json({ error: "Failed to get status" });
   }
+  return;
 });
 
 function buildMonthBuckets() {
@@ -1478,6 +1488,9 @@ const K_THRESHOLD = 5;
 
 router.get("/analytics/diversity", resolveUser, async (req, res) => {
   try {
+    if (!["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"].includes(req.resolvedUser!.role)) {
+      return res.status(403).json({ error: "Forbidden — diversity analytics are restricted to staff." });
+    }
     const allowed = await tenantFilter(req);
     const rs = await recruiterScope(req);
     if (allowed?.length === 0 || (rs.candidateIds !== null && rs.candidateIds.length === 0)) {
@@ -1495,6 +1508,7 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
     const whereCands = andConds(
       inTenant(candidatesTable.tenantId, allowed),
       inScope(candidatesTable.id, rs.candidateIds),
+      restrictToCompliantCandidates(candidatesTable.id),
     );
     /* INNER join — only candidates who actively self-identified contribute
      * to the aggregate. Candidates who skipped the form are simply not in
@@ -1524,7 +1538,7 @@ router.get("/analytics/diversity", resolveUser, async (req, res) => {
      * unlocked" empty state. */
     if (total < K_THRESHOLD) {
       return res.json({
-        total,
+        total: 0,
         kThreshold: K_THRESHOLD,
         gender: [],
         raceEthnicity: [],
@@ -1659,8 +1673,10 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
      * jobs only (only AEDT jobs require auditor reproducibility). */
     const conds: any[] = [];
     if (allowed) conds.push(inArray(aiDecisionLogTable.tenantId, allowed));
+    if (allowed) conds.push(inArray(jobsTable.tenantId, allowed));
     if (jobIdParam) conds.push(eq(aiDecisionLogTable.jobId, jobIdParam));
     conds.push(eq(jobsTable.aedtEnabled, true));
+    conds.push(restrictToCompliantCandidates(aiDecisionLogTable.candidateId));
     const whereClause = conds.length > 1 ? and(...conds) : conds[0];
 
     const rows = await db
@@ -1692,6 +1708,7 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
         and(
           eq(applicationsTable.candidateId, aiDecisionLogTable.candidateId),
           eq(applicationsTable.jobId, aiDecisionLogTable.jobId),
+          inTenant(applicationsTable.tenantId, allowed),
         ),
       )
       .where(whereClause)
@@ -1755,6 +1772,7 @@ router.get("/analytics/aedt-export", resolveUser, async (req: any, res) => {
     logger.error({ err: err?.message }, "[analytics/aedt-export] failed");
     res.status(500).json({ error: "Failed to generate AEDT export" });
   }
+  return;
 });
 
 /* ── GET /analytics/adverse-impact ────────────────────────────────────────────
@@ -1841,8 +1859,12 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
 
     /* Denominator for the demographic-coverage disclosure: EVERY unit in the
      * selected population, whether or not the candidate self-identified. */
-    const appConds: any[] = [inArray(applicationsTable.entryType, population.entryTypes as any)];
+    const appConds: any[] = [
+      inArray(applicationsTable.entryType, population.entryTypes as any),
+      restrictToCompliantCandidates(applicationsTable.candidateId),
+    ];
     if (allowed) appConds.push(inArray(applicationsTable.tenantId, allowed));
+    if (allowed) appConds.push(inArray(jobsTable.tenantId, allowed));
     if (jobIdParam) appConds.push(eq(applicationsTable.jobId, jobIdParam));
     const appWhere = appConds.length > 1 ? and(...appConds) : appConds[0];
 
@@ -1855,6 +1877,7 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
               jobId: applicationsTable.jobId,
             })
             .from(applicationsTable)
+            .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
             .where(appWhere);
     const popUnits = new Set(popRows.map((r) => `${r.candidateId}::${r.jobId}`)).size;
 
@@ -1905,6 +1928,7 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
         disabilityStatus: candidateDemographicsTable.disabilityStatus,
       })
       .from(applicationsTable)
+      .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
       .innerJoin(
         candidateDemographicsTable,
         eq(applicationsTable.candidateId, candidateDemographicsTable.candidateId),
@@ -1914,8 +1938,9 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
     if (baseRows.length === 0) return res.json(emptyResp);
 
     /* Furthest level reached per (candidate, job) from the immutable event log. */
-    const evConds: any[] = [];
+    const evConds: any[] = [restrictToCompliantCandidates(candidateEventsTable.candidateId)];
     if (allowed) evConds.push(inArray(candidateEventsTable.tenantId, allowed));
+    if (allowed) evConds.push(inArray(jobsTable.tenantId, allowed));
     if (jobIdParam) evConds.push(eq(candidateEventsTable.jobId, jobIdParam));
     const evWhere = evConds.length > 1 ? and(...evConds) : evConds[0];
     const evRows = await db
@@ -1925,6 +1950,7 @@ router.get("/analytics/adverse-impact", resolveUser, async (req: any, res) => {
         eventType: candidateEventsTable.eventType,
       })
       .from(candidateEventsTable)
+      .innerJoin(jobsTable, eq(candidateEventsTable.jobId, jobsTable.id))
       .where(evWhere);
     const evMax = buildEventMax(evRows);
     const units = buildUnits(baseRows, evMax);
@@ -2109,6 +2135,7 @@ router.get("/analytics/morning-report", resolveUser, async (req, res) => {
           inScope(applicationsTable.jobId, rs.jobIds),
           nonDeliverableEmailSql(candidatesTable.email),
           compliantCandidatePredicate(),
+          restrictToRealCandidates(candidatesTable.id),
         ),
       );
     const nBlocked = blockedRows.length;
@@ -2343,6 +2370,7 @@ router.get("/analytics/blocked-candidates", resolveUser, async (req, res) => {
           inScope(applicationsTable.jobId, rs.jobIds),
           nonDeliverableEmailSql(candidatesTable.email),
           compliantCandidatePredicate(),
+          restrictToRealCandidates(candidatesTable.id),
         ),
       );
     const ids = blockedRows.map((r) => r.candidateId).filter(Boolean) as string[];

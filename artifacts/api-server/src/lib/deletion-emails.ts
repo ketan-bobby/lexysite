@@ -79,32 +79,31 @@ export async function sendDeletionFulfilledConfirmationToCandidate(args: {
   candidateEmailSnapshot: string | null;
   jurisdiction: string;
   fulfilledAt: Date;
-}): Promise<void> {
+}): Promise<boolean> {
   const { requestId, candidateEmailSnapshot, jurisdiction, fulfilledAt } = args;
   if (!candidateEmailSnapshot) {
     logger.warn(
       { requestId },
       "[deletion] cannot send candidate confirmation — no email snapshot on request",
     );
-    return;
+    return false;
   }
-  const subject = `Your Lexy data has been deleted`;
+  const subject = `Your Lexy candidate-profile erasure is complete`;
   const text = [
     `Hello,`,
     ``,
-    `Your request to delete your personal data from Lexy has been completed`,
+    `Your candidate-profile erasure request in Lexy has been completed`,
     `on ${fulfilledAt.toISOString().slice(0, 10)} (UTC).`,
     ``,
-    `What we deleted: your candidate profile, applications, interview`,
-    `sessions and recordings, resume, AI consent records, and all`,
-    `recommendation / outreach / activity history associated with your`,
-    `account across our systems.`,
+    `What we deleted: your candidate profile, linked interview records,`,
+    `referenced Lexy-held recordings and resume, AI consent records,`,
+    `and candidate recommendation, outreach and activity records.`,
     ``,
     `What we retained: a record of this deletion (request ID ${requestId},`,
-    `jurisdiction ${jurisdiction}) is kept in our audit log under the legal`,
-    `basis "establishment, exercise, or defence of legal claims" (GDPR`,
-    `Art. 17(3)(e)). This record contains only the request metadata, not`,
-    `any of your application content.`,
+    `jurisdiction ${jurisdiction}), required decision history and financial`,
+    `records may be retained where required by law. Profile erasure does`,
+    `not certify deletion of every login-account identifier or copies`,
+    `independently held by employers or other providers.`,
     ``,
     `If you believe any data has been retained outside what is described`,
     `above, please reply to this email or contact privacy@lexy.ai within`,
@@ -132,4 +131,5 @@ export async function sendDeletionFulfilledConfirmationToCandidate(args: {
       "[deletion] failed to send candidate fulfilment confirmation",
     );
   }
+  return result.ok;
 }

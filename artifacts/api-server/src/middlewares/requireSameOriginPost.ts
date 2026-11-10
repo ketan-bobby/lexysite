@@ -117,7 +117,7 @@ function originOf(url: string | undefined): string | null {
  *  middleware (requireSameOriginPost) and the conditional global guard
  *  (csrfOriginGuard). Sends the 403 itself and returns false on rejection;
  *  returns true when the caller may proceed. */
-function passesOriginCheck(req: Request, res: Response, tag: string): boolean {
+function passesOriginCheck(req: Request<unknown>, res: Response, tag: string): boolean {
   const origin = (req.headers.origin as string | undefined) ?? null;
   const referer = req.headers.referer as string | undefined;
   const candidate = origin ?? originOf(referer);
@@ -149,8 +149,8 @@ function passesOriginCheck(req: Request, res: Response, tag: string): boolean {
   return false;
 }
 
-export function requireSameOriginPost(
-  req: Request,
+export function requireSameOriginPost<Params>(
+  req: Request<Params>,
   res: Response,
   next: NextFunction,
 ) {
@@ -219,8 +219,8 @@ function isCsrfExempt(reqPath: string): boolean {
   return false;
 }
 
-export function csrfOriginGuard(
-  req: Request,
+export function csrfOriginGuard<Params>(
+  req: Request<Params>,
   res: Response,
   next: NextFunction,
 ) {

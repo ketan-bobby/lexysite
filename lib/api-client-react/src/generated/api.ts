@@ -21,15 +21,61 @@ import type {
   AnswerResponse,
   Application,
   ApprovedCandidateIntroduction,
+  AtsApplicantInterviewInput,
+  AtsApplicantInterviewState,
+  AtsCampaignControlInput,
+  AtsCampaignDetail,
+  AtsCampaignDispatchInput,
+  AtsCampaignIndex,
+  AtsCampaignPreparationInput,
+  AtsCandidateProfileInput,
+  AtsCandidateProfileResult,
+  AtsCandidateProfileState,
+  AtsHandoffInput,
+  AtsHandoffState,
+  AtsImportHistory,
+  AtsImportInput,
+  AtsImportState,
+  AtsInterviewInvitationInput,
+  AtsInterviewInvitationState,
+  AtsInterviewNoteInput,
+  AtsInterviewNoteState,
+  AtsInvitationEvidence,
+  AtsInvitationReconciliationInput,
+  AtsNoteRecoveryAttempt,
+  AtsNoteRecoveryInput,
+  AtsPreviewInput,
+  AtsPreviewPage,
+  AtsRefreshInput,
+  AtsScheduleInput,
+  AtsScheduleState,
+  AtsStageOwnershipInput,
+  AtsStageOwnershipState,
+  AtsVerificationInput,
+  AtsVerificationState,
   AutopilotToggleRequest,
+  CalendarWorkingHours,
+  CalendarWorkingHoursInput,
   Candidate,
   CandidateDashboard,
+  CandidateGoogleMeetView,
+  CandidateInterviewConfiguration,
   CandidateIntroductionApprovalInput,
   CandidateIntroductionDraft,
   CandidateIntroductionInput,
   CandidateNotification,
+  CandidateOfferedTimes,
+  CandidateRegistrationPage,
+  CandidateTimeConfirmationInput,
+  CandidateTimeConfirmationReceipt,
+  CandidateZoomLinkView,
   CandidatesListResponse,
+  CareerCampaignPage,
   CommunicationEvent,
+  ConnectZohoRecruitAccount200,
+  ControlledOfferInput,
+  ControlledOfferResponseInput,
+  ControlledOfferState,
   CreateApplicationRequest,
   CreateCampaignRequest,
   CreateCandidateRequest,
@@ -43,19 +89,56 @@ import type {
   GenerateIcpRequest,
   GeneratePrepRequest,
   GetAnalyticsOverviewParams,
+  GetCandidateRegistrationsParams,
+  GetCareerCampaignStatusParams,
+  GetEmployerOfferInboxParams,
   GetHiringFunnelParams,
+  GetInterviewRecordingSegments200,
+  GetOutlookCalendarAvailabilityParams,
+  GetStaffNotificationsParams,
   GhostingRisk,
+  GoogleCalendarPilotCheck,
+  GoogleCalendarPilotReadRequest,
+  GoogleInterviewInvitationInput,
+  GoogleInterviewInvitationStatus,
+  GoogleInvitationOperationInput,
+  GoogleInvitationOperationView,
+  GoogleMeetRecordingAccountConsentInput,
+  GoogleMeetRecordingAccountStatus,
+  GooglePanelConsentInput,
+  GooglePanelConsentView,
+  GooglePanelMembersView,
+  GooglePanelTimesInput,
+  GooglePanelTimesView,
+  GoogleStaffAvailabilityInput,
+  GoogleStaffAvailabilityReceipt,
+  GoogleStaffCalendarConsent,
+  GoogleStaffCalendarConsentInput,
+  GoogleStaffCalendarDisconnectInput,
+  GoogleStaffCalendarStatus,
   HealthStatus,
   HiringFunnel,
   IdeaCandiateProfile,
   InboxReplyInput,
   IngestProfileRequest,
+  InterviewBookingLinkCreated,
+  InterviewBookingLinkInput,
+  InterviewBookingLinkStatus,
+  InterviewCaptureDiagnosticInput,
+  InterviewCaptureDiagnosticReceipt,
+  InterviewCaptureDiagnosticReport,
+  InterviewCompletionReceipt,
   InterviewPlan,
+  InterviewPlanGenerationFailure,
+  InterviewRecordingSegmentForm,
   InterviewSchedule,
   InterviewSession,
   InterviewSummary,
+  InterviewTimeChangeView,
   Job,
+  JobWorkflowState,
   JobsListResponse,
+  LaunchCandidateWorkflowAction200,
   LearningAchievements,
   LearningAssessmentDetail,
   LearningAssessmentHome,
@@ -81,24 +164,90 @@ import type {
   ListCommunicationEventsParams,
   ListInterviewsParams,
   ListJobsParams,
+  ListMailHoldsParams,
   ListPrepSessionsParams,
   ListSchedulesParams,
   ListSourcedCandidatesParams,
   ListUsersParams,
   LoginRequest,
   LoginResult,
+  MailHoldPage,
+  MailHoldReviewInput,
+  MailHoldReviewResult,
+  MeetingAttendanceApproval,
+  MeetingAttendanceAttempt,
+  MeetingAttendanceImport,
+  MeetingAttendanceView,
+  MeetingNote,
+  MeetingProcessingInput,
+  MeetingQuestionReviewInput,
+  MeetingRecordingInput,
+  MeetingSpeakerReviewInput,
+  MeetingWorkspaceAuthorization,
   MergeIdentitiesRequest,
+  NativeMeetConference,
+  NativeMeetPreviewInput,
+  NativeMeetRecordingPreview,
+  NativeZoomAppointment,
+  NativeZoomPreviewInput,
+  NativeZoomRecordingInput,
+  NativeZoomRecordingPreview,
+  OfferInboxItem,
+  OfferInboxPage,
+  OfferRoutingInput,
+  OfferRoutingState,
+  OfferedTimeChoiceInput,
+  OfferedTimesInput,
+  OutlookAvailability,
+  OutlookCandidateInvitationInput,
+  OutlookCandidateInvitationStatus,
+  OutlookInvitationChangeInput,
+  OutlookInvitationChangeView,
+  OutlookPanelInvitationInput,
+  OutlookPanelInvitationStatus,
+  OutlookScheduleActionInput,
+  OutlookScheduleReceipt,
   OutreachCampaign,
+  PanelCalendarConsent,
+  PanelCalendarConsentInput,
+  PanelTimeSearchInput,
+  PanelTimeSearchResult,
+  PilotCodeCreated,
+  PilotCodeInput,
+  PilotEndInput,
+  PilotOverview,
+  PilotRedemptionInput,
+  PilotStatus,
   PrepFeedback,
   PrepPlan,
   PrepSession,
+  PublicControlledOffer,
+  PublicInterviewBookingChoice,
+  PublicInterviewBookingToken,
+  PublicInterviewBookingView,
+  PublicTimeChangeRequestInput,
+  PublicTimeChangeWithdrawalInput,
+  RecallReadiness,
   RecruiterInboxItem,
+  RecruitingConfigurationUpdate,
   RediscoverRequest,
   ReplyToInboxItem200,
   ResumeScreen,
+  SavedSchedulePanel,
+  ScheduleCreateResult,
+  ScheduleFeedbackRequest,
+  SchedulePanelInput,
+  SchedulePanelMembers,
   ScreenResumeRequest,
   SendCommunicationRequest,
+  SessionRevocationInput,
+  SessionRevocationResult,
   SourcedCandidate,
+  SourcingControlCommand,
+  SourcingControlView,
+  StaffNotificationRecord,
+  StaffOfferedTimes,
+  StaffZoomLinkView,
   StartInterviewRequest,
   StartPrepSessionRequest,
   StorageUploadUrlInput,
@@ -108,13 +257,78 @@ import type {
   TalentMatch,
   TalentMatchRequest,
   Tenant,
+  TimeChangeRequestInput,
+  TimeChangeReviewInput,
+  TimeChangeTokenInput,
+  TimeChangeWithdrawalInput,
+  TranscribeCareerInterview200,
   UpdateApplicationRequest,
   UpdateCandidateRequest,
   UpdateJobRequest,
   UpdateScheduleRequest,
   UpdateTenantRequest,
+  UploadInterviewRecordingSegment200,
   User,
   VerificationStatus,
+  WorkflowActionLaunchInput,
+  WorkflowControlInput,
+  WorkflowDecisionCorrectionInput,
+  WorkflowEnrollmentInput,
+  WorkflowEvidenceInput,
+  WorkflowFollowUpInput,
+  WorkflowFollowUpList,
+  WorkflowIdentityResolutionInput,
+  WorkflowLivePilotInput,
+  WorkflowMutationInput,
+  WorkflowMutationResult,
+  WorkflowRecoveryInput,
+  WorkflowShadowView,
+  ZohoCampaignAction,
+  ZohoCampaignApplicantReview,
+  ZohoCampaignDetail,
+  ZohoCampaignReviewInput,
+  ZohoCampaignReviewQueue,
+  ZohoCampaignSelection,
+  ZohoCampaignWorkspace,
+  ZohoInterviewNoteApproval,
+  ZohoInterviewNotePreview,
+  ZohoInterviewNoteReceipt,
+  ZohoInterviewNoteSelection,
+  ZohoJobApplicantPage,
+  ZohoJobApplicantSelection,
+  ZohoRecruitAccessCheck,
+  ZohoRecruitAccountConfirmation,
+  ZohoRecruitAccountView,
+  ZohoRecruitConsent,
+  ZohoRecruitImportConfirmation,
+  ZohoRecruitImportPreview,
+  ZohoRecruitImportResult,
+  ZohoRecruitImportSelection,
+  ZohoReviewExportInput,
+  ZohoReviewExportReceipt,
+  ZohoStageHandoff,
+  ZohoStageHandoffInput,
+  ZohoStageMapping,
+  ZohoStageMappingInput,
+  ZohoStageMetadataCheck,
+  ZohoStageMetadataInput,
+  ZohoStageRequestAction,
+  ZohoStageRequestInput,
+  ZohoStageRequestWorkspace,
+  ZoomLinkApproval,
+  ZoomLinkDraft,
+  ZoomLinkRemoval,
+  ZoomMeetingApproval,
+  ZoomMeetingReview,
+  ZoomMeetingReviewView,
+  ZoomMeetingView,
+  ZoomRecoveryApproval,
+  ZoomRecoveryReview,
+  ZoomRecoveryView,
+  ZoomStaffAccountView,
+  ZoomStaffAuthorization,
+  ZoomStaffConsent,
+  ZoomStaffDisconnect,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -125,6 +339,11384 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+export const getGetZohoRecruitAccountUrl = () => {
+  return `/api/zoho-recruit/account`;
+};
+
+export const getZohoRecruitAccount = async (
+  options?: RequestInit,
+): Promise<ZohoRecruitAccountView> => {
+  return customFetch<ZohoRecruitAccountView>(getGetZohoRecruitAccountUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoRecruitAccountQueryKey = () => {
+  return [`/api/zoho-recruit/account`] as const;
+};
+
+export const getGetZohoRecruitAccountQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoRecruitAccount>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoRecruitAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoRecruitAccountQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoRecruitAccount>>> = ({ signal }) =>
+    getZohoRecruitAccount({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoRecruitAccount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoRecruitAccountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoRecruitAccount>>
+>;
+export type GetZohoRecruitAccountQueryError = ErrorType<unknown>;
+
+export function useGetZohoRecruitAccount<
+  TData = Awaited<ReturnType<typeof getZohoRecruitAccount>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoRecruitAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoRecruitAccountQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getConnectZohoRecruitAccountUrl = () => {
+  return `/api/zoho-recruit/account/connect`;
+};
+
+export const connectZohoRecruitAccount = async (
+  zohoRecruitConsent: ZohoRecruitConsent,
+  options?: RequestInit,
+): Promise<ConnectZohoRecruitAccount200> => {
+  return customFetch<ConnectZohoRecruitAccount200>(getConnectZohoRecruitAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitConsent),
+  });
+};
+
+export const getConnectZohoRecruitAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitConsent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitConsent> },
+  TContext
+> => {
+  const mutationKey = ["connectZohoRecruitAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectZohoRecruitAccount>>,
+    { data: BodyType<ZohoRecruitConsent> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectZohoRecruitAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectZohoRecruitAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectZohoRecruitAccount>>
+>;
+export type ConnectZohoRecruitAccountMutationBody = BodyType<ZohoRecruitConsent>;
+export type ConnectZohoRecruitAccountMutationError = ErrorType<unknown>;
+
+export const useConnectZohoRecruitAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitConsent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitConsent> },
+  TContext
+> => {
+  return useMutation(getConnectZohoRecruitAccountMutationOptions(options));
+};
+
+export const getApproveZohoRecruitAccountUrl = () => {
+  return `/api/zoho-recruit/account/approve`;
+};
+
+export const approveZohoRecruitAccount = async (
+  zohoRecruitAccountConfirmation: ZohoRecruitAccountConfirmation,
+  options?: RequestInit,
+): Promise<ZohoRecruitAccountView> => {
+  return customFetch<ZohoRecruitAccountView>(getApproveZohoRecruitAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitAccountConfirmation),
+  });
+};
+
+export const getApproveZohoRecruitAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  const mutationKey = ["approveZohoRecruitAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveZohoRecruitAccount>>,
+    { data: BodyType<ZohoRecruitAccountConfirmation> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return approveZohoRecruitAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveZohoRecruitAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveZohoRecruitAccount>>
+>;
+export type ApproveZohoRecruitAccountMutationBody = BodyType<ZohoRecruitAccountConfirmation>;
+export type ApproveZohoRecruitAccountMutationError = ErrorType<unknown>;
+
+export const useApproveZohoRecruitAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  return useMutation(getApproveZohoRecruitAccountMutationOptions(options));
+};
+
+export const getDisconnectZohoRecruitAccountUrl = () => {
+  return `/api/zoho-recruit/account/disconnect`;
+};
+
+export const disconnectZohoRecruitAccount = async (
+  zohoRecruitAccountConfirmation: ZohoRecruitAccountConfirmation,
+  options?: RequestInit,
+): Promise<ZohoRecruitAccountView> => {
+  return customFetch<ZohoRecruitAccountView>(getDisconnectZohoRecruitAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitAccountConfirmation),
+  });
+};
+
+export const getDisconnectZohoRecruitAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  const mutationKey = ["disconnectZohoRecruitAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>,
+    { data: BodyType<ZohoRecruitAccountConfirmation> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return disconnectZohoRecruitAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectZohoRecruitAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>
+>;
+export type DisconnectZohoRecruitAccountMutationBody = BodyType<ZohoRecruitAccountConfirmation>;
+export type DisconnectZohoRecruitAccountMutationError = ErrorType<unknown>;
+
+export const useDisconnectZohoRecruitAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectZohoRecruitAccount>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  return useMutation(getDisconnectZohoRecruitAccountMutationOptions(options));
+};
+
+/**
+ * @summary Manually check read permissions without importing records
+ */
+export const getCheckZohoRecruitAccessUrl = () => {
+  return `/api/zoho-recruit/account/check-access`;
+};
+
+export const checkZohoRecruitAccess = async (
+  zohoRecruitAccountConfirmation: ZohoRecruitAccountConfirmation,
+  options?: RequestInit,
+): Promise<ZohoRecruitAccessCheck> => {
+  return customFetch<ZohoRecruitAccessCheck>(getCheckZohoRecruitAccessUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitAccountConfirmation),
+  });
+};
+
+export const getCheckZohoRecruitAccessMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkZohoRecruitAccess>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof checkZohoRecruitAccess>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  const mutationKey = ["checkZohoRecruitAccess"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof checkZohoRecruitAccess>>,
+    { data: BodyType<ZohoRecruitAccountConfirmation> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return checkZohoRecruitAccess(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CheckZohoRecruitAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof checkZohoRecruitAccess>>
+>;
+export type CheckZohoRecruitAccessMutationBody = BodyType<ZohoRecruitAccountConfirmation>;
+export type CheckZohoRecruitAccessMutationError = ErrorType<void>;
+
+/**
+ * @summary Manually check read permissions without importing records
+ */
+export const useCheckZohoRecruitAccess = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkZohoRecruitAccess>>,
+    TError,
+    { data: BodyType<ZohoRecruitAccountConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof checkZohoRecruitAccess>>,
+  TError,
+  { data: BodyType<ZohoRecruitAccountConfirmation> },
+  TContext
+> => {
+  return useMutation(getCheckZohoRecruitAccessMutationOptions(options));
+};
+
+export const getPreviewZohoRecruitImportUrl = () => {
+  return `/api/zoho-recruit/imports/preview`;
+};
+
+export const previewZohoRecruitImport = async (
+  zohoRecruitImportSelection: ZohoRecruitImportSelection,
+  options?: RequestInit,
+): Promise<ZohoRecruitImportPreview> => {
+  return customFetch<ZohoRecruitImportPreview>(getPreviewZohoRecruitImportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitImportSelection),
+  });
+};
+
+export const getPreviewZohoRecruitImportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewZohoRecruitImport>>,
+    TError,
+    { data: BodyType<ZohoRecruitImportSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewZohoRecruitImport>>,
+  TError,
+  { data: BodyType<ZohoRecruitImportSelection> },
+  TContext
+> => {
+  const mutationKey = ["previewZohoRecruitImport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewZohoRecruitImport>>,
+    { data: BodyType<ZohoRecruitImportSelection> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return previewZohoRecruitImport(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewZohoRecruitImportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewZohoRecruitImport>>
+>;
+export type PreviewZohoRecruitImportMutationBody = BodyType<ZohoRecruitImportSelection>;
+export type PreviewZohoRecruitImportMutationError = ErrorType<unknown>;
+
+export const usePreviewZohoRecruitImport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewZohoRecruitImport>>,
+    TError,
+    { data: BodyType<ZohoRecruitImportSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewZohoRecruitImport>>,
+  TError,
+  { data: BodyType<ZohoRecruitImportSelection> },
+  TContext
+> => {
+  return useMutation(getPreviewZohoRecruitImportMutationOptions(options));
+};
+
+export const getListZohoJobApplicantsUrl = () => {
+  return `/api/zoho-recruit/applicants`;
+};
+
+export const listZohoJobApplicants = async (
+  zohoJobApplicantSelection: ZohoJobApplicantSelection,
+  options?: RequestInit,
+): Promise<ZohoJobApplicantPage> => {
+  return customFetch<ZohoJobApplicantPage>(getListZohoJobApplicantsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoJobApplicantSelection),
+  });
+};
+
+export const getListZohoJobApplicantsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof listZohoJobApplicants>>,
+    TError,
+    { data: BodyType<ZohoJobApplicantSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof listZohoJobApplicants>>,
+  TError,
+  { data: BodyType<ZohoJobApplicantSelection> },
+  TContext
+> => {
+  const mutationKey = ["listZohoJobApplicants"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof listZohoJobApplicants>>,
+    { data: BodyType<ZohoJobApplicantSelection> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return listZohoJobApplicants(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ListZohoJobApplicantsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof listZohoJobApplicants>>
+>;
+export type ListZohoJobApplicantsMutationBody = BodyType<ZohoJobApplicantSelection>;
+export type ListZohoJobApplicantsMutationError = ErrorType<unknown>;
+
+export const useListZohoJobApplicants = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof listZohoJobApplicants>>,
+    TError,
+    { data: BodyType<ZohoJobApplicantSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof listZohoJobApplicants>>,
+  TError,
+  { data: BodyType<ZohoJobApplicantSelection> },
+  TContext
+> => {
+  return useMutation(getListZohoJobApplicantsMutationOptions(options));
+};
+
+export const getGetZohoCampaignWorkspaceUrl = () => {
+  return `/api/zoho-recruit/campaigns`;
+};
+
+export const getZohoCampaignWorkspace = async (
+  options?: RequestInit,
+): Promise<ZohoCampaignWorkspace> => {
+  return customFetch<ZohoCampaignWorkspace>(getGetZohoCampaignWorkspaceUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoCampaignWorkspaceQueryKey = () => {
+  return [`/api/zoho-recruit/campaigns`] as const;
+};
+
+export const getGetZohoCampaignWorkspaceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoCampaignWorkspace>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoCampaignWorkspace>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoCampaignWorkspaceQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoCampaignWorkspace>>> = ({
+    signal,
+  }) => getZohoCampaignWorkspace({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoCampaignWorkspace>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoCampaignWorkspaceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoCampaignWorkspace>>
+>;
+export type GetZohoCampaignWorkspaceQueryError = ErrorType<unknown>;
+
+export function useGetZohoCampaignWorkspace<
+  TData = Awaited<ReturnType<typeof getZohoCampaignWorkspace>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoCampaignWorkspace>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoCampaignWorkspaceQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateZohoInterviewCampaignUrl = () => {
+  return `/api/zoho-recruit/campaigns`;
+};
+
+export const createZohoInterviewCampaign = async (
+  zohoCampaignSelection: ZohoCampaignSelection,
+  options?: RequestInit,
+): Promise<ZohoCampaignDetail> => {
+  return customFetch<ZohoCampaignDetail>(getCreateZohoInterviewCampaignUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoCampaignSelection),
+  });
+};
+
+export const getCreateZohoInterviewCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createZohoInterviewCampaign>>,
+    TError,
+    { data: BodyType<ZohoCampaignSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createZohoInterviewCampaign>>,
+  TError,
+  { data: BodyType<ZohoCampaignSelection> },
+  TContext
+> => {
+  const mutationKey = ["createZohoInterviewCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createZohoInterviewCampaign>>,
+    { data: BodyType<ZohoCampaignSelection> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createZohoInterviewCampaign(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateZohoInterviewCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createZohoInterviewCampaign>>
+>;
+export type CreateZohoInterviewCampaignMutationBody = BodyType<ZohoCampaignSelection>;
+export type CreateZohoInterviewCampaignMutationError = ErrorType<unknown>;
+
+export const useCreateZohoInterviewCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createZohoInterviewCampaign>>,
+    TError,
+    { data: BodyType<ZohoCampaignSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createZohoInterviewCampaign>>,
+  TError,
+  { data: BodyType<ZohoCampaignSelection> },
+  TContext
+> => {
+  return useMutation(getCreateZohoInterviewCampaignMutationOptions(options));
+};
+
+export const getGetZohoInterviewCampaignUrl = (id: string) => {
+  return `/api/zoho-recruit/campaigns/${id}`;
+};
+
+export const getZohoInterviewCampaign = async (
+  id: string,
+  options?: RequestInit,
+): Promise<ZohoCampaignDetail> => {
+  return customFetch<ZohoCampaignDetail>(getGetZohoInterviewCampaignUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoInterviewCampaignQueryKey = (id: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}`] as const;
+};
+
+export const getGetZohoInterviewCampaignQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoInterviewCampaign>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoInterviewCampaign>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoInterviewCampaignQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoInterviewCampaign>>> = ({
+    signal,
+  }) => getZohoInterviewCampaign(id, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoInterviewCampaign>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoInterviewCampaignQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoInterviewCampaign>>
+>;
+export type GetZohoInterviewCampaignQueryError = ErrorType<unknown>;
+
+export function useGetZohoInterviewCampaign<
+  TData = Awaited<ReturnType<typeof getZohoInterviewCampaign>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoInterviewCampaign>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoInterviewCampaignQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetZohoCampaignReviewQueueUrl = (id: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/reviews`;
+};
+
+export const getZohoCampaignReviewQueue = async (
+  id: string,
+  options?: RequestInit,
+): Promise<ZohoCampaignReviewQueue> => {
+  return customFetch<ZohoCampaignReviewQueue>(getGetZohoCampaignReviewQueueUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoCampaignReviewQueueQueryKey = (id: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/reviews`] as const;
+};
+
+export const getGetZohoCampaignReviewQueueQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoCampaignReviewQueueQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>> = ({
+    signal,
+  }) => getZohoCampaignReviewQueue(id, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoCampaignReviewQueueQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>
+>;
+export type GetZohoCampaignReviewQueueQueryError = ErrorType<unknown>;
+
+export function useGetZohoCampaignReviewQueue<
+  TData = Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoCampaignReviewQueue>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoCampaignReviewQueueQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetZohoStageHandoffUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/handoff`;
+};
+
+export const getZohoStageHandoff = async (
+  id: string,
+  recipientId: string,
+  options?: RequestInit,
+): Promise<ZohoStageHandoff> => {
+  return customFetch<ZohoStageHandoff>(getGetZohoStageHandoffUrl(id, recipientId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoStageHandoffQueryKey = (id: string, recipientId: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/handoff`] as const;
+};
+
+export const getGetZohoStageHandoffQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoStageHandoff>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageHandoff>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoStageHandoffQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoStageHandoff>>> = ({ signal }) =>
+    getZohoStageHandoff(id, recipientId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!(id && recipientId), ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoStageHandoff>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoStageHandoffQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoStageHandoff>>
+>;
+export type GetZohoStageHandoffQueryError = ErrorType<unknown>;
+
+export function useGetZohoStageHandoff<
+  TData = Awaited<ReturnType<typeof getZohoStageHandoff>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageHandoff>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoStageHandoffQueryOptions(id, recipientId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getTestZohoStageHandoffUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/handoff`;
+};
+
+export const testZohoStageHandoff = async (
+  id: string,
+  recipientId: string,
+  zohoStageHandoffInput: ZohoStageHandoffInput,
+  options?: RequestInit,
+): Promise<ZohoStageHandoff> => {
+  return customFetch<ZohoStageHandoff>(getTestZohoStageHandoffUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageHandoffInput),
+  });
+};
+
+export const getTestZohoStageHandoffMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testZohoStageHandoff>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageHandoffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testZohoStageHandoff>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageHandoffInput> },
+  TContext
+> => {
+  const mutationKey = ["testZohoStageHandoff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testZohoStageHandoff>>,
+    { id: string; recipientId: string; data: BodyType<ZohoStageHandoffInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return testZohoStageHandoff(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestZohoStageHandoffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testZohoStageHandoff>>
+>;
+export type TestZohoStageHandoffMutationBody = BodyType<ZohoStageHandoffInput>;
+export type TestZohoStageHandoffMutationError = ErrorType<unknown>;
+
+export const useTestZohoStageHandoff = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testZohoStageHandoff>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageHandoffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testZohoStageHandoff>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageHandoffInput> },
+  TContext
+> => {
+  return useMutation(getTestZohoStageHandoffMutationOptions(options));
+};
+
+export const getPreviewZohoInterviewNoteUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/note-preview`;
+};
+
+export const previewZohoInterviewNote = async (
+  id: string,
+  recipientId: string,
+  zohoInterviewNoteSelection: ZohoInterviewNoteSelection,
+  options?: RequestInit,
+): Promise<ZohoInterviewNotePreview> => {
+  return customFetch<ZohoInterviewNotePreview>(getPreviewZohoInterviewNoteUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoInterviewNoteSelection),
+  });
+};
+
+export const getPreviewZohoInterviewNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewZohoInterviewNote>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewZohoInterviewNote>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteSelection> },
+  TContext
+> => {
+  const mutationKey = ["previewZohoInterviewNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewZohoInterviewNote>>,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteSelection> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return previewZohoInterviewNote(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewZohoInterviewNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewZohoInterviewNote>>
+>;
+export type PreviewZohoInterviewNoteMutationBody = BodyType<ZohoInterviewNoteSelection>;
+export type PreviewZohoInterviewNoteMutationError = ErrorType<unknown>;
+
+export const usePreviewZohoInterviewNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewZohoInterviewNote>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteSelection> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewZohoInterviewNote>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteSelection> },
+  TContext
+> => {
+  return useMutation(getPreviewZohoInterviewNoteMutationOptions(options));
+};
+
+export const getPublishZohoInterviewNoteUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/note-publication`;
+};
+
+export const publishZohoInterviewNote = async (
+  id: string,
+  recipientId: string,
+  zohoInterviewNoteApproval: ZohoInterviewNoteApproval,
+  options?: RequestInit,
+): Promise<ZohoInterviewNoteReceipt> => {
+  return customFetch<ZohoInterviewNoteReceipt>(getPublishZohoInterviewNoteUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoInterviewNoteApproval),
+  });
+};
+
+export const getPublishZohoInterviewNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishZohoInterviewNote>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishZohoInterviewNote>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteApproval> },
+  TContext
+> => {
+  const mutationKey = ["publishZohoInterviewNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishZohoInterviewNote>>,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteApproval> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return publishZohoInterviewNote(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PublishZohoInterviewNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof publishZohoInterviewNote>>
+>;
+export type PublishZohoInterviewNoteMutationBody = BodyType<ZohoInterviewNoteApproval>;
+export type PublishZohoInterviewNoteMutationError = ErrorType<unknown>;
+
+export const usePublishZohoInterviewNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishZohoInterviewNote>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishZohoInterviewNote>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoInterviewNoteApproval> },
+  TContext
+> => {
+  return useMutation(getPublishZohoInterviewNoteMutationOptions(options));
+};
+
+export const getGetZohoStageRequestsUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-requests`;
+};
+
+export const getZohoStageRequests = async (
+  id: string,
+  recipientId: string,
+  options?: RequestInit,
+): Promise<ZohoStageRequestWorkspace> => {
+  return customFetch<ZohoStageRequestWorkspace>(getGetZohoStageRequestsUrl(id, recipientId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoStageRequestsQueryKey = (id: string, recipientId: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-requests`] as const;
+};
+
+export const getGetZohoStageRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoStageRequests>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageRequests>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoStageRequestsQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoStageRequests>>> = ({ signal }) =>
+    getZohoStageRequests(id, recipientId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!(id && recipientId), ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoStageRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoStageRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoStageRequests>>
+>;
+export type GetZohoStageRequestsQueryError = ErrorType<unknown>;
+
+export function useGetZohoStageRequests<
+  TData = Awaited<ReturnType<typeof getZohoStageRequests>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageRequests>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoStageRequestsQueryOptions(id, recipientId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPrepareZohoStageRequestUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-requests`;
+};
+
+export const prepareZohoStageRequest = async (
+  id: string,
+  recipientId: string,
+  zohoStageRequestInput: ZohoStageRequestInput,
+  options?: RequestInit,
+): Promise<ZohoStageRequestWorkspace> => {
+  return customFetch<ZohoStageRequestWorkspace>(getPrepareZohoStageRequestUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageRequestInput),
+  });
+};
+
+export const getPrepareZohoStageRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoStageRequest>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareZohoStageRequest>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageRequestInput> },
+  TContext
+> => {
+  const mutationKey = ["prepareZohoStageRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareZohoStageRequest>>,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRequestInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return prepareZohoStageRequest(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareZohoStageRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareZohoStageRequest>>
+>;
+export type PrepareZohoStageRequestMutationBody = BodyType<ZohoStageRequestInput>;
+export type PrepareZohoStageRequestMutationError = ErrorType<unknown>;
+
+export const usePrepareZohoStageRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoStageRequest>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareZohoStageRequest>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageRequestInput> },
+  TContext
+> => {
+  return useMutation(getPrepareZohoStageRequestMutationOptions(options));
+};
+
+export const getActOnZohoStageRequestUrl = (id: string, recipientId: string, requestId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-requests/${requestId}/actions`;
+};
+
+export const actOnZohoStageRequest = async (
+  id: string,
+  recipientId: string,
+  requestId: string,
+  zohoStageRequestAction: ZohoStageRequestAction,
+  options?: RequestInit,
+): Promise<ZohoStageRequestWorkspace> => {
+  return customFetch<ZohoStageRequestWorkspace>(
+    getActOnZohoStageRequestUrl(id, recipientId, requestId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(zohoStageRequestAction),
+    },
+  );
+};
+
+export const getActOnZohoStageRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageRequest>>,
+    TError,
+    { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageRequestAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof actOnZohoStageRequest>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageRequestAction> },
+  TContext
+> => {
+  const mutationKey = ["actOnZohoStageRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof actOnZohoStageRequest>>,
+    { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageRequestAction> }
+  > = (props) => {
+    const { id, recipientId, requestId, data } = props ?? {};
+
+    return actOnZohoStageRequest(id, recipientId, requestId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActOnZohoStageRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof actOnZohoStageRequest>>
+>;
+export type ActOnZohoStageRequestMutationBody = BodyType<ZohoStageRequestAction>;
+export type ActOnZohoStageRequestMutationError = ErrorType<unknown>;
+
+export const useActOnZohoStageRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageRequest>>,
+    TError,
+    { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageRequestAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof actOnZohoStageRequest>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageRequestAction> },
+  TContext
+> => {
+  return useMutation(getActOnZohoStageRequestMutationOptions(options));
+};
+
+export const getCheckZohoStageMetadataUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-validation`;
+};
+
+export const checkZohoStageMetadata = async (
+  id: string,
+  recipientId: string,
+  zohoStageMetadataInput: ZohoStageMetadataInput,
+  options?: RequestInit,
+): Promise<ZohoStageMetadataCheck> => {
+  return customFetch<ZohoStageMetadataCheck>(getCheckZohoStageMetadataUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageMetadataInput),
+  });
+};
+
+export const getCheckZohoStageMetadataMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkZohoStageMetadata>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageMetadataInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof checkZohoStageMetadata>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageMetadataInput> },
+  TContext
+> => {
+  const mutationKey = ["checkZohoStageMetadata"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof checkZohoStageMetadata>>,
+    { id: string; recipientId: string; data: BodyType<ZohoStageMetadataInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return checkZohoStageMetadata(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CheckZohoStageMetadataMutationResult = NonNullable<
+  Awaited<ReturnType<typeof checkZohoStageMetadata>>
+>;
+export type CheckZohoStageMetadataMutationBody = BodyType<ZohoStageMetadataInput>;
+export type CheckZohoStageMetadataMutationError = ErrorType<unknown>;
+
+export const useCheckZohoStageMetadata = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkZohoStageMetadata>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageMetadataInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof checkZohoStageMetadata>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageMetadataInput> },
+  TContext
+> => {
+  return useMutation(getCheckZohoStageMetadataMutationOptions(options));
+};
+
+export const getSaveZohoStageMappingUrl = (id: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/stage-mapping`;
+};
+
+export const saveZohoStageMapping = async (
+  id: string,
+  zohoStageMappingInput: ZohoStageMappingInput,
+  options?: RequestInit,
+): Promise<ZohoStageMapping> => {
+  return customFetch<ZohoStageMapping>(getSaveZohoStageMappingUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageMappingInput),
+  });
+};
+
+export const getSaveZohoStageMappingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveZohoStageMapping>>,
+    TError,
+    { id: string; data: BodyType<ZohoStageMappingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveZohoStageMapping>>,
+  TError,
+  { id: string; data: BodyType<ZohoStageMappingInput> },
+  TContext
+> => {
+  const mutationKey = ["saveZohoStageMapping"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveZohoStageMapping>>,
+    { id: string; data: BodyType<ZohoStageMappingInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return saveZohoStageMapping(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveZohoStageMappingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveZohoStageMapping>>
+>;
+export type SaveZohoStageMappingMutationBody = BodyType<ZohoStageMappingInput>;
+export type SaveZohoStageMappingMutationError = ErrorType<unknown>;
+
+export const useSaveZohoStageMapping = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveZohoStageMapping>>,
+    TError,
+    { id: string; data: BodyType<ZohoStageMappingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveZohoStageMapping>>,
+  TError,
+  { id: string; data: BodyType<ZohoStageMappingInput> },
+  TContext
+> => {
+  return useMutation(getSaveZohoStageMappingMutationOptions(options));
+};
+
+/**
+ * @summary Record preparation of a current human-reviewed handoff, not file delivery
+ */
+export const getPrepareZohoReviewExportUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/review-export`;
+};
+
+export const prepareZohoReviewExport = async (
+  id: string,
+  recipientId: string,
+  zohoReviewExportInput: ZohoReviewExportInput,
+  options?: RequestInit,
+): Promise<ZohoReviewExportReceipt> => {
+  return customFetch<ZohoReviewExportReceipt>(getPrepareZohoReviewExportUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoReviewExportInput),
+  });
+};
+
+export const getPrepareZohoReviewExportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoReviewExport>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoReviewExportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareZohoReviewExport>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoReviewExportInput> },
+  TContext
+> => {
+  const mutationKey = ["prepareZohoReviewExport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareZohoReviewExport>>,
+    { id: string; recipientId: string; data: BodyType<ZohoReviewExportInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return prepareZohoReviewExport(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareZohoReviewExportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareZohoReviewExport>>
+>;
+export type PrepareZohoReviewExportMutationBody = BodyType<ZohoReviewExportInput>;
+export type PrepareZohoReviewExportMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Record preparation of a current human-reviewed handoff, not file delivery
+ */
+export const usePrepareZohoReviewExport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoReviewExport>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoReviewExportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareZohoReviewExport>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoReviewExportInput> },
+  TContext
+> => {
+  return useMutation(getPrepareZohoReviewExportMutationOptions(options));
+};
+
+export const getGetZohoCampaignApplicantReviewUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/review`;
+};
+
+export const getZohoCampaignApplicantReview = async (
+  id: string,
+  recipientId: string,
+  options?: RequestInit,
+): Promise<ZohoCampaignApplicantReview> => {
+  return customFetch<ZohoCampaignApplicantReview>(
+    getGetZohoCampaignApplicantReviewUrl(id, recipientId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetZohoCampaignApplicantReviewQueryKey = (id: string, recipientId: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/review`] as const;
+};
+
+export const getGetZohoCampaignApplicantReviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetZohoCampaignApplicantReviewQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>> = ({
+    signal,
+  }) => getZohoCampaignApplicantReview(id, recipientId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!(id && recipientId), ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoCampaignApplicantReviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>
+>;
+export type GetZohoCampaignApplicantReviewQueryError = ErrorType<unknown>;
+
+export function useGetZohoCampaignApplicantReview<
+  TData = Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getZohoCampaignApplicantReview>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoCampaignApplicantReviewQueryOptions(id, recipientId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRecordZohoCampaignApplicantReviewUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/review`;
+};
+
+export const recordZohoCampaignApplicantReview = async (
+  id: string,
+  recipientId: string,
+  zohoCampaignReviewInput: ZohoCampaignReviewInput,
+  options?: RequestInit,
+): Promise<ZohoCampaignApplicantReview> => {
+  return customFetch<ZohoCampaignApplicantReview>(
+    getRecordZohoCampaignApplicantReviewUrl(id, recipientId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(zohoCampaignReviewInput),
+    },
+  );
+};
+
+export const getRecordZohoCampaignApplicantReviewMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoCampaignReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoCampaignReviewInput> },
+  TContext
+> => {
+  const mutationKey = ["recordZohoCampaignApplicantReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>,
+    { id: string; recipientId: string; data: BodyType<ZohoCampaignReviewInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return recordZohoCampaignApplicantReview(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RecordZohoCampaignApplicantReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>
+>;
+export type RecordZohoCampaignApplicantReviewMutationBody = BodyType<ZohoCampaignReviewInput>;
+export type RecordZohoCampaignApplicantReviewMutationError = ErrorType<unknown>;
+
+export const useRecordZohoCampaignApplicantReview = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoCampaignReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof recordZohoCampaignApplicantReview>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoCampaignReviewInput> },
+  TContext
+> => {
+  return useMutation(getRecordZohoCampaignApplicantReviewMutationOptions(options));
+};
+
+export const getActOnZohoInterviewCampaignUrl = (id: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/action`;
+};
+
+export const actOnZohoInterviewCampaign = async (
+  id: string,
+  zohoCampaignAction: ZohoCampaignAction,
+  options?: RequestInit,
+): Promise<ZohoCampaignDetail> => {
+  return customFetch<ZohoCampaignDetail>(getActOnZohoInterviewCampaignUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoCampaignAction),
+  });
+};
+
+export const getActOnZohoInterviewCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>,
+    TError,
+    { id: string; data: BodyType<ZohoCampaignAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>,
+  TError,
+  { id: string; data: BodyType<ZohoCampaignAction> },
+  TContext
+> => {
+  const mutationKey = ["actOnZohoInterviewCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>,
+    { id: string; data: BodyType<ZohoCampaignAction> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return actOnZohoInterviewCampaign(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActOnZohoInterviewCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>
+>;
+export type ActOnZohoInterviewCampaignMutationBody = BodyType<ZohoCampaignAction>;
+export type ActOnZohoInterviewCampaignMutationError = ErrorType<unknown>;
+
+export const useActOnZohoInterviewCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>,
+    TError,
+    { id: string; data: BodyType<ZohoCampaignAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof actOnZohoInterviewCampaign>>,
+  TError,
+  { id: string; data: BodyType<ZohoCampaignAction> },
+  TContext
+> => {
+  return useMutation(getActOnZohoInterviewCampaignMutationOptions(options));
+};
+
+export const getConfirmZohoRecruitImportUrl = () => {
+  return `/api/zoho-recruit/imports/confirm`;
+};
+
+export const confirmZohoRecruitImport = async (
+  zohoRecruitImportConfirmation: ZohoRecruitImportConfirmation,
+  options?: RequestInit,
+): Promise<ZohoRecruitImportResult> => {
+  return customFetch<ZohoRecruitImportResult>(getConfirmZohoRecruitImportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoRecruitImportConfirmation),
+  });
+};
+
+export const getConfirmZohoRecruitImportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmZohoRecruitImport>>,
+    TError,
+    { data: BodyType<ZohoRecruitImportConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmZohoRecruitImport>>,
+  TError,
+  { data: BodyType<ZohoRecruitImportConfirmation> },
+  TContext
+> => {
+  const mutationKey = ["confirmZohoRecruitImport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmZohoRecruitImport>>,
+    { data: BodyType<ZohoRecruitImportConfirmation> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return confirmZohoRecruitImport(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmZohoRecruitImportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmZohoRecruitImport>>
+>;
+export type ConfirmZohoRecruitImportMutationBody = BodyType<ZohoRecruitImportConfirmation>;
+export type ConfirmZohoRecruitImportMutationError = ErrorType<unknown>;
+
+export const useConfirmZohoRecruitImport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmZohoRecruitImport>>,
+    TError,
+    { data: BodyType<ZohoRecruitImportConfirmation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmZohoRecruitImport>>,
+  TError,
+  { data: BodyType<ZohoRecruitImportConfirmation> },
+  TContext
+> => {
+  return useMutation(getConfirmZohoRecruitImportMutationOptions(options));
+};
+
+export const getFinishZohoRecruitAuthorizationUrl = () => {
+  return `/api/zoho-recruit/callback`;
+};
+
+export const finishZohoRecruitAuthorization = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getFinishZohoRecruitAuthorizationUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getFinishZohoRecruitAuthorizationQueryKey = () => {
+  return [`/api/zoho-recruit/callback`] as const;
+};
+
+export const getFinishZohoRecruitAuthorizationQueryOptions = <
+  TData = Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getFinishZohoRecruitAuthorizationQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>> = ({
+    signal,
+  }) => finishZohoRecruitAuthorization({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type FinishZohoRecruitAuthorizationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>
+>;
+export type FinishZohoRecruitAuthorizationQueryError = ErrorType<void>;
+
+export function useFinishZohoRecruitAuthorization<
+  TData = Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof finishZohoRecruitAuthorization>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getFinishZohoRecruitAuthorizationQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetZoomStaffAccountUrl = () => {
+  return `/api/zoom-account/me`;
+};
+
+export const getZoomStaffAccount = async (options?: RequestInit): Promise<ZoomStaffAccountView> => {
+  return customFetch<ZoomStaffAccountView>(getGetZoomStaffAccountUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZoomStaffAccountQueryKey = () => {
+  return [`/api/zoom-account/me`] as const;
+};
+
+export const getGetZoomStaffAccountQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZoomStaffAccount>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZoomStaffAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZoomStaffAccountQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZoomStaffAccount>>> = ({ signal }) =>
+    getZoomStaffAccount({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZoomStaffAccount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZoomStaffAccountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZoomStaffAccount>>
+>;
+export type GetZoomStaffAccountQueryError = ErrorType<unknown>;
+
+export function useGetZoomStaffAccount<
+  TData = Awaited<ReturnType<typeof getZoomStaffAccount>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getZoomStaffAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZoomStaffAccountQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getBeginZoomStaffAccountUrl = () => {
+  return `/api/zoom-account/me/connect`;
+};
+
+export const beginZoomStaffAccount = async (
+  zoomStaffConsent: ZoomStaffConsent,
+  options?: RequestInit,
+): Promise<ZoomStaffAuthorization> => {
+  return customFetch<ZoomStaffAuthorization>(getBeginZoomStaffAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomStaffConsent),
+  });
+};
+
+export const getBeginZoomStaffAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof beginZoomStaffAccount>>,
+    TError,
+    { data: BodyType<ZoomStaffConsent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof beginZoomStaffAccount>>,
+  TError,
+  { data: BodyType<ZoomStaffConsent> },
+  TContext
+> => {
+  const mutationKey = ["beginZoomStaffAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof beginZoomStaffAccount>>,
+    { data: BodyType<ZoomStaffConsent> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return beginZoomStaffAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BeginZoomStaffAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof beginZoomStaffAccount>>
+>;
+export type BeginZoomStaffAccountMutationBody = BodyType<ZoomStaffConsent>;
+export type BeginZoomStaffAccountMutationError = ErrorType<unknown>;
+
+export const useBeginZoomStaffAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof beginZoomStaffAccount>>,
+    TError,
+    { data: BodyType<ZoomStaffConsent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof beginZoomStaffAccount>>,
+  TError,
+  { data: BodyType<ZoomStaffConsent> },
+  TContext
+> => {
+  return useMutation(getBeginZoomStaffAccountMutationOptions(options));
+};
+
+export const getDisconnectZoomStaffAccountUrl = () => {
+  return `/api/zoom-account/me/disconnect`;
+};
+
+export const disconnectZoomStaffAccount = async (
+  zoomStaffDisconnect: ZoomStaffDisconnect,
+  options?: RequestInit,
+): Promise<ZoomStaffAccountView> => {
+  return customFetch<ZoomStaffAccountView>(getDisconnectZoomStaffAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomStaffDisconnect),
+  });
+};
+
+export const getDisconnectZoomStaffAccountMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectZoomStaffAccount>>,
+    TError,
+    { data: BodyType<ZoomStaffDisconnect> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectZoomStaffAccount>>,
+  TError,
+  { data: BodyType<ZoomStaffDisconnect> },
+  TContext
+> => {
+  const mutationKey = ["disconnectZoomStaffAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectZoomStaffAccount>>,
+    { data: BodyType<ZoomStaffDisconnect> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return disconnectZoomStaffAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectZoomStaffAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectZoomStaffAccount>>
+>;
+export type DisconnectZoomStaffAccountMutationBody = BodyType<ZoomStaffDisconnect>;
+export type DisconnectZoomStaffAccountMutationError = ErrorType<unknown>;
+
+export const useDisconnectZoomStaffAccount = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectZoomStaffAccount>>,
+    TError,
+    { data: BodyType<ZoomStaffDisconnect> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectZoomStaffAccount>>,
+  TError,
+  { data: BodyType<ZoomStaffDisconnect> },
+  TContext
+> => {
+  return useMutation(getDisconnectZoomStaffAccountMutationOptions(options));
+};
+
+export const getFinishZoomStaffAccountUrl = () => {
+  return `/api/zoom-account/callback`;
+};
+
+export const finishZoomStaffAccount = async (options?: RequestInit): Promise<unknown> => {
+  return customFetch<unknown>(getFinishZoomStaffAccountUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getFinishZoomStaffAccountQueryKey = () => {
+  return [`/api/zoom-account/callback`] as const;
+};
+
+export const getFinishZoomStaffAccountQueryOptions = <
+  TData = Awaited<ReturnType<typeof finishZoomStaffAccount>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof finishZoomStaffAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getFinishZoomStaffAccountQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof finishZoomStaffAccount>>> = ({ signal }) =>
+    finishZoomStaffAccount({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof finishZoomStaffAccount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type FinishZoomStaffAccountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof finishZoomStaffAccount>>
+>;
+export type FinishZoomStaffAccountQueryError = ErrorType<void>;
+
+export function useFinishZoomStaffAccount<
+  TData = Awaited<ReturnType<typeof finishZoomStaffAccount>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof finishZoomStaffAccount>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getFinishZoomStaffAccountQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetStaffZoomMeetingUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/meeting`;
+};
+
+export const getStaffZoomMeeting = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<ZoomMeetingView> => {
+  return customFetch<ZoomMeetingView>(getGetStaffZoomMeetingUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffZoomMeetingQueryKey = (scheduleId: string) => {
+  return [`/api/zoom/schedules/${scheduleId}/meeting`] as const;
+};
+
+export const getGetStaffZoomMeetingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffZoomMeeting>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffZoomMeeting>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStaffZoomMeetingQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffZoomMeeting>>> = ({ signal }) =>
+    getStaffZoomMeeting(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffZoomMeeting>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffZoomMeetingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStaffZoomMeeting>>
+>;
+export type GetStaffZoomMeetingQueryError = ErrorType<unknown>;
+
+export function useGetStaffZoomMeeting<
+  TData = Awaited<ReturnType<typeof getStaffZoomMeeting>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffZoomMeeting>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffZoomMeetingQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getApproveStaffZoomMeetingUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/meeting`;
+};
+
+export const approveStaffZoomMeeting = async (
+  scheduleId: string,
+  zoomMeetingApproval: ZoomMeetingApproval,
+  options?: RequestInit,
+): Promise<ZoomMeetingView> => {
+  return customFetch<ZoomMeetingView>(getApproveStaffZoomMeetingUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomMeetingApproval),
+  });
+};
+
+export const getApproveStaffZoomMeetingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveStaffZoomMeeting>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomMeetingApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveStaffZoomMeeting>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomMeetingApproval> },
+  TContext
+> => {
+  const mutationKey = ["approveStaffZoomMeeting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveStaffZoomMeeting>>,
+    { scheduleId: string; data: BodyType<ZoomMeetingApproval> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return approveStaffZoomMeeting(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveStaffZoomMeetingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveStaffZoomMeeting>>
+>;
+export type ApproveStaffZoomMeetingMutationBody = BodyType<ZoomMeetingApproval>;
+export type ApproveStaffZoomMeetingMutationError = ErrorType<unknown>;
+
+export const useApproveStaffZoomMeeting = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveStaffZoomMeeting>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomMeetingApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveStaffZoomMeeting>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomMeetingApproval> },
+  TContext
+> => {
+  return useMutation(getApproveStaffZoomMeetingMutationOptions(options));
+};
+
+export const getReviewStaffZoomMeetingUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/meeting-review`;
+};
+
+export const reviewStaffZoomMeeting = async (
+  scheduleId: string,
+  zoomMeetingReview: ZoomMeetingReview,
+  options?: RequestInit,
+): Promise<ZoomMeetingReviewView> => {
+  return customFetch<ZoomMeetingReviewView>(getReviewStaffZoomMeetingUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomMeetingReview),
+  });
+};
+
+export const getReviewStaffZoomMeetingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomMeeting>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomMeetingReview> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewStaffZoomMeeting>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomMeetingReview> },
+  TContext
+> => {
+  const mutationKey = ["reviewStaffZoomMeeting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewStaffZoomMeeting>>,
+    { scheduleId: string; data: BodyType<ZoomMeetingReview> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return reviewStaffZoomMeeting(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewStaffZoomMeetingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewStaffZoomMeeting>>
+>;
+export type ReviewStaffZoomMeetingMutationBody = BodyType<ZoomMeetingReview>;
+export type ReviewStaffZoomMeetingMutationError = ErrorType<unknown>;
+
+export const useReviewStaffZoomMeeting = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomMeeting>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomMeetingReview> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewStaffZoomMeeting>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomMeetingReview> },
+  TContext
+> => {
+  return useMutation(getReviewStaffZoomMeetingMutationOptions(options));
+};
+
+export const getReviewStaffZoomRecoveryUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/meeting-recovery-review`;
+};
+
+export const reviewStaffZoomRecovery = async (
+  scheduleId: string,
+  zoomRecoveryReview: ZoomRecoveryReview,
+  options?: RequestInit,
+): Promise<ZoomRecoveryView> => {
+  return customFetch<ZoomRecoveryView>(getReviewStaffZoomRecoveryUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomRecoveryReview),
+  });
+};
+
+export const getReviewStaffZoomRecoveryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomRecovery>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomRecoveryReview> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewStaffZoomRecovery>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomRecoveryReview> },
+  TContext
+> => {
+  const mutationKey = ["reviewStaffZoomRecovery"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewStaffZoomRecovery>>,
+    { scheduleId: string; data: BodyType<ZoomRecoveryReview> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return reviewStaffZoomRecovery(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewStaffZoomRecoveryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewStaffZoomRecovery>>
+>;
+export type ReviewStaffZoomRecoveryMutationBody = BodyType<ZoomRecoveryReview>;
+export type ReviewStaffZoomRecoveryMutationError = ErrorType<unknown>;
+
+export const useReviewStaffZoomRecovery = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomRecovery>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomRecoveryReview> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewStaffZoomRecovery>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomRecoveryReview> },
+  TContext
+> => {
+  return useMutation(getReviewStaffZoomRecoveryMutationOptions(options));
+};
+
+export const getApproveStaffZoomRecoveryUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/meeting-recovery`;
+};
+
+export const approveStaffZoomRecovery = async (
+  scheduleId: string,
+  zoomRecoveryApproval: ZoomRecoveryApproval,
+  options?: RequestInit,
+): Promise<ZoomMeetingView> => {
+  return customFetch<ZoomMeetingView>(getApproveStaffZoomRecoveryUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomRecoveryApproval),
+  });
+};
+
+export const getApproveStaffZoomRecoveryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveStaffZoomRecovery>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomRecoveryApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveStaffZoomRecovery>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomRecoveryApproval> },
+  TContext
+> => {
+  const mutationKey = ["approveStaffZoomRecovery"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveStaffZoomRecovery>>,
+    { scheduleId: string; data: BodyType<ZoomRecoveryApproval> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return approveStaffZoomRecovery(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveStaffZoomRecoveryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveStaffZoomRecovery>>
+>;
+export type ApproveStaffZoomRecoveryMutationBody = BodyType<ZoomRecoveryApproval>;
+export type ApproveStaffZoomRecoveryMutationError = ErrorType<unknown>;
+
+export const useApproveStaffZoomRecovery = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveStaffZoomRecovery>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomRecoveryApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveStaffZoomRecovery>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomRecoveryApproval> },
+  TContext
+> => {
+  return useMutation(getApproveStaffZoomRecoveryMutationOptions(options));
+};
+
+export const getGetStaffZoomLinkUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/link`;
+};
+
+export const getStaffZoomLink = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<StaffZoomLinkView> => {
+  return customFetch<StaffZoomLinkView>(getGetStaffZoomLinkUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffZoomLinkQueryKey = (scheduleId: string) => {
+  return [`/api/zoom/schedules/${scheduleId}/link`] as const;
+};
+
+export const getGetStaffZoomLinkQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffZoomLink>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffZoomLink>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStaffZoomLinkQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffZoomLink>>> = ({ signal }) =>
+    getStaffZoomLink(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffZoomLink>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffZoomLinkQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffZoomLink>>>;
+export type GetStaffZoomLinkQueryError = ErrorType<void>;
+
+export function useGetStaffZoomLink<
+  TData = Awaited<ReturnType<typeof getStaffZoomLink>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffZoomLink>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffZoomLinkQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPublishStaffZoomLinkUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/link`;
+};
+
+export const publishStaffZoomLink = async (
+  scheduleId: string,
+  zoomLinkApproval: ZoomLinkApproval,
+  options?: RequestInit,
+): Promise<StaffZoomLinkView> => {
+  return customFetch<StaffZoomLinkView>(getPublishStaffZoomLinkUrl(scheduleId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomLinkApproval),
+  });
+};
+
+export const getPublishStaffZoomLinkMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkApproval> },
+  TContext
+> => {
+  const mutationKey = ["publishStaffZoomLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishStaffZoomLink>>,
+    { scheduleId: string; data: BodyType<ZoomLinkApproval> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return publishStaffZoomLink(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PublishStaffZoomLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof publishStaffZoomLink>>
+>;
+export type PublishStaffZoomLinkMutationBody = BodyType<ZoomLinkApproval>;
+export type PublishStaffZoomLinkMutationError = ErrorType<void>;
+
+export const usePublishStaffZoomLink = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkApproval> },
+  TContext
+> => {
+  return useMutation(getPublishStaffZoomLinkMutationOptions(options));
+};
+
+export const getRemoveStaffZoomLinkUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/link`;
+};
+
+export const removeStaffZoomLink = async (
+  scheduleId: string,
+  zoomLinkRemoval: ZoomLinkRemoval,
+  options?: RequestInit,
+): Promise<StaffZoomLinkView> => {
+  return customFetch<StaffZoomLinkView>(getRemoveStaffZoomLinkUrl(scheduleId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomLinkRemoval),
+  });
+};
+
+export const getRemoveStaffZoomLinkMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkRemoval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkRemoval> },
+  TContext
+> => {
+  const mutationKey = ["removeStaffZoomLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeStaffZoomLink>>,
+    { scheduleId: string; data: BodyType<ZoomLinkRemoval> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return removeStaffZoomLink(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveStaffZoomLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeStaffZoomLink>>
+>;
+export type RemoveStaffZoomLinkMutationBody = BodyType<ZoomLinkRemoval>;
+export type RemoveStaffZoomLinkMutationError = ErrorType<void>;
+
+export const useRemoveStaffZoomLink = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkRemoval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkRemoval> },
+  TContext
+> => {
+  return useMutation(getRemoveStaffZoomLinkMutationOptions(options));
+};
+
+export const getReviewStaffZoomLinkUrl = (scheduleId: string) => {
+  return `/api/zoom/schedules/${scheduleId}/link-review`;
+};
+
+export const reviewStaffZoomLink = async (
+  scheduleId: string,
+  zoomLinkDraft: ZoomLinkDraft,
+  options?: RequestInit,
+): Promise<StaffZoomLinkView> => {
+  return customFetch<StaffZoomLinkView>(getReviewStaffZoomLinkUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zoomLinkDraft),
+  });
+};
+
+export const getReviewStaffZoomLinkMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkDraft> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkDraft> },
+  TContext
+> => {
+  const mutationKey = ["reviewStaffZoomLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewStaffZoomLink>>,
+    { scheduleId: string; data: BodyType<ZoomLinkDraft> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return reviewStaffZoomLink(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewStaffZoomLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewStaffZoomLink>>
+>;
+export type ReviewStaffZoomLinkMutationBody = BodyType<ZoomLinkDraft>;
+export type ReviewStaffZoomLinkMutationError = ErrorType<void>;
+
+export const useReviewStaffZoomLink = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffZoomLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<ZoomLinkDraft> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewStaffZoomLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<ZoomLinkDraft> },
+  TContext
+> => {
+  return useMutation(getReviewStaffZoomLinkMutationOptions(options));
+};
+
+export const getGetCandidateZoomLinkUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/zoom-link`;
+};
+
+export const getCandidateZoomLink = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<CandidateZoomLinkView> => {
+  return customFetch<CandidateZoomLinkView>(getGetCandidateZoomLinkUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateZoomLinkQueryKey = (scheduleId: string) => {
+  return [`/api/portal/interview-schedules/${scheduleId}/zoom-link`] as const;
+};
+
+export const getGetCandidateZoomLinkQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateZoomLink>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateZoomLink>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateZoomLinkQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateZoomLink>>> = ({ signal }) =>
+    getCandidateZoomLink(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateZoomLink>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateZoomLinkQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateZoomLink>>
+>;
+export type GetCandidateZoomLinkQueryError = ErrorType<void>;
+
+export function useGetCandidateZoomLink<
+  TData = Awaited<ReturnType<typeof getCandidateZoomLink>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateZoomLink>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateZoomLinkQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetGooglePanelConsentUrl = () => {
+  return `/api/google-calendar/panel-consent`;
+};
+
+export const getGooglePanelConsent = async (
+  options?: RequestInit,
+): Promise<GooglePanelConsentView> => {
+  return customFetch<GooglePanelConsentView>(getGetGooglePanelConsentUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGooglePanelConsentQueryKey = () => {
+  return [`/api/google-calendar/panel-consent`] as const;
+};
+
+export const getGetGooglePanelConsentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGooglePanelConsent>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getGooglePanelConsent>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGooglePanelConsentQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGooglePanelConsent>>> = ({ signal }) =>
+    getGooglePanelConsent({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGooglePanelConsent>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGooglePanelConsentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGooglePanelConsent>>
+>;
+export type GetGooglePanelConsentQueryError = ErrorType<void>;
+
+export function useGetGooglePanelConsent<
+  TData = Awaited<ReturnType<typeof getGooglePanelConsent>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getGooglePanelConsent>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGooglePanelConsentQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getSetGooglePanelConsentUrl = () => {
+  return `/api/google-calendar/panel-consent`;
+};
+
+export const setGooglePanelConsent = async (
+  googlePanelConsentInput: GooglePanelConsentInput,
+  options?: RequestInit,
+): Promise<GooglePanelConsentView> => {
+  return customFetch<GooglePanelConsentView>(getSetGooglePanelConsentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googlePanelConsentInput),
+  });
+};
+
+export const getSetGooglePanelConsentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setGooglePanelConsent>>,
+    TError,
+    { data: BodyType<GooglePanelConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setGooglePanelConsent>>,
+  TError,
+  { data: BodyType<GooglePanelConsentInput> },
+  TContext
+> => {
+  const mutationKey = ["setGooglePanelConsent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setGooglePanelConsent>>,
+    { data: BodyType<GooglePanelConsentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return setGooglePanelConsent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetGooglePanelConsentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setGooglePanelConsent>>
+>;
+export type SetGooglePanelConsentMutationBody = BodyType<GooglePanelConsentInput>;
+export type SetGooglePanelConsentMutationError = ErrorType<void>;
+
+export const useSetGooglePanelConsent = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setGooglePanelConsent>>,
+    TError,
+    { data: BodyType<GooglePanelConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setGooglePanelConsent>>,
+  TError,
+  { data: BodyType<GooglePanelConsentInput> },
+  TContext
+> => {
+  return useMutation(getSetGooglePanelConsentMutationOptions(options));
+};
+
+export const getGetSavedGoogleSchedulePanelUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/panel`;
+};
+
+export const getSavedGoogleSchedulePanel = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<SavedSchedulePanel> => {
+  return customFetch<SavedSchedulePanel>(getGetSavedGoogleSchedulePanelUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSavedGoogleSchedulePanelQueryKey = (scheduleId: string) => {
+  return [`/api/google-calendar/schedules/${scheduleId}/panel`] as const;
+};
+
+export const getGetSavedGoogleSchedulePanelQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSavedGoogleSchedulePanelQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>> = ({
+    signal,
+  }) => getSavedGoogleSchedulePanel(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSavedGoogleSchedulePanelQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>
+>;
+export type GetSavedGoogleSchedulePanelQueryError = ErrorType<void>;
+
+export function useGetSavedGoogleSchedulePanel<
+  TData = Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSavedGoogleSchedulePanel>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSavedGoogleSchedulePanelQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getSaveGoogleSchedulePanelUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/panel`;
+};
+
+export const saveGoogleSchedulePanel = async (
+  scheduleId: string,
+  schedulePanelInput: SchedulePanelInput,
+  options?: RequestInit,
+): Promise<SavedSchedulePanel> => {
+  return customFetch<SavedSchedulePanel>(getSaveGoogleSchedulePanelUrl(scheduleId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(schedulePanelInput),
+  });
+};
+
+export const getSaveGoogleSchedulePanelMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveGoogleSchedulePanel>>,
+    TError,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveGoogleSchedulePanel>>,
+  TError,
+  { scheduleId: string; data: BodyType<SchedulePanelInput> },
+  TContext
+> => {
+  const mutationKey = ["saveGoogleSchedulePanel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveGoogleSchedulePanel>>,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return saveGoogleSchedulePanel(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveGoogleSchedulePanelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveGoogleSchedulePanel>>
+>;
+export type SaveGoogleSchedulePanelMutationBody = BodyType<SchedulePanelInput>;
+export type SaveGoogleSchedulePanelMutationError = ErrorType<void>;
+
+export const useSaveGoogleSchedulePanel = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveGoogleSchedulePanel>>,
+    TError,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveGoogleSchedulePanel>>,
+  TError,
+  { scheduleId: string; data: BodyType<SchedulePanelInput> },
+  TContext
+> => {
+  return useMutation(getSaveGoogleSchedulePanelMutationOptions(options));
+};
+
+export const getGetGooglePanelMembersUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/panel-members`;
+};
+
+export const getGooglePanelMembers = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<GooglePanelMembersView> => {
+  return customFetch<GooglePanelMembersView>(getGetGooglePanelMembersUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGooglePanelMembersQueryKey = (scheduleId: string) => {
+  return [`/api/google-calendar/schedules/${scheduleId}/panel-members`] as const;
+};
+
+export const getGetGooglePanelMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGooglePanelMembers>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGooglePanelMembers>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGooglePanelMembersQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGooglePanelMembers>>> = ({ signal }) =>
+    getGooglePanelMembers(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGooglePanelMembers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGooglePanelMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGooglePanelMembers>>
+>;
+export type GetGooglePanelMembersQueryError = ErrorType<void>;
+
+export function useGetGooglePanelMembers<
+  TData = Awaited<ReturnType<typeof getGooglePanelMembers>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGooglePanelMembers>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGooglePanelMembersQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getFindGooglePanelTimesUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/panel-times`;
+};
+
+export const findGooglePanelTimes = async (
+  scheduleId: string,
+  googlePanelTimesInput: GooglePanelTimesInput,
+  options?: RequestInit,
+): Promise<GooglePanelTimesView> => {
+  return customFetch<GooglePanelTimesView>(getFindGooglePanelTimesUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googlePanelTimesInput),
+  });
+};
+
+export const getFindGooglePanelTimesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findGooglePanelTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<GooglePanelTimesInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof findGooglePanelTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<GooglePanelTimesInput> },
+  TContext
+> => {
+  const mutationKey = ["findGooglePanelTimes"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof findGooglePanelTimes>>,
+    { scheduleId: string; data: BodyType<GooglePanelTimesInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return findGooglePanelTimes(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type FindGooglePanelTimesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof findGooglePanelTimes>>
+>;
+export type FindGooglePanelTimesMutationBody = BodyType<GooglePanelTimesInput>;
+export type FindGooglePanelTimesMutationError = ErrorType<void>;
+
+export const useFindGooglePanelTimes = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findGooglePanelTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<GooglePanelTimesInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof findGooglePanelTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<GooglePanelTimesInput> },
+  TContext
+> => {
+  return useMutation(getFindGooglePanelTimesMutationOptions(options));
+};
+
+/**
+ * @summary Candidate-owned current booking Google Meet receipt
+ */
+export const getGetCandidateGoogleMeetUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/google-meet`;
+};
+
+export const getCandidateGoogleMeet = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<CandidateGoogleMeetView> => {
+  return customFetch<CandidateGoogleMeetView>(getGetCandidateGoogleMeetUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateGoogleMeetQueryKey = (scheduleId: string) => {
+  return [`/api/portal/interview-schedules/${scheduleId}/google-meet`] as const;
+};
+
+export const getGetCandidateGoogleMeetQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateGoogleMeet>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateGoogleMeet>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateGoogleMeetQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateGoogleMeet>>> = ({ signal }) =>
+    getCandidateGoogleMeet(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateGoogleMeet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateGoogleMeetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateGoogleMeet>>
+>;
+export type GetCandidateGoogleMeetQueryError = ErrorType<void>;
+
+/**
+ * @summary Candidate-owned current booking Google Meet receipt
+ */
+
+export function useGetCandidateGoogleMeet<
+  TData = Awaited<ReturnType<typeof getCandidateGoogleMeet>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateGoogleMeet>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateGoogleMeetQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetInterviewBookingLinkStatusUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/booking-link`;
+};
+
+export const getInterviewBookingLinkStatus = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<InterviewBookingLinkStatus> => {
+  return customFetch<InterviewBookingLinkStatus>(getGetInterviewBookingLinkStatusUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetInterviewBookingLinkStatusQueryKey = (scheduleId: string) => {
+  return [`/api/coordinator/schedules/${scheduleId}/booking-link`] as const;
+};
+
+export const getGetInterviewBookingLinkStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetInterviewBookingLinkStatusQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>> = ({
+    signal,
+  }) => getInterviewBookingLinkStatus(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInterviewBookingLinkStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>
+>;
+export type GetInterviewBookingLinkStatusQueryError = ErrorType<void>;
+
+export function useGetInterviewBookingLinkStatus<
+  TData = Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewBookingLinkStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInterviewBookingLinkStatusQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateInterviewBookingLinkUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/booking-link`;
+};
+
+export const createInterviewBookingLink = async (
+  scheduleId: string,
+  interviewBookingLinkInput: InterviewBookingLinkInput,
+  options?: RequestInit,
+): Promise<InterviewBookingLinkCreated> => {
+  return customFetch<InterviewBookingLinkCreated>(getCreateInterviewBookingLinkUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(interviewBookingLinkInput),
+  });
+};
+
+export const getCreateInterviewBookingLinkMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createInterviewBookingLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createInterviewBookingLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+  TContext
+> => {
+  const mutationKey = ["createInterviewBookingLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createInterviewBookingLink>>,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return createInterviewBookingLink(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateInterviewBookingLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createInterviewBookingLink>>
+>;
+export type CreateInterviewBookingLinkMutationBody = BodyType<InterviewBookingLinkInput>;
+export type CreateInterviewBookingLinkMutationError = ErrorType<void>;
+
+export const useCreateInterviewBookingLink = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createInterviewBookingLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createInterviewBookingLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+  TContext
+> => {
+  return useMutation(getCreateInterviewBookingLinkMutationOptions(options));
+};
+
+export const getRevokeInterviewBookingLinkUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/booking-link`;
+};
+
+export const revokeInterviewBookingLink = async (
+  scheduleId: string,
+  interviewBookingLinkInput: InterviewBookingLinkInput,
+  options?: RequestInit,
+): Promise<InterviewBookingLinkStatus> => {
+  return customFetch<InterviewBookingLinkStatus>(getRevokeInterviewBookingLinkUrl(scheduleId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(interviewBookingLinkInput),
+  });
+};
+
+export const getRevokeInterviewBookingLinkMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeInterviewBookingLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeInterviewBookingLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+  TContext
+> => {
+  const mutationKey = ["revokeInterviewBookingLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeInterviewBookingLink>>,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return revokeInterviewBookingLink(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RevokeInterviewBookingLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeInterviewBookingLink>>
+>;
+export type RevokeInterviewBookingLinkMutationBody = BodyType<InterviewBookingLinkInput>;
+export type RevokeInterviewBookingLinkMutationError = ErrorType<void>;
+
+export const useRevokeInterviewBookingLink = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeInterviewBookingLink>>,
+    TError,
+    { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeInterviewBookingLink>>,
+  TError,
+  { scheduleId: string; data: BodyType<InterviewBookingLinkInput> },
+  TContext
+> => {
+  return useMutation(getRevokeInterviewBookingLinkMutationOptions(options));
+};
+
+export const getReadPublicInterviewBookingUrl = () => {
+  return `/api/public/interview-booking/read`;
+};
+
+export const readPublicInterviewBooking = async (
+  publicInterviewBookingToken: PublicInterviewBookingToken,
+  options?: RequestInit,
+): Promise<PublicInterviewBookingView> => {
+  return customFetch<PublicInterviewBookingView>(getReadPublicInterviewBookingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicInterviewBookingToken),
+  });
+};
+
+export const getReadPublicInterviewBookingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof readPublicInterviewBooking>>,
+    TError,
+    { data: BodyType<PublicInterviewBookingToken> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof readPublicInterviewBooking>>,
+  TError,
+  { data: BodyType<PublicInterviewBookingToken> },
+  TContext
+> => {
+  const mutationKey = ["readPublicInterviewBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof readPublicInterviewBooking>>,
+    { data: BodyType<PublicInterviewBookingToken> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return readPublicInterviewBooking(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReadPublicInterviewBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof readPublicInterviewBooking>>
+>;
+export type ReadPublicInterviewBookingMutationBody = BodyType<PublicInterviewBookingToken>;
+export type ReadPublicInterviewBookingMutationError = ErrorType<void>;
+
+export const useReadPublicInterviewBooking = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof readPublicInterviewBooking>>,
+    TError,
+    { data: BodyType<PublicInterviewBookingToken> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof readPublicInterviewBooking>>,
+  TError,
+  { data: BodyType<PublicInterviewBookingToken> },
+  TContext
+> => {
+  return useMutation(getReadPublicInterviewBookingMutationOptions(options));
+};
+
+export const getChoosePublicInterviewBookingUrl = () => {
+  return `/api/public/interview-booking/choose`;
+};
+
+export const choosePublicInterviewBooking = async (
+  publicInterviewBookingChoice: PublicInterviewBookingChoice,
+  options?: RequestInit,
+): Promise<CandidateTimeConfirmationReceipt> => {
+  return customFetch<CandidateTimeConfirmationReceipt>(getChoosePublicInterviewBookingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicInterviewBookingChoice),
+  });
+};
+
+export const getChoosePublicInterviewBookingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof choosePublicInterviewBooking>>,
+    TError,
+    { data: BodyType<PublicInterviewBookingChoice> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof choosePublicInterviewBooking>>,
+  TError,
+  { data: BodyType<PublicInterviewBookingChoice> },
+  TContext
+> => {
+  const mutationKey = ["choosePublicInterviewBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof choosePublicInterviewBooking>>,
+    { data: BodyType<PublicInterviewBookingChoice> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return choosePublicInterviewBooking(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChoosePublicInterviewBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof choosePublicInterviewBooking>>
+>;
+export type ChoosePublicInterviewBookingMutationBody = BodyType<PublicInterviewBookingChoice>;
+export type ChoosePublicInterviewBookingMutationError = ErrorType<void>;
+
+export const useChoosePublicInterviewBooking = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof choosePublicInterviewBooking>>,
+    TError,
+    { data: BodyType<PublicInterviewBookingChoice> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof choosePublicInterviewBooking>>,
+  TError,
+  { data: BodyType<PublicInterviewBookingChoice> },
+  TContext
+> => {
+  return useMutation(getChoosePublicInterviewBookingMutationOptions(options));
+};
+
+export const getGetStaffOfferedTimesUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/offered-times`;
+};
+
+export const getStaffOfferedTimes = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<StaffOfferedTimes> => {
+  return customFetch<StaffOfferedTimes>(getGetStaffOfferedTimesUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffOfferedTimesQueryKey = (scheduleId: string) => {
+  return [`/api/coordinator/schedules/${scheduleId}/offered-times`] as const;
+};
+
+export const getGetStaffOfferedTimesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffOfferedTimes>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffOfferedTimes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStaffOfferedTimesQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffOfferedTimes>>> = ({ signal }) =>
+    getStaffOfferedTimes(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffOfferedTimes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffOfferedTimesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStaffOfferedTimes>>
+>;
+export type GetStaffOfferedTimesQueryError = ErrorType<void>;
+
+export function useGetStaffOfferedTimes<
+  TData = Awaited<ReturnType<typeof getStaffOfferedTimes>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffOfferedTimes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffOfferedTimesQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPublishStaffOfferedTimesUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/offered-times`;
+};
+
+export const publishStaffOfferedTimes = async (
+  scheduleId: string,
+  offeredTimesInput: OfferedTimesInput,
+  options?: RequestInit,
+): Promise<StaffOfferedTimes> => {
+  return customFetch<StaffOfferedTimes>(getPublishStaffOfferedTimesUrl(scheduleId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(offeredTimesInput),
+  });
+};
+
+export const getPublishStaffOfferedTimesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishStaffOfferedTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<OfferedTimesInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishStaffOfferedTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<OfferedTimesInput> },
+  TContext
+> => {
+  const mutationKey = ["publishStaffOfferedTimes"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishStaffOfferedTimes>>,
+    { scheduleId: string; data: BodyType<OfferedTimesInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return publishStaffOfferedTimes(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PublishStaffOfferedTimesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof publishStaffOfferedTimes>>
+>;
+export type PublishStaffOfferedTimesMutationBody = BodyType<OfferedTimesInput>;
+export type PublishStaffOfferedTimesMutationError = ErrorType<void>;
+
+export const usePublishStaffOfferedTimes = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishStaffOfferedTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<OfferedTimesInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishStaffOfferedTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<OfferedTimesInput> },
+  TContext
+> => {
+  return useMutation(getPublishStaffOfferedTimesMutationOptions(options));
+};
+
+export const getGetCandidateOfferedTimesUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/offered-times`;
+};
+
+export const getCandidateOfferedTimes = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<CandidateOfferedTimes> => {
+  return customFetch<CandidateOfferedTimes>(getGetCandidateOfferedTimesUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateOfferedTimesQueryKey = (scheduleId: string) => {
+  return [`/api/portal/interview-schedules/${scheduleId}/offered-times`] as const;
+};
+
+export const getGetCandidateOfferedTimesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateOfferedTimes>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateOfferedTimes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateOfferedTimesQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateOfferedTimes>>> = ({
+    signal,
+  }) => getCandidateOfferedTimes(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateOfferedTimes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateOfferedTimesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateOfferedTimes>>
+>;
+export type GetCandidateOfferedTimesQueryError = ErrorType<void>;
+
+export function useGetCandidateOfferedTimes<
+  TData = Awaited<ReturnType<typeof getCandidateOfferedTimes>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateOfferedTimes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateOfferedTimesQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getChooseCandidateOfferedTimeUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/offered-times`;
+};
+
+export const chooseCandidateOfferedTime = async (
+  scheduleId: string,
+  offeredTimeChoiceInput: OfferedTimeChoiceInput,
+  options?: RequestInit,
+): Promise<CandidateTimeConfirmationReceipt> => {
+  return customFetch<CandidateTimeConfirmationReceipt>(
+    getChooseCandidateOfferedTimeUrl(scheduleId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(offeredTimeChoiceInput),
+    },
+  );
+};
+
+export const getChooseCandidateOfferedTimeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof chooseCandidateOfferedTime>>,
+    TError,
+    { scheduleId: string; data: BodyType<OfferedTimeChoiceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof chooseCandidateOfferedTime>>,
+  TError,
+  { scheduleId: string; data: BodyType<OfferedTimeChoiceInput> },
+  TContext
+> => {
+  const mutationKey = ["chooseCandidateOfferedTime"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof chooseCandidateOfferedTime>>,
+    { scheduleId: string; data: BodyType<OfferedTimeChoiceInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return chooseCandidateOfferedTime(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChooseCandidateOfferedTimeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof chooseCandidateOfferedTime>>
+>;
+export type ChooseCandidateOfferedTimeMutationBody = BodyType<OfferedTimeChoiceInput>;
+export type ChooseCandidateOfferedTimeMutationError = ErrorType<void>;
+
+export const useChooseCandidateOfferedTime = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof chooseCandidateOfferedTime>>,
+    TError,
+    { scheduleId: string; data: BodyType<OfferedTimeChoiceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof chooseCandidateOfferedTime>>,
+  TError,
+  { scheduleId: string; data: BodyType<OfferedTimeChoiceInput> },
+  TContext
+> => {
+  return useMutation(getChooseCandidateOfferedTimeMutationOptions(options));
+};
+
+export const getGetCandidateTimeChangeRequestUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/time-change-request`;
+};
+
+export const getCandidateTimeChangeRequest = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getGetCandidateTimeChangeRequestUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateTimeChangeRequestQueryKey = (scheduleId: string) => {
+  return [`/api/portal/interview-schedules/${scheduleId}/time-change-request`] as const;
+};
+
+export const getGetCandidateTimeChangeRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateTimeChangeRequestQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>> = ({
+    signal,
+  }) => getCandidateTimeChangeRequest(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateTimeChangeRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>
+>;
+export type GetCandidateTimeChangeRequestQueryError = ErrorType<unknown>;
+
+export function useGetCandidateTimeChangeRequest<
+  TData = Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateTimeChangeRequest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateTimeChangeRequestQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRequestCandidateTimeChangeUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/time-change-request`;
+};
+
+export const requestCandidateTimeChange = async (
+  scheduleId: string,
+  timeChangeRequestInput: TimeChangeRequestInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getRequestCandidateTimeChangeUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(timeChangeRequestInput),
+  });
+};
+
+export const getRequestCandidateTimeChangeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestCandidateTimeChange>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestCandidateTimeChange>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeRequestInput> },
+  TContext
+> => {
+  const mutationKey = ["requestCandidateTimeChange"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestCandidateTimeChange>>,
+    { scheduleId: string; data: BodyType<TimeChangeRequestInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return requestCandidateTimeChange(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestCandidateTimeChangeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestCandidateTimeChange>>
+>;
+export type RequestCandidateTimeChangeMutationBody = BodyType<TimeChangeRequestInput>;
+export type RequestCandidateTimeChangeMutationError = ErrorType<void>;
+
+export const useRequestCandidateTimeChange = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestCandidateTimeChange>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestCandidateTimeChange>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeRequestInput> },
+  TContext
+> => {
+  return useMutation(getRequestCandidateTimeChangeMutationOptions(options));
+};
+
+export const getWithdrawCandidateTimeChangeUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/time-change-request/withdraw`;
+};
+
+export const withdrawCandidateTimeChange = async (
+  scheduleId: string,
+  timeChangeWithdrawalInput: TimeChangeWithdrawalInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getWithdrawCandidateTimeChangeUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(timeChangeWithdrawalInput),
+  });
+};
+
+export const getWithdrawCandidateTimeChangeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawCandidateTimeChange>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeWithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof withdrawCandidateTimeChange>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeWithdrawalInput> },
+  TContext
+> => {
+  const mutationKey = ["withdrawCandidateTimeChange"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof withdrawCandidateTimeChange>>,
+    { scheduleId: string; data: BodyType<TimeChangeWithdrawalInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return withdrawCandidateTimeChange(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WithdrawCandidateTimeChangeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof withdrawCandidateTimeChange>>
+>;
+export type WithdrawCandidateTimeChangeMutationBody = BodyType<TimeChangeWithdrawalInput>;
+export type WithdrawCandidateTimeChangeMutationError = ErrorType<void>;
+
+export const useWithdrawCandidateTimeChange = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawCandidateTimeChange>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeWithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof withdrawCandidateTimeChange>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeWithdrawalInput> },
+  TContext
+> => {
+  return useMutation(getWithdrawCandidateTimeChangeMutationOptions(options));
+};
+
+export const getWithdrawPublicTimeChangeUrl = () => {
+  return `/api/public/interview-booking/time-change/withdraw`;
+};
+
+export const withdrawPublicTimeChange = async (
+  publicTimeChangeWithdrawalInput: PublicTimeChangeWithdrawalInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getWithdrawPublicTimeChangeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicTimeChangeWithdrawalInput),
+  });
+};
+
+export const getWithdrawPublicTimeChangeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawPublicTimeChange>>,
+    TError,
+    { data: BodyType<PublicTimeChangeWithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof withdrawPublicTimeChange>>,
+  TError,
+  { data: BodyType<PublicTimeChangeWithdrawalInput> },
+  TContext
+> => {
+  const mutationKey = ["withdrawPublicTimeChange"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof withdrawPublicTimeChange>>,
+    { data: BodyType<PublicTimeChangeWithdrawalInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return withdrawPublicTimeChange(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WithdrawPublicTimeChangeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof withdrawPublicTimeChange>>
+>;
+export type WithdrawPublicTimeChangeMutationBody = BodyType<PublicTimeChangeWithdrawalInput>;
+export type WithdrawPublicTimeChangeMutationError = ErrorType<void>;
+
+export const useWithdrawPublicTimeChange = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof withdrawPublicTimeChange>>,
+    TError,
+    { data: BodyType<PublicTimeChangeWithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof withdrawPublicTimeChange>>,
+  TError,
+  { data: BodyType<PublicTimeChangeWithdrawalInput> },
+  TContext
+> => {
+  return useMutation(getWithdrawPublicTimeChangeMutationOptions(options));
+};
+
+export const getGetStaffTimeChangeRequestUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/time-change-request`;
+};
+
+export const getStaffTimeChangeRequest = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getGetStaffTimeChangeRequestUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffTimeChangeRequestQueryKey = (scheduleId: string) => {
+  return [`/api/coordinator/schedules/${scheduleId}/time-change-request`] as const;
+};
+
+export const getGetStaffTimeChangeRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffTimeChangeRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffTimeChangeRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStaffTimeChangeRequestQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffTimeChangeRequest>>> = ({
+    signal,
+  }) => getStaffTimeChangeRequest(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffTimeChangeRequest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffTimeChangeRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStaffTimeChangeRequest>>
+>;
+export type GetStaffTimeChangeRequestQueryError = ErrorType<unknown>;
+
+export function useGetStaffTimeChangeRequest<
+  TData = Awaited<ReturnType<typeof getStaffTimeChangeRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffTimeChangeRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffTimeChangeRequestQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getReviewStaffTimeChangeRequestUrl = (scheduleId: string) => {
+  return `/api/coordinator/schedules/${scheduleId}/time-change-request`;
+};
+
+export const reviewStaffTimeChangeRequest = async (
+  scheduleId: string,
+  timeChangeReviewInput: TimeChangeReviewInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getReviewStaffTimeChangeRequestUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(timeChangeReviewInput),
+  });
+};
+
+export const getReviewStaffTimeChangeRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeReviewInput> },
+  TContext
+> => {
+  const mutationKey = ["reviewStaffTimeChangeRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>,
+    { scheduleId: string; data: BodyType<TimeChangeReviewInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return reviewStaffTimeChangeRequest(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewStaffTimeChangeRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>
+>;
+export type ReviewStaffTimeChangeRequestMutationBody = BodyType<TimeChangeReviewInput>;
+export type ReviewStaffTimeChangeRequestMutationError = ErrorType<unknown>;
+
+export const useReviewStaffTimeChangeRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>,
+    TError,
+    { scheduleId: string; data: BodyType<TimeChangeReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewStaffTimeChangeRequest>>,
+  TError,
+  { scheduleId: string; data: BodyType<TimeChangeReviewInput> },
+  TContext
+> => {
+  return useMutation(getReviewStaffTimeChangeRequestMutationOptions(options));
+};
+
+export const getReadPublicTimeChangeRequestUrl = () => {
+  return `/api/public/interview-booking/time-change/read`;
+};
+
+export const readPublicTimeChangeRequest = async (
+  timeChangeTokenInput: TimeChangeTokenInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getReadPublicTimeChangeRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(timeChangeTokenInput),
+  });
+};
+
+export const getReadPublicTimeChangeRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof readPublicTimeChangeRequest>>,
+    TError,
+    { data: BodyType<TimeChangeTokenInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof readPublicTimeChangeRequest>>,
+  TError,
+  { data: BodyType<TimeChangeTokenInput> },
+  TContext
+> => {
+  const mutationKey = ["readPublicTimeChangeRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof readPublicTimeChangeRequest>>,
+    { data: BodyType<TimeChangeTokenInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return readPublicTimeChangeRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReadPublicTimeChangeRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof readPublicTimeChangeRequest>>
+>;
+export type ReadPublicTimeChangeRequestMutationBody = BodyType<TimeChangeTokenInput>;
+export type ReadPublicTimeChangeRequestMutationError = ErrorType<unknown>;
+
+export const useReadPublicTimeChangeRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof readPublicTimeChangeRequest>>,
+    TError,
+    { data: BodyType<TimeChangeTokenInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof readPublicTimeChangeRequest>>,
+  TError,
+  { data: BodyType<TimeChangeTokenInput> },
+  TContext
+> => {
+  return useMutation(getReadPublicTimeChangeRequestMutationOptions(options));
+};
+
+export const getRequestPublicTimeChangeUrl = () => {
+  return `/api/public/interview-booking/time-change`;
+};
+
+export const requestPublicTimeChange = async (
+  publicTimeChangeRequestInput: PublicTimeChangeRequestInput,
+  options?: RequestInit,
+): Promise<InterviewTimeChangeView> => {
+  return customFetch<InterviewTimeChangeView>(getRequestPublicTimeChangeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicTimeChangeRequestInput),
+  });
+};
+
+export const getRequestPublicTimeChangeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestPublicTimeChange>>,
+    TError,
+    { data: BodyType<PublicTimeChangeRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestPublicTimeChange>>,
+  TError,
+  { data: BodyType<PublicTimeChangeRequestInput> },
+  TContext
+> => {
+  const mutationKey = ["requestPublicTimeChange"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestPublicTimeChange>>,
+    { data: BodyType<PublicTimeChangeRequestInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestPublicTimeChange(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestPublicTimeChangeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestPublicTimeChange>>
+>;
+export type RequestPublicTimeChangeMutationBody = BodyType<PublicTimeChangeRequestInput>;
+export type RequestPublicTimeChangeMutationError = ErrorType<unknown>;
+
+export const useRequestPublicTimeChange = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestPublicTimeChange>>,
+    TError,
+    { data: BodyType<PublicTimeChangeRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestPublicTimeChange>>,
+  TError,
+  { data: BodyType<PublicTimeChangeRequestInput> },
+  TContext
+> => {
+  return useMutation(getRequestPublicTimeChangeMutationOptions(options));
+};
+
+/**
+ * Does not reserve an Outlook event or send an invitation.
+ * @summary Candidate confirms their own proposed native interview time
+ */
+export const getConfirmCandidateProposedTimeUrl = (scheduleId: string) => {
+  return `/api/portal/interview-schedules/${scheduleId}/confirmation`;
+};
+
+export const confirmCandidateProposedTime = async (
+  scheduleId: string,
+  candidateTimeConfirmationInput: CandidateTimeConfirmationInput,
+  options?: RequestInit,
+): Promise<CandidateTimeConfirmationReceipt> => {
+  return customFetch<CandidateTimeConfirmationReceipt>(
+    getConfirmCandidateProposedTimeUrl(scheduleId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(candidateTimeConfirmationInput),
+    },
+  );
+};
+
+export const getConfirmCandidateProposedTimeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmCandidateProposedTime>>,
+    TError,
+    { scheduleId: string; data: BodyType<CandidateTimeConfirmationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmCandidateProposedTime>>,
+  TError,
+  { scheduleId: string; data: BodyType<CandidateTimeConfirmationInput> },
+  TContext
+> => {
+  const mutationKey = ["confirmCandidateProposedTime"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmCandidateProposedTime>>,
+    { scheduleId: string; data: BodyType<CandidateTimeConfirmationInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return confirmCandidateProposedTime(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmCandidateProposedTimeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmCandidateProposedTime>>
+>;
+export type ConfirmCandidateProposedTimeMutationBody = BodyType<CandidateTimeConfirmationInput>;
+export type ConfirmCandidateProposedTimeMutationError = ErrorType<void>;
+
+/**
+ * @summary Candidate confirms their own proposed native interview time
+ */
+export const useConfirmCandidateProposedTime = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmCandidateProposedTime>>,
+    TError,
+    { scheduleId: string; data: BodyType<CandidateTimeConfirmationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmCandidateProposedTime>>,
+  TError,
+  { scheduleId: string; data: BodyType<CandidateTimeConfirmationInput> },
+  TContext
+> => {
+  return useMutation(getConfirmCandidateProposedTimeMutationOptions(options));
+};
+
+/**
+ * @summary Platform-admin review queue for reserved email attempts
+ */
+export const getListMailHoldsUrl = (params?: ListMailHoldsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/platform/mail-holds?${stringifiedParams}`
+    : `/api/platform/mail-holds`;
+};
+
+export const listMailHolds = async (
+  params?: ListMailHoldsParams,
+  options?: RequestInit,
+): Promise<MailHoldPage> => {
+  return customFetch<MailHoldPage>(getListMailHoldsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMailHoldsQueryKey = (params?: ListMailHoldsParams) => {
+  return [`/api/platform/mail-holds`, ...(params ? [params] : [])] as const;
+};
+
+export const getListMailHoldsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMailHolds>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMailHoldsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listMailHolds>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMailHoldsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMailHolds>>> = ({ signal }) =>
+    listMailHolds(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMailHolds>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMailHoldsQueryResult = NonNullable<Awaited<ReturnType<typeof listMailHolds>>>;
+export type ListMailHoldsQueryError = ErrorType<void>;
+
+/**
+ * @summary Platform-admin review queue for reserved email attempts
+ */
+
+export function useListMailHolds<
+  TData = Awaited<ReturnType<typeof listMailHolds>>,
+  TError = ErrorType<void>,
+>(
+  params?: ListMailHoldsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listMailHolds>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMailHoldsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Record a review without sending or releasing the original hold
+ */
+export const getReviewMailHoldUrl = () => {
+  return `/api/platform/mail-holds/review`;
+};
+
+export const reviewMailHold = async (
+  mailHoldReviewInput: MailHoldReviewInput,
+  options?: RequestInit,
+): Promise<MailHoldReviewResult> => {
+  return customFetch<MailHoldReviewResult>(getReviewMailHoldUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mailHoldReviewInput),
+  });
+};
+
+export const getReviewMailHoldMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewMailHold>>,
+    TError,
+    { data: BodyType<MailHoldReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewMailHold>>,
+  TError,
+  { data: BodyType<MailHoldReviewInput> },
+  TContext
+> => {
+  const mutationKey = ["reviewMailHold"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewMailHold>>,
+    { data: BodyType<MailHoldReviewInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return reviewMailHold(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewMailHoldMutationResult = NonNullable<Awaited<ReturnType<typeof reviewMailHold>>>;
+export type ReviewMailHoldMutationBody = BodyType<MailHoldReviewInput>;
+export type ReviewMailHoldMutationError = ErrorType<void>;
+
+/**
+ * @summary Record a review without sending or releasing the original hold
+ */
+export const useReviewMailHold = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewMailHold>>,
+    TError,
+    { data: BodyType<MailHoldReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewMailHold>>,
+  TError,
+  { data: BodyType<MailHoldReviewInput> },
+  TContext
+> => {
+  return useMutation(getReviewMailHoldMutationOptions(options));
+};
+
+/**
+ * @summary Platform-admin-only directory of self-registered candidate accounts
+ */
+export const getGetCandidateRegistrationsUrl = (params?: GetCandidateRegistrationsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/platform/candidate-registrations?${stringifiedParams}`
+    : `/api/platform/candidate-registrations`;
+};
+
+export const getCandidateRegistrations = async (
+  params?: GetCandidateRegistrationsParams,
+  options?: RequestInit,
+): Promise<CandidateRegistrationPage> => {
+  return customFetch<CandidateRegistrationPage>(getGetCandidateRegistrationsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateRegistrationsQueryKey = (params?: GetCandidateRegistrationsParams) => {
+  return [`/api/platform/candidate-registrations`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetCandidateRegistrationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateRegistrations>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetCandidateRegistrationsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateRegistrations>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateRegistrationsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateRegistrations>>> = ({
+    signal,
+  }) => getCandidateRegistrations(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateRegistrations>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateRegistrationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateRegistrations>>
+>;
+export type GetCandidateRegistrationsQueryError = ErrorType<void>;
+
+/**
+ * @summary Platform-admin-only directory of self-registered candidate accounts
+ */
+
+export function useGetCandidateRegistrations<
+  TData = Awaited<ReturnType<typeof getCandidateRegistrations>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetCandidateRegistrationsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateRegistrations>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateRegistrationsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Read candidate-bound portal progress in stable, authorized pages
+ */
+export const getGetCareerCampaignStatusUrl = (params?: GetCareerCampaignStatusParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/invites/career-campaign-status?${stringifiedParams}`
+    : `/api/invites/career-campaign-status`;
+};
+
+export const getCareerCampaignStatus = async (
+  params?: GetCareerCampaignStatusParams,
+  options?: RequestInit,
+): Promise<CareerCampaignPage> => {
+  return customFetch<CareerCampaignPage>(getGetCareerCampaignStatusUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCareerCampaignStatusQueryKey = (params?: GetCareerCampaignStatusParams) => {
+  return [`/api/invites/career-campaign-status`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetCareerCampaignStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCareerCampaignStatus>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetCareerCampaignStatusParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCareerCampaignStatus>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCareerCampaignStatusQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCareerCampaignStatus>>> = ({
+    signal,
+  }) => getCareerCampaignStatus(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCareerCampaignStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCareerCampaignStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCareerCampaignStatus>>
+>;
+export type GetCareerCampaignStatusQueryError = ErrorType<void>;
+
+/**
+ * @summary Read candidate-bound portal progress in stable, authorized pages
+ */
+
+export function useGetCareerCampaignStatus<
+  TData = Awaited<ReturnType<typeof getCareerCampaignStatus>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetCareerCampaignStatusParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCareerCampaignStatus>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCareerCampaignStatusQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Read only the connected user's busy periods, without event details
+ */
+export const getGetOutlookCalendarAvailabilityUrl = (
+  params: GetOutlookCalendarAvailabilityParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/outlook-calendar/availability?${stringifiedParams}`
+    : `/api/outlook-calendar/availability`;
+};
+
+export const getOutlookCalendarAvailability = async (
+  params: GetOutlookCalendarAvailabilityParams,
+  options?: RequestInit,
+): Promise<OutlookAvailability> => {
+  return customFetch<OutlookAvailability>(getGetOutlookCalendarAvailabilityUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOutlookCalendarAvailabilityQueryKey = (
+  params?: GetOutlookCalendarAvailabilityParams,
+) => {
+  return [`/api/outlook-calendar/availability`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetOutlookCalendarAvailabilityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOutlookCalendarAvailability>>,
+  TError = ErrorType<void>,
+>(
+  params: GetOutlookCalendarAvailabilityParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOutlookCalendarAvailability>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetOutlookCalendarAvailabilityQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOutlookCalendarAvailability>>> = ({
+    signal,
+  }) => getOutlookCalendarAvailability(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOutlookCalendarAvailability>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOutlookCalendarAvailabilityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOutlookCalendarAvailability>>
+>;
+export type GetOutlookCalendarAvailabilityQueryError = ErrorType<void>;
+
+/**
+ * @summary Read only the connected user's busy periods, without event details
+ */
+
+export function useGetOutlookCalendarAvailability<
+  TData = Awaited<ReturnType<typeof getOutlookCalendarAvailability>>,
+  TError = ErrorType<void>,
+>(
+  params: GetOutlookCalendarAvailabilityParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOutlookCalendarAvailability>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOutlookCalendarAvailabilityQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Find the caller's own Outlook hold for an authorized Lexy interview schedule
+ */
+export const getGetOutlookScheduleEventUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}`;
+};
+
+export const getOutlookScheduleEvent = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<OutlookScheduleReceipt> => {
+  return customFetch<OutlookScheduleReceipt>(getGetOutlookScheduleEventUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOutlookScheduleEventQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}`] as const;
+};
+
+export const getGetOutlookScheduleEventQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOutlookScheduleEvent>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookScheduleEvent>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetOutlookScheduleEventQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOutlookScheduleEvent>>> = ({
+    signal,
+  }) => getOutlookScheduleEvent(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOutlookScheduleEvent>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOutlookScheduleEventQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOutlookScheduleEvent>>
+>;
+export type GetOutlookScheduleEventQueryError = ErrorType<void>;
+
+/**
+ * @summary Find the caller's own Outlook hold for an authorized Lexy interview schedule
+ */
+
+export function useGetOutlookScheduleEvent<
+  TData = Awaited<ReturnType<typeof getOutlookScheduleEvent>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookScheduleEvent>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOutlookScheduleEventQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * No candidate invitations are sent. Guest meetings and recurring events require manual handling in Outlook. Pull is an explicit refresh, not a background webhook subscription.
+ * @summary Explicit human action to create, update, pull or cancel a personal interview hold
+ */
+export const getApplyOutlookScheduleActionUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}`;
+};
+
+export const applyOutlookScheduleAction = async (
+  scheduleId: string,
+  outlookScheduleActionInput: OutlookScheduleActionInput,
+  options?: RequestInit,
+): Promise<OutlookScheduleReceipt> => {
+  return customFetch<OutlookScheduleReceipt>(getApplyOutlookScheduleActionUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(outlookScheduleActionInput),
+  });
+};
+
+export const getApplyOutlookScheduleActionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof applyOutlookScheduleAction>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookScheduleActionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof applyOutlookScheduleAction>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookScheduleActionInput> },
+  TContext
+> => {
+  const mutationKey = ["applyOutlookScheduleAction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof applyOutlookScheduleAction>>,
+    { scheduleId: string; data: BodyType<OutlookScheduleActionInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return applyOutlookScheduleAction(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApplyOutlookScheduleActionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof applyOutlookScheduleAction>>
+>;
+export type ApplyOutlookScheduleActionMutationBody = BodyType<OutlookScheduleActionInput>;
+export type ApplyOutlookScheduleActionMutationError = ErrorType<void>;
+
+/**
+ * @summary Explicit human action to create, update, pull or cancel a personal interview hold
+ */
+export const useApplyOutlookScheduleAction = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof applyOutlookScheduleAction>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookScheduleActionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof applyOutlookScheduleAction>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookScheduleActionInput> },
+  TContext
+> => {
+  return useMutation(getApplyOutlookScheduleActionMutationOptions(options));
+};
+
+/**
+ * @summary Review candidate-only Outlook invitation status for an authorized confirmed schedule
+ */
+export const getGetOutlookCandidateInvitationUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/invitation`;
+};
+
+export const getOutlookCandidateInvitation = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<OutlookCandidateInvitationStatus> => {
+  return customFetch<OutlookCandidateInvitationStatus>(
+    getGetOutlookCandidateInvitationUrl(scheduleId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetOutlookCandidateInvitationQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}/invitation`] as const;
+};
+
+export const getGetOutlookCandidateInvitationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOutlookCandidateInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOutlookCandidateInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetOutlookCandidateInvitationQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOutlookCandidateInvitation>>> = ({
+    signal,
+  }) => getOutlookCandidateInvitation(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOutlookCandidateInvitation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOutlookCandidateInvitationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOutlookCandidateInvitation>>
+>;
+export type GetOutlookCandidateInvitationQueryError = ErrorType<void>;
+
+/**
+ * @summary Review candidate-only Outlook invitation status for an authorized confirmed schedule
+ */
+
+export function useGetOutlookCandidateInvitation<
+  TData = Awaited<ReturnType<typeof getOutlookCandidateInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getOutlookCandidateInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOutlookCandidateInvitationQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Never automatic. Each schedule has one durable send attempt; uncertain acceptance requires reconciliation, not automatic retry. Not an email-delivery guarantee.
+ * @summary Explicit human action to invite only the candidate from the caller's connected Outlook calendar
+ */
+export const getSendOutlookCandidateInvitationUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/invitation`;
+};
+
+export const sendOutlookCandidateInvitation = async (
+  scheduleId: string,
+  outlookCandidateInvitationInput: OutlookCandidateInvitationInput,
+  options?: RequestInit,
+): Promise<OutlookCandidateInvitationStatus> => {
+  return customFetch<OutlookCandidateInvitationStatus>(
+    getSendOutlookCandidateInvitationUrl(scheduleId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(outlookCandidateInvitationInput),
+    },
+  );
+};
+
+export const getSendOutlookCandidateInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookCandidateInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookCandidateInvitationInput> },
+  TContext
+> => {
+  const mutationKey = ["sendOutlookCandidateInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>,
+    { scheduleId: string; data: BodyType<OutlookCandidateInvitationInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return sendOutlookCandidateInvitation(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendOutlookCandidateInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>
+>;
+export type SendOutlookCandidateInvitationMutationBody = BodyType<OutlookCandidateInvitationInput>;
+export type SendOutlookCandidateInvitationMutationError = ErrorType<void>;
+
+/**
+ * @summary Explicit human action to invite only the candidate from the caller's connected Outlook calendar
+ */
+export const useSendOutlookCandidateInvitation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookCandidateInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendOutlookCandidateInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookCandidateInvitationInput> },
+  TContext
+> => {
+  return useMutation(getSendOutlookCandidateInvitationMutationOptions(options));
+};
+
+/**
+ * @summary Review the saved panel and connected organizer before inviting
+ */
+export const getGetOutlookPanelInvitationUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel-invitation`;
+};
+
+export const getOutlookPanelInvitation = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<OutlookPanelInvitationStatus> => {
+  return customFetch<OutlookPanelInvitationStatus>(getGetOutlookPanelInvitationUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOutlookPanelInvitationQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}/panel-invitation`] as const;
+};
+
+export const getGetOutlookPanelInvitationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOutlookPanelInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookPanelInvitation>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetOutlookPanelInvitationQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOutlookPanelInvitation>>> = ({
+    signal,
+  }) => getOutlookPanelInvitation(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOutlookPanelInvitation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOutlookPanelInvitationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOutlookPanelInvitation>>
+>;
+export type GetOutlookPanelInvitationQueryError = ErrorType<void>;
+
+/**
+ * @summary Review the saved panel and connected organizer before inviting
+ */
+
+export function useGetOutlookPanelInvitation<
+  TData = Awaited<ReturnType<typeof getOutlookPanelInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookPanelInvitation>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOutlookPanelInvitationQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * One committed intent shared with candidate-only invitations. Hidden attendees. No automatic retry or guarantee of guest acceptance or email delivery.
+ * @summary Human-approved invitation to the candidate and saved panel
+ */
+export const getSendOutlookPanelInvitationUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel-invitation`;
+};
+
+export const sendOutlookPanelInvitation = async (
+  scheduleId: string,
+  outlookPanelInvitationInput: OutlookPanelInvitationInput,
+  options?: RequestInit,
+): Promise<OutlookPanelInvitationStatus> => {
+  return customFetch<OutlookPanelInvitationStatus>(getSendOutlookPanelInvitationUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(outlookPanelInvitationInput),
+  });
+};
+
+export const getSendOutlookPanelInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendOutlookPanelInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookPanelInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendOutlookPanelInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookPanelInvitationInput> },
+  TContext
+> => {
+  const mutationKey = ["sendOutlookPanelInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendOutlookPanelInvitation>>,
+    { scheduleId: string; data: BodyType<OutlookPanelInvitationInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return sendOutlookPanelInvitation(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendOutlookPanelInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendOutlookPanelInvitation>>
+>;
+export type SendOutlookPanelInvitationMutationBody = BodyType<OutlookPanelInvitationInput>;
+export type SendOutlookPanelInvitationMutationError = ErrorType<void>;
+
+/**
+ * @summary Human-approved invitation to the candidate and saved panel
+ */
+export const useSendOutlookPanelInvitation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendOutlookPanelInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookPanelInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendOutlookPanelInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookPanelInvitationInput> },
+  TContext
+> => {
+  return useMutation(getSendOutlookPanelInvitationMutationOptions(options));
+};
+
+/**
+ * @summary Staff-only read-only review or reconciliation of an existing guest meeting
+ */
+export const getGetOutlookInvitationChangeUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/invitation/change`;
+};
+
+export const getOutlookInvitationChange = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<OutlookInvitationChangeView> => {
+  return customFetch<OutlookInvitationChangeView>(getGetOutlookInvitationChangeUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetOutlookInvitationChangeQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}/invitation/change`] as const;
+};
+
+export const getGetOutlookInvitationChangeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getOutlookInvitationChange>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookInvitationChange>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetOutlookInvitationChangeQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOutlookInvitationChange>>> = ({
+    signal,
+  }) => getOutlookInvitationChange(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getOutlookInvitationChange>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetOutlookInvitationChangeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getOutlookInvitationChange>>
+>;
+export type GetOutlookInvitationChangeQueryError = ErrorType<void>;
+
+/**
+ * @summary Staff-only read-only review or reconciliation of an existing guest meeting
+ */
+
+export function useGetOutlookInvitationChange<
+  TData = Awaited<ReturnType<typeof getOutlookInvitationChange>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getOutlookInvitationChange>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetOutlookInvitationChangeQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Durable intent before one conditional PATCH. Never create another event or automatically retry an uncertain write.
+ * @summary Human-approved time-only update to the same Outlook guest event
+ */
+export const getUpdateOutlookInvitationUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/invitation/change`;
+};
+
+export const updateOutlookInvitation = async (
+  scheduleId: string,
+  outlookInvitationChangeInput: OutlookInvitationChangeInput,
+  options?: RequestInit,
+): Promise<OutlookInvitationChangeView> => {
+  return customFetch<OutlookInvitationChangeView>(getUpdateOutlookInvitationUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(outlookInvitationChangeInput),
+  });
+};
+
+export const getUpdateOutlookInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOutlookInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookInvitationChangeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateOutlookInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookInvitationChangeInput> },
+  TContext
+> => {
+  const mutationKey = ["updateOutlookInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateOutlookInvitation>>,
+    { scheduleId: string; data: BodyType<OutlookInvitationChangeInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return updateOutlookInvitation(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateOutlookInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateOutlookInvitation>>
+>;
+export type UpdateOutlookInvitationMutationBody = BodyType<OutlookInvitationChangeInput>;
+export type UpdateOutlookInvitationMutationError = ErrorType<void>;
+
+/**
+ * @summary Human-approved time-only update to the same Outlook guest event
+ */
+export const useUpdateOutlookInvitation = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateOutlookInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<OutlookInvitationChangeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateOutlookInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<OutlookInvitationChangeInput> },
+  TContext
+> => {
+  return useMutation(getUpdateOutlookInvitationMutationOptions(options));
+};
+
+/**
+ * @summary Review one candidate-only Google invitation or reconcile its existing event by read
+ */
+export const getGetGoogleInterviewInvitationUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/invitation`;
+};
+
+export const getGoogleInterviewInvitation = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<GoogleInterviewInvitationStatus> => {
+  return customFetch<GoogleInterviewInvitationStatus>(
+    getGetGoogleInterviewInvitationUrl(scheduleId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetGoogleInterviewInvitationQueryKey = (scheduleId: string) => {
+  return [`/api/google-calendar/schedules/${scheduleId}/invitation`] as const;
+};
+
+export const getGetGoogleInterviewInvitationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGoogleInterviewInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGoogleInterviewInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGoogleInterviewInvitationQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoogleInterviewInvitation>>> = ({
+    signal,
+  }) => getGoogleInterviewInvitation(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGoogleInterviewInvitation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGoogleInterviewInvitationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGoogleInterviewInvitation>>
+>;
+export type GetGoogleInterviewInvitationQueryError = ErrorType<void>;
+
+/**
+ * @summary Review one candidate-only Google invitation or reconcile its existing event by read
+ */
+
+export function useGetGoogleInterviewInvitation<
+  TData = Awaited<ReturnType<typeof getGoogleInterviewInvitation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGoogleInterviewInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGoogleInterviewInvitationQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve one immutable candidate invitation and Google Meet request
+ */
+export const getSendGoogleInterviewInvitationUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/invitation`;
+};
+
+export const sendGoogleInterviewInvitation = async (
+  scheduleId: string,
+  googleInterviewInvitationInput: GoogleInterviewInvitationInput,
+  options?: RequestInit,
+): Promise<GoogleInterviewInvitationStatus> => {
+  return customFetch<GoogleInterviewInvitationStatus>(
+    getSendGoogleInterviewInvitationUrl(scheduleId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(googleInterviewInvitationInput),
+    },
+  );
+};
+
+export const getSendGoogleInterviewInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<GoogleInterviewInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<GoogleInterviewInvitationInput> },
+  TContext
+> => {
+  const mutationKey = ["sendGoogleInterviewInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>,
+    { scheduleId: string; data: BodyType<GoogleInterviewInvitationInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return sendGoogleInterviewInvitation(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendGoogleInterviewInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>
+>;
+export type SendGoogleInterviewInvitationMutationBody = BodyType<GoogleInterviewInvitationInput>;
+export type SendGoogleInterviewInvitationMutationError = ErrorType<void>;
+
+/**
+ * @summary Approve one immutable candidate invitation and Google Meet request
+ */
+export const useSendGoogleInterviewInvitation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>,
+    TError,
+    { scheduleId: string; data: BodyType<GoogleInterviewInvitationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendGoogleInterviewInvitation>>,
+  TError,
+  { scheduleId: string; data: BodyType<GoogleInterviewInvitationInput> },
+  TContext
+> => {
+  return useMutation(getSendGoogleInterviewInvitationMutationOptions(options));
+};
+
+/**
+ * @summary Review a native time change or cancellation against the original Google event
+ */
+export const getGetGoogleInvitationOperationUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/invitation/operation`;
+};
+
+export const getGoogleInvitationOperation = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<GoogleInvitationOperationView> => {
+  return customFetch<GoogleInvitationOperationView>(
+    getGetGoogleInvitationOperationUrl(scheduleId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetGoogleInvitationOperationQueryKey = (scheduleId: string) => {
+  return [`/api/google-calendar/schedules/${scheduleId}/invitation/operation`] as const;
+};
+
+export const getGetGoogleInvitationOperationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGoogleInvitationOperation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGoogleInvitationOperation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGoogleInvitationOperationQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoogleInvitationOperation>>> = ({
+    signal,
+  }) => getGoogleInvitationOperation(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGoogleInvitationOperation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGoogleInvitationOperationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGoogleInvitationOperation>>
+>;
+export type GetGoogleInvitationOperationQueryError = ErrorType<void>;
+
+/**
+ * @summary Review a native time change or cancellation against the original Google event
+ */
+
+export function useGetGoogleInvitationOperation<
+  TData = Awaited<ReturnType<typeof getGoogleInvitationOperation>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGoogleInvitationOperation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGoogleInvitationOperationQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve exactly one conditional change to the original Google event
+ */
+export const getApplyGoogleInvitationOperationUrl = (scheduleId: string) => {
+  return `/api/google-calendar/schedules/${scheduleId}/invitation/operation`;
+};
+
+export const applyGoogleInvitationOperation = async (
+  scheduleId: string,
+  googleInvitationOperationInput: GoogleInvitationOperationInput,
+  options?: RequestInit,
+): Promise<GoogleInvitationOperationView> => {
+  return customFetch<GoogleInvitationOperationView>(
+    getApplyGoogleInvitationOperationUrl(scheduleId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(googleInvitationOperationInput),
+    },
+  );
+};
+
+export const getApplyGoogleInvitationOperationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof applyGoogleInvitationOperation>>,
+    TError,
+    { scheduleId: string; data: BodyType<GoogleInvitationOperationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof applyGoogleInvitationOperation>>,
+  TError,
+  { scheduleId: string; data: BodyType<GoogleInvitationOperationInput> },
+  TContext
+> => {
+  const mutationKey = ["applyGoogleInvitationOperation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof applyGoogleInvitationOperation>>,
+    { scheduleId: string; data: BodyType<GoogleInvitationOperationInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return applyGoogleInvitationOperation(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApplyGoogleInvitationOperationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof applyGoogleInvitationOperation>>
+>;
+export type ApplyGoogleInvitationOperationMutationBody = BodyType<GoogleInvitationOperationInput>;
+export type ApplyGoogleInvitationOperationMutationError = ErrorType<void>;
+
+/**
+ * @summary Approve exactly one conditional change to the original Google event
+ */
+export const useApplyGoogleInvitationOperation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof applyGoogleInvitationOperation>>,
+    TError,
+    { scheduleId: string; data: BodyType<GoogleInvitationOperationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof applyGoogleInvitationOperation>>,
+  TError,
+  { scheduleId: string; data: BodyType<GoogleInvitationOperationInput> },
+  TContext
+> => {
+  return useMutation(getApplyGoogleInvitationOperationMutationOptions(options));
+};
+
+/**
+ * @summary Read own separate staff Meet recording authorization
+ */
+export const getGetMyGoogleMeetRecordingAccountUrl = () => {
+  return `/api/google-meet-recordings/me`;
+};
+
+export const getMyGoogleMeetRecordingAccount = async (
+  options?: RequestInit,
+): Promise<GoogleMeetRecordingAccountStatus> => {
+  return customFetch<GoogleMeetRecordingAccountStatus>(getGetMyGoogleMeetRecordingAccountUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyGoogleMeetRecordingAccountQueryKey = () => {
+  return [`/api/google-meet-recordings/me`] as const;
+};
+
+export const getGetMyGoogleMeetRecordingAccountQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyGoogleMeetRecordingAccountQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>> = ({
+    signal,
+  }) => getMyGoogleMeetRecordingAccount({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyGoogleMeetRecordingAccountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>
+>;
+export type GetMyGoogleMeetRecordingAccountQueryError = ErrorType<void>;
+
+/**
+ * @summary Read own separate staff Meet recording authorization
+ */
+
+export function useGetMyGoogleMeetRecordingAccount<
+  TData = Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyGoogleMeetRecordingAccount>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyGoogleMeetRecordingAccountQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Begin separate read-only Meet recording authorization
+ */
+export const getConnectMyGoogleMeetRecordingAccountUrl = () => {
+  return `/api/google-meet-recordings/me/connect`;
+};
+
+export const connectMyGoogleMeetRecordingAccount = async (
+  googleMeetRecordingAccountConsentInput: GoogleMeetRecordingAccountConsentInput,
+  options?: RequestInit,
+): Promise<GoogleStaffCalendarConsent> => {
+  return customFetch<GoogleStaffCalendarConsent>(getConnectMyGoogleMeetRecordingAccountUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleMeetRecordingAccountConsentInput),
+  });
+};
+
+export const getConnectMyGoogleMeetRecordingAccountMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>,
+    TError,
+    { data: BodyType<GoogleMeetRecordingAccountConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>,
+  TError,
+  { data: BodyType<GoogleMeetRecordingAccountConsentInput> },
+  TContext
+> => {
+  const mutationKey = ["connectMyGoogleMeetRecordingAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>,
+    { data: BodyType<GoogleMeetRecordingAccountConsentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectMyGoogleMeetRecordingAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectMyGoogleMeetRecordingAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>
+>;
+export type ConnectMyGoogleMeetRecordingAccountMutationBody =
+  BodyType<GoogleMeetRecordingAccountConsentInput>;
+export type ConnectMyGoogleMeetRecordingAccountMutationError = ErrorType<void>;
+
+/**
+ * @summary Begin separate read-only Meet recording authorization
+ */
+export const useConnectMyGoogleMeetRecordingAccount = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>,
+    TError,
+    { data: BodyType<GoogleMeetRecordingAccountConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectMyGoogleMeetRecordingAccount>>,
+  TError,
+  { data: BodyType<GoogleMeetRecordingAccountConsentInput> },
+  TContext
+> => {
+  return useMutation(getConnectMyGoogleMeetRecordingAccountMutationOptions(options));
+};
+
+/**
+ * @summary Disconnect only the current staff recording grant locally
+ */
+export const getDisconnectMyGoogleMeetRecordingAccountUrl = () => {
+  return `/api/google-meet-recordings/me/disconnect`;
+};
+
+export const disconnectMyGoogleMeetRecordingAccount = async (
+  googleStaffCalendarDisconnectInput: GoogleStaffCalendarDisconnectInput,
+  options?: RequestInit,
+): Promise<GoogleMeetRecordingAccountStatus> => {
+  return customFetch<GoogleMeetRecordingAccountStatus>(
+    getDisconnectMyGoogleMeetRecordingAccountUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(googleStaffCalendarDisconnectInput),
+    },
+  );
+};
+
+export const getDisconnectMyGoogleMeetRecordingAccountMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+  TContext
+> => {
+  const mutationKey = ["disconnectMyGoogleMeetRecordingAccount"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return disconnectMyGoogleMeetRecordingAccount(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectMyGoogleMeetRecordingAccountMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>
+>;
+export type DisconnectMyGoogleMeetRecordingAccountMutationBody =
+  BodyType<GoogleStaffCalendarDisconnectInput>;
+export type DisconnectMyGoogleMeetRecordingAccountMutationError = ErrorType<void>;
+
+/**
+ * @summary Disconnect only the current staff recording grant locally
+ */
+export const useDisconnectMyGoogleMeetRecordingAccount = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectMyGoogleMeetRecordingAccount>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+  TContext
+> => {
+  return useMutation(getDisconnectMyGoogleMeetRecordingAccountMutationOptions(options));
+};
+
+/**
+ * @summary Read the current staff member's own Google calendar connection
+ */
+export const getGetMyGoogleCalendarUrl = () => {
+  return `/api/google-calendar/me`;
+};
+
+export const getMyGoogleCalendar = async (
+  options?: RequestInit,
+): Promise<GoogleStaffCalendarStatus> => {
+  return customFetch<GoogleStaffCalendarStatus>(getGetMyGoogleCalendarUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyGoogleCalendarQueryKey = () => {
+  return [`/api/google-calendar/me`] as const;
+};
+
+export const getGetMyGoogleCalendarQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyGoogleCalendar>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMyGoogleCalendar>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyGoogleCalendarQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyGoogleCalendar>>> = ({ signal }) =>
+    getMyGoogleCalendar({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyGoogleCalendar>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyGoogleCalendarQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyGoogleCalendar>>
+>;
+export type GetMyGoogleCalendarQueryError = ErrorType<void>;
+
+/**
+ * @summary Read the current staff member's own Google calendar connection
+ */
+
+export function useGetMyGoogleCalendar<
+  TData = Awaited<ReturnType<typeof getMyGoogleCalendar>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMyGoogleCalendar>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyGoogleCalendarQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Begin own Google authorization with optional explicit invitation permission
+ */
+export const getConnectMyGoogleCalendarUrl = () => {
+  return `/api/google-calendar/me/connect`;
+};
+
+export const connectMyGoogleCalendar = async (
+  googleStaffCalendarConsentInput: GoogleStaffCalendarConsentInput,
+  options?: RequestInit,
+): Promise<GoogleStaffCalendarConsent> => {
+  return customFetch<GoogleStaffCalendarConsent>(getConnectMyGoogleCalendarUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleStaffCalendarConsentInput),
+  });
+};
+
+export const getConnectMyGoogleCalendarMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectMyGoogleCalendar>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof connectMyGoogleCalendar>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarConsentInput> },
+  TContext
+> => {
+  const mutationKey = ["connectMyGoogleCalendar"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof connectMyGoogleCalendar>>,
+    { data: BodyType<GoogleStaffCalendarConsentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return connectMyGoogleCalendar(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConnectMyGoogleCalendarMutationResult = NonNullable<
+  Awaited<ReturnType<typeof connectMyGoogleCalendar>>
+>;
+export type ConnectMyGoogleCalendarMutationBody = BodyType<GoogleStaffCalendarConsentInput>;
+export type ConnectMyGoogleCalendarMutationError = ErrorType<void>;
+
+/**
+ * @summary Begin own Google authorization with optional explicit invitation permission
+ */
+export const useConnectMyGoogleCalendar = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof connectMyGoogleCalendar>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof connectMyGoogleCalendar>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarConsentInput> },
+  TContext
+> => {
+  return useMutation(getConnectMyGoogleCalendarMutationOptions(options));
+};
+
+/**
+ * @summary Remove own local Google credentials and invalidate pending authorization
+ */
+export const getDisconnectMyGoogleCalendarUrl = () => {
+  return `/api/google-calendar/me/disconnect`;
+};
+
+export const disconnectMyGoogleCalendar = async (
+  googleStaffCalendarDisconnectInput: GoogleStaffCalendarDisconnectInput,
+  options?: RequestInit,
+): Promise<GoogleStaffCalendarStatus> => {
+  return customFetch<GoogleStaffCalendarStatus>(getDisconnectMyGoogleCalendarUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleStaffCalendarDisconnectInput),
+  });
+};
+
+export const getDisconnectMyGoogleCalendarMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+  TContext
+> => {
+  const mutationKey = ["disconnectMyGoogleCalendar"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return disconnectMyGoogleCalendar(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisconnectMyGoogleCalendarMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>
+>;
+export type DisconnectMyGoogleCalendarMutationBody = BodyType<GoogleStaffCalendarDisconnectInput>;
+export type DisconnectMyGoogleCalendarMutationError = ErrorType<void>;
+
+/**
+ * @summary Remove own local Google credentials and invalidate pending authorization
+ */
+export const useDisconnectMyGoogleCalendar = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>,
+    TError,
+    { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disconnectMyGoogleCalendar>>,
+  TError,
+  { data: BodyType<GoogleStaffCalendarDisconnectInput> },
+  TContext
+> => {
+  return useMutation(getDisconnectMyGoogleCalendarMutationOptions(options));
+};
+
+/**
+ * @summary Check one bounded interval on the current staff member's own calendar
+ */
+export const getCheckMyGoogleCalendarAvailabilityUrl = () => {
+  return `/api/google-calendar/me/availability`;
+};
+
+export const checkMyGoogleCalendarAvailability = async (
+  googleStaffAvailabilityInput: GoogleStaffAvailabilityInput,
+  options?: RequestInit,
+): Promise<GoogleStaffAvailabilityReceipt> => {
+  return customFetch<GoogleStaffAvailabilityReceipt>(getCheckMyGoogleCalendarAvailabilityUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleStaffAvailabilityInput),
+  });
+};
+
+export const getCheckMyGoogleCalendarAvailabilityMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>,
+    TError,
+    { data: BodyType<GoogleStaffAvailabilityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>,
+  TError,
+  { data: BodyType<GoogleStaffAvailabilityInput> },
+  TContext
+> => {
+  const mutationKey = ["checkMyGoogleCalendarAvailability"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>,
+    { data: BodyType<GoogleStaffAvailabilityInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return checkMyGoogleCalendarAvailability(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CheckMyGoogleCalendarAvailabilityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>
+>;
+export type CheckMyGoogleCalendarAvailabilityMutationBody = BodyType<GoogleStaffAvailabilityInput>;
+export type CheckMyGoogleCalendarAvailabilityMutationError = ErrorType<void>;
+
+/**
+ * @summary Check one bounded interval on the current staff member's own calendar
+ */
+export const useCheckMyGoogleCalendarAvailability = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>,
+    TError,
+    { data: BodyType<GoogleStaffAvailabilityInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof checkMyGoogleCalendarAvailability>>,
+  TError,
+  { data: BodyType<GoogleStaffAvailabilityInput> },
+  TContext
+> => {
+  return useMutation(getCheckMyGoogleCalendarAvailabilityMutationOptions(options));
+};
+
+/**
+ * Checks primary calendar metadata and a bounded free-busy query. Returns no account identifiers, calendar contents or availability intervals. Does not bind the account to staff or enable invitations.
+ * @summary Platform-admin-only read-only project Google connection diagnostic
+ */
+export const getCheckGoogleCalendarPilotUrl = () => {
+  return `/api/google-calendar/pilot-check`;
+};
+
+export const checkGoogleCalendarPilot = async (
+  googleCalendarPilotReadRequest: GoogleCalendarPilotReadRequest,
+  options?: RequestInit,
+): Promise<GoogleCalendarPilotCheck> => {
+  return customFetch<GoogleCalendarPilotCheck>(getCheckGoogleCalendarPilotUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(googleCalendarPilotReadRequest),
+  });
+};
+
+export const getCheckGoogleCalendarPilotMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkGoogleCalendarPilot>>,
+    TError,
+    { data: BodyType<GoogleCalendarPilotReadRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof checkGoogleCalendarPilot>>,
+  TError,
+  { data: BodyType<GoogleCalendarPilotReadRequest> },
+  TContext
+> => {
+  const mutationKey = ["checkGoogleCalendarPilot"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof checkGoogleCalendarPilot>>,
+    { data: BodyType<GoogleCalendarPilotReadRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return checkGoogleCalendarPilot(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CheckGoogleCalendarPilotMutationResult = NonNullable<
+  Awaited<ReturnType<typeof checkGoogleCalendarPilot>>
+>;
+export type CheckGoogleCalendarPilotMutationBody = BodyType<GoogleCalendarPilotReadRequest>;
+export type CheckGoogleCalendarPilotMutationError = ErrorType<void>;
+
+/**
+ * @summary Platform-admin-only read-only project Google connection diagnostic
+ */
+export const useCheckGoogleCalendarPilot = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof checkGoogleCalendarPilot>>,
+    TError,
+    { data: BodyType<GoogleCalendarPilotReadRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof checkGoogleCalendarPilot>>,
+  TError,
+  { data: BodyType<GoogleCalendarPilotReadRequest> },
+  TContext
+> => {
+  return useMutation(getCheckGoogleCalendarPilotMutationOptions(options));
+};
+
+/**
+ * @summary Read your own optional weekly panel working hours
+ */
+export const getGetCalendarWorkingHoursUrl = () => {
+  return `/api/outlook-calendar/working-hours`;
+};
+
+export const getCalendarWorkingHours = async (
+  options?: RequestInit,
+): Promise<CalendarWorkingHours> => {
+  return customFetch<CalendarWorkingHours>(getGetCalendarWorkingHoursUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCalendarWorkingHoursQueryKey = () => {
+  return [`/api/outlook-calendar/working-hours`] as const;
+};
+
+export const getGetCalendarWorkingHoursQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCalendarWorkingHours>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getCalendarWorkingHours>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCalendarWorkingHoursQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCalendarWorkingHours>>> = ({
+    signal,
+  }) => getCalendarWorkingHours({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCalendarWorkingHours>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCalendarWorkingHoursQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCalendarWorkingHours>>
+>;
+export type GetCalendarWorkingHoursQueryError = ErrorType<void>;
+
+/**
+ * @summary Read your own optional weekly panel working hours
+ */
+
+export function useGetCalendarWorkingHours<
+  TData = Awaited<ReturnType<typeof getCalendarWorkingHours>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getCalendarWorkingHours>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCalendarWorkingHoursQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Save or explicitly clear your own panel working hours
+ */
+export const getSaveCalendarWorkingHoursUrl = () => {
+  return `/api/outlook-calendar/working-hours`;
+};
+
+export const saveCalendarWorkingHours = async (
+  calendarWorkingHoursInput: CalendarWorkingHoursInput,
+  options?: RequestInit,
+): Promise<CalendarWorkingHours> => {
+  return customFetch<CalendarWorkingHours>(getSaveCalendarWorkingHoursUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(calendarWorkingHoursInput),
+  });
+};
+
+export const getSaveCalendarWorkingHoursMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveCalendarWorkingHours>>,
+    TError,
+    { data: BodyType<CalendarWorkingHoursInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveCalendarWorkingHours>>,
+  TError,
+  { data: BodyType<CalendarWorkingHoursInput> },
+  TContext
+> => {
+  const mutationKey = ["saveCalendarWorkingHours"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveCalendarWorkingHours>>,
+    { data: BodyType<CalendarWorkingHoursInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return saveCalendarWorkingHours(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveCalendarWorkingHoursMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveCalendarWorkingHours>>
+>;
+export type SaveCalendarWorkingHoursMutationBody = BodyType<CalendarWorkingHoursInput>;
+export type SaveCalendarWorkingHoursMutationError = ErrorType<void>;
+
+/**
+ * @summary Save or explicitly clear your own panel working hours
+ */
+export const useSaveCalendarWorkingHours = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveCalendarWorkingHours>>,
+    TError,
+    { data: BodyType<CalendarWorkingHoursInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveCalendarWorkingHours>>,
+  TError,
+  { data: BodyType<CalendarWorkingHoursInput> },
+  TContext
+> => {
+  return useMutation(getSaveCalendarWorkingHoursMutationOptions(options));
+};
+
+/**
+ * @summary Read your own explicit panel-availability sharing consent
+ */
+export const getGetPanelCalendarConsentUrl = () => {
+  return `/api/outlook-calendar/panel-consent`;
+};
+
+export const getPanelCalendarConsent = async (
+  options?: RequestInit,
+): Promise<PanelCalendarConsent> => {
+  return customFetch<PanelCalendarConsent>(getGetPanelCalendarConsentUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPanelCalendarConsentQueryKey = () => {
+  return [`/api/outlook-calendar/panel-consent`] as const;
+};
+
+export const getGetPanelCalendarConsentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPanelCalendarConsent>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getPanelCalendarConsent>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPanelCalendarConsentQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPanelCalendarConsent>>> = ({
+    signal,
+  }) => getPanelCalendarConsent({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPanelCalendarConsent>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPanelCalendarConsentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPanelCalendarConsent>>
+>;
+export type GetPanelCalendarConsentQueryError = ErrorType<void>;
+
+/**
+ * @summary Read your own explicit panel-availability sharing consent
+ */
+
+export function useGetPanelCalendarConsent<
+  TData = Awaited<ReturnType<typeof getPanelCalendarConsent>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getPanelCalendarConsent>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPanelCalendarConsentQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Explicitly opt your connected calendar in or out of staff panel searches
+ */
+export const getSetPanelCalendarConsentUrl = () => {
+  return `/api/outlook-calendar/panel-consent`;
+};
+
+export const setPanelCalendarConsent = async (
+  panelCalendarConsentInput: PanelCalendarConsentInput,
+  options?: RequestInit,
+): Promise<PanelCalendarConsent> => {
+  return customFetch<PanelCalendarConsent>(getSetPanelCalendarConsentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(panelCalendarConsentInput),
+  });
+};
+
+export const getSetPanelCalendarConsentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setPanelCalendarConsent>>,
+    TError,
+    { data: BodyType<PanelCalendarConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setPanelCalendarConsent>>,
+  TError,
+  { data: BodyType<PanelCalendarConsentInput> },
+  TContext
+> => {
+  const mutationKey = ["setPanelCalendarConsent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setPanelCalendarConsent>>,
+    { data: BodyType<PanelCalendarConsentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return setPanelCalendarConsent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetPanelCalendarConsentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setPanelCalendarConsent>>
+>;
+export type SetPanelCalendarConsentMutationBody = BodyType<PanelCalendarConsentInput>;
+export type SetPanelCalendarConsentMutationError = ErrorType<void>;
+
+/**
+ * @summary Explicitly opt your connected calendar in or out of staff panel searches
+ */
+export const useSetPanelCalendarConsent = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setPanelCalendarConsent>>,
+    TError,
+    { data: BodyType<PanelCalendarConsentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setPanelCalendarConsent>>,
+  TError,
+  { data: BodyType<PanelCalendarConsentInput> },
+  TContext
+> => {
+  return useMutation(getSetPanelCalendarConsentMutationOptions(options));
+};
+
+export const getGetSavedSchedulePanelUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel`;
+};
+
+export const getSavedSchedulePanel = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<SavedSchedulePanel> => {
+  return customFetch<SavedSchedulePanel>(getGetSavedSchedulePanelUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSavedSchedulePanelQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}/panel`] as const;
+};
+
+export const getGetSavedSchedulePanelQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSavedSchedulePanel>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSavedSchedulePanel>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSavedSchedulePanelQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSavedSchedulePanel>>> = ({ signal }) =>
+    getSavedSchedulePanel(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSavedSchedulePanel>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSavedSchedulePanelQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSavedSchedulePanel>>
+>;
+export type GetSavedSchedulePanelQueryError = ErrorType<void>;
+
+export function useGetSavedSchedulePanel<
+  TData = Awaited<ReturnType<typeof getSavedSchedulePanel>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSavedSchedulePanel>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSavedSchedulePanelQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getSaveSchedulePanelUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel`;
+};
+
+export const saveSchedulePanel = async (
+  scheduleId: string,
+  schedulePanelInput: SchedulePanelInput,
+  options?: RequestInit,
+): Promise<SavedSchedulePanel> => {
+  return customFetch<SavedSchedulePanel>(getSaveSchedulePanelUrl(scheduleId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(schedulePanelInput),
+  });
+};
+
+export const getSaveSchedulePanelMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveSchedulePanel>>,
+    TError,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveSchedulePanel>>,
+  TError,
+  { scheduleId: string; data: BodyType<SchedulePanelInput> },
+  TContext
+> => {
+  const mutationKey = ["saveSchedulePanel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveSchedulePanel>>,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return saveSchedulePanel(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveSchedulePanelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveSchedulePanel>>
+>;
+export type SaveSchedulePanelMutationBody = BodyType<SchedulePanelInput>;
+export type SaveSchedulePanelMutationError = ErrorType<void>;
+
+export const useSaveSchedulePanel = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveSchedulePanel>>,
+    TError,
+    { scheduleId: string; data: BodyType<SchedulePanelInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveSchedulePanel>>,
+  TError,
+  { scheduleId: string; data: BodyType<SchedulePanelInput> },
+  TContext
+> => {
+  return useMutation(getSaveSchedulePanelMutationOptions(options));
+};
+
+/**
+ * @summary List opted-in staff in the authorised work-order scope
+ */
+export const getGetSchedulePanelMembersUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel-members`;
+};
+
+export const getSchedulePanelMembers = async (
+  scheduleId: string,
+  options?: RequestInit,
+): Promise<SchedulePanelMembers> => {
+  return customFetch<SchedulePanelMembers>(getGetSchedulePanelMembersUrl(scheduleId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSchedulePanelMembersQueryKey = (scheduleId: string) => {
+  return [`/api/outlook-calendar/schedules/${scheduleId}/panel-members`] as const;
+};
+
+export const getGetSchedulePanelMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSchedulePanelMembers>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSchedulePanelMembers>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSchedulePanelMembersQueryKey(scheduleId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSchedulePanelMembers>>> = ({
+    signal,
+  }) => getSchedulePanelMembers(scheduleId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!scheduleId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSchedulePanelMembers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSchedulePanelMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSchedulePanelMembers>>
+>;
+export type GetSchedulePanelMembersQueryError = ErrorType<void>;
+
+/**
+ * @summary List opted-in staff in the authorised work-order scope
+ */
+
+export function useGetSchedulePanelMembers<
+  TData = Awaited<ReturnType<typeof getSchedulePanelMembers>>,
+  TError = ErrorType<void>,
+>(
+  scheduleId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getSchedulePanelMembers>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSchedulePanelMembersQueryOptions(scheduleId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Read-only provider operation. Returns bounded common suggestions, never individual calendars or busy periods. Does not save, offer slots, reserve or invite.
+ * @summary Staff-only common-time search across an explicitly selected consenting panel
+ */
+export const getFindSchedulePanelTimesUrl = (scheduleId: string) => {
+  return `/api/outlook-calendar/schedules/${scheduleId}/panel-times`;
+};
+
+export const findSchedulePanelTimes = async (
+  scheduleId: string,
+  panelTimeSearchInput: PanelTimeSearchInput,
+  options?: RequestInit,
+): Promise<PanelTimeSearchResult> => {
+  return customFetch<PanelTimeSearchResult>(getFindSchedulePanelTimesUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(panelTimeSearchInput),
+  });
+};
+
+export const getFindSchedulePanelTimesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findSchedulePanelTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<PanelTimeSearchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof findSchedulePanelTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<PanelTimeSearchInput> },
+  TContext
+> => {
+  const mutationKey = ["findSchedulePanelTimes"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof findSchedulePanelTimes>>,
+    { scheduleId: string; data: BodyType<PanelTimeSearchInput> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return findSchedulePanelTimes(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type FindSchedulePanelTimesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof findSchedulePanelTimes>>
+>;
+export type FindSchedulePanelTimesMutationBody = BodyType<PanelTimeSearchInput>;
+export type FindSchedulePanelTimesMutationError = ErrorType<void>;
+
+/**
+ * @summary Staff-only common-time search across an explicitly selected consenting panel
+ */
+export const useFindSchedulePanelTimes = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof findSchedulePanelTimes>>,
+    TError,
+    { scheduleId: string; data: BodyType<PanelTimeSearchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof findSchedulePanelTimes>>,
+  TError,
+  { scheduleId: string; data: BodyType<PanelTimeSearchInput> },
+  TContext
+> => {
+  return useMutation(getFindSchedulePanelTimesMutationOptions(options));
+};
+
+/**
+ * Returns the existing array response. Use X-Next-Cursor to request the next older page. The cursor is bound to the caller.
+ * @summary Read the caller's notification history
+ */
+export const getGetStaffNotificationsUrl = (params?: GetStaffNotificationsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/user-notifications?${stringifiedParams}`
+    : `/api/user-notifications`;
+};
+
+export const getStaffNotifications = async (
+  params?: GetStaffNotificationsParams,
+  options?: RequestInit,
+): Promise<StaffNotificationRecord[]> => {
+  return customFetch<StaffNotificationRecord[]>(getGetStaffNotificationsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffNotificationsQueryKey = (params?: GetStaffNotificationsParams) => {
+  return [`/api/user-notifications`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetStaffNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffNotifications>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetStaffNotificationsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffNotifications>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStaffNotificationsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffNotifications>>> = ({ signal }) =>
+    getStaffNotifications(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStaffNotifications>>
+>;
+export type GetStaffNotificationsQueryError = ErrorType<void>;
+
+/**
+ * @summary Read the caller's notification history
+ */
+
+export function useGetStaffNotifications<
+  TData = Awaited<ReturnType<typeof getStaffNotifications>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetStaffNotificationsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getStaffNotifications>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffNotificationsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List offers explicitly assigned to the current employer staff member
+ */
+export const getGetEmployerOfferInboxUrl = (params?: GetEmployerOfferInboxParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/offer-inbox?${stringifiedParams}`
+    : `/api/offer-inbox`;
+};
+
+export const getEmployerOfferInbox = async (
+  params?: GetEmployerOfferInboxParams,
+  options?: RequestInit,
+): Promise<OfferInboxPage> => {
+  return customFetch<OfferInboxPage>(getGetEmployerOfferInboxUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetEmployerOfferInboxQueryKey = (params?: GetEmployerOfferInboxParams) => {
+  return [`/api/offer-inbox`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetEmployerOfferInboxQueryOptions = <
+  TData = Awaited<ReturnType<typeof getEmployerOfferInbox>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetEmployerOfferInboxParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getEmployerOfferInbox>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetEmployerOfferInboxQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmployerOfferInbox>>> = ({ signal }) =>
+    getEmployerOfferInbox(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getEmployerOfferInbox>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetEmployerOfferInboxQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getEmployerOfferInbox>>
+>;
+export type GetEmployerOfferInboxQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List offers explicitly assigned to the current employer staff member
+ */
+
+export function useGetEmployerOfferInbox<
+  TData = Awaited<ReturnType<typeof getEmployerOfferInbox>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetEmployerOfferInboxParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getEmployerOfferInbox>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetEmployerOfferInboxQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Read one currently assigned offer and its original decision evidence
+ */
+export const getGetEmployerOfferInboxItemUrl = (workflowId: string) => {
+  return `/api/offer-inbox/${workflowId}`;
+};
+
+export const getEmployerOfferInboxItem = async (
+  workflowId: string,
+  options?: RequestInit,
+): Promise<OfferInboxItem> => {
+  return customFetch<OfferInboxItem>(getGetEmployerOfferInboxItemUrl(workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetEmployerOfferInboxItemQueryKey = (workflowId: string) => {
+  return [`/api/offer-inbox/${workflowId}`] as const;
+};
+
+export const getGetEmployerOfferInboxItemQueryOptions = <
+  TData = Awaited<ReturnType<typeof getEmployerOfferInboxItem>>,
+  TError = ErrorType<void>,
+>(
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getEmployerOfferInboxItem>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetEmployerOfferInboxItemQueryKey(workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmployerOfferInboxItem>>> = ({
+    signal,
+  }) => getEmployerOfferInboxItem(workflowId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!workflowId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getEmployerOfferInboxItem>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetEmployerOfferInboxItemQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getEmployerOfferInboxItem>>
+>;
+export type GetEmployerOfferInboxItemQueryError = ErrorType<void>;
+
+/**
+ * @summary Read one currently assigned offer and its original decision evidence
+ */
+
+export function useGetEmployerOfferInboxItem<
+  TData = Awaited<ReturnType<typeof getEmployerOfferInboxItem>>,
+  TError = ErrorType<void>,
+>(
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getEmployerOfferInboxItem>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetEmployerOfferInboxItemQueryOptions(workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetCandidateOfferRoutingUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer-routing`;
+};
+
+export const getCandidateOfferRouting = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<OfferRoutingState> => {
+  return customFetch<OfferRoutingState>(getGetCandidateOfferRoutingUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateOfferRoutingQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer-routing`] as const;
+};
+
+export const getGetCandidateOfferRoutingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateOfferRouting>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateOfferRouting>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateOfferRoutingQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateOfferRouting>>> = ({
+    signal,
+  }) => getCandidateOfferRouting(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateOfferRouting>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateOfferRoutingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateOfferRouting>>
+>;
+export type GetCandidateOfferRoutingQueryError = ErrorType<unknown>;
+
+export function useGetCandidateOfferRouting<
+  TData = Awaited<ReturnType<typeof getCandidateOfferRouting>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateOfferRouting>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateOfferRoutingQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getConfigureCandidateOfferRoutingUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer-routing`;
+};
+
+export const configureCandidateOfferRouting = async (
+  jobId: string,
+  workflowId: string,
+  offerRoutingInput: OfferRoutingInput,
+  options?: RequestInit,
+): Promise<OfferRoutingState> => {
+  return customFetch<OfferRoutingState>(getConfigureCandidateOfferRoutingUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(offerRoutingInput),
+  });
+};
+
+export const getConfigureCandidateOfferRoutingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof configureCandidateOfferRouting>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<OfferRoutingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof configureCandidateOfferRouting>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<OfferRoutingInput> },
+  TContext
+> => {
+  const mutationKey = ["configureCandidateOfferRouting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof configureCandidateOfferRouting>>,
+    { jobId: string; workflowId: string; data: BodyType<OfferRoutingInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return configureCandidateOfferRouting(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfigureCandidateOfferRoutingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof configureCandidateOfferRouting>>
+>;
+export type ConfigureCandidateOfferRoutingMutationBody = BodyType<OfferRoutingInput>;
+export type ConfigureCandidateOfferRoutingMutationError = ErrorType<void>;
+
+export const useConfigureCandidateOfferRouting = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof configureCandidateOfferRouting>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<OfferRoutingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof configureCandidateOfferRouting>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<OfferRoutingInput> },
+  TContext
+> => {
+  return useMutation(getConfigureCandidateOfferRoutingMutationOptions(options));
+};
+
+export const getGetCandidateAtsHandoffUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-handoff`;
+};
+
+export const getCandidateAtsHandoff = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsHandoffState> => {
+  return customFetch<AtsHandoffState>(getGetCandidateAtsHandoffUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateAtsHandoffQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-handoff`] as const;
+};
+
+export const getGetCandidateAtsHandoffQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsHandoff>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsHandoff>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateAtsHandoffQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsHandoff>>> = ({ signal }) =>
+    getCandidateAtsHandoff(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsHandoff>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsHandoffQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsHandoff>>
+>;
+export type GetCandidateAtsHandoffQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsHandoff<
+  TData = Awaited<ReturnType<typeof getCandidateAtsHandoff>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsHandoff>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsHandoffQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsHandoffUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-handoff`;
+};
+
+export const controlCandidateAtsHandoff = async (
+  jobId: string,
+  workflowId: string,
+  atsHandoffInput: AtsHandoffInput,
+  options?: RequestInit,
+): Promise<AtsHandoffState> => {
+  return customFetch<AtsHandoffState>(getControlCandidateAtsHandoffUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(atsHandoffInput),
+  });
+};
+
+export const getControlCandidateAtsHandoffMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsHandoff>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsHandoffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsHandoff>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsHandoffInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsHandoff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsHandoff>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsHandoffInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateAtsHandoff(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsHandoffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsHandoff>>
+>;
+export type ControlCandidateAtsHandoffMutationBody = BodyType<AtsHandoffInput>;
+export type ControlCandidateAtsHandoffMutationError = ErrorType<void>;
+
+export const useControlCandidateAtsHandoff = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsHandoff>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsHandoffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsHandoff>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsHandoffInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsHandoffMutationOptions(options));
+};
+
+export const getRefreshCandidateAtsImportUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/refresh`;
+};
+
+export const refreshCandidateAtsImport = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsRefreshInput: AtsRefreshInput,
+  options?: RequestInit,
+): Promise<AtsImportHistory> => {
+  return customFetch<AtsImportHistory>(
+    getRefreshCandidateAtsImportUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsRefreshInput),
+    },
+  );
+};
+
+export const getRefreshCandidateAtsImportMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refreshCandidateAtsImport>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsRefreshInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof refreshCandidateAtsImport>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsRefreshInput> },
+  TContext
+> => {
+  const mutationKey = ["refreshCandidateAtsImport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof refreshCandidateAtsImport>>,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsRefreshInput> }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return refreshCandidateAtsImport(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RefreshCandidateAtsImportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof refreshCandidateAtsImport>>
+>;
+export type RefreshCandidateAtsImportMutationBody = BodyType<AtsRefreshInput>;
+export type RefreshCandidateAtsImportMutationError = ErrorType<void>;
+
+export const useRefreshCandidateAtsImport = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refreshCandidateAtsImport>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsRefreshInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof refreshCandidateAtsImport>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsRefreshInput> },
+  TContext
+> => {
+  return useMutation(getRefreshCandidateAtsImportMutationOptions(options));
+};
+
+export const getGetCandidateAtsImportHistoryUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/history`;
+};
+
+export const getCandidateAtsImportHistory = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsImportHistory> => {
+  return customFetch<AtsImportHistory>(
+    getGetCandidateAtsImportHistoryUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsImportHistoryQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/history`,
+  ] as const;
+};
+
+export const getGetCandidateAtsImportHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsImportHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsImportHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsImportHistoryQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsImportHistory>>> = ({
+    signal,
+  }) => getCandidateAtsImportHistory(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsImportHistory>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsImportHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsImportHistory>>
+>;
+export type GetCandidateAtsImportHistoryQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsImportHistory<
+  TData = Awaited<ReturnType<typeof getCandidateAtsImportHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsImportHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsImportHistoryQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetCandidateAtsStageOwnershipUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-stage-ownership`;
+};
+
+export const getCandidateAtsStageOwnership = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsStageOwnershipState> => {
+  return customFetch<AtsStageOwnershipState>(
+    getGetCandidateAtsStageOwnershipUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsStageOwnershipQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-stage-ownership`] as const;
+};
+
+export const getGetCandidateAtsStageOwnershipQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsStageOwnershipQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>> = ({
+    signal,
+  }) => getCandidateAtsStageOwnership(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsStageOwnershipQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>
+>;
+export type GetCandidateAtsStageOwnershipQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsStageOwnership<
+  TData = Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsStageOwnership>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsStageOwnershipQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsStageOwnershipUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-stage-ownership`;
+};
+
+export const controlCandidateAtsStageOwnership = async (
+  jobId: string,
+  workflowId: string,
+  atsStageOwnershipInput: AtsStageOwnershipInput,
+  options?: RequestInit,
+): Promise<AtsStageOwnershipState> => {
+  return customFetch<AtsStageOwnershipState>(
+    getControlCandidateAtsStageOwnershipUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsStageOwnershipInput),
+    },
+  );
+};
+
+export const getControlCandidateAtsStageOwnershipMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsStageOwnershipInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsStageOwnershipInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsStageOwnership"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsStageOwnershipInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateAtsStageOwnership(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsStageOwnershipMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>
+>;
+export type ControlCandidateAtsStageOwnershipMutationBody = BodyType<AtsStageOwnershipInput>;
+export type ControlCandidateAtsStageOwnershipMutationError = ErrorType<void>;
+
+export const useControlCandidateAtsStageOwnership = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsStageOwnershipInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsStageOwnership>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsStageOwnershipInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsStageOwnershipMutationOptions(options));
+};
+
+export const getGetCandidateAtsRefreshScheduleUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-refresh-schedule`;
+};
+
+export const getCandidateAtsRefreshSchedule = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsScheduleState> => {
+  return customFetch<AtsScheduleState>(getGetCandidateAtsRefreshScheduleUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateAtsRefreshScheduleQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-refresh-schedule`] as const;
+};
+
+export const getGetCandidateAtsRefreshScheduleQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsRefreshScheduleQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>> = ({
+    signal,
+  }) => getCandidateAtsRefreshSchedule(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateAtsRefreshScheduleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>
+>;
+export type GetCandidateAtsRefreshScheduleQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsRefreshSchedule<
+  TData = Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsRefreshSchedule>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsRefreshScheduleQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsRefreshScheduleUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-refresh-schedule`;
+};
+
+export const controlCandidateAtsRefreshSchedule = async (
+  jobId: string,
+  workflowId: string,
+  atsScheduleInput: AtsScheduleInput,
+  options?: RequestInit,
+): Promise<AtsScheduleState> => {
+  return customFetch<AtsScheduleState>(
+    getControlCandidateAtsRefreshScheduleUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsScheduleInput),
+    },
+  );
+};
+
+export const getControlCandidateAtsRefreshScheduleMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsScheduleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsScheduleInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsRefreshSchedule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsScheduleInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateAtsRefreshSchedule(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsRefreshScheduleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>
+>;
+export type ControlCandidateAtsRefreshScheduleMutationBody = BodyType<AtsScheduleInput>;
+export type ControlCandidateAtsRefreshScheduleMutationError = ErrorType<void>;
+
+export const useControlCandidateAtsRefreshSchedule = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsScheduleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsRefreshSchedule>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsScheduleInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsRefreshScheduleMutationOptions(options));
+};
+
+export const getGetCandidateAtsImportsUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports`;
+};
+
+export const getCandidateAtsImports = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsImportState> => {
+  return customFetch<AtsImportState>(getGetCandidateAtsImportsUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateAtsImportsQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports`] as const;
+};
+
+export const getGetCandidateAtsImportsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsImports>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsImports>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateAtsImportsQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsImports>>> = ({ signal }) =>
+    getCandidateAtsImports(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsImports>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsImportsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsImports>>
+>;
+export type GetCandidateAtsImportsQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsImports<
+  TData = Awaited<ReturnType<typeof getCandidateAtsImports>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsImports>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsImportsQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getImportCandidateAtsRecordsUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports`;
+};
+
+export const importCandidateAtsRecords = async (
+  jobId: string,
+  workflowId: string,
+  atsImportInput: AtsImportInput,
+  options?: RequestInit,
+): Promise<AtsImportState> => {
+  return customFetch<AtsImportState>(getImportCandidateAtsRecordsUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(atsImportInput),
+  });
+};
+
+export const getImportCandidateAtsRecordsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importCandidateAtsRecords>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsImportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importCandidateAtsRecords>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsImportInput> },
+  TContext
+> => {
+  const mutationKey = ["importCandidateAtsRecords"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importCandidateAtsRecords>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsImportInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return importCandidateAtsRecords(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportCandidateAtsRecordsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importCandidateAtsRecords>>
+>;
+export type ImportCandidateAtsRecordsMutationBody = BodyType<AtsImportInput>;
+export type ImportCandidateAtsRecordsMutationError = ErrorType<void>;
+
+export const useImportCandidateAtsRecords = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importCandidateAtsRecords>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsImportInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importCandidateAtsRecords>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsImportInput> },
+  TContext
+> => {
+  return useMutation(getImportCandidateAtsRecordsMutationOptions(options));
+};
+
+export const getGetCandidateAtsProfileUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/profile`;
+};
+
+export const getCandidateAtsProfile = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsCandidateProfileState> => {
+  return customFetch<AtsCandidateProfileState>(
+    getGetCandidateAtsProfileUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsProfileQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/profile`,
+  ] as const;
+};
+
+export const getGetCandidateAtsProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsProfile>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsProfileQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsProfile>>> = ({ signal }) =>
+    getCandidateAtsProfile(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsProfile>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsProfile>>
+>;
+export type GetCandidateAtsProfileQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsProfile<
+  TData = Awaited<ReturnType<typeof getCandidateAtsProfile>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsProfile>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsProfileQueryOptions(jobId, workflowId, recordId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsProfileUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/profile`;
+};
+
+export const controlCandidateAtsProfile = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsCandidateProfileInput: AtsCandidateProfileInput,
+  options?: RequestInit,
+): Promise<AtsCandidateProfileResult> => {
+  return customFetch<AtsCandidateProfileResult>(
+    getControlCandidateAtsProfileUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsCandidateProfileInput),
+    },
+  );
+};
+
+export const getControlCandidateAtsProfileMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsProfile>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsCandidateProfileInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsProfile>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsCandidateProfileInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsProfile>>,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsCandidateProfileInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return controlCandidateAtsProfile(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsProfile>>
+>;
+export type ControlCandidateAtsProfileMutationBody = BodyType<AtsCandidateProfileInput>;
+export type ControlCandidateAtsProfileMutationError = ErrorType<void>;
+
+export const useControlCandidateAtsProfile = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsProfile>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsCandidateProfileInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsProfile>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsCandidateProfileInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsProfileMutationOptions(options));
+};
+
+export const getGetCandidateAtsInterviewUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview`;
+};
+
+export const getCandidateAtsInterview = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsApplicantInterviewState> => {
+  return customFetch<AtsApplicantInterviewState>(
+    getGetCandidateAtsInterviewUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsInterviewQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview`,
+  ] as const;
+};
+
+export const getGetCandidateAtsInterviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterview>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsInterview>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsInterviewQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsInterview>>> = ({
+    signal,
+  }) => getCandidateAtsInterview(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsInterview>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsInterviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsInterview>>
+>;
+export type GetCandidateAtsInterviewQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsInterview<
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterview>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsInterview>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsInterviewQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPrepareCandidateAtsInterviewUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview`;
+};
+
+export const prepareCandidateAtsInterview = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsApplicantInterviewInput: AtsApplicantInterviewInput,
+  options?: RequestInit,
+): Promise<AtsApplicantInterviewState> => {
+  return customFetch<AtsApplicantInterviewState>(
+    getPrepareCandidateAtsInterviewUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsApplicantInterviewInput),
+    },
+  );
+};
+
+export const getPrepareCandidateAtsInterviewMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareCandidateAtsInterview>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsApplicantInterviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareCandidateAtsInterview>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsApplicantInterviewInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["prepareCandidateAtsInterview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareCandidateAtsInterview>>,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsApplicantInterviewInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return prepareCandidateAtsInterview(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareCandidateAtsInterviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareCandidateAtsInterview>>
+>;
+export type PrepareCandidateAtsInterviewMutationBody = BodyType<AtsApplicantInterviewInput>;
+export type PrepareCandidateAtsInterviewMutationError = ErrorType<void>;
+
+export const usePrepareCandidateAtsInterview = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareCandidateAtsInterview>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsApplicantInterviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareCandidateAtsInterview>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsApplicantInterviewInput>;
+  },
+  TContext
+> => {
+  return useMutation(getPrepareCandidateAtsInterviewMutationOptions(options));
+};
+
+export const getGetCandidateAtsInterviewInvitationUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation`;
+};
+
+export const getCandidateAtsInterviewInvitation = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsInterviewInvitationState> => {
+  return customFetch<AtsInterviewInvitationState>(
+    getGetCandidateAtsInterviewInvitationUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsInterviewInvitationQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation`,
+  ] as const;
+};
+
+export const getGetCandidateAtsInterviewInvitationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetCandidateAtsInterviewInvitationQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>> = ({
+    signal,
+  }) =>
+    getCandidateAtsInterviewInvitation(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateAtsInterviewInvitationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>
+>;
+export type GetCandidateAtsInterviewInvitationQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsInterviewInvitation<
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInterviewInvitation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsInterviewInvitationQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getSendCandidateAtsInterviewInvitationUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation`;
+};
+
+export const sendCandidateAtsInterviewInvitation = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsInterviewInvitationInput: AtsInterviewInvitationInput,
+  options?: RequestInit,
+): Promise<AtsInterviewInvitationState> => {
+  return customFetch<AtsInterviewInvitationState>(
+    getSendCandidateAtsInterviewInvitationUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsInterviewInvitationInput),
+    },
+  );
+};
+
+export const getSendCandidateAtsInterviewInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInterviewInvitationInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsInterviewInvitationInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["sendCandidateAtsInterviewInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInterviewInvitationInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return sendCandidateAtsInterviewInvitation(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendCandidateAtsInterviewInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>
+>;
+export type SendCandidateAtsInterviewInvitationMutationBody = BodyType<AtsInterviewInvitationInput>;
+export type SendCandidateAtsInterviewInvitationMutationError = ErrorType<void>;
+
+export const useSendCandidateAtsInterviewInvitation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInterviewInvitationInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendCandidateAtsInterviewInvitation>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsInterviewInvitationInput>;
+  },
+  TContext
+> => {
+  return useMutation(getSendCandidateAtsInterviewInvitationMutationOptions(options));
+};
+
+export const getGetCandidateAtsInterviewNoteUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  mode: "progress" | "assessment",
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note/${mode}`;
+};
+
+export const getCandidateAtsInterviewNote = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  mode: "progress" | "assessment",
+  options?: RequestInit,
+): Promise<AtsInterviewNoteState> => {
+  return customFetch<AtsInterviewNoteState>(
+    getGetCandidateAtsInterviewNoteUrl(jobId, workflowId, recordId, mode),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsInterviewNoteQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  mode: "progress" | "assessment",
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note/${mode}`,
+  ] as const;
+};
+
+export const getGetCandidateAtsInterviewNoteQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  mode: "progress" | "assessment",
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetCandidateAtsInterviewNoteQueryKey(jobId, workflowId, recordId, mode);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>> = ({
+    signal,
+  }) =>
+    getCandidateAtsInterviewNote(jobId, workflowId, recordId, mode, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId && mode),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsInterviewNoteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>
+>;
+export type GetCandidateAtsInterviewNoteQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsInterviewNote<
+  TData = Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  mode: "progress" | "assessment",
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInterviewNote>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsInterviewNoteQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    mode,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPublishCandidateAtsInterviewNoteUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note`;
+};
+
+export const publishCandidateAtsInterviewNote = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsInterviewNoteInput: AtsInterviewNoteInput,
+  options?: RequestInit,
+): Promise<AtsInterviewNoteState> => {
+  return customFetch<AtsInterviewNoteState>(
+    getPublishCandidateAtsInterviewNoteUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsInterviewNoteInput),
+    },
+  );
+};
+
+export const getPublishCandidateAtsInterviewNoteMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsInterviewNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsInterviewNoteInput> },
+  TContext
+> => {
+  const mutationKey = ["publishCandidateAtsInterviewNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsInterviewNoteInput> }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return publishCandidateAtsInterviewNote(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PublishCandidateAtsInterviewNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>
+>;
+export type PublishCandidateAtsInterviewNoteMutationBody = BodyType<AtsInterviewNoteInput>;
+export type PublishCandidateAtsInterviewNoteMutationError = ErrorType<void>;
+
+export const usePublishCandidateAtsInterviewNote = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsInterviewNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishCandidateAtsInterviewNote>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsInterviewNoteInput> },
+  TContext
+> => {
+  return useMutation(getPublishCandidateAtsInterviewNoteMutationOptions(options));
+};
+
+export const getGetCandidateAtsNoteRecoveryUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note-recovery`;
+};
+
+export const getCandidateAtsNoteRecovery = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsNoteRecoveryAttempt[]> => {
+  return customFetch<AtsNoteRecoveryAttempt[]>(
+    getGetCandidateAtsNoteRecoveryUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsNoteRecoveryQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note-recovery`,
+  ] as const;
+};
+
+export const getGetCandidateAtsNoteRecoveryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsNoteRecoveryQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>> = ({
+    signal,
+  }) => getCandidateAtsNoteRecovery(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsNoteRecoveryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>
+>;
+export type GetCandidateAtsNoteRecoveryQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsNoteRecovery<
+  TData = Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsNoteRecovery>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsNoteRecoveryQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getReconcileCandidateAtsNoteUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-note-recovery`;
+};
+
+export const reconcileCandidateAtsNote = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsNoteRecoveryInput: AtsNoteRecoveryInput,
+  options?: RequestInit,
+): Promise<AtsNoteRecoveryAttempt[]> => {
+  return customFetch<AtsNoteRecoveryAttempt[]>(
+    getReconcileCandidateAtsNoteUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsNoteRecoveryInput),
+    },
+  );
+};
+
+export const getReconcileCandidateAtsNoteMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileCandidateAtsNote>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsNoteRecoveryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reconcileCandidateAtsNote>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsNoteRecoveryInput> },
+  TContext
+> => {
+  const mutationKey = ["reconcileCandidateAtsNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reconcileCandidateAtsNote>>,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsNoteRecoveryInput> }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return reconcileCandidateAtsNote(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReconcileCandidateAtsNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reconcileCandidateAtsNote>>
+>;
+export type ReconcileCandidateAtsNoteMutationBody = BodyType<AtsNoteRecoveryInput>;
+export type ReconcileCandidateAtsNoteMutationError = ErrorType<void>;
+
+export const useReconcileCandidateAtsNote = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileCandidateAtsNote>>,
+    TError,
+    { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsNoteRecoveryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reconcileCandidateAtsNote>>,
+  TError,
+  { jobId: string; workflowId: string; recordId: string; data: BodyType<AtsNoteRecoveryInput> },
+  TContext
+> => {
+  return useMutation(getReconcileCandidateAtsNoteMutationOptions(options));
+};
+
+export const getGetCandidateAtsInvitationEvidenceUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation-evidence`;
+};
+
+export const getCandidateAtsInvitationEvidence = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: RequestInit,
+): Promise<AtsInvitationEvidence> => {
+  return customFetch<AtsInvitationEvidence>(
+    getGetCandidateAtsInvitationEvidenceUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsInvitationEvidenceQueryKey = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation-evidence`,
+  ] as const;
+};
+
+export const getGetCandidateAtsInvitationEvidenceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetCandidateAtsInvitationEvidenceQueryKey(jobId, workflowId, recordId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>> = ({
+    signal,
+  }) =>
+    getCandidateAtsInvitationEvidence(jobId, workflowId, recordId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && recordId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateAtsInvitationEvidenceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>
+>;
+export type GetCandidateAtsInvitationEvidenceQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsInvitationEvidence<
+  TData = Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateAtsInvitationEvidence>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsInvitationEvidenceQueryOptions(
+    jobId,
+    workflowId,
+    recordId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getReconcileCandidateAtsInvitationUrl = (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-imports/${recordId}/interview-invitation-evidence`;
+};
+
+export const reconcileCandidateAtsInvitation = async (
+  jobId: string,
+  workflowId: string,
+  recordId: string,
+  atsInvitationReconciliationInput: AtsInvitationReconciliationInput,
+  options?: RequestInit,
+): Promise<AtsInvitationEvidence> => {
+  return customFetch<AtsInvitationEvidence>(
+    getReconcileCandidateAtsInvitationUrl(jobId, workflowId, recordId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsInvitationReconciliationInput),
+    },
+  );
+};
+
+export const getReconcileCandidateAtsInvitationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInvitationReconciliationInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsInvitationReconciliationInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["reconcileCandidateAtsInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInvitationReconciliationInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, recordId, data } = props ?? {};
+
+    return reconcileCandidateAtsInvitation(jobId, workflowId, recordId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReconcileCandidateAtsInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>
+>;
+export type ReconcileCandidateAtsInvitationMutationBody =
+  BodyType<AtsInvitationReconciliationInput>;
+export type ReconcileCandidateAtsInvitationMutationError = ErrorType<void>;
+
+export const useReconcileCandidateAtsInvitation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      recordId: string;
+      data: BodyType<AtsInvitationReconciliationInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reconcileCandidateAtsInvitation>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    recordId: string;
+    data: BodyType<AtsInvitationReconciliationInput>;
+  },
+  TContext
+> => {
+  return useMutation(getReconcileCandidateAtsInvitationMutationOptions(options));
+};
+
+export const getGetCandidateAtsCampaignsUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns`;
+};
+
+export const getCandidateAtsCampaigns = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsCampaignIndex> => {
+  return customFetch<AtsCampaignIndex>(getGetCandidateAtsCampaignsUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateAtsCampaignsQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns`] as const;
+};
+
+export const getGetCandidateAtsCampaignsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsCampaigns>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaigns>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCandidateAtsCampaignsQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsCampaigns>>> = ({
+    signal,
+  }) => getCandidateAtsCampaigns(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaigns>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsCampaignsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsCampaigns>>
+>;
+export type GetCandidateAtsCampaignsQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsCampaigns<
+  TData = Awaited<ReturnType<typeof getCandidateAtsCampaigns>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaigns>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsCampaignsQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPrepareCandidateAtsCampaignUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns`;
+};
+
+export const prepareCandidateAtsCampaign = async (
+  jobId: string,
+  workflowId: string,
+  atsCampaignPreparationInput: AtsCampaignPreparationInput,
+  options?: RequestInit,
+): Promise<AtsCampaignDetail> => {
+  return customFetch<AtsCampaignDetail>(getPrepareCandidateAtsCampaignUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(atsCampaignPreparationInput),
+  });
+};
+
+export const getPrepareCandidateAtsCampaignMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsCampaignPreparationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsCampaignPreparationInput> },
+  TContext
+> => {
+  const mutationKey = ["prepareCandidateAtsCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsCampaignPreparationInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return prepareCandidateAtsCampaign(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareCandidateAtsCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>
+>;
+export type PrepareCandidateAtsCampaignMutationBody = BodyType<AtsCampaignPreparationInput>;
+export type PrepareCandidateAtsCampaignMutationError = ErrorType<void>;
+
+export const usePrepareCandidateAtsCampaign = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsCampaignPreparationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareCandidateAtsCampaign>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsCampaignPreparationInput> },
+  TContext
+> => {
+  return useMutation(getPrepareCandidateAtsCampaignMutationOptions(options));
+};
+
+export const getGetCandidateAtsCampaignUrl = (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns/${campaignId}`;
+};
+
+export const getCandidateAtsCampaign = async (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  options?: RequestInit,
+): Promise<AtsCampaignDetail> => {
+  return customFetch<AtsCampaignDetail>(
+    getGetCandidateAtsCampaignUrl(jobId, workflowId, campaignId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateAtsCampaignQueryKey = (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns/${campaignId}`,
+  ] as const;
+};
+
+export const getGetCandidateAtsCampaignQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsCampaign>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaign>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsCampaignQueryKey(jobId, workflowId, campaignId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsCampaign>>> = ({
+    signal,
+  }) => getCandidateAtsCampaign(jobId, workflowId, campaignId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId && campaignId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaign>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsCampaignQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsCampaign>>
+>;
+export type GetCandidateAtsCampaignQueryError = ErrorType<unknown>;
+
+export function useGetCandidateAtsCampaign<
+  TData = Awaited<ReturnType<typeof getCandidateAtsCampaign>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsCampaign>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsCampaignQueryOptions(
+    jobId,
+    workflowId,
+    campaignId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsCampaignUrl = (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns/${campaignId}/control`;
+};
+
+export const controlCandidateAtsCampaign = async (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  atsCampaignControlInput: AtsCampaignControlInput,
+  options?: RequestInit,
+): Promise<AtsCampaignDetail> => {
+  return customFetch<AtsCampaignDetail>(
+    getControlCandidateAtsCampaignUrl(jobId, workflowId, campaignId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsCampaignControlInput),
+    },
+  );
+};
+
+export const getControlCandidateAtsCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsCampaign>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      data: BodyType<AtsCampaignControlInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsCampaign>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    campaignId: string;
+    data: BodyType<AtsCampaignControlInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsCampaign>>,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      data: BodyType<AtsCampaignControlInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, campaignId, data } = props ?? {};
+
+    return controlCandidateAtsCampaign(jobId, workflowId, campaignId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsCampaign>>
+>;
+export type ControlCandidateAtsCampaignMutationBody = BodyType<AtsCampaignControlInput>;
+export type ControlCandidateAtsCampaignMutationError = ErrorType<unknown>;
+
+export const useControlCandidateAtsCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsCampaign>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      data: BodyType<AtsCampaignControlInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsCampaign>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    campaignId: string;
+    data: BodyType<AtsCampaignControlInput>;
+  },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsCampaignMutationOptions(options));
+};
+
+export const getDispatchCandidateAtsCampaignMemberUrl = (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  memberId: string,
+) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-interview-campaigns/${campaignId}/members/${memberId}/dispatch`;
+};
+
+export const dispatchCandidateAtsCampaignMember = async (
+  jobId: string,
+  workflowId: string,
+  campaignId: string,
+  memberId: string,
+  atsCampaignDispatchInput: AtsCampaignDispatchInput,
+  options?: RequestInit,
+): Promise<AtsCampaignDetail> => {
+  return customFetch<AtsCampaignDetail>(
+    getDispatchCandidateAtsCampaignMemberUrl(jobId, workflowId, campaignId, memberId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsCampaignDispatchInput),
+    },
+  );
+};
+
+export const getDispatchCandidateAtsCampaignMemberMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      memberId: string;
+      data: BodyType<AtsCampaignDispatchInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    campaignId: string;
+    memberId: string;
+    data: BodyType<AtsCampaignDispatchInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["dispatchCandidateAtsCampaignMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      memberId: string;
+      data: BodyType<AtsCampaignDispatchInput>;
+    }
+  > = (props) => {
+    const { jobId, workflowId, campaignId, memberId, data } = props ?? {};
+
+    return dispatchCandidateAtsCampaignMember(
+      jobId,
+      workflowId,
+      campaignId,
+      memberId,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DispatchCandidateAtsCampaignMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>
+>;
+export type DispatchCandidateAtsCampaignMemberMutationBody = BodyType<AtsCampaignDispatchInput>;
+export type DispatchCandidateAtsCampaignMemberMutationError = ErrorType<void>;
+
+export const useDispatchCandidateAtsCampaignMember = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>,
+    TError,
+    {
+      jobId: string;
+      workflowId: string;
+      campaignId: string;
+      memberId: string;
+      data: BodyType<AtsCampaignDispatchInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof dispatchCandidateAtsCampaignMember>>,
+  TError,
+  {
+    jobId: string;
+    workflowId: string;
+    campaignId: string;
+    memberId: string;
+    data: BodyType<AtsCampaignDispatchInput>;
+  },
+  TContext
+> => {
+  return useMutation(getDispatchCandidateAtsCampaignMemberMutationOptions(options));
+};
+
+export const getPreviewCandidateAtsRecordsUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-preview`;
+};
+
+export const previewCandidateAtsRecords = async (
+  jobId: string,
+  workflowId: string,
+  atsPreviewInput: AtsPreviewInput,
+  options?: RequestInit,
+): Promise<AtsPreviewPage> => {
+  return customFetch<AtsPreviewPage>(getPreviewCandidateAtsRecordsUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(atsPreviewInput),
+  });
+};
+
+export const getPreviewCandidateAtsRecordsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewCandidateAtsRecords>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewCandidateAtsRecords>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsPreviewInput> },
+  TContext
+> => {
+  const mutationKey = ["previewCandidateAtsRecords"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewCandidateAtsRecords>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsPreviewInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return previewCandidateAtsRecords(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewCandidateAtsRecordsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewCandidateAtsRecords>>
+>;
+export type PreviewCandidateAtsRecordsMutationBody = BodyType<AtsPreviewInput>;
+export type PreviewCandidateAtsRecordsMutationError = ErrorType<void>;
+
+export const usePreviewCandidateAtsRecords = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewCandidateAtsRecords>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewCandidateAtsRecords>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsPreviewInput> },
+  TContext
+> => {
+  return useMutation(getPreviewCandidateAtsRecordsMutationOptions(options));
+};
+
+export const getGetCandidateAtsVerificationUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-verification`;
+};
+
+export const getCandidateAtsVerification = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<AtsVerificationState> => {
+  return customFetch<AtsVerificationState>(getGetCandidateAtsVerificationUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateAtsVerificationQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-verification`] as const;
+};
+
+export const getGetCandidateAtsVerificationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateAtsVerification>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsVerification>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateAtsVerificationQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateAtsVerification>>> = ({
+    signal,
+  }) => getCandidateAtsVerification(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsVerification>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateAtsVerificationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateAtsVerification>>
+>;
+export type GetCandidateAtsVerificationQueryError = ErrorType<void>;
+
+export function useGetCandidateAtsVerification<
+  TData = Awaited<ReturnType<typeof getCandidateAtsVerification>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateAtsVerification>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateAtsVerificationQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateAtsVerificationUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/ats-verification`;
+};
+
+export const controlCandidateAtsVerification = async (
+  jobId: string,
+  workflowId: string,
+  atsVerificationInput: AtsVerificationInput,
+  options?: RequestInit,
+): Promise<AtsVerificationState> => {
+  return customFetch<AtsVerificationState>(
+    getControlCandidateAtsVerificationUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(atsVerificationInput),
+    },
+  );
+};
+
+export const getControlCandidateAtsVerificationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsVerification>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsVerificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateAtsVerification>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsVerificationInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateAtsVerification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateAtsVerification>>,
+    { jobId: string; workflowId: string; data: BodyType<AtsVerificationInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateAtsVerification(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateAtsVerificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateAtsVerification>>
+>;
+export type ControlCandidateAtsVerificationMutationBody = BodyType<AtsVerificationInput>;
+export type ControlCandidateAtsVerificationMutationError = ErrorType<void>;
+
+export const useControlCandidateAtsVerification = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateAtsVerification>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<AtsVerificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateAtsVerification>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<AtsVerificationInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateAtsVerificationMutationOptions(options));
+};
+
+export const getGetCandidateWorkflowOfferUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer`;
+};
+
+export const getCandidateWorkflowOffer = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<ControlledOfferState> => {
+  return customFetch<ControlledOfferState>(getGetCandidateWorkflowOfferUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCandidateWorkflowOfferQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer`] as const;
+};
+
+export const getGetCandidateWorkflowOfferQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateWorkflowOffer>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateWorkflowOffer>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateWorkflowOfferQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateWorkflowOffer>>> = ({
+    signal,
+  }) => getCandidateWorkflowOffer(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCandidateWorkflowOffer>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCandidateWorkflowOfferQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateWorkflowOffer>>
+>;
+export type GetCandidateWorkflowOfferQueryError = ErrorType<unknown>;
+
+export function useGetCandidateWorkflowOffer<
+  TData = Awaited<ReturnType<typeof getCandidateWorkflowOffer>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCandidateWorkflowOffer>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateWorkflowOfferQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlCandidateWorkflowOfferUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer`;
+};
+
+export const controlCandidateWorkflowOffer = async (
+  jobId: string,
+  workflowId: string,
+  controlledOfferInput: ControlledOfferInput,
+  options?: RequestInit,
+): Promise<ControlledOfferState> => {
+  return customFetch<ControlledOfferState>(getControlCandidateWorkflowOfferUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(controlledOfferInput),
+  });
+};
+
+export const getControlCandidateWorkflowOfferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<ControlledOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<ControlledOfferInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateWorkflowOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>,
+    { jobId: string; workflowId: string; data: BodyType<ControlledOfferInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateWorkflowOffer(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateWorkflowOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>
+>;
+export type ControlCandidateWorkflowOfferMutationBody = BodyType<ControlledOfferInput>;
+export type ControlCandidateWorkflowOfferMutationError = ErrorType<unknown>;
+
+export const useControlCandidateWorkflowOffer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<ControlledOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateWorkflowOffer>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<ControlledOfferInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateWorkflowOfferMutationOptions(options));
+};
+
+export const getGetPublicControlledOfferUrl = (token: string) => {
+  return `/api/controlled-offers/public/${token}`;
+};
+
+export const getPublicControlledOffer = async (
+  token: string,
+  options?: RequestInit,
+): Promise<PublicControlledOffer> => {
+  return customFetch<PublicControlledOffer>(getGetPublicControlledOfferUrl(token), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPublicControlledOfferQueryKey = (token: string) => {
+  return [`/api/controlled-offers/public/${token}`] as const;
+};
+
+export const getGetPublicControlledOfferQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPublicControlledOffer>>,
+  TError = ErrorType<unknown>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getPublicControlledOffer>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPublicControlledOfferQueryKey(token);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicControlledOffer>>> = ({
+    signal,
+  }) => getPublicControlledOffer(token, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!token, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicControlledOffer>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPublicControlledOfferQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPublicControlledOffer>>
+>;
+export type GetPublicControlledOfferQueryError = ErrorType<unknown>;
+
+export function useGetPublicControlledOffer<
+  TData = Awaited<ReturnType<typeof getPublicControlledOffer>>,
+  TError = ErrorType<unknown>,
+>(
+  token: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getPublicControlledOffer>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPublicControlledOfferQueryOptions(token, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRespondToControlledOfferUrl = (token: string) => {
+  return `/api/controlled-offers/public/${token}`;
+};
+
+export const respondToControlledOffer = async (
+  token: string,
+  controlledOfferResponseInput: ControlledOfferResponseInput,
+  options?: RequestInit,
+): Promise<PublicControlledOffer> => {
+  return customFetch<PublicControlledOffer>(getRespondToControlledOfferUrl(token), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(controlledOfferResponseInput),
+  });
+};
+
+export const getRespondToControlledOfferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof respondToControlledOffer>>,
+    TError,
+    { token: string; data: BodyType<ControlledOfferResponseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof respondToControlledOffer>>,
+  TError,
+  { token: string; data: BodyType<ControlledOfferResponseInput> },
+  TContext
+> => {
+  const mutationKey = ["respondToControlledOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof respondToControlledOffer>>,
+    { token: string; data: BodyType<ControlledOfferResponseInput> }
+  > = (props) => {
+    const { token, data } = props ?? {};
+
+    return respondToControlledOffer(token, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RespondToControlledOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof respondToControlledOffer>>
+>;
+export type RespondToControlledOfferMutationBody = BodyType<ControlledOfferResponseInput>;
+export type RespondToControlledOfferMutationError = ErrorType<unknown>;
+
+export const useRespondToControlledOffer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof respondToControlledOffer>>,
+    TError,
+    { token: string; data: BodyType<ControlledOfferResponseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof respondToControlledOffer>>,
+  TError,
+  { token: string; data: BodyType<ControlledOfferResponseInput> },
+  TContext
+> => {
+  return useMutation(getRespondToControlledOfferMutationOptions(options));
+};
+
+/**
+ * Requires current, unrevoked AI-interview consent. Uses the same language-aware speech provider chain as job interviews.
+ * @summary Transcribe the signed-in candidate's career-interview audio
+ */
+export const getTranscribeCareerInterviewUrl = () => {
+  return `/api/portal/career-interview/transcribe`;
+};
+
+export const transcribeCareerInterview = async (
+  transcribeCareerInterviewBody: Blob,
+  options?: RequestInit,
+): Promise<TranscribeCareerInterview200> => {
+  return customFetch<TranscribeCareerInterview200>(getTranscribeCareerInterviewUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "audio/webm", ...options?.headers },
+    body: JSON.stringify(transcribeCareerInterviewBody),
+  });
+};
+
+export const getTranscribeCareerInterviewMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transcribeCareerInterview>>,
+    TError,
+    { data: BodyType<Blob> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof transcribeCareerInterview>>,
+  TError,
+  { data: BodyType<Blob> },
+  TContext
+> => {
+  const mutationKey = ["transcribeCareerInterview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof transcribeCareerInterview>>,
+    { data: BodyType<Blob> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return transcribeCareerInterview(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TranscribeCareerInterviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof transcribeCareerInterview>>
+>;
+export type TranscribeCareerInterviewMutationBody = BodyType<Blob>;
+export type TranscribeCareerInterviewMutationError = ErrorType<void>;
+
+/**
+ * @summary Transcribe the signed-in candidate's career-interview audio
+ */
+export const useTranscribeCareerInterview = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof transcribeCareerInterview>>,
+    TError,
+    { data: BodyType<Blob> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof transcribeCareerInterview>>,
+  TError,
+  { data: BodyType<Blob> },
+  TContext
+> => {
+  return useMutation(getTranscribeCareerInterviewMutationOptions(options));
+};
+
+export const getGetPilotStatusUrl = () => {
+  return `/api/pilot-codes/me`;
+};
+
+export const getPilotStatus = async (options?: RequestInit): Promise<PilotStatus> => {
+  return customFetch<PilotStatus>(getGetPilotStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPilotStatusQueryKey = () => {
+  return [`/api/pilot-codes/me`] as const;
+};
+
+export const getGetPilotStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPilotStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getPilotStatus>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPilotStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPilotStatus>>> = ({ signal }) =>
+    getPilotStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPilotStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPilotStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getPilotStatus>>>;
+export type GetPilotStatusQueryError = ErrorType<unknown>;
+
+export function useGetPilotStatus<
+  TData = Awaited<ReturnType<typeof getPilotStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getPilotStatus>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPilotStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRedeemPilotCodeUrl = () => {
+  return `/api/pilot-codes/redeem`;
+};
+
+export const redeemPilotCode = async (
+  pilotRedemptionInput: PilotRedemptionInput,
+  options?: RequestInit,
+): Promise<PilotStatus> => {
+  return customFetch<PilotStatus>(getRedeemPilotCodeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(pilotRedemptionInput),
+  });
+};
+
+export const getRedeemPilotCodeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof redeemPilotCode>>,
+    TError,
+    { data: BodyType<PilotRedemptionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof redeemPilotCode>>,
+  TError,
+  { data: BodyType<PilotRedemptionInput> },
+  TContext
+> => {
+  const mutationKey = ["redeemPilotCode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof redeemPilotCode>>,
+    { data: BodyType<PilotRedemptionInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return redeemPilotCode(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RedeemPilotCodeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof redeemPilotCode>>
+>;
+export type RedeemPilotCodeMutationBody = BodyType<PilotRedemptionInput>;
+export type RedeemPilotCodeMutationError = ErrorType<unknown>;
+
+export const useRedeemPilotCode = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof redeemPilotCode>>,
+    TError,
+    { data: BodyType<PilotRedemptionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof redeemPilotCode>>,
+  TError,
+  { data: BodyType<PilotRedemptionInput> },
+  TContext
+> => {
+  return useMutation(getRedeemPilotCodeMutationOptions(options));
+};
+
+export const getListPilotCodesUrl = () => {
+  return `/api/pilot-codes/admin`;
+};
+
+export const listPilotCodes = async (options?: RequestInit): Promise<PilotOverview> => {
+  return customFetch<PilotOverview>(getListPilotCodesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPilotCodesQueryKey = () => {
+  return [`/api/pilot-codes/admin`] as const;
+};
+
+export const getListPilotCodesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPilotCodes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listPilotCodes>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPilotCodesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPilotCodes>>> = ({ signal }) =>
+    listPilotCodes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPilotCodes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPilotCodesQueryResult = NonNullable<Awaited<ReturnType<typeof listPilotCodes>>>;
+export type ListPilotCodesQueryError = ErrorType<unknown>;
+
+export function useListPilotCodes<
+  TData = Awaited<ReturnType<typeof listPilotCodes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listPilotCodes>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPilotCodesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreatePilotCodeUrl = () => {
+  return `/api/pilot-codes/admin`;
+};
+
+export const createPilotCode = async (
+  pilotCodeInput: PilotCodeInput,
+  options?: RequestInit,
+): Promise<PilotCodeCreated> => {
+  return customFetch<PilotCodeCreated>(getCreatePilotCodeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(pilotCodeInput),
+  });
+};
+
+export const getCreatePilotCodeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPilotCode>>,
+    TError,
+    { data: BodyType<PilotCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPilotCode>>,
+  TError,
+  { data: BodyType<PilotCodeInput> },
+  TContext
+> => {
+  const mutationKey = ["createPilotCode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPilotCode>>,
+    { data: BodyType<PilotCodeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPilotCode(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePilotCodeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPilotCode>>
+>;
+export type CreatePilotCodeMutationBody = BodyType<PilotCodeInput>;
+export type CreatePilotCodeMutationError = ErrorType<unknown>;
+
+export const useCreatePilotCode = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPilotCode>>,
+    TError,
+    { data: BodyType<PilotCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPilotCode>>,
+  TError,
+  { data: BodyType<PilotCodeInput> },
+  TContext
+> => {
+  return useMutation(getCreatePilotCodeMutationOptions(options));
+};
+
+export const getDisablePilotCodeUrl = (id: string) => {
+  return `/api/pilot-codes/admin/${id}/disable`;
+};
+
+export const disablePilotCode = async (id: string, options?: RequestInit): Promise<void> => {
+  return customFetch<void>(getDisablePilotCodeUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDisablePilotCodeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disablePilotCode>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disablePilotCode>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["disablePilotCode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disablePilotCode>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return disablePilotCode(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisablePilotCodeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disablePilotCode>>
+>;
+
+export type DisablePilotCodeMutationError = ErrorType<unknown>;
+
+export const useDisablePilotCode = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disablePilotCode>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disablePilotCode>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDisablePilotCodeMutationOptions(options));
+};
+
+export const getEndPilotGrantUrl = (id: string) => {
+  return `/api/pilot-codes/admin/grants/${id}/end`;
+};
+
+export const endPilotGrant = async (
+  id: string,
+  pilotEndInput: PilotEndInput,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getEndPilotGrantUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(pilotEndInput),
+  });
+};
+
+export const getEndPilotGrantMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof endPilotGrant>>,
+    TError,
+    { id: string; data: BodyType<PilotEndInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof endPilotGrant>>,
+  TError,
+  { id: string; data: BodyType<PilotEndInput> },
+  TContext
+> => {
+  const mutationKey = ["endPilotGrant"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof endPilotGrant>>,
+    { id: string; data: BodyType<PilotEndInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return endPilotGrant(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type EndPilotGrantMutationResult = NonNullable<Awaited<ReturnType<typeof endPilotGrant>>>;
+export type EndPilotGrantMutationBody = BodyType<PilotEndInput>;
+export type EndPilotGrantMutationError = ErrorType<unknown>;
+
+export const useEndPilotGrant = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof endPilotGrant>>,
+    TError,
+    { id: string; data: BodyType<PilotEndInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof endPilotGrant>>,
+  TError,
+  { id: string; data: BodyType<PilotEndInput> },
+  TContext
+> => {
+  return useMutation(getEndPilotGrantMutationOptions(options));
+};
 
 /**
  * @summary Health check
@@ -405,6 +11997,87 @@ export function useGetMe<
 }
 
 /**
+ * @summary Confirm password and invalidate every session for the signed-in account
+ */
+export const getLogoutAllSessionsUrl = () => {
+  return `/api/auth/logout-all`;
+};
+
+export const logoutAllSessions = async (
+  sessionRevocationInput: SessionRevocationInput,
+  options?: RequestInit,
+): Promise<SessionRevocationResult> => {
+  return customFetch<SessionRevocationResult>(getLogoutAllSessionsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sessionRevocationInput),
+  });
+};
+
+export const getLogoutAllSessionsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof logoutAllSessions>>,
+    TError,
+    { data: BodyType<SessionRevocationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof logoutAllSessions>>,
+  TError,
+  { data: BodyType<SessionRevocationInput> },
+  TContext
+> => {
+  const mutationKey = ["logoutAllSessions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof logoutAllSessions>>,
+    { data: BodyType<SessionRevocationInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return logoutAllSessions(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LogoutAllSessionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof logoutAllSessions>>
+>;
+export type LogoutAllSessionsMutationBody = BodyType<SessionRevocationInput>;
+export type LogoutAllSessionsMutationError = ErrorType<void>;
+
+/**
+ * @summary Confirm password and invalidate every session for the signed-in account
+ */
+export const useLogoutAllSessions = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof logoutAllSessions>>,
+    TError,
+    { data: BodyType<SessionRevocationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof logoutAllSessions>>,
+  TError,
+  { data: BodyType<SessionRevocationInput> },
+  TContext
+> => {
+  return useMutation(getLogoutAllSessionsMutationOptions(options));
+};
+
+/**
  * @summary Logout
  */
 export const getLogoutUrl = () => {
@@ -418,10 +12091,7 @@ export const logout = async (options?: RequestInit): Promise<SuccessResponse> =>
   });
 };
 
-export const getLogoutMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
+export const getLogoutMutationOptions = <TError = ErrorType<void>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
@@ -441,12 +12111,12 @@ export const getLogoutMutationOptions = <
 
 export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>;
 
-export type LogoutMutationError = ErrorType<unknown>;
+export type LogoutMutationError = ErrorType<void>;
 
 /**
  * @summary Logout
  */
-export const useLogout = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const useLogout = <TError = ErrorType<void>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError, void, TContext>;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<Awaited<ReturnType<typeof logout>>, TError, void, TContext> => {
@@ -1334,6 +13004,1392 @@ export const useDeleteJob = <TError = ErrorType<unknown>, TContext = unknown>(op
   TContext
 > => {
   return useMutation(getDeleteJobMutationOptions(options));
+};
+
+/**
+ * @summary Save planned recruiting configuration without executing agents
+ */
+export const getUpdateRecruitingConfigurationUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/recruiting-configuration`;
+};
+
+export const updateRecruitingConfiguration = async (
+  jobId: string,
+  recruitingConfigurationUpdate: RecruitingConfigurationUpdate,
+  options?: RequestInit,
+): Promise<Job> => {
+  return customFetch<Job>(getUpdateRecruitingConfigurationUrl(jobId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(recruitingConfigurationUpdate),
+  });
+};
+
+export const getUpdateRecruitingConfigurationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateRecruitingConfiguration>>,
+    TError,
+    { jobId: string; data: BodyType<RecruitingConfigurationUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateRecruitingConfiguration>>,
+  TError,
+  { jobId: string; data: BodyType<RecruitingConfigurationUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateRecruitingConfiguration"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateRecruitingConfiguration>>,
+    { jobId: string; data: BodyType<RecruitingConfigurationUpdate> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return updateRecruitingConfiguration(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateRecruitingConfigurationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateRecruitingConfiguration>>
+>;
+export type UpdateRecruitingConfigurationMutationBody = BodyType<RecruitingConfigurationUpdate>;
+export type UpdateRecruitingConfigurationMutationError = ErrorType<void>;
+
+/**
+ * @summary Save planned recruiting configuration without executing agents
+ */
+export const useUpdateRecruitingConfiguration = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateRecruitingConfiguration>>,
+    TError,
+    { jobId: string; data: BodyType<RecruitingConfigurationUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateRecruitingConfiguration>>,
+  TError,
+  { jobId: string; data: BodyType<RecruitingConfigurationUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateRecruitingConfigurationMutationOptions(options));
+};
+
+/**
+ * @summary Read prepared sourcing limits and USD allocation holds; execution locked
+ */
+export const getGetJobSourcingControlsUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/sourcing-controls`;
+};
+
+export const getJobSourcingControls = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<SourcingControlView> => {
+  return customFetch<SourcingControlView>(getGetJobSourcingControlsUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetJobSourcingControlsQueryKey = (jobId: string) => {
+  return [`/api/jobs/${jobId}/sourcing-controls`] as const;
+};
+
+export const getGetJobSourcingControlsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getJobSourcingControls>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobSourcingControls>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetJobSourcingControlsQueryKey(jobId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getJobSourcingControls>>> = ({ signal }) =>
+    getJobSourcingControls(jobId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!jobId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getJobSourcingControls>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetJobSourcingControlsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getJobSourcingControls>>
+>;
+export type GetJobSourcingControlsQueryError = ErrorType<void>;
+
+/**
+ * @summary Read prepared sourcing limits and USD allocation holds; execution locked
+ */
+
+export function useGetJobSourcingControls<
+  TData = Awaited<ReturnType<typeof getJobSourcingControls>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobSourcingControls>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetJobSourcingControlsQueryOptions(jobId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Manage approved sourcing holds or start local-only internal talent discovery
+ */
+export const getCommandJobSourcingControlsUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/sourcing-controls`;
+};
+
+export const commandJobSourcingControls = async (
+  jobId: string,
+  sourcingControlCommand: SourcingControlCommand,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getCommandJobSourcingControlsUrl(jobId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sourcingControlCommand),
+  });
+};
+
+export const getCommandJobSourcingControlsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commandJobSourcingControls>>,
+    TError,
+    { jobId: string; data: BodyType<SourcingControlCommand> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof commandJobSourcingControls>>,
+  TError,
+  { jobId: string; data: BodyType<SourcingControlCommand> },
+  TContext
+> => {
+  const mutationKey = ["commandJobSourcingControls"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof commandJobSourcingControls>>,
+    { jobId: string; data: BodyType<SourcingControlCommand> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return commandJobSourcingControls(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CommandJobSourcingControlsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof commandJobSourcingControls>>
+>;
+export type CommandJobSourcingControlsMutationBody = BodyType<SourcingControlCommand>;
+export type CommandJobSourcingControlsMutationError = ErrorType<void>;
+
+/**
+ * @summary Manage approved sourcing holds or start local-only internal talent discovery
+ */
+export const useCommandJobSourcingControls = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof commandJobSourcingControls>>,
+    TError,
+    { jobId: string; data: BodyType<SourcingControlCommand> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof commandJobSourcingControls>>,
+  TError,
+  { jobId: string; data: BodyType<SourcingControlCommand> },
+  TContext
+> => {
+  return useMutation(getCommandJobSourcingControlsMutationOptions(options));
+};
+
+/**
+ * @summary Explain proposed work with read-only deterministic shadow rules
+ */
+export const getGetJobWorkflowShadowUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/workflow-shadow`;
+};
+
+export const getJobWorkflowShadow = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<WorkflowShadowView> => {
+  return customFetch<WorkflowShadowView>(getGetJobWorkflowShadowUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetJobWorkflowShadowQueryKey = (jobId: string) => {
+  return [`/api/jobs/${jobId}/workflow-shadow`] as const;
+};
+
+export const getGetJobWorkflowShadowQueryOptions = <
+  TData = Awaited<ReturnType<typeof getJobWorkflowShadow>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobWorkflowShadow>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetJobWorkflowShadowQueryKey(jobId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getJobWorkflowShadow>>> = ({ signal }) =>
+    getJobWorkflowShadow(jobId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!jobId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getJobWorkflowShadow>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetJobWorkflowShadowQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getJobWorkflowShadow>>
+>;
+export type GetJobWorkflowShadowQueryError = ErrorType<void>;
+
+/**
+ * @summary Explain proposed work with read-only deterministic shadow rules
+ */
+
+export function useGetJobWorkflowShadow<
+  TData = Awaited<ReturnType<typeof getJobWorkflowShadow>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobWorkflowShadow>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetJobWorkflowShadowQueryOptions(jobId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Read planned journeys and candidate-specific workflow evidence
+ */
+export const getGetJobWorkflowStateUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/workflow-state`;
+};
+
+export const getJobWorkflowState = async (
+  jobId: string,
+  options?: RequestInit,
+): Promise<JobWorkflowState> => {
+  return customFetch<JobWorkflowState>(getGetJobWorkflowStateUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetJobWorkflowStateQueryKey = (jobId: string) => {
+  return [`/api/jobs/${jobId}/workflow-state`] as const;
+};
+
+export const getGetJobWorkflowStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getJobWorkflowState>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobWorkflowState>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetJobWorkflowStateQueryKey(jobId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getJobWorkflowState>>> = ({ signal }) =>
+    getJobWorkflowState(jobId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!jobId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getJobWorkflowState>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetJobWorkflowStateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getJobWorkflowState>>
+>;
+export type GetJobWorkflowStateQueryError = ErrorType<void>;
+
+/**
+ * @summary Read planned journeys and candidate-specific workflow evidence
+ */
+
+export function useGetJobWorkflowState<
+  TData = Awaited<ReturnType<typeof getJobWorkflowState>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getJobWorkflowState>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetJobWorkflowStateQueryOptions(jobId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Capture an immutable journey draft from the current requisition brief
+ */
+export const getDraftJobWorkflowJourneyUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/workflow-journeys`;
+};
+
+export const draftJobWorkflowJourney = async (
+  jobId: string,
+  workflowMutationInput: WorkflowMutationInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getDraftJobWorkflowJourneyUrl(jobId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowMutationInput),
+  });
+};
+
+export const getDraftJobWorkflowJourneyMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof draftJobWorkflowJourney>>,
+    TError,
+    { jobId: string; data: BodyType<WorkflowMutationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof draftJobWorkflowJourney>>,
+  TError,
+  { jobId: string; data: BodyType<WorkflowMutationInput> },
+  TContext
+> => {
+  const mutationKey = ["draftJobWorkflowJourney"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof draftJobWorkflowJourney>>,
+    { jobId: string; data: BodyType<WorkflowMutationInput> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return draftJobWorkflowJourney(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DraftJobWorkflowJourneyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof draftJobWorkflowJourney>>
+>;
+export type DraftJobWorkflowJourneyMutationBody = BodyType<WorkflowMutationInput>;
+export type DraftJobWorkflowJourneyMutationError = ErrorType<void>;
+
+/**
+ * @summary Capture an immutable journey draft from the current requisition brief
+ */
+export const useDraftJobWorkflowJourney = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof draftJobWorkflowJourney>>,
+    TError,
+    { jobId: string; data: BodyType<WorkflowMutationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof draftJobWorkflowJourney>>,
+  TError,
+  { jobId: string; data: BodyType<WorkflowMutationInput> },
+  TContext
+> => {
+  return useMutation(getDraftJobWorkflowJourneyMutationOptions(options));
+};
+
+/**
+ * @summary Human approval of one exact journey and brief version
+ */
+export const getApproveJobWorkflowJourneyUrl = (jobId: string, journeyId: string) => {
+  return `/api/jobs/${jobId}/workflow-journeys/${journeyId}/approve`;
+};
+
+export const approveJobWorkflowJourney = async (
+  jobId: string,
+  journeyId: string,
+  workflowMutationInput: WorkflowMutationInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getApproveJobWorkflowJourneyUrl(jobId, journeyId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowMutationInput),
+  });
+};
+
+export const getApproveJobWorkflowJourneyMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveJobWorkflowJourney>>,
+    TError,
+    { jobId: string; journeyId: string; data: BodyType<WorkflowMutationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveJobWorkflowJourney>>,
+  TError,
+  { jobId: string; journeyId: string; data: BodyType<WorkflowMutationInput> },
+  TContext
+> => {
+  const mutationKey = ["approveJobWorkflowJourney"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveJobWorkflowJourney>>,
+    { jobId: string; journeyId: string; data: BodyType<WorkflowMutationInput> }
+  > = (props) => {
+    const { jobId, journeyId, data } = props ?? {};
+
+    return approveJobWorkflowJourney(jobId, journeyId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveJobWorkflowJourneyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveJobWorkflowJourney>>
+>;
+export type ApproveJobWorkflowJourneyMutationBody = BodyType<WorkflowMutationInput>;
+export type ApproveJobWorkflowJourneyMutationError = ErrorType<void>;
+
+/**
+ * @summary Human approval of one exact journey and brief version
+ */
+export const useApproveJobWorkflowJourney = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveJobWorkflowJourney>>,
+    TError,
+    { jobId: string; journeyId: string; data: BodyType<WorkflowMutationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveJobWorkflowJourney>>,
+  TError,
+  { jobId: string; journeyId: string; data: BodyType<WorkflowMutationInput> },
+  TContext
+> => {
+  return useMutation(getApproveJobWorkflowJourneyMutationOptions(options));
+};
+
+/**
+ * @summary Explicitly bind a linked candidate to an approved journey version
+ */
+export const getEnrollCandidateWorkflowUrl = (jobId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows`;
+};
+
+export const enrollCandidateWorkflow = async (
+  jobId: string,
+  workflowEnrollmentInput: WorkflowEnrollmentInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getEnrollCandidateWorkflowUrl(jobId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowEnrollmentInput),
+  });
+};
+
+export const getEnrollCandidateWorkflowMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enrollCandidateWorkflow>>,
+    TError,
+    { jobId: string; data: BodyType<WorkflowEnrollmentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof enrollCandidateWorkflow>>,
+  TError,
+  { jobId: string; data: BodyType<WorkflowEnrollmentInput> },
+  TContext
+> => {
+  const mutationKey = ["enrollCandidateWorkflow"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof enrollCandidateWorkflow>>,
+    { jobId: string; data: BodyType<WorkflowEnrollmentInput> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return enrollCandidateWorkflow(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type EnrollCandidateWorkflowMutationResult = NonNullable<
+  Awaited<ReturnType<typeof enrollCandidateWorkflow>>
+>;
+export type EnrollCandidateWorkflowMutationBody = BodyType<WorkflowEnrollmentInput>;
+export type EnrollCandidateWorkflowMutationError = ErrorType<void>;
+
+/**
+ * @summary Explicitly bind a linked candidate to an approved journey version
+ */
+export const useEnrollCandidateWorkflow = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enrollCandidateWorkflow>>,
+    TError,
+    { jobId: string; data: BodyType<WorkflowEnrollmentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof enrollCandidateWorkflow>>,
+  TError,
+  { jobId: string; data: BodyType<WorkflowEnrollmentInput> },
+  TContext
+> => {
+  return useMutation(getEnrollCandidateWorkflowMutationOptions(options));
+};
+
+/**
+ * @summary Pause, resume or cancel only this planned candidate workflow
+ */
+export const getControlCandidateWorkflowUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/control`;
+};
+
+export const controlCandidateWorkflow = async (
+  jobId: string,
+  workflowId: string,
+  workflowControlInput: WorkflowControlInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getControlCandidateWorkflowUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowControlInput),
+  });
+};
+
+export const getControlCandidateWorkflowMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateWorkflow>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowControlInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlCandidateWorkflow>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowControlInput> },
+  TContext
+> => {
+  const mutationKey = ["controlCandidateWorkflow"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlCandidateWorkflow>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowControlInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlCandidateWorkflow(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlCandidateWorkflowMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlCandidateWorkflow>>
+>;
+export type ControlCandidateWorkflowMutationBody = BodyType<WorkflowControlInput>;
+export type ControlCandidateWorkflowMutationError = ErrorType<void>;
+
+/**
+ * @summary Pause, resume or cancel only this planned candidate workflow
+ */
+export const useControlCandidateWorkflow = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlCandidateWorkflow>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowControlInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlCandidateWorkflow>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowControlInput> },
+  TContext
+> => {
+  return useMutation(getControlCandidateWorkflowMutationOptions(options));
+};
+
+/**
+ * @summary Request the next guarded action for one approved candidate workflow
+ */
+export const getLaunchCandidateWorkflowActionUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/execute`;
+};
+
+export const launchCandidateWorkflowAction = async (
+  jobId: string,
+  workflowId: string,
+  workflowActionLaunchInput: WorkflowActionLaunchInput,
+  options?: RequestInit,
+): Promise<LaunchCandidateWorkflowAction200> => {
+  return customFetch<LaunchCandidateWorkflowAction200>(
+    getLaunchCandidateWorkflowActionUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(workflowActionLaunchInput),
+    },
+  );
+};
+
+export const getLaunchCandidateWorkflowActionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof launchCandidateWorkflowAction>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowActionLaunchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof launchCandidateWorkflowAction>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowActionLaunchInput> },
+  TContext
+> => {
+  const mutationKey = ["launchCandidateWorkflowAction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof launchCandidateWorkflowAction>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowActionLaunchInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return launchCandidateWorkflowAction(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LaunchCandidateWorkflowActionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof launchCandidateWorkflowAction>>
+>;
+export type LaunchCandidateWorkflowActionMutationBody = BodyType<WorkflowActionLaunchInput>;
+export type LaunchCandidateWorkflowActionMutationError = ErrorType<void>;
+
+/**
+ * @summary Request the next guarded action for one approved candidate workflow
+ */
+export const useLaunchCandidateWorkflowAction = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof launchCandidateWorkflowAction>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowActionLaunchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof launchCandidateWorkflowAction>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowActionLaunchInput> },
+  TContext
+> => {
+  return useMutation(getLaunchCandidateWorkflowActionMutationOptions(options));
+};
+
+export const getGetWorkflowFollowUpsUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/follow-ups`;
+};
+
+export const getWorkflowFollowUps = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<WorkflowFollowUpList> => {
+  return customFetch<WorkflowFollowUpList>(getGetWorkflowFollowUpsUrl(jobId, workflowId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWorkflowFollowUpsQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/follow-ups`] as const;
+};
+
+export const getGetWorkflowFollowUpsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWorkflowFollowUps>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getWorkflowFollowUps>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWorkflowFollowUpsQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkflowFollowUps>>> = ({ signal }) =>
+    getWorkflowFollowUps(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getWorkflowFollowUps>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetWorkflowFollowUpsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWorkflowFollowUps>>
+>;
+export type GetWorkflowFollowUpsQueryError = ErrorType<void>;
+
+export function useGetWorkflowFollowUps<
+  TData = Awaited<ReturnType<typeof getWorkflowFollowUps>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getWorkflowFollowUps>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWorkflowFollowUpsQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlWorkflowFollowUpUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/follow-ups`;
+};
+
+export const controlWorkflowFollowUp = async (
+  jobId: string,
+  workflowId: string,
+  workflowFollowUpInput: WorkflowFollowUpInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getControlWorkflowFollowUpUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowFollowUpInput),
+  });
+};
+
+export const getControlWorkflowFollowUpMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlWorkflowFollowUp>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowFollowUpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlWorkflowFollowUp>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowFollowUpInput> },
+  TContext
+> => {
+  const mutationKey = ["controlWorkflowFollowUp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlWorkflowFollowUp>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowFollowUpInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlWorkflowFollowUp(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlWorkflowFollowUpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlWorkflowFollowUp>>
+>;
+export type ControlWorkflowFollowUpMutationBody = BodyType<WorkflowFollowUpInput>;
+export type ControlWorkflowFollowUpMutationError = ErrorType<void>;
+
+export const useControlWorkflowFollowUp = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlWorkflowFollowUp>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowFollowUpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlWorkflowFollowUp>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowFollowUpInput> },
+  TContext
+> => {
+  return useMutation(getControlWorkflowFollowUpMutationOptions(options));
+};
+
+/**
+ * @summary Authorize one recovery after trusted pre-effect proof, retaining prior claims
+ */
+export const getRecoverCandidateWorkflowActionUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/recover`;
+};
+
+export const recoverCandidateWorkflowAction = async (
+  jobId: string,
+  workflowId: string,
+  workflowRecoveryInput: WorkflowRecoveryInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(
+    getRecoverCandidateWorkflowActionUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(workflowRecoveryInput),
+    },
+  );
+};
+
+export const getRecoverCandidateWorkflowActionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowRecoveryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowRecoveryInput> },
+  TContext
+> => {
+  const mutationKey = ["recoverCandidateWorkflowAction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowRecoveryInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return recoverCandidateWorkflowAction(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RecoverCandidateWorkflowActionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>
+>;
+export type RecoverCandidateWorkflowActionMutationBody = BodyType<WorkflowRecoveryInput>;
+export type RecoverCandidateWorkflowActionMutationError = ErrorType<void>;
+
+/**
+ * @summary Authorize one recovery after trusted pre-effect proof, retaining prior claims
+ */
+export const useRecoverCandidateWorkflowAction = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowRecoveryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof recoverCandidateWorkflowAction>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowRecoveryInput> },
+  TContext
+> => {
+  return useMutation(getRecoverCandidateWorkflowActionMutationOptions(options));
+};
+
+export const getControlWorkflowLivePilotUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/live-pilot`;
+};
+
+export const controlWorkflowLivePilot = async (
+  jobId: string,
+  workflowId: string,
+  workflowLivePilotInput: WorkflowLivePilotInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getControlWorkflowLivePilotUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowLivePilotInput),
+  });
+};
+
+export const getControlWorkflowLivePilotMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlWorkflowLivePilot>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowLivePilotInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlWorkflowLivePilot>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowLivePilotInput> },
+  TContext
+> => {
+  const mutationKey = ["controlWorkflowLivePilot"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlWorkflowLivePilot>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowLivePilotInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlWorkflowLivePilot(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlWorkflowLivePilotMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlWorkflowLivePilot>>
+>;
+export type ControlWorkflowLivePilotMutationBody = BodyType<WorkflowLivePilotInput>;
+export type ControlWorkflowLivePilotMutationError = ErrorType<void>;
+
+export const useControlWorkflowLivePilot = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlWorkflowLivePilot>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowLivePilotInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlWorkflowLivePilot>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowLivePilotInput> },
+  TContext
+> => {
+  return useMutation(getControlWorkflowLivePilotMutationOptions(options));
+};
+
+/**
+ * @summary Save an audited human identity decision without executing agents or sending contact
+ */
+export const getResolveWorkflowIdentityUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/identity-resolution`;
+};
+
+export const resolveWorkflowIdentity = async (
+  jobId: string,
+  workflowId: string,
+  workflowIdentityResolutionInput: WorkflowIdentityResolutionInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(getResolveWorkflowIdentityUrl(jobId, workflowId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(workflowIdentityResolutionInput),
+  });
+};
+
+export const getResolveWorkflowIdentityMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resolveWorkflowIdentity>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowIdentityResolutionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resolveWorkflowIdentity>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowIdentityResolutionInput> },
+  TContext
+> => {
+  const mutationKey = ["resolveWorkflowIdentity"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resolveWorkflowIdentity>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowIdentityResolutionInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return resolveWorkflowIdentity(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResolveWorkflowIdentityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resolveWorkflowIdentity>>
+>;
+export type ResolveWorkflowIdentityMutationBody = BodyType<WorkflowIdentityResolutionInput>;
+export type ResolveWorkflowIdentityMutationError = ErrorType<void>;
+
+/**
+ * @summary Save an audited human identity decision without executing agents or sending contact
+ */
+export const useResolveWorkflowIdentity = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resolveWorkflowIdentity>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowIdentityResolutionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resolveWorkflowIdentity>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowIdentityResolutionInput> },
+  TContext
+> => {
+  return useMutation(getResolveWorkflowIdentityMutationOptions(options));
+};
+
+/**
+ * @summary Record human-provided evidence without changing the assisted pipeline
+ */
+export const getRecordCandidateWorkflowEvidenceUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/evidence`;
+};
+
+export const recordCandidateWorkflowEvidence = async (
+  jobId: string,
+  workflowId: string,
+  workflowEvidenceInput: WorkflowEvidenceInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(
+    getRecordCandidateWorkflowEvidenceUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(workflowEvidenceInput),
+    },
+  );
+};
+
+export const getRecordCandidateWorkflowEvidenceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowEvidenceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowEvidenceInput> },
+  TContext
+> => {
+  const mutationKey = ["recordCandidateWorkflowEvidence"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowEvidenceInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return recordCandidateWorkflowEvidence(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RecordCandidateWorkflowEvidenceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>
+>;
+export type RecordCandidateWorkflowEvidenceMutationBody = BodyType<WorkflowEvidenceInput>;
+export type RecordCandidateWorkflowEvidenceMutationError = ErrorType<void>;
+
+/**
+ * @summary Record human-provided evidence without changing the assisted pipeline
+ */
+export const useRecordCandidateWorkflowEvidence = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowEvidenceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof recordCandidateWorkflowEvidence>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowEvidenceInput> },
+  TContext
+> => {
+  return useMutation(getRecordCandidateWorkflowEvidenceMutationOptions(options));
+};
+
+/**
+ * @summary Append an authorised correction without rewriting hiring history or employment
+ */
+export const getCorrectCandidateWorkflowDecisionUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/decision-correction`;
+};
+
+export const correctCandidateWorkflowDecision = async (
+  jobId: string,
+  workflowId: string,
+  workflowDecisionCorrectionInput: WorkflowDecisionCorrectionInput,
+  options?: RequestInit,
+): Promise<WorkflowMutationResult> => {
+  return customFetch<WorkflowMutationResult>(
+    getCorrectCandidateWorkflowDecisionUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(workflowDecisionCorrectionInput),
+    },
+  );
+};
+
+export const getCorrectCandidateWorkflowDecisionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowDecisionCorrectionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowDecisionCorrectionInput> },
+  TContext
+> => {
+  const mutationKey = ["correctCandidateWorkflowDecision"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowDecisionCorrectionInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return correctCandidateWorkflowDecision(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CorrectCandidateWorkflowDecisionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>
+>;
+export type CorrectCandidateWorkflowDecisionMutationBody =
+  BodyType<WorkflowDecisionCorrectionInput>;
+export type CorrectCandidateWorkflowDecisionMutationError = ErrorType<void>;
+
+/**
+ * @summary Append an authorised correction without rewriting hiring history or employment
+ */
+export const useCorrectCandidateWorkflowDecision = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<WorkflowDecisionCorrectionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof correctCandidateWorkflowDecision>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<WorkflowDecisionCorrectionInput> },
+  TContext
+> => {
+  return useMutation(getCorrectCandidateWorkflowDecisionMutationOptions(options));
 };
 
 /**
@@ -2662,7 +15718,7 @@ export const createInterviewPlan = async (
 };
 
 export const getCreateInterviewPlanMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void | InterviewPlanGenerationFailure>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2701,12 +15757,15 @@ export type CreateInterviewPlanMutationResult = NonNullable<
   Awaited<ReturnType<typeof createInterviewPlan>>
 >;
 export type CreateInterviewPlanMutationBody = BodyType<CreateInterviewPlanRequest>;
-export type CreateInterviewPlanMutationError = ErrorType<unknown>;
+export type CreateInterviewPlanMutationError = ErrorType<void | InterviewPlanGenerationFailure>;
 
 /**
  * @summary Create interview plan from JD + ICP
  */
-export const useCreateInterviewPlan = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const useCreateInterviewPlan = <
+  TError = ErrorType<void | InterviewPlanGenerationFailure>,
+  TContext = unknown,
+>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof createInterviewPlan>>,
     TError,
@@ -2872,6 +15931,91 @@ export function useGetInterview<
 }
 
 /**
+ * Requires the interview session cookie. The plan is resolved from that session; no plan identifier is accepted.
+ * @summary Get candidate-visible configuration for a verified interview session
+ */
+export const getGetCandidateInterviewConfigurationUrl = (interviewId: string) => {
+  return `/api/interviews/${interviewId}/configuration`;
+};
+
+export const getCandidateInterviewConfiguration = async (
+  interviewId: string,
+  options?: RequestInit,
+): Promise<CandidateInterviewConfiguration> => {
+  return customFetch<CandidateInterviewConfiguration>(
+    getGetCandidateInterviewConfigurationUrl(interviewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCandidateInterviewConfigurationQueryKey = (interviewId: string) => {
+  return [`/api/interviews/${interviewId}/configuration`] as const;
+};
+
+export const getGetCandidateInterviewConfigurationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCandidateInterviewConfigurationQueryKey(interviewId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>> = ({
+    signal,
+  }) => getCandidateInterviewConfiguration(interviewId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!interviewId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCandidateInterviewConfigurationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>
+>;
+export type GetCandidateInterviewConfigurationQueryError = ErrorType<void>;
+
+/**
+ * @summary Get candidate-visible configuration for a verified interview session
+ */
+
+export function useGetCandidateInterviewConfiguration<
+  TData = Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCandidateInterviewConfiguration>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCandidateInterviewConfigurationQueryOptions(interviewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Submit an answer
  */
 export const getSubmitInterviewAnswerUrl = (interviewId: string) => {
@@ -2966,8 +16110,8 @@ export const getEndInterviewUrl = (interviewId: string) => {
 export const endInterview = async (
   interviewId: string,
   options?: RequestInit,
-): Promise<InterviewSummary> => {
-  return customFetch<InterviewSummary>(getEndInterviewUrl(interviewId), {
+): Promise<InterviewCompletionReceipt> => {
+  return customFetch<InterviewCompletionReceipt>(getEndInterviewUrl(interviewId), {
     ...options,
     method: "POST",
   });
@@ -3520,8 +16664,8 @@ export const getCreateScheduleUrl = () => {
 export const createSchedule = async (
   createScheduleRequest: CreateScheduleRequest,
   options?: RequestInit,
-): Promise<InterviewSchedule> => {
-  return customFetch<InterviewSchedule>(getCreateScheduleUrl(), {
+): Promise<ScheduleCreateResult> => {
+  return customFetch<ScheduleCreateResult>(getCreateScheduleUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -3530,7 +16674,7 @@ export const createSchedule = async (
 };
 
 export const getCreateScheduleMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3567,12 +16711,12 @@ export const getCreateScheduleMutationOptions = <
 
 export type CreateScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof createSchedule>>>;
 export type CreateScheduleMutationBody = BodyType<CreateScheduleRequest>;
-export type CreateScheduleMutationError = ErrorType<unknown>;
+export type CreateScheduleMutationError = ErrorType<void>;
 
 /**
  * @summary Create schedule
  */
-export const useCreateSchedule = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const useCreateSchedule = <TError = ErrorType<void>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof createSchedule>>,
     TError,
@@ -3588,6 +16732,77 @@ export const useCreateSchedule = <TError = ErrorType<unknown>, TContext = unknow
 > => {
   return useMutation(getCreateScheduleMutationOptions(options));
 };
+
+/**
+ * @summary Recover the current caller's saved schedule after an uncertain response
+ */
+export const getGetScheduleSaveRequestUrl = (requestId: string) => {
+  return `/api/coordinator/schedules/requests/${requestId}`;
+};
+
+export const getScheduleSaveRequest = async (
+  requestId: string,
+  options?: RequestInit,
+): Promise<ScheduleCreateResult> => {
+  return customFetch<ScheduleCreateResult>(getGetScheduleSaveRequestUrl(requestId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetScheduleSaveRequestQueryKey = (requestId: string) => {
+  return [`/api/coordinator/schedules/requests/${requestId}`] as const;
+};
+
+export const getGetScheduleSaveRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getScheduleSaveRequest>>,
+  TError = ErrorType<void>,
+>(
+  requestId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getScheduleSaveRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetScheduleSaveRequestQueryKey(requestId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getScheduleSaveRequest>>> = ({ signal }) =>
+    getScheduleSaveRequest(requestId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!requestId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getScheduleSaveRequest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetScheduleSaveRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getScheduleSaveRequest>>
+>;
+export type GetScheduleSaveRequestQueryError = ErrorType<void>;
+
+/**
+ * @summary Recover the current caller's saved schedule after an uncertain response
+ */
+
+export function useGetScheduleSaveRequest<
+  TData = Awaited<ReturnType<typeof getScheduleSaveRequest>>,
+  TError = ErrorType<void>,
+>(
+  requestId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getScheduleSaveRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetScheduleSaveRequestQueryOptions(requestId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update/reschedule
@@ -3610,7 +16825,7 @@ export const updateSchedule = async (
 };
 
 export const getUpdateScheduleMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3647,12 +16862,12 @@ export const getUpdateScheduleMutationOptions = <
 
 export type UpdateScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof updateSchedule>>>;
 export type UpdateScheduleMutationBody = BodyType<UpdateScheduleRequest>;
-export type UpdateScheduleMutationError = ErrorType<unknown>;
+export type UpdateScheduleMutationError = ErrorType<void>;
 
 /**
  * @summary Update/reschedule
  */
-export const useUpdateSchedule = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+export const useUpdateSchedule = <TError = ErrorType<void>, TContext = unknown>(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateSchedule>>,
     TError,
@@ -3667,6 +16882,88 @@ export const useUpdateSchedule = <TError = ErrorType<unknown>, TContext = unknow
   TContext
 > => {
   return useMutation(getUpdateScheduleMutationOptions(options));
+};
+
+/**
+ * @summary Save human interview feedback under current staff and requisition scope
+ */
+export const getSaveScheduleFeedbackUrl = (scheduleId: string) => {
+  return `/api/interviews/${scheduleId}/feedback`;
+};
+
+export const saveScheduleFeedback = async (
+  scheduleId: string,
+  scheduleFeedbackRequest: ScheduleFeedbackRequest,
+  options?: RequestInit,
+): Promise<InterviewSchedule> => {
+  return customFetch<InterviewSchedule>(getSaveScheduleFeedbackUrl(scheduleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(scheduleFeedbackRequest),
+  });
+};
+
+export const getSaveScheduleFeedbackMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveScheduleFeedback>>,
+    TError,
+    { scheduleId: string; data: BodyType<ScheduleFeedbackRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveScheduleFeedback>>,
+  TError,
+  { scheduleId: string; data: BodyType<ScheduleFeedbackRequest> },
+  TContext
+> => {
+  const mutationKey = ["saveScheduleFeedback"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveScheduleFeedback>>,
+    { scheduleId: string; data: BodyType<ScheduleFeedbackRequest> }
+  > = (props) => {
+    const { scheduleId, data } = props ?? {};
+
+    return saveScheduleFeedback(scheduleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveScheduleFeedbackMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveScheduleFeedback>>
+>;
+export type SaveScheduleFeedbackMutationBody = BodyType<ScheduleFeedbackRequest>;
+export type SaveScheduleFeedbackMutationError = ErrorType<void>;
+
+/**
+ * @summary Save human interview feedback under current staff and requisition scope
+ */
+export const useSaveScheduleFeedback = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveScheduleFeedback>>,
+    TError,
+    { scheduleId: string; data: BodyType<ScheduleFeedbackRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveScheduleFeedback>>,
+  TError,
+  { scheduleId: string; data: BodyType<ScheduleFeedbackRequest> },
+  TContext
+> => {
+  return useMutation(getSaveScheduleFeedbackMutationOptions(options));
 };
 
 /**
@@ -7370,6 +20667,2490 @@ export function useGetStorageObject<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetStorageObjectQueryOptions(objectPath, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Requires the active interview cookie, same-origin request, current consent and approved work order. Never contributes to assessment or proctoring scores.
+ * @summary Record content-free, client-reported capture diagnostics
+ */
+export const getRecordInterviewCaptureDiagnosticUrl = (interviewId: string) => {
+  return `/api/interviews/${interviewId}/capture-diagnostics`;
+};
+
+export const recordInterviewCaptureDiagnostic = async (
+  interviewId: string,
+  interviewCaptureDiagnosticInput: InterviewCaptureDiagnosticInput,
+  options?: RequestInit,
+): Promise<InterviewCaptureDiagnosticReceipt> => {
+  return customFetch<InterviewCaptureDiagnosticReceipt>(
+    getRecordInterviewCaptureDiagnosticUrl(interviewId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(interviewCaptureDiagnosticInput),
+    },
+  );
+};
+
+export const getRecordInterviewCaptureDiagnosticMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>,
+    TError,
+    { interviewId: string; data: BodyType<InterviewCaptureDiagnosticInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>,
+  TError,
+  { interviewId: string; data: BodyType<InterviewCaptureDiagnosticInput> },
+  TContext
+> => {
+  const mutationKey = ["recordInterviewCaptureDiagnostic"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>,
+    { interviewId: string; data: BodyType<InterviewCaptureDiagnosticInput> }
+  > = (props) => {
+    const { interviewId, data } = props ?? {};
+
+    return recordInterviewCaptureDiagnostic(interviewId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RecordInterviewCaptureDiagnosticMutationResult = NonNullable<
+  Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>
+>;
+export type RecordInterviewCaptureDiagnosticMutationBody =
+  BodyType<InterviewCaptureDiagnosticInput>;
+export type RecordInterviewCaptureDiagnosticMutationError = ErrorType<void>;
+
+/**
+ * @summary Record content-free, client-reported capture diagnostics
+ */
+export const useRecordInterviewCaptureDiagnostic = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>,
+    TError,
+    { interviewId: string; data: BodyType<InterviewCaptureDiagnosticInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof recordInterviewCaptureDiagnostic>>,
+  TError,
+  { interviewId: string; data: BodyType<InterviewCaptureDiagnosticInput> },
+  TContext
+> => {
+  return useMutation(getRecordInterviewCaptureDiagnosticMutationOptions(options));
+};
+
+/**
+ * @summary Read capture diagnostics with staff interview ownership checks
+ */
+export const getGetInterviewCaptureDiagnosticsUrl = (interviewId: string) => {
+  return `/api/interviews/${interviewId}/capture-diagnostics`;
+};
+
+export const getInterviewCaptureDiagnostics = async (
+  interviewId: string,
+  options?: RequestInit,
+): Promise<InterviewCaptureDiagnosticReport> => {
+  return customFetch<InterviewCaptureDiagnosticReport>(
+    getGetInterviewCaptureDiagnosticsUrl(interviewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetInterviewCaptureDiagnosticsQueryKey = (interviewId: string) => {
+  return [`/api/interviews/${interviewId}/capture-diagnostics`] as const;
+};
+
+export const getGetInterviewCaptureDiagnosticsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetInterviewCaptureDiagnosticsQueryKey(interviewId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>> = ({
+    signal,
+  }) => getInterviewCaptureDiagnostics(interviewId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!interviewId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInterviewCaptureDiagnosticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>
+>;
+export type GetInterviewCaptureDiagnosticsQueryError = ErrorType<void>;
+
+/**
+ * @summary Read capture diagnostics with staff interview ownership checks
+ */
+
+export function useGetInterviewCaptureDiagnostics<
+  TData = Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewCaptureDiagnostics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInterviewCaptureDiagnosticsQueryOptions(interviewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List privately retained recording attempts
+ */
+export const getGetInterviewRecordingSegmentsUrl = (interviewId: string) => {
+  return `/api/interviews/${interviewId}/recording-segments`;
+};
+
+export const getInterviewRecordingSegments = async (
+  interviewId: string,
+  options?: RequestInit,
+): Promise<GetInterviewRecordingSegments200> => {
+  return customFetch<GetInterviewRecordingSegments200>(
+    getGetInterviewRecordingSegmentsUrl(interviewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetInterviewRecordingSegmentsQueryKey = (interviewId: string) => {
+  return [`/api/interviews/${interviewId}/recording-segments`] as const;
+};
+
+export const getGetInterviewRecordingSegmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getInterviewRecordingSegments>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewRecordingSegments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetInterviewRecordingSegmentsQueryKey(interviewId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getInterviewRecordingSegments>>> = ({
+    signal,
+  }) => getInterviewRecordingSegments(interviewId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!interviewId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getInterviewRecordingSegments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetInterviewRecordingSegmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getInterviewRecordingSegments>>
+>;
+export type GetInterviewRecordingSegmentsQueryError = ErrorType<void>;
+
+/**
+ * @summary List privately retained recording attempts
+ */
+
+export function useGetInterviewRecordingSegments<
+  TData = Awaited<ReturnType<typeof getInterviewRecordingSegments>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getInterviewRecordingSegments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetInterviewRecordingSegmentsQueryOptions(interviewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Checkpoint an active consented interview recording
+ */
+export const getUploadInterviewRecordingSegmentUrl = (interviewId: string) => {
+  return `/api/interviews/${interviewId}/recording-segments`;
+};
+
+export const uploadInterviewRecordingSegment = async (
+  interviewId: string,
+  interviewRecordingSegmentForm: InterviewRecordingSegmentForm,
+  options?: RequestInit,
+): Promise<UploadInterviewRecordingSegment200> => {
+  const formData = new FormData();
+  formData.append(`file`, interviewRecordingSegmentForm.file);
+  formData.append(`attemptId`, interviewRecordingSegmentForm.attemptId);
+  formData.append(`index`, interviewRecordingSegmentForm.index);
+
+  return customFetch<UploadInterviewRecordingSegment200>(
+    getUploadInterviewRecordingSegmentUrl(interviewId),
+    {
+      ...options,
+      method: "POST",
+      body: formData,
+    },
+  );
+};
+
+export const getUploadInterviewRecordingSegmentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>,
+    TError,
+    { interviewId: string; data: BodyType<InterviewRecordingSegmentForm> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>,
+  TError,
+  { interviewId: string; data: BodyType<InterviewRecordingSegmentForm> },
+  TContext
+> => {
+  const mutationKey = ["uploadInterviewRecordingSegment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>,
+    { interviewId: string; data: BodyType<InterviewRecordingSegmentForm> }
+  > = (props) => {
+    const { interviewId, data } = props ?? {};
+
+    return uploadInterviewRecordingSegment(interviewId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadInterviewRecordingSegmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>
+>;
+export type UploadInterviewRecordingSegmentMutationBody = BodyType<InterviewRecordingSegmentForm>;
+export type UploadInterviewRecordingSegmentMutationError = ErrorType<void>;
+
+/**
+ * @summary Checkpoint an active consented interview recording
+ */
+export const useUploadInterviewRecordingSegment = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>,
+    TError,
+    { interviewId: string; data: BodyType<InterviewRecordingSegmentForm> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadInterviewRecordingSegment>>,
+  TError,
+  { interviewId: string; data: BodyType<InterviewRecordingSegmentForm> },
+  TContext
+> => {
+  return useMutation(getUploadInterviewRecordingSegmentMutationOptions(options));
+};
+
+/**
+ * @summary Stream one privately retained recording attempt
+ */
+export const getDownloadInterviewRecordingSegmentUrl = (interviewId: string, attemptId: string) => {
+  return `/api/interviews/${interviewId}/recording-segments/${attemptId}`;
+};
+
+export const downloadInterviewRecordingSegment = async (
+  interviewId: string,
+  attemptId: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadInterviewRecordingSegmentUrl(interviewId, attemptId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadInterviewRecordingSegmentQueryKey = (
+  interviewId: string,
+  attemptId: string,
+) => {
+  return [`/api/interviews/${interviewId}/recording-segments/${attemptId}`] as const;
+};
+
+export const getDownloadInterviewRecordingSegmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  attemptId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getDownloadInterviewRecordingSegmentQueryKey(interviewId, attemptId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>> = ({
+    signal,
+  }) => downloadInterviewRecordingSegment(interviewId, attemptId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(interviewId && attemptId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadInterviewRecordingSegmentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>
+>;
+export type DownloadInterviewRecordingSegmentQueryError = ErrorType<void>;
+
+/**
+ * @summary Stream one privately retained recording attempt
+ */
+
+export function useDownloadInterviewRecordingSegment<
+  TData = Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>,
+  TError = ErrorType<void>,
+>(
+  interviewId: string,
+  attemptId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadInterviewRecordingSegment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadInterviewRecordingSegmentQueryOptions(
+    interviewId,
+    attemptId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List private imported human-interview notes for an authorized job applicant.
+ */
+export const getListMeetingNotesUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes`;
+};
+
+export const listMeetingNotes = async (
+  jobId: string,
+  candidateId: string,
+  options?: RequestInit,
+): Promise<MeetingNote[]> => {
+  return customFetch<MeetingNote[]>(getListMeetingNotesUrl(jobId, candidateId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMeetingNotesQueryKey = (jobId: string, candidateId: string) => {
+  return [`/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes`] as const;
+};
+
+export const getListMeetingNotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMeetingNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listMeetingNotes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMeetingNotesQueryKey(jobId, candidateId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMeetingNotes>>> = ({ signal }) =>
+    listMeetingNotes(jobId, candidateId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listMeetingNotes>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type ListMeetingNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listMeetingNotes>>>;
+export type ListMeetingNotesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List private imported human-interview notes for an authorized job applicant.
+ */
+
+export function useListMeetingNotes<
+  TData = Awaited<ReturnType<typeof listMeetingNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listMeetingNotes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMeetingNotesQueryOptions(jobId, candidateId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Import a consented recording, up to 100 MB and 60 minutes.
+ */
+export const getUploadMeetingNoteUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes`;
+};
+
+export const uploadMeetingNote = async (
+  jobId: string,
+  candidateId: string,
+  meetingRecordingInput: MeetingRecordingInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  const formData = new FormData();
+  formData.append(`file`, meetingRecordingInput.file);
+  formData.append(`title`, meetingRecordingInput.title);
+  formData.append(`language`, meetingRecordingInput.language);
+  formData.append(`consent`, meetingRecordingInput.consent);
+  formData.append(`consentStatement`, meetingRecordingInput.consentStatement);
+  if (meetingRecordingInput.plannedQuestions !== undefined) {
+    formData.append(`plannedQuestions`, meetingRecordingInput.plannedQuestions);
+  }
+
+  return customFetch<MeetingNote>(getUploadMeetingNoteUrl(jobId, candidateId), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadMeetingNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingRecordingInput> },
+  TContext
+> => {
+  const mutationKey = ["uploadMeetingNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadMeetingNote>>,
+    { jobId: string; candidateId: string; data: BodyType<MeetingRecordingInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return uploadMeetingNote(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadMeetingNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadMeetingNote>>
+>;
+export type UploadMeetingNoteMutationBody = BodyType<MeetingRecordingInput>;
+export type UploadMeetingNoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Import a consented recording, up to 100 MB and 60 minutes.
+ */
+export const useUploadMeetingNote = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingRecordingInput> },
+  TContext
+> => {
+  return useMutation(getUploadMeetingNoteMutationOptions(options));
+};
+
+export const getListNativeMeetRecordingAppointmentsUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-google-meet/appointments`;
+};
+
+export const listNativeMeetRecordingAppointments = async (
+  jobId: string,
+  candidateId: string,
+  options?: RequestInit,
+): Promise<NativeZoomAppointment[]> => {
+  return customFetch<NativeZoomAppointment[]>(
+    getListNativeMeetRecordingAppointmentsUrl(jobId, candidateId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListNativeMeetRecordingAppointmentsQueryKey = (
+  jobId: string,
+  candidateId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-google-meet/appointments`,
+  ] as const;
+};
+
+export const getListNativeMeetRecordingAppointmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListNativeMeetRecordingAppointmentsQueryKey(jobId, candidateId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>> = ({
+    signal,
+  }) => listNativeMeetRecordingAppointments(jobId, candidateId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNativeMeetRecordingAppointmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>
+>;
+export type ListNativeMeetRecordingAppointmentsQueryError = ErrorType<unknown>;
+
+export function useListNativeMeetRecordingAppointments<
+  TData = Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNativeMeetRecordingAppointments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNativeMeetRecordingAppointmentsQueryOptions(
+    jobId,
+    candidateId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getListNativeMeetRecordingConferencesUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-google-meet/conferences`;
+};
+
+export const listNativeMeetRecordingConferences = async (
+  jobId: string,
+  candidateId: string,
+  nativeZoomPreviewInput: NativeZoomPreviewInput,
+  options?: RequestInit,
+): Promise<NativeMeetConference[]> => {
+  return customFetch<NativeMeetConference[]>(
+    getListNativeMeetRecordingConferencesUrl(jobId, candidateId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(nativeZoomPreviewInput),
+    },
+  );
+};
+
+export const getListNativeMeetRecordingConferencesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+  TContext
+> => {
+  const mutationKey = ["listNativeMeetRecordingConferences"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return listNativeMeetRecordingConferences(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ListNativeMeetRecordingConferencesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>
+>;
+export type ListNativeMeetRecordingConferencesMutationBody = BodyType<NativeZoomPreviewInput>;
+export type ListNativeMeetRecordingConferencesMutationError = ErrorType<void>;
+
+export const useListNativeMeetRecordingConferences = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof listNativeMeetRecordingConferences>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+  TContext
+> => {
+  return useMutation(getListNativeMeetRecordingConferencesMutationOptions(options));
+};
+
+export const getPreviewNativeMeetRecordingUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-google-meet/preview`;
+};
+
+export const previewNativeMeetRecording = async (
+  jobId: string,
+  candidateId: string,
+  nativeMeetPreviewInput: NativeMeetPreviewInput,
+  options?: RequestInit,
+): Promise<NativeMeetRecordingPreview> => {
+  return customFetch<NativeMeetRecordingPreview>(
+    getPreviewNativeMeetRecordingUrl(jobId, candidateId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(nativeMeetPreviewInput),
+    },
+  );
+};
+
+export const getPreviewNativeMeetRecordingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewNativeMeetRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeMeetPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewNativeMeetRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeMeetPreviewInput> },
+  TContext
+> => {
+  const mutationKey = ["previewNativeMeetRecording"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewNativeMeetRecording>>,
+    { jobId: string; candidateId: string; data: BodyType<NativeMeetPreviewInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return previewNativeMeetRecording(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewNativeMeetRecordingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewNativeMeetRecording>>
+>;
+export type PreviewNativeMeetRecordingMutationBody = BodyType<NativeMeetPreviewInput>;
+export type PreviewNativeMeetRecordingMutationError = ErrorType<void>;
+
+export const usePreviewNativeMeetRecording = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewNativeMeetRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeMeetPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewNativeMeetRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeMeetPreviewInput> },
+  TContext
+> => {
+  return useMutation(getPreviewNativeMeetRecordingMutationOptions(options));
+};
+
+export const getImportNativeMeetRecordingUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-google-meet/import`;
+};
+
+export const importNativeMeetRecording = async (
+  jobId: string,
+  candidateId: string,
+  nativeZoomRecordingInput: NativeZoomRecordingInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getImportNativeMeetRecordingUrl(jobId, candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nativeZoomRecordingInput),
+  });
+};
+
+export const getImportNativeMeetRecordingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importNativeMeetRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importNativeMeetRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+  TContext
+> => {
+  const mutationKey = ["importNativeMeetRecording"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importNativeMeetRecording>>,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return importNativeMeetRecording(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportNativeMeetRecordingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importNativeMeetRecording>>
+>;
+export type ImportNativeMeetRecordingMutationBody = BodyType<NativeZoomRecordingInput>;
+export type ImportNativeMeetRecordingMutationError = ErrorType<void>;
+
+export const useImportNativeMeetRecording = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importNativeMeetRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importNativeMeetRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+  TContext
+> => {
+  return useMutation(getImportNativeMeetRecordingMutationOptions(options));
+};
+
+/**
+ * @summary List only this staff host's confirmed Lexy Zoom appointments for this applicant.
+ */
+export const getListNativeZoomRecordingAppointmentsUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-zoom/appointments`;
+};
+
+export const listNativeZoomRecordingAppointments = async (
+  jobId: string,
+  candidateId: string,
+  options?: RequestInit,
+): Promise<NativeZoomAppointment[]> => {
+  return customFetch<NativeZoomAppointment[]>(
+    getListNativeZoomRecordingAppointmentsUrl(jobId, candidateId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListNativeZoomRecordingAppointmentsQueryKey = (
+  jobId: string,
+  candidateId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-zoom/appointments`,
+  ] as const;
+};
+
+export const getListNativeZoomRecordingAppointmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListNativeZoomRecordingAppointmentsQueryKey(jobId, candidateId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>> = ({
+    signal,
+  }) => listNativeZoomRecordingAppointments(jobId, candidateId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNativeZoomRecordingAppointmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>
+>;
+export type ListNativeZoomRecordingAppointmentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List only this staff host's confirmed Lexy Zoom appointments for this applicant.
+ */
+
+export function useListNativeZoomRecordingAppointments<
+  TData = Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNativeZoomRecordingAppointments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNativeZoomRecordingAppointmentsQueryOptions(
+    jobId,
+    candidateId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getPreviewNativeZoomRecordingUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-zoom/preview`;
+};
+
+export const previewNativeZoomRecording = async (
+  jobId: string,
+  candidateId: string,
+  nativeZoomPreviewInput: NativeZoomPreviewInput,
+  options?: RequestInit,
+): Promise<NativeZoomRecordingPreview> => {
+  return customFetch<NativeZoomRecordingPreview>(
+    getPreviewNativeZoomRecordingUrl(jobId, candidateId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(nativeZoomPreviewInput),
+    },
+  );
+};
+
+export const getPreviewNativeZoomRecordingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewNativeZoomRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewNativeZoomRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+  TContext
+> => {
+  const mutationKey = ["previewNativeZoomRecording"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewNativeZoomRecording>>,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return previewNativeZoomRecording(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewNativeZoomRecordingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewNativeZoomRecording>>
+>;
+export type PreviewNativeZoomRecordingMutationBody = BodyType<NativeZoomPreviewInput>;
+export type PreviewNativeZoomRecordingMutationError = ErrorType<void>;
+
+export const usePreviewNativeZoomRecording = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewNativeZoomRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewNativeZoomRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomPreviewInput> },
+  TContext
+> => {
+  return useMutation(getPreviewNativeZoomRecordingMutationOptions(options));
+};
+
+export const getImportNativeZoomRecordingUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/native-zoom/import`;
+};
+
+export const importNativeZoomRecording = async (
+  jobId: string,
+  candidateId: string,
+  nativeZoomRecordingInput: NativeZoomRecordingInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getImportNativeZoomRecordingUrl(jobId, candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nativeZoomRecordingInput),
+  });
+};
+
+export const getImportNativeZoomRecordingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importNativeZoomRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importNativeZoomRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+  TContext
+> => {
+  const mutationKey = ["importNativeZoomRecording"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importNativeZoomRecording>>,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return importNativeZoomRecording(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportNativeZoomRecordingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importNativeZoomRecording>>
+>;
+export type ImportNativeZoomRecordingMutationBody = BodyType<NativeZoomRecordingInput>;
+export type ImportNativeZoomRecordingMutationError = ErrorType<void>;
+
+export const useImportNativeZoomRecording = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importNativeZoomRecording>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importNativeZoomRecording>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<NativeZoomRecordingInput> },
+  TContext
+> => {
+  return useMutation(getImportNativeZoomRecordingMutationOptions(options));
+};
+
+export const getGetMeetingNoteUrl = (jobId: string, candidateId: string, noteId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}`;
+};
+
+export const getMeetingNote = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getGetMeetingNoteUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeetingNoteQueryKey = (jobId: string, candidateId: string, noteId: string) => {
+  return [`/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}`] as const;
+};
+
+export const getGetMeetingNoteQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMeetingNote>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getMeetingNote>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeetingNoteQueryKey(jobId, candidateId, noteId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeetingNote>>> = ({ signal }) =>
+    getMeetingNote(jobId, candidateId, noteId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId && noteId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getMeetingNote>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetMeetingNoteQueryResult = NonNullable<Awaited<ReturnType<typeof getMeetingNote>>>;
+export type GetMeetingNoteQueryError = ErrorType<unknown>;
+
+export function useGetMeetingNote<
+  TData = Awaited<ReturnType<typeof getMeetingNote>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getMeetingNote>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeetingNoteQueryOptions(jobId, candidateId, noteId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getDeleteMeetingNoteUrl = (jobId: string, candidateId: string, noteId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}`;
+};
+
+export const deleteMeetingNote = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMeetingNoteUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMeetingNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; noteId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteMeetingNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMeetingNote>>,
+    { jobId: string; candidateId: string; noteId: string }
+  > = (props) => {
+    const { jobId, candidateId, noteId } = props ?? {};
+
+    return deleteMeetingNote(jobId, candidateId, noteId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMeetingNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMeetingNote>>
+>;
+
+export type DeleteMeetingNoteMutationError = ErrorType<unknown>;
+
+export const useDeleteMeetingNote = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; noteId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string },
+  TContext
+> => {
+  return useMutation(getDeleteMeetingNoteMutationOptions(options));
+};
+
+export const getProcessMeetingNoteUrl = (jobId: string, candidateId: string, noteId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/process`;
+};
+
+export const processMeetingNote = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  meetingProcessingInput: MeetingProcessingInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getProcessMeetingNoteUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meetingProcessingInput),
+  });
+};
+
+export const getProcessMeetingNoteMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof processMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingProcessingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof processMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingProcessingInput> },
+  TContext
+> => {
+  const mutationKey = ["processMeetingNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof processMeetingNote>>,
+    { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingProcessingInput> }
+  > = (props) => {
+    const { jobId, candidateId, noteId, data } = props ?? {};
+
+    return processMeetingNote(jobId, candidateId, noteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ProcessMeetingNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof processMeetingNote>>
+>;
+export type ProcessMeetingNoteMutationBody = BodyType<MeetingProcessingInput>;
+export type ProcessMeetingNoteMutationError = ErrorType<void>;
+
+export const useProcessMeetingNote = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof processMeetingNote>>,
+    TError,
+    { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingProcessingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof processMeetingNote>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingProcessingInput> },
+  TContext
+> => {
+  return useMutation(getProcessMeetingNoteMutationOptions(options));
+};
+
+export const getSaveMeetingSpeakerReviewUrl = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/speaker-review`;
+};
+
+export const saveMeetingSpeakerReview = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  meetingSpeakerReviewInput: MeetingSpeakerReviewInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getSaveMeetingSpeakerReviewUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meetingSpeakerReviewInput),
+  });
+};
+
+export const getSaveMeetingSpeakerReviewMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveMeetingSpeakerReview>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingSpeakerReviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveMeetingSpeakerReview>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingSpeakerReviewInput> },
+  TContext
+> => {
+  const mutationKey = ["saveMeetingSpeakerReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveMeetingSpeakerReview>>,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingSpeakerReviewInput>;
+    }
+  > = (props) => {
+    const { jobId, candidateId, noteId, data } = props ?? {};
+
+    return saveMeetingSpeakerReview(jobId, candidateId, noteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveMeetingSpeakerReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveMeetingSpeakerReview>>
+>;
+export type SaveMeetingSpeakerReviewMutationBody = BodyType<MeetingSpeakerReviewInput>;
+export type SaveMeetingSpeakerReviewMutationError = ErrorType<void>;
+
+export const useSaveMeetingSpeakerReview = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveMeetingSpeakerReview>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingSpeakerReviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveMeetingSpeakerReview>>,
+  TError,
+  { jobId: string; candidateId: string; noteId: string; data: BodyType<MeetingSpeakerReviewInput> },
+  TContext
+> => {
+  return useMutation(getSaveMeetingSpeakerReviewMutationOptions(options));
+};
+
+export const getSaveMeetingQuestionReviewUrl = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/question-review`;
+};
+
+export const saveMeetingQuestionReview = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  meetingQuestionReviewInput: MeetingQuestionReviewInput,
+  options?: RequestInit,
+): Promise<MeetingNote> => {
+  return customFetch<MeetingNote>(getSaveMeetingQuestionReviewUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meetingQuestionReviewInput),
+  });
+};
+
+export const getSaveMeetingQuestionReviewMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveMeetingQuestionReview>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingQuestionReviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveMeetingQuestionReview>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    noteId: string;
+    data: BodyType<MeetingQuestionReviewInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["saveMeetingQuestionReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveMeetingQuestionReview>>,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingQuestionReviewInput>;
+    }
+  > = (props) => {
+    const { jobId, candidateId, noteId, data } = props ?? {};
+
+    return saveMeetingQuestionReview(jobId, candidateId, noteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveMeetingQuestionReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveMeetingQuestionReview>>
+>;
+export type SaveMeetingQuestionReviewMutationBody = BodyType<MeetingQuestionReviewInput>;
+export type SaveMeetingQuestionReviewMutationError = ErrorType<void>;
+
+export const useSaveMeetingQuestionReview = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveMeetingQuestionReview>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      noteId: string;
+      data: BodyType<MeetingQuestionReviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveMeetingQuestionReview>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    noteId: string;
+    data: BodyType<MeetingQuestionReviewInput>;
+  },
+  TContext
+> => {
+  return useMutation(getSaveMeetingQuestionReviewMutationOptions(options));
+};
+
+/**
+ * Private snapshot of saved source notes; no AI work or hiring assessment approval.
+ */
+export const getDownloadMeetingSavedNotesUrl = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/notes-export`;
+};
+
+export const downloadMeetingSavedNotes = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadMeetingSavedNotesUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadMeetingSavedNotesQueryKey = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/notes-export`,
+  ] as const;
+};
+
+export const getDownloadMeetingSavedNotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadMeetingSavedNotes>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingSavedNotes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getDownloadMeetingSavedNotesQueryKey(jobId, candidateId, noteId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadMeetingSavedNotes>>> = ({
+    signal,
+  }) => downloadMeetingSavedNotes(jobId, candidateId, noteId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId && noteId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingSavedNotes>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type DownloadMeetingSavedNotesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadMeetingSavedNotes>>
+>;
+export type DownloadMeetingSavedNotesQueryError = ErrorType<void>;
+
+export function useDownloadMeetingSavedNotes<
+  TData = Awaited<ReturnType<typeof downloadMeetingSavedNotes>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingSavedNotes>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadMeetingSavedNotesQueryOptions(
+    jobId,
+    candidateId,
+    noteId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getDownloadMeetingRecordingUrl = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/recording`;
+};
+
+export const downloadMeetingRecording = async (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadMeetingRecordingUrl(jobId, candidateId, noteId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadMeetingRecordingQueryKey = (
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+) => {
+  return [
+    `/api/jobs/${jobId}/candidates/${candidateId}/meeting-notes/${noteId}/recording`,
+  ] as const;
+};
+
+export const getDownloadMeetingRecordingQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadMeetingRecording>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingRecording>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getDownloadMeetingRecordingQueryKey(jobId, candidateId, noteId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadMeetingRecording>>> = ({
+    signal,
+  }) => downloadMeetingRecording(jobId, candidateId, noteId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId && noteId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingRecording>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type DownloadMeetingRecordingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadMeetingRecording>>
+>;
+export type DownloadMeetingRecordingQueryError = ErrorType<unknown>;
+
+export function useDownloadMeetingRecording<
+  TData = Awaited<ReturnType<typeof downloadMeetingRecording>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  candidateId: string,
+  noteId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof downloadMeetingRecording>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadMeetingRecordingQueryOptions(jobId, candidateId, noteId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetMeetingAttendanceUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant`;
+};
+
+export const getMeetingAttendance = async (
+  jobId: string,
+  candidateId: string,
+  options?: RequestInit,
+): Promise<MeetingAttendanceView> => {
+  return customFetch<MeetingAttendanceView>(getGetMeetingAttendanceUrl(jobId, candidateId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeetingAttendanceQueryKey = (jobId: string, candidateId: string) => {
+  return [`/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant`] as const;
+};
+
+export const getGetMeetingAttendanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMeetingAttendance>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getMeetingAttendance>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeetingAttendanceQueryKey(jobId, candidateId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeetingAttendance>>> = ({ signal }) =>
+    getMeetingAttendance(jobId, candidateId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && candidateId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getMeetingAttendance>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetMeetingAttendanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMeetingAttendance>>
+>;
+export type GetMeetingAttendanceQueryError = ErrorType<void>;
+
+export function useGetMeetingAttendance<
+  TData = Awaited<ReturnType<typeof getMeetingAttendance>>,
+  TError = ErrorType<void>,
+>(
+  jobId: string,
+  candidateId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getMeetingAttendance>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeetingAttendanceQueryOptions(jobId, candidateId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getApproveMeetingAttendanceUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant`;
+};
+
+export const approveMeetingAttendance = async (
+  jobId: string,
+  candidateId: string,
+  meetingAttendanceApproval: MeetingAttendanceApproval,
+  options?: RequestInit,
+): Promise<MeetingAttendanceAttempt> => {
+  return customFetch<MeetingAttendanceAttempt>(getApproveMeetingAttendanceUrl(jobId, candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meetingAttendanceApproval),
+  });
+};
+
+export const getApproveMeetingAttendanceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveMeetingAttendance>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingAttendanceApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveMeetingAttendance>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingAttendanceApproval> },
+  TContext
+> => {
+  const mutationKey = ["approveMeetingAttendance"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveMeetingAttendance>>,
+    { jobId: string; candidateId: string; data: BodyType<MeetingAttendanceApproval> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return approveMeetingAttendance(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveMeetingAttendanceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveMeetingAttendance>>
+>;
+export type ApproveMeetingAttendanceMutationBody = BodyType<MeetingAttendanceApproval>;
+export type ApproveMeetingAttendanceMutationError = ErrorType<void>;
+
+export const useApproveMeetingAttendance = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveMeetingAttendance>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingAttendanceApproval> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveMeetingAttendance>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingAttendanceApproval> },
+  TContext
+> => {
+  return useMutation(getApproveMeetingAttendanceMutationOptions(options));
+};
+
+export const getAuthorizeMeetingWorkspaceUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant/workspace`;
+};
+
+export const authorizeMeetingWorkspace = async (
+  jobId: string,
+  candidateId: string,
+  meetingWorkspaceAuthorization: MeetingWorkspaceAuthorization,
+  options?: RequestInit,
+): Promise<MeetingAttendanceView> => {
+  return customFetch<MeetingAttendanceView>(getAuthorizeMeetingWorkspaceUrl(jobId, candidateId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(meetingWorkspaceAuthorization),
+  });
+};
+
+export const getAuthorizeMeetingWorkspaceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authorizeMeetingWorkspace>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingWorkspaceAuthorization> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authorizeMeetingWorkspace>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingWorkspaceAuthorization> },
+  TContext
+> => {
+  const mutationKey = ["authorizeMeetingWorkspace"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authorizeMeetingWorkspace>>,
+    { jobId: string; candidateId: string; data: BodyType<MeetingWorkspaceAuthorization> }
+  > = (props) => {
+    const { jobId, candidateId, data } = props ?? {};
+
+    return authorizeMeetingWorkspace(jobId, candidateId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthorizeMeetingWorkspaceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authorizeMeetingWorkspace>>
+>;
+export type AuthorizeMeetingWorkspaceMutationBody = BodyType<MeetingWorkspaceAuthorization>;
+export type AuthorizeMeetingWorkspaceMutationError = ErrorType<void>;
+
+export const useAuthorizeMeetingWorkspace = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authorizeMeetingWorkspace>>,
+    TError,
+    { jobId: string; candidateId: string; data: BodyType<MeetingWorkspaceAuthorization> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof authorizeMeetingWorkspace>>,
+  TError,
+  { jobId: string; candidateId: string; data: BodyType<MeetingWorkspaceAuthorization> },
+  TContext
+> => {
+  return useMutation(getAuthorizeMeetingWorkspaceMutationOptions(options));
+};
+
+export const getRevokeMeetingWorkspaceUrl = (jobId: string, candidateId: string) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant/workspace`;
+};
+
+export const revokeMeetingWorkspace = async (
+  jobId: string,
+  candidateId: string,
+  options?: RequestInit,
+): Promise<MeetingAttendanceView> => {
+  return customFetch<MeetingAttendanceView>(getRevokeMeetingWorkspaceUrl(jobId, candidateId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRevokeMeetingWorkspaceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeMeetingWorkspace>>,
+    TError,
+    { jobId: string; candidateId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof revokeMeetingWorkspace>>,
+  TError,
+  { jobId: string; candidateId: string },
+  TContext
+> => {
+  const mutationKey = ["revokeMeetingWorkspace"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof revokeMeetingWorkspace>>,
+    { jobId: string; candidateId: string }
+  > = (props) => {
+    const { jobId, candidateId } = props ?? {};
+
+    return revokeMeetingWorkspace(jobId, candidateId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RevokeMeetingWorkspaceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof revokeMeetingWorkspace>>
+>;
+
+export type RevokeMeetingWorkspaceMutationError = ErrorType<void>;
+
+export const useRevokeMeetingWorkspace = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof revokeMeetingWorkspace>>,
+    TError,
+    { jobId: string; candidateId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof revokeMeetingWorkspace>>,
+  TError,
+  { jobId: string; candidateId: string },
+  TContext
+> => {
+  return useMutation(getRevokeMeetingWorkspaceMutationOptions(options));
+};
+
+export const getActOnMeetingAttendanceUrl = (
+  jobId: string,
+  candidateId: string,
+  attendanceId: string,
+  action: "dispatch" | "stop" | "recover",
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant/attempts/${attendanceId}/${action}`;
+};
+
+export const actOnMeetingAttendance = async (
+  jobId: string,
+  candidateId: string,
+  attendanceId: string,
+  action: "dispatch" | "stop" | "recover",
+  options?: RequestInit,
+): Promise<MeetingAttendanceAttempt> => {
+  return customFetch<MeetingAttendanceAttempt>(
+    getActOnMeetingAttendanceUrl(jobId, candidateId, attendanceId, action),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getActOnMeetingAttendanceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnMeetingAttendance>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      action: "dispatch" | "stop" | "recover";
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof actOnMeetingAttendance>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    attendanceId: string;
+    action: "dispatch" | "stop" | "recover";
+  },
+  TContext
+> => {
+  const mutationKey = ["actOnMeetingAttendance"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof actOnMeetingAttendance>>,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      action: "dispatch" | "stop" | "recover";
+    }
+  > = (props) => {
+    const { jobId, candidateId, attendanceId, action } = props ?? {};
+
+    return actOnMeetingAttendance(jobId, candidateId, attendanceId, action, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActOnMeetingAttendanceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof actOnMeetingAttendance>>
+>;
+
+export type ActOnMeetingAttendanceMutationError = ErrorType<void>;
+
+export const useActOnMeetingAttendance = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnMeetingAttendance>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      action: "dispatch" | "stop" | "recover";
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof actOnMeetingAttendance>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    attendanceId: string;
+    action: "dispatch" | "stop" | "recover";
+  },
+  TContext
+> => {
+  return useMutation(getActOnMeetingAttendanceMutationOptions(options));
+};
+
+export const getImportMeetingAttendanceUrl = (
+  jobId: string,
+  candidateId: string,
+  attendanceId: string,
+) => {
+  return `/api/jobs/${jobId}/candidates/${candidateId}/meeting-assistant/attempts/${attendanceId}/import`;
+};
+
+export const importMeetingAttendance = async (
+  jobId: string,
+  candidateId: string,
+  attendanceId: string,
+  meetingAttendanceImport: MeetingAttendanceImport,
+  options?: RequestInit,
+): Promise<MeetingAttendanceAttempt> => {
+  return customFetch<MeetingAttendanceAttempt>(
+    getImportMeetingAttendanceUrl(jobId, candidateId, attendanceId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(meetingAttendanceImport),
+    },
+  );
+};
+
+export const getImportMeetingAttendanceMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importMeetingAttendance>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      data: BodyType<MeetingAttendanceImport>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof importMeetingAttendance>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    attendanceId: string;
+    data: BodyType<MeetingAttendanceImport>;
+  },
+  TContext
+> => {
+  const mutationKey = ["importMeetingAttendance"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof importMeetingAttendance>>,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      data: BodyType<MeetingAttendanceImport>;
+    }
+  > = (props) => {
+    const { jobId, candidateId, attendanceId, data } = props ?? {};
+
+    return importMeetingAttendance(jobId, candidateId, attendanceId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ImportMeetingAttendanceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof importMeetingAttendance>>
+>;
+export type ImportMeetingAttendanceMutationBody = BodyType<MeetingAttendanceImport>;
+export type ImportMeetingAttendanceMutationError = ErrorType<void>;
+
+export const useImportMeetingAttendance = <TError = ErrorType<void>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof importMeetingAttendance>>,
+    TError,
+    {
+      jobId: string;
+      candidateId: string;
+      attendanceId: string;
+      data: BodyType<MeetingAttendanceImport>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof importMeetingAttendance>>,
+  TError,
+  {
+    jobId: string;
+    candidateId: string;
+    attendanceId: string;
+    data: BodyType<MeetingAttendanceImport>;
+  },
+  TContext
+> => {
+  return useMutation(getImportMeetingAttendanceMutationOptions(options));
+};
+
+export const getReceiveRecallAttendanceEventUrl = () => {
+  return `/api/meeting-assistant/recall-events`;
+};
+
+export const receiveRecallAttendanceEvent = async (options?: RequestInit): Promise<void> => {
+  return customFetch<void>(getReceiveRecallAttendanceEventUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getReceiveRecallAttendanceEventMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["receiveRecallAttendanceEvent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>,
+    void
+  > = () => {
+    return receiveRecallAttendanceEvent(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReceiveRecallAttendanceEventMutationResult = NonNullable<
+  Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>
+>;
+
+export type ReceiveRecallAttendanceEventMutationError = ErrorType<void>;
+
+export const useReceiveRecallAttendanceEvent = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof receiveRecallAttendanceEvent>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getReceiveRecallAttendanceEventMutationOptions(options));
+};
+
+/**
+ * @summary Platform-admin read-only Recall connection diagnostic
+ */
+export const getRecallAssistantReadinessUrl = () => {
+  return `/api/meeting-assistant/readiness`;
+};
+
+export const recallAssistantReadiness = async (options?: RequestInit): Promise<RecallReadiness> => {
+  return customFetch<RecallReadiness>(getRecallAssistantReadinessUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getRecallAssistantReadinessQueryKey = () => {
+  return [`/api/meeting-assistant/readiness`] as const;
+};
+
+export const getRecallAssistantReadinessQueryOptions = <
+  TData = Awaited<ReturnType<typeof recallAssistantReadiness>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof recallAssistantReadiness>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getRecallAssistantReadinessQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof recallAssistantReadiness>>> = ({
+    signal,
+  }) => recallAssistantReadiness({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof recallAssistantReadiness>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type RecallAssistantReadinessQueryResult = NonNullable<
+  Awaited<ReturnType<typeof recallAssistantReadiness>>
+>;
+export type RecallAssistantReadinessQueryError = ErrorType<void>;
+
+/**
+ * @summary Platform-admin read-only Recall connection diagnostic
+ */
+
+export function useRecallAssistantReadiness<
+  TData = Awaited<ReturnType<typeof recallAssistantReadiness>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof recallAssistantReadiness>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getRecallAssistantReadinessQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

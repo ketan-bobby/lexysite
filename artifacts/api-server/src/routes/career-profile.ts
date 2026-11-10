@@ -39,19 +39,24 @@ import multer from "multer";
 import mammoth from "mammoth";
 import OpenAI from "openai";
 import { z } from "zod";
-import { db, candidateCareerProfilesTable, jobsTable, usersTable, candidateRecommendationProgressTable, applicationsTable, candidatesTable, candidateProgressSnapshotsTable, candidateActivityStreaksTable, candidateActionEventsTable, candidateSkillScoresTable, interviewSchedulesTable, interviewSessionsTable, tenantsTable, talentPoolSubmissionsTable, communicationEventsTable, candidateDemographicsTable, candidateAiConsentTable, deletionRequestsTable } from "@workspace/db";
+import { db, candidateCareerProfilesTable, jobsTable, usersTable, candidateRecommendationProgressTable, applicationsTable, candidatesTable, candidateProgressSnapshotsTable, candidateActivityStreaksTable, candidateActionEventsTable, candidateSkillScoresTable, interviewSessionsTable, tenantsTable, talentPoolSubmissionsTable, communicationEventsTable, candidateDemographicsTable, candidateAiConsentTable, deletionRequestsTable } from "@workspace/db";
 import { changeCandidateStage } from "../lib/change-candidate-stage.js";
 import { recordAudit } from "../lib/audit";
 import { eq, desc, and, ilike, gte, sql, avg, inArray, count, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { originFields } from "../lib/sourcing-origin";
-import { chatCompletionWithAI, synthesizeSpeechAzure, resolveLangMeta } from "../lib/ai";
+import { listCandidateNativeSchedules } from "../lib/candidate-native-schedules";
+import { chatCompletionWithAI, resolveLangMeta } from "../lib/ai";
+import { synthesizeInterviewSpeech, type InterviewVoice } from "../lib/interview-speech";
+import { transcribeAudio } from "../lib/transcribe";
+import { admit } from "../lib/admission";
 import { getRecordingUploadUrl, getRecordingPlaybackUrl, isS3Configured, streamRecordingParts } from "../lib/s3Recording";
 import { ObjectStorageService, s3Client } from "../lib/objectStorage";
 import { getAuthUserId } from "../lib/auth-token";
 import { resolveCandidateId } from "../lib/portal-auth";
 import { callerOwnsCandidateDevelopmentData } from "../lib/candidate-development-privacy";
 import { fillCandidateSocialUrlsIfEmpty } from "../lib/enrich-candidate";
+import { parseCareerResumeProfile, type CareerResumeProfile } from "../lib/career-resume-profile";
 import { validate } from "../middlewares/validate";
 import { logCandidateEvent } from "../lib/candidate-event-logger.js";
 import { computeInterviewQuality } from "../lib/readiness-quality.js";
@@ -173,9 +178,10 @@ const _require = createRequire(import.meta.url);
 const pdfParse: (buf: Buffer) => Promise<{ text: string }> = _require("pdf-parse");
 const resumeUploadMiddleware = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 } });
 
+import { meteredFetch } from "../lib/vendor-usage";
 const router = Router();
 
-const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL, fetch: meteredFetch(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct") });
 const objectStorageService = new ObjectStorageService();
 
 /* ── Profile merge utility ───────────────────────────────────────────────── */
@@ -1779,11 +1785,12 @@ ${history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n")}`,
     logger.info({ language, isNonEnglish, hadTranscript: !!transcriptEn, hadAnalysis: !!analysisEn }, "Interview completion: transcript+analysis generated");
 
     // Fetch existing profile (full row) so mergeProfileData can backfill gaps.
-    const existingRows = await db
-      .select()
-      .from(candidateCareerProfilesTable)
-      .where(eq(candidateCareerProfilesTable.candidateId, candidateId))
-      .limit(1);
+    const [existingRows, resumeRows] = await Promise.all([
+      db.select().from(candidateCareerProfilesTable)
+        .where(eq(candidateCareerProfilesTable.candidateId, candidateId)).limit(1),
+      db.select({ resumeUrl: candidatesTable.resumeUrl }).from(candidatesTable)
+        .where(eq(candidatesTable.id, candidateId)).limit(1),
+    ]);
     const existingProfile = existingRows[0] ?? null;
     const resumeParsed    = (existingProfile?.resumeParsedProfile ?? null) as Record<string, any> | null;
 
@@ -1791,7 +1798,7 @@ ${history.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n")}`,
     const merged = mergeProfileData(extracted, existingProfile as any, resumeParsed);
 
     // ── Validation — warns in logs if required fields are still empty ──────
-    validateMergedProfile(merged, candidateId, !!(existingProfile?.resumeUrl));
+    validateMergedProfile(merged, candidateId, !!resumeRows[0]?.resumeUrl);
 
     const interviewQualityScore = computeInterviewQuality(history);
     logger.info({ candidateId, interviewQualityScore }, "Interview quality score computed");
@@ -1946,7 +1953,9 @@ router.post("/portal/career-profile/recompute", async (req: any, res) => {
     // Pass existing profile as both extracted AND existing — merge will pick up
     // resume-parsed fallbacks for any null fields.
     const merged = mergeProfileData(currentValues, currentValues, resumeParsed);
-    const missing = validateMergedProfile(merged, candidateId, !!(profile.resumeUrl));
+    const [resumeCandidate] = await db.select({ resumeUrl: candidatesTable.resumeUrl })
+      .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
+    const missing = validateMergedProfile(merged, candidateId, !!resumeCandidate?.resumeUrl);
 
     const recomputeQuality = profile.interviewQualityScore ?? 100;
     const updated = await db
@@ -2439,7 +2448,7 @@ router.get("/portal/engagement", async (req: any, res) => {
           viewNotHidden,
         ))
         .groupBy(tenantsTable.name);
-      const viewerByLcName = new Map(
+      const viewerByLcName = new Map<string, { name: string; count: number; lastAt: string | null }>(
         allViewerRows.filter(r => r.name).map(r => [(r.name as string).toLowerCase(),
           { name: r.name as string, count: Number(r.count), lastAt: (r.lastAt as Date)?.toISOString?.() ?? null }]),
       );
@@ -2594,10 +2603,13 @@ router.get("/portal/career-recommendations", async (req: any, res) => {
       if (candidateApps.length > 0) {
         const jobIds = candidateApps.map(a => a.jobId);
 
+        const appliedEmployers = await db
+          .select({ company: tenantsTable.name })
+          .from(jobsTable)
+          .innerJoin(tenantsTable, eq(tenantsTable.id, jobsTable.tenantId))
+          .where(inArray(jobsTable.id, jobIds));
         const appliedCompanies = new Set(
-          (await Promise.all(jobIds.map(id =>
-            db.select({ company: jobsTable.company }).from(jobsTable).where(eq(jobsTable.id, id)).limit(1)
-          ))).flatMap(r => r.map(j => j.company?.toLowerCase() ?? ""))
+          appliedEmployers.map((job) => job.company?.toLowerCase() ?? ""),
         );
 
         for (const company of targetCosAll) {
@@ -2664,7 +2676,7 @@ router.get("/portal/career-recommendations", async (req: any, res) => {
       }
     }
 
-    if (p.profileCompleteness < 80 && !completedKeys.has("profile")) {
+    if ((p.profileCompleteness ?? 0) < 80 && !completedKeys.has("profile")) {
       recs.push({ recKey: "profile", type: "profile", label: "Complete your career profile to unlock better matches", priority: "medium", href: "/portal/career" });
     }
 
@@ -2818,7 +2830,7 @@ Return this exact JSON (use null for missing fields, empty arrays [] for missing
   "career_summary": "2-3 sentence professional summary"
 }`;
 
-    let parsed: Record<string, any> | null = null;
+    let parsed: CareerResumeProfile;
     try {
       const aiResp = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -2828,7 +2840,7 @@ Return this exact JSON (use null for missing fields, empty arrays [] for missing
         response_format: { type: "json_object" },
       });
       const raw = aiResp.choices[0]?.message?.content ?? "{}";
-      parsed = JSON.parse(raw);
+      parsed = parseCareerResumeProfile(raw);
     } catch (aiErr) {
       logger.error({ aiErr }, "AI resume parsing failed");
       return res.json({ ok: false, parseError: true, message: "Couldn't fully read your resume, but you can still continue with the interview." });
@@ -2969,7 +2981,7 @@ Return this exact JSON (use null for missing fields, empty arrays [] for missing
   "career_summary": "2-3 sentence professional summary"
 }`;
 
-    let parsed: Record<string, any> | null = null;
+    let parsed: CareerResumeProfile;
     try {
       const aiResp = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -2979,7 +2991,7 @@ Return this exact JSON (use null for missing fields, empty arrays [] for missing
         response_format: { type: "json_object" },
       });
       const raw = aiResp.choices[0]?.message?.content ?? "{}";
-      parsed = JSON.parse(raw);
+      parsed = parseCareerResumeProfile(raw);
     } catch (aiErr) {
       logger.error({ aiErr }, "AI resume parsing failed (parse-existing)");
       return res.json({ ok: false, parseError: true, message: "Couldn't fully read your resume, but you can still continue with the interview." });
@@ -3142,7 +3154,7 @@ router.post("/portal/applications/:applicationId/withdraw", async (req: any, res
 
     const reason: string | null = typeof req.body?.reason === "string" ? req.body.reason.slice(0, 1000) : null;
 
-    await changeCandidateStage({
+    const stageChange = await changeCandidateStage({
       tenantId: app.tenantId,
       candidateId,
       jobId: app.jobId ?? "",
@@ -3191,7 +3203,7 @@ router.post("/portal/applications/:applicationId/withdraw", async (req: any, res
       })();
     }
 
-    return res.json({ ok: true, stage: updated?.stage ?? "withdrawn" });
+    return res.json({ ok: true, stage: stageChange.to });
   } catch (err: any) {
     logger.error({ err }, "Failed to withdraw application");
     return res.status(500).json({ error: "Failed to withdraw application" });
@@ -3204,43 +3216,9 @@ router.get("/portal/interviews", async (req: any, res) => {
     const candidateId = await getCandidateId(req);
     if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
 
-    // Scheduled interviews (from interview_schedules + applications + jobs)
-    const candidateApps = await db
-      .select({ id: applicationsTable.id, jobId: applicationsTable.jobId })
-      .from(applicationsTable)
-      .where(eq(applicationsTable.candidateId, candidateId));
-
-    const scheduled: any[] = [];
-    for (const app of candidateApps) {
-      const [job] = await db
-        .select({ title: jobsTable.title, department: jobsTable.department, location: jobsTable.location })
-        .from(jobsTable)
-        .where(eq(jobsTable.id, app.jobId))
-        .limit(1);
-
-      const scheds = await db
-        .select()
-        .from(interviewSchedulesTable)
-        .where(eq(interviewSchedulesTable.applicationId, app.id))
-        .orderBy(desc(interviewSchedulesTable.scheduledAt));
-
-      for (const s of scheds) {
-        if (s.status === "cancelled") continue;
-        scheduled.push({
-          id: s.id,
-          jobTitle: job?.title ?? "Interview",
-          department: job?.department ?? null,
-          location: job?.location ?? null,
-          type: s.type,
-          status: s.status,
-          scheduledAt: s.scheduledAt.toISOString(),
-          duration: s.durationMinutes,
-          score: null,
-          feedback: null,
-          source: "schedule",
-        });
-      }
-    }
+    // Native proposals live under employer/agency tenants, not necessarily the
+    // candidate's portal tenant. The helper scopes every join to self ownership.
+    const scheduled: any[] = await listCandidateNativeSchedules(candidateId);
 
     /* Upcoming AI interviews (interview_sessions not yet taken). Recruiters
      * launch these directly — there is no interview_schedules row — so without
@@ -3255,7 +3233,7 @@ router.get("/portal/interviews", async (req: any, res) => {
       .from(interviewSessionsTable)
       .where(and(
         eq(interviewSessionsTable.candidateId, candidateId),
-        inArray(interviewSessionsTable.status, PENDING_SESSION_STATUSES as unknown as string[])
+        inArray(interviewSessionsTable.status, PENDING_SESSION_STATUSES)
       ))
       .orderBy(desc(interviewSessionsTable.createdAt));
 
@@ -3710,6 +3688,30 @@ router.post("/portal/express-interest/:jobId", async (req: any, res) => {
   }
 });
 
+router.post("/portal/career-interview/transcribe", async (req: any, res, next) => {
+  const candidateId = await getCandidateId(req);
+  if (!candidateId) return res.status(401).json({ error: "Unauthorized" });
+  const aiConsent = await import("../lib/ai-consent");
+  // Consent is candidate-owned, not tenant-owned. The ID comes exclusively
+  // from canonical portal authentication; callers cannot supply a foreign ID.
+  classBRead(CLASS_B_READ_EXEMPTION.CANDIDATE_SELF_OWNED);
+  const [latest] = await db.select().from(candidateAiConsentTable)
+    .where(eq(candidateAiConsentTable.candidateId, candidateId))
+    .orderBy(desc(candidateAiConsentTable.consentedAt)).limit(1);
+  if (!latest || latest.revokedAt || latest.consentVersion !== aiConsent.CURRENT_AI_CONSENT_VERSION)
+    return res.status(412).json({ error: "ai_consent_required" });
+  return next();
+}, admit(), async (req, res) => {
+  const contentType = req.headers["content-type"] || "audio/webm";
+  const language = typeof req.headers["x-language"] === "string" ? req.headers["x-language"] : "en-US";
+  if (!Buffer.isBuffer(req.body)) return res.status(400).json({ error: "Audio body required" });
+  const { transcript, provider } = await transcribeAudio({
+    buf: req.body, contentType, rawLang: language,
+  });
+  logger.info({ language, provider, empty: !transcript.trim() }, "[STT] Career speech transcribed");
+  return res.json({ transcript });
+});
+
 /* ── POST /api/portal/tts ─────────────────────────────────────────────────
  *  Converts text to speech. Routes Indian languages to Azure Speech Service
  *  (Neural voices) and all others to OpenAI TTS.
@@ -3740,37 +3742,14 @@ router.post("/portal/tts", validate({ body: TtsBody }), async (req: any, res) =>
 
     if (!clean) return res.status(400).json({ error: "No speakable text after cleaning" });
 
-    /* ── Route Indian languages to Azure Speech ── */
-    const langMeta = resolveLangMeta(language);
-    if (langMeta.speechProvider === "azure" && langMeta.region === "indian") {
-      logger.info({ language, azureVoice: langMeta.azureVoice }, "TTS → Azure Speech");
-      const buffer = await synthesizeSpeechAzure(clean, langMeta.azureLocale, langMeta.azureVoice);
-      if (buffer) {
-        res.setHeader("Content-Type", "audio/mpeg");
-        res.setHeader("Content-Length", buffer.length);
-        res.setHeader("Cache-Control", "no-store");
-        return res.end(buffer);
-      }
-      logger.warn({ language }, "Azure Speech failed — falling back to OpenAI TTS");
-    }
-
-    /* ── Default: OpenAI TTS ── */
+    /* Share job-interview language/voice routing, including ElevenLabs locales
+       and dedicated Azure TTS credentials. Authentication stays portal-owned. */
     const VALID_VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
     const voice = VALID_VOICES.includes(rawVoice) ? rawVoice : "shimmer";
-
-    /* Use direct API key (no proxy base URL) — Replit AI proxy does not support audio/speech */
-    const ttsApiKey = process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-    if (!ttsApiKey) return res.status(503).json({ error: "TTS not configured" });
-    const { default: OpenAI } = await import("openai");
-    const ttsClient = new OpenAI({ apiKey: ttsApiKey });
-
-    const mp3 = await ttsClient.audio.speech.create({
-      model: "tts-1-hd",
-      voice: voice as any,
-      input: clean,
+    const { audio: buffer } = await synthesizeInterviewSpeech(clean, language, {
+      openaiModel: "tts-1-hd",
+      openaiVoice: voice as InterviewVoice,
     });
-
-    const buffer = Buffer.from(await mp3.arrayBuffer());
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Content-Length", buffer.length);
     res.setHeader("Cache-Control", "no-store");
@@ -4439,8 +4418,9 @@ router.get("/portal/me/export", async (req: any, res) => {
        employer tenant seal is N/A — the subject is reading about themselves. */
     classBRead(CLASS_B_READ_EXEMPTION.CANDIDATE_SELF_OWNED);
 
-    /* Pull session-scoped children only if we have any sessions — otherwise
-     * the IN () would either error or return everything depending on driver.
+    /* Schedules are application-linked, not session-linked. A scheduled human
+     * interview may have no AI session at all. Scope the child row by both the
+     * owned application and its tenant, not the candidate's home tenant.
      *
      * NOTE: interview SUMMARIES (the AI verdict prepared for the hiring team —
      * overallScore, recommendation, recruiterSummary, strengths/weaknesses)
@@ -4448,11 +4428,26 @@ router.get("/portal/me/export", async (req: any, res) => {
      * the hiring team's assessment and are withheld by the fairness firewall;
      * the candidate may request them via the DPO for manual review. */
     void interviewSummariesTable;
-    const sessionIds = sessions.map((s: any) => s.id);
-    const schedules = sessionIds.length > 0
-      ? await db.select().from(schedTable)
-          .where(inArray(schedTable.sessionId, sessionIds))
+    const applicationIds = applications.map((application) => application.id);
+    const scheduleRows = applicationIds.length > 0
+      ? await db.select({ schedule: schedTable }).from(schedTable)
+          .innerJoin(appTable, eq(appTable.id, schedTable.applicationId))
+          .where(and(
+            eq(appTable.candidateId, candidateId),
+            inArray(appTable.id, applicationIds),
+            eq(schedTable.tenantId, appTable.tenantId),
+          ))
       : [];
+    const schedules = scheduleRows.map(({ schedule }) => ({
+      ...schedule,
+      notes: schedule.notes == null
+        ? null
+        : "[redacted — contact dpo@l3xy.ai to request third-party-data review]",
+      feedbackRating: null,
+      feedbackNotes: schedule.feedbackNotes == null
+        ? null
+        : "[withheld — results are shared with the hiring team; contact dpo@l3xy.ai to request review]",
+    }));
 
     /* Fairness firewall on recruiter-run interview sessions: export the fact
      * of the interview and the candidate's OWN words (their answers), but
@@ -4496,7 +4491,7 @@ router.get("/portal/me/export", async (req: any, res) => {
       exportedAt:        new Date().toISOString(),
       schemaVersion:     1,
       candidateId,
-      note:              "This is the personal data Lexy holds about you as the data subject. See docs/PII_HANDLING.md for what each field means and which records are retained for compliance after erasure. Recruiter free-text notes on your applications have been redacted from this automated export; email dpo@l3xy.ai to request manual review.",
+      note:              "This is the personal data Lexy holds about you as the data subject. See docs/PII_HANDLING.md for what each field means and which records are retained for compliance after erasure. Recruiter free-text notes on your applications and interview schedules have been redacted, and hiring-team interview feedback is withheld from this automated export; email dpo@l3xy.ai to request manual review.",
       candidate:         cand,
       careerProfile:     careerProfile[0] ?? null,
       applications:      applicationsRedacted,
@@ -4522,7 +4517,7 @@ router.get("/portal/me/export", async (req: any, res) => {
       subjectType:  "candidate",
       subjectId:    candidateId,
       subjectLabel: (cand as any).email ?? candidateId,
-      channel:      "portal",
+      channel:      "in_app",
       direction:    "outbound",
       action:       "gdpr_data_export",
       title:        "Candidate self-service data export",
@@ -4543,7 +4538,7 @@ router.get("/portal/me/export", async (req: any, res) => {
     return res.status(200).send(JSON.stringify(payload, null, 2));
   } catch (err: any) {
     logger.error({ err: err?.message }, "[GDPR-export] failed");
-    return res.status(500).json({ error: "Export failed", detail: err?.message });
+    return res.status(500).json({ error: "Export failed" });
   }
 });
 
@@ -4561,7 +4556,8 @@ router.delete("/portal/me", async (req: any, res) => {
       .where(eq(candidatesTable.id, candidateId)).limit(1);
     if (!cand) return res.status(404).json({ error: "Candidate not found" });
     if ((cand as any).dataErasedAt) {
-      return res.json({ ok: true, message: "Data already erased." });
+      const { latestCandidateCleanup } = await import("../lib/erasure-cleanup");
+      return res.json({ ok: true, message: "Candidate database records already erased. File status is tracked separately.", ...await latestCandidateCleanup(candidateId) });
     }
 
     const now = new Date();
@@ -4575,6 +4571,10 @@ router.delete("/portal/me", async (req: any, res) => {
        their resume bytes. Orphan S3 objects (commit-then-S3-fail) are
        acceptable and cleaned up by the audit retry pipeline. */
     const purge: Record<string, any> = { candidateId };
+    const { purgeCandidateLinkedData, collectCandidateRecordingPaths } = await import("../lib/candidate-erasure");
+    const { stageErasureCleanup, processErasureCleanup } = await import("../lib/erasure-cleanup");
+    let recordingPaths: string[] = [];
+    let cleanupRequestId = "";
     const {
       candidateJobIntelligenceTable,
       outreachMessagesTable,
@@ -4588,11 +4588,15 @@ router.delete("/portal/me", async (req: any, res) => {
     const { inArray } = await import("drizzle-orm");
 
     await db.transaction(async (tx) => {
+      recordingPaths = await collectCandidateRecordingPaths(tx, candidateId);
+      cleanupRequestId = await stageErasureCleanup(tx, {
+        candidateId, paths: recordingPaths, origin: "self",
+      });
       await tx.update(candidatesTable)
         .set({
           firstName:      "[Erased]",
           lastName:       "[Erased]",
-          email:          `erased+${candidateId.slice(0, 8)}@deleted.invalid`,
+          email:          `erased+${candidateId}@deleted.invalid`,
           phone:          null,
           location:       null,
           linkedinUrl:    null,
@@ -4601,10 +4605,21 @@ router.delete("/portal/me", async (req: any, res) => {
           currentCompany: null,
           resumeUrl:      null,
           skills:         [],
+          timezone:       null,
+          verificationResult: null,
+          workAuthorized: null,
+          requiresSponsorship: null,
+          sponsorshipCountry: null,
+          sponsorshipNotes: null,
+          screeningCompletedAt: null,
+          workAuthSource: null,
+          currentEmployerDomain: null,
+          blockedCompanyDomains: [],
+          isCurrentEmployee: false,
+          discoveryPaused: true,
           doNotContact:   true,
           dncAt:          (cand as any).dncAt ?? now,
           dncReason:      "self_service_gdpr",
-          dataErasedAt:   now,
           updatedAt:      now,
         } as any)
         .where(eq(candidatesTable.id, candidateId));
@@ -4636,9 +4651,13 @@ router.delete("/portal/me", async (req: any, res) => {
       // is recorded post-commit by the governance applyHumanDecision() block
       // below (final_decision = candidate_withdrawn + immutable decision_event
       // per row) — a stronger audit record than a generic STAGE_CHANGED.
+      await tx.update(appTable)
+        .set({ notes: "Candidate self-erased per GDPR request.", updatedAt: now })
+        .where(eq(appTable.candidateId, candidateId));
       const __affected = await tx.update(appTable)
         .set({ notes: "Candidate self-erased per GDPR request.", stage: "rejected" as any, updatedAt: now })
-        .where(eq(appTable.candidateId, candidateId))
+        .where(and(eq(appTable.candidateId, candidateId),
+          sql`${appTable.stage}::text NOT IN ('hired', 'started', 'rejected', 'withdrawn', 'offer_declined')`))
         .returning({ id: appTable.id });
       (purge as any).__gdprAffectedAppIds = __affected.map((a) => a.id);
 
@@ -4647,8 +4666,7 @@ router.delete("/portal/me", async (req: any, res) => {
         .where(eq(interviewSessionsTable.candidateId, candidateId));
       const sessionIds = sessions.map(s => s.id);
       if (sessionIds.length > 0) {
-        await tx.delete(interviewSummariesTable).where(inArray(interviewSummariesTable.sessionId, sessionIds));
-        await tx.delete(schedTable).where(inArray(schedTable.sessionId, sessionIds));
+        await tx.delete(interviewSummariesTable).where(inArray(interviewSummariesTable.interviewSessionId, sessionIds));
       }
       await tx.delete(interviewSessionsTable)
         .where(eq(interviewSessionsTable.candidateId, candidateId));
@@ -4658,6 +4676,10 @@ router.delete("/portal/me", async (req: any, res) => {
         .where(eq(candidateSkillScoresTable.candidateId, candidateId));
       await tx.delete(verificationRecordsTable)
         .where(eq(verificationRecordsTable.candidateId, candidateId));
+      // Finalise the erasure marker after the same transaction's stopping and
+      // withdrawal writes. The candidate lock fences concurrent writers.
+      await tx.update(candidatesTable).set({ dataErasedAt: now }).where(eq(candidatesTable.id, candidateId));
+      await purgeCandidateLinkedData(tx, candidateId, { retainApplications: true });
     });
     purge.cascade = "ok";
 
@@ -4689,36 +4711,25 @@ router.delete("/portal/me", async (req: any, res) => {
       }
     }
 
-    /* Best-effort S3 resume purge. */
-    try {
-      if ((cand as any).resumeUrl) {
-        const { s3Client } = await import("../lib/s3");
-        const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-        const bucket = process.env.AWS_S3_BUCKET;
-        const url = (cand as any).resumeUrl as string;
-        const key = url.startsWith("http")
-          ? new URL(url).pathname.replace(/^\//, "")
-          : url.replace(/^\//, "");
-        if (bucket && key) {
-          await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-          purge.resumeObject = "deleted";
-        }
-      }
-    } catch (s3Err: any) {
-      logger.warn({ candidateId, err: s3Err?.message }, "[GDPR-self] S3 delete failed");
-      purge.s3Error = s3Err?.message ?? "unknown";
-    }
+    try { purge.recordings = await processErasureCleanup(cleanupRequestId); }
+    catch { purge.recordings = { cleanupPending: true, requestId: cleanupRequestId }; }
+
+    if (cand.resumeUrl) purge.resumeObject = purge.recordings.cleanupPending ? "pending" : "deleted";
 
     logger.info({ candidateId, purge }, "[GDPR-self] Candidate self-erased");
     return res.json({
       ok: true,
-      message: "Your personal data has been anonymised across the platform. Application records are retained in anonymised form for audit purposes.",
+      cleanupRequestId,
+      cleanupPending: Boolean(purge.recordings?.cleanupPending || purge.s3Error || purge.resumeObject === "pending"),
+      message: purge.recordings?.cleanupPending || purge.s3Error || purge.resumeObject === "pending"
+        ? "Your candidate database records have been erased or anonymised. File cleanup still needs attention. Required audit records are retained."
+        : "Your candidate data has been erased or anonymised. Required application, decision and financial audit records are retained.",
       erasedRef,
       purge,
     });
   } catch (err: any) {
     logger.error({ err: err?.message }, "[GDPR-self] failed");
-    return res.status(500).json({ error: "Erasure failed", detail: err?.message });
+    return res.status(500).json({ error: "Erasure failed" });
   }
 });
 
@@ -5125,7 +5136,8 @@ router.get("/portal/candidate/deletion-request", async (req: any, res) => {
     .where(eq(deletionRequestsTable.candidateId, candidateId))
     .orderBy(desc(deletionRequestsTable.createdAt))
     .limit(20);
-  return res.json({ data: rows });
+  const { serializeErasureRequest } = await import("../lib/erasure-cleanup");
+  return res.json({ data: rows.map(serializeErasureRequest) });
 });
 
 export default router;

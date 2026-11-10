@@ -42,6 +42,7 @@
 import { generateJSON } from "./ai.js";
 import { FAIRNESS_DIRECTIVE } from "./fairness.js";
 import { logger } from "./logger.js";
+import { meteredFetch } from "./vendor-usage";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -111,7 +112,7 @@ export interface AdapterResult {
 /** Run a SerpAPI Google search and return organic_results, or [] on failure. */
 async function runSerp(query: string, apiKey: string, num: number): Promise<any[]> {
   try {
-    const res = await fetch(
+    const res = await meteredFetch("serpapi")(
       `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&num=${num}&api_key=${apiKey}`,
     );
     const text = await res.text();
@@ -438,7 +439,7 @@ export async function searchPDL(ctx: SearchContext): Promise<AdapterResult> {
     lastQueryStr = queryStr;
 
     try {
-      const res = await fetch("https://api.peopledatalabs.com/v5/person/search", {
+      const res = await meteredFetch("pdl")("https://api.peopledatalabs.com/v5/person/search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": PDL_KEY },
         body: JSON.stringify(body),
@@ -692,11 +693,11 @@ async function enrichOneProfile(
   linkedinUrl: string,
   apiKey: string,
 ): Promise<EnrichLayerProfile | null> {
-  const url = `https://enrichlayer.com/api/v2/profile?url=${encodeURIComponent(linkedinUrl)}`;
+  const url = `https://enrichlayer.com/api/v2/profile?profile_url=${encodeURIComponent(linkedinUrl)}`;
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), 12_000);
   try {
-    const res = await fetch(url, {
+    const res = await meteredFetch("enrichlayer")(url, {
       headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
       signal: controller.signal,
     });

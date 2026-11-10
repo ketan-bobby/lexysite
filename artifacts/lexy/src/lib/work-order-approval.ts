@@ -13,6 +13,7 @@
 
 export interface ApprovalJob {
   status: string;
+  createdById?: string | null;
   createdByRole?: string | null;
   assignedHiringManagerId?: string | null;
 }
@@ -31,12 +32,22 @@ export function isHmCreated(job: ApprovalJob | null | undefined): boolean {
   return job?.createdByRole === "hiring_manager";
 }
 
+/** Submission requests review; the server resolves approvers and enforces scope. */
+export function canSubmitWorkOrder(
+  job: ApprovalJob | null | undefined,
+  user: ApprovalUser | null | undefined,
+): boolean {
+  if (!job || !user?.id || !["draft", "active"].includes(job.status)) return false;
+  if (user.role === "hiring_manager") return job.createdById === user.id;
+  return ["recruiter", "tenant_admin", "platform_admin"].includes(user.role ?? "");
+}
+
 /** Mirrors the page's canApprove gate: may this user action the approval? */
 export function canApproveWorkOrder(
   job: ApprovalJob | null | undefined,
   user: ApprovalUser | null | undefined,
 ): boolean {
-  if (!job) return false;
+  if (!job || !user?.id || job.createdById === user.id) return false;
   if (job.status !== "pending_approval") return false;
   if (isHmCreated(job)) return ADMIN_APPROVER_ROLES.includes(user?.role ?? "");
   return (

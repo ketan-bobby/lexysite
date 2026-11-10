@@ -41,7 +41,8 @@
  * with explicit per-tenant filters — never a tenant-scoped RLS connection.
  */
 import { controlDb, globalScoringPriorsTable, candidateJobIntelligenceTable } from "@workspace/db";
-import { eq, isNotNull, desc, sql } from "drizzle-orm";
+import { eq, isNotNull, desc, sql, and } from "drizzle-orm";
+import { restrictToRealCandidates } from "./synthetic-fixture-scope";
 import { classBRead, CLASS_B_READ_EXEMPTION } from "./class-b-read";
 import { logger } from "./logger";
 import {
@@ -309,7 +310,10 @@ export async function loadTenantIdsWithOutcomes(): Promise<string[]> {
   const rows = await controlDb
     .selectDistinct({ tenantId: candidateJobIntelligenceTable.tenantId })
     .from(candidateJobIntelligenceTable)
-    .where(isNotNull(candidateJobIntelligenceTable.outcome));
+    .where(and(
+      isNotNull(candidateJobIntelligenceTable.outcome),
+      restrictToRealCandidates(candidateJobIntelligenceTable.candidateId),
+    ));
   return rows.map((r) => r.tenantId).filter((t): t is string => typeof t === "string" && t.length > 0);
 }
 

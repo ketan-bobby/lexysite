@@ -33,6 +33,14 @@
 
 export const PLATFORM_READ_EXEMPTION = Object.freeze({
   /**
+   * Active platform-admin operational review of reserved mail attempts.
+   * Only operation/candidate/tenant IDs, reservation time and review status
+   * may leave this surface; no employer access, profile fields, recipient,
+   * subject, message body or private learning data. Erasure and DNC exclusions
+   * still apply. Does not authorize contact or releasing send holds.
+   */
+  ADMINISTRATIVE_MAIL_HOLD_METADATA: "administrative_mail_hold_metadata",
+  /**
    * A scheduler / engine that reads platform rows to CONTACT THE CANDIDATE
    * THEMSELVES (their own weekly digest, a re-engagement nudge, etc.).
    *

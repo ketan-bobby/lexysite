@@ -152,6 +152,7 @@ test("uploadBuffer puts with SSE + content type and returns canonical path", asy
   assert.ok(cmd instanceof PutObjectCommand);
   assert.equal(cmd.input.ServerSideEncryption, "AES256");
   assert.equal(cmd.input.ContentType, "application/pdf");
+  assert.ok(cmd.input.Key);
   assert.ok(cmd.input.Key.startsWith("priv/resumes/"));
 });
 

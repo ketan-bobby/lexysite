@@ -38,7 +38,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   dbAdmin,
   tenantsTable,
@@ -50,7 +50,7 @@ import {
 import { issueToken } from "../lib/auth-token";
 import candidateConnectionRouter from "./candidate-connection-engine";
 
-const P = "ccea_";
+const P = `ccea_${crypto.randomUUID().slice(0, 8)}_`;
 const id = (s: string) => P + s;
 
 const TENANT_IDS = [id("tenant")];
@@ -131,6 +131,7 @@ async function seed() {
 
   await dbAdmin.insert(candidateConnectionInsightsTable).values([
     { id: id("insOwner"), candidateId: id("cOwner"), jobId: id("jOwner"), connectionStrengthScore: 72, connectionStrengthLabel: "Engaged", hiringMomentumScore: 78, hiringMomentumLabel: "High", nextBestAction: "Complete your AI interview to stand out." },
+    { id: id("insOther"), candidateId: id("cOther"), jobId: id("jOther"), connectionStrengthScore: 12, connectionStrengthLabel: "Cold", hiringMomentumScore: 10, hiringMomentumLabel: "Low", nextBestAction: "PRIVATE PEER INSIGHT" },
   ]);
 }
 
@@ -236,4 +237,75 @@ test("GET /me as a candidate-role user with no linked candidate row → 401 (no 
 test("GET /me as a recruiter whose email matches a candidate row → 401 (no email-join)", async () => {
   const { status } = await api("GET", "/candidate/connection-insights/me", tok.emailRec());
   assert.equal(status, 401);
+});
+
+test("single insight returns each owner's exact candidate/job pair without a peer fallback", async () => {
+  const own = await api(
+    "GET", `/candidate/connection-insight/${id("cOwner")}/${id("jOwner")}`, tok.owner(),
+  );
+  assert.equal(own.status, 200);
+  assert.equal(own.json.id, id("insOwner"));
+  assert.equal(own.json.connectionStrengthScore, 72);
+  const peer = await api(
+    "GET", `/candidate/connection-insight/${id("cOther")}/${id("jOther")}`, tok.other(),
+  );
+  assert.equal(peer.status, 200);
+  assert.equal(peer.json.id, id("insOther"));
+  const absent = await api(
+    "GET", `/candidate/connection-insight/${id("cOwner")}/${id("jOther")}`, tok.owner(),
+  );
+  assert.equal(absent.status, 200);
+  assert.equal(absent.json.connectionStrengthScore, 0);
+  assert.equal(JSON.stringify(absent.json).includes("PRIVATE PEER"), false);
+  for (const candidateId of [id("cOther"), id("missingCandidate")]) {
+    const denied = await api(
+      "GET", `/candidate/connection-insight/${candidateId}/${id("jOther")}`, tok.owner(),
+    );
+    assert.deepEqual(denied, { status: 404, json: { error: "Not found" } });
+  }
+});
+
+test("single insight rejects all staff database roles even with a candidate-role token", async () => {
+  const staleToken = issueToken({
+    userId: id("uRec"), role: "candidate", tenantId: id("tenant"),
+  });
+  try {
+    for (const role of ["recruiter", "recruiter_admin", "tenant_admin", "hiring_manager", "platform_admin"] as const) {
+      await dbAdmin.update(usersTable).set({ role }).where(eq(usersTable.id, id("uRec")));
+      const denied = await api(
+        "GET", `/candidate/connection-insight/${id("cOwner")}/${id("jOwner")}`, staleToken,
+      );
+      assert.deepEqual(denied, { status: 401, json: { error: "Unauthorized" } });
+    }
+  } finally {
+    await dbAdmin.update(usersTable).set({ role: "recruiter" }).where(eq(usersTable.id, id("uRec")));
+  }
+});
+
+test("single insight refuses anonymous, suspended and erased owners without losing active owner access", async () => {
+  const path = `/candidate/connection-insight/${id("cOwner")}/${id("jOwner")}`;
+  assert.equal((await api("GET", path)).status, 401);
+  try {
+    await dbAdmin.update(usersTable).set({ status: "suspended" }).where(eq(usersTable.id, id("uOwner")));
+    assert.equal((await api("GET", path, tok.owner())).status, 401);
+    await dbAdmin.update(usersTable)
+      .set({ status: "active", accountErasedAt: new Date() })
+      .where(eq(usersTable.id, id("uOwner")));
+    assert.equal((await api("GET", path, tok.owner())).status, 401);
+  } finally {
+    await dbAdmin.update(usersTable)
+      .set({ status: "active", accountErasedAt: null })
+      .where(eq(usersTable.id, id("uOwner")));
+  }
+  assert.equal((await api("GET", path, tok.owner())).json.id, id("insOwner"));
+  // Candidate erasure is terminal: the database barrier must not be bypassed
+  // to restore a fixture. Erase the disposable peer last; cleanup deletes it.
+  await dbAdmin.update(candidatesTable)
+    .set({ dataErasedAt: new Date() })
+    .where(eq(candidatesTable.id, id("cOther")));
+  const erased = await api(
+    "GET", `/candidate/connection-insight/${id("cOther")}/${id("jOther")}`, tok.other(),
+  );
+  assert.deepEqual(erased, { status: 401, json: { error: "Unauthorized" } });
+  assert.equal((await api("GET", path, tok.owner())).json.id, id("insOwner"));
 });

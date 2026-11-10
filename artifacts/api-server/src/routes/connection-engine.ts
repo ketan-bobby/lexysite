@@ -152,11 +152,11 @@ router.get("/connection-events/:candidateId", async (req, res) => {
 // ─── POST /api/connection-event ───────────────────────────────────────────────
 // Records a new connection event and recalculates the score.
 // Body: { candidateId, eventType, jobId?, employerId?, eventValue?, metadata? }
-router.post("/connection-event", validate({ body: ConnectionEventBody }), async (req, res) => {
+router.post("/connection-event", validate({ body: ConnectionEventBody }), async (req, res): Promise<void> => {
   const { candidateId, eventType, jobId, employerId, eventValue, metadata } = req.body;
 
   if (!candidateId || !eventType) {
-    return res.status(400).json({ error: "candidateId and eventType are required." });
+    res.status(400).json({ error: "candidateId and eventType are required." }); return;
   }
 
   const VALID_EVENT_TYPES = [
@@ -172,9 +172,9 @@ router.post("/connection-event", validate({ body: ConnectionEventBody }), async 
   ];
 
   if (!VALID_EVENT_TYPES.includes(eventType)) {
-    return res.status(400).json({
+    res.status(400).json({
       error: `Unknown eventType. Valid types: ${VALID_EVENT_TYPES.join(", ")}`,
-    });
+    }); return;
   }
 
   try {
@@ -199,11 +199,11 @@ router.post("/connection-event", validate({ body: ConnectionEventBody }), async 
 // ─── POST /api/connection-score/recalculate ───────────────────────────────────
 // Manually triggers score recalculation for a candidate.
 // Body: { candidateId, jobId?, employerId? }
-router.post("/connection-score/recalculate", validate({ body: ConnectionScoreRecalcBody }), async (req, res) => {
+router.post("/connection-score/recalculate", validate({ body: ConnectionScoreRecalcBody }), async (req, res): Promise<void> => {
   const { candidateId, jobId, employerId } = req.body;
 
   if (!candidateId) {
-    return res.status(400).json({ error: "candidateId is required." });
+    res.status(400).json({ error: "candidateId is required." }); return;
   }
 
   try {

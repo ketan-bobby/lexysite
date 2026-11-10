@@ -40,7 +40,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
-import { inArray, eq } from "drizzle-orm";
+import { inArray, eq, and, sql } from "drizzle-orm";
 import {
   dbAdmin,
   tenantsTable,
@@ -60,6 +60,7 @@ import {
   aiMessageFeedbackTable,
   talentMatchesTable,
   icpTable,
+  candidateJobIntelligenceTable,
   outreachConversationDraftsTable,
   inviteTokensTable,
 } from "@workspace/db";
@@ -143,6 +144,7 @@ async function api(
 }
 
 async function cleanup() {
+  await dbAdmin.delete(candidateJobIntelligenceTable).where(inArray(candidateJobIntelligenceTable.jobId, JOB_IDS));
   // ingest test creates a sourced row with a generated id → clear the whole test tenant's pool.
   await dbAdmin.delete(sourcedCandidatesTable).where(eq(sourcedCandidatesTable.tenantId, id("t")));
   // Tier-2 additions — clear by tenant so any generated-id side rows (talent-match
@@ -629,6 +631,58 @@ test("ai-messages edit: owner 2xx / peer 404 / admin 2xx", async () => {
 
   const admin = await api("PATCH", `/ai-messages/${id("genX")}`, tok.tAdmin(), { body: "Edited by admin" });
   assert.ok(admin.status < 300, `tenant_admin should edit the draft, got ${admin.status}`);
+});
+
+test("intelligence feedback preserves native and legacy history and rejects malformed history", async () => {
+  const path = `/intelligence/${id("jobX")}/${id("candX")}/feedback`;
+  const pair = and(
+    eq(candidateJobIntelligenceTable.jobId, id("jobX")),
+    eq(candidateJobIntelligenceTable.candidateId, id("candX")),
+  );
+  const original = [{ id: "existing-human-review", type: "override", reason: "Human review" }];
+  for (const history of [original, JSON.stringify(original), { malformed: true }]) {
+    await dbAdmin.insert(candidateJobIntelligenceTable).values({
+      id: id("feedback_history"),
+      tenantId: id("t"),
+      jobId: id("jobX"),
+      candidateId: id("candX"),
+      overridesJson: history,
+    }).onConflictDoUpdate({
+      target: [candidateJobIntelligenceTable.jobId, candidateJobIntelligenceTable.candidateId],
+      set: { overridesJson: history },
+    });
+    const [before] = await dbAdmin.select().from(candidateJobIntelligenceTable).where(pair);
+    const peer = await api("POST", path, tok.recrY(), { rating: "positive" });
+    assert.equal(peer.status, 404);
+    const [untouched] = await dbAdmin.select().from(candidateJobIntelligenceTable).where(pair);
+    assert.deepEqual(untouched?.overridesJson, before?.overridesJson);
+
+    const owner = await api("POST", path, tok.recrX(), { rating: "positive" });
+    const [saved] = await dbAdmin.select().from(candidateJobIntelligenceTable).where(pair);
+    if (typeof history === "object" && !Array.isArray(history)) {
+      assert.equal(owner.status, 500);
+      assert.deepEqual(saved?.overridesJson, history, "invalid evidence must never be overwritten");
+    } else {
+      assert.equal(owner.status, 200, JSON.stringify(owner.json));
+      assert.deepEqual(owner.json, { success: true, rating: "positive" });
+      const [physical] = await dbAdmin.select({
+        historyType: sql<string>`jsonb_typeof(${candidateJobIntelligenceTable.overridesJson})`,
+      }).from(candidateJobIntelligenceTable).where(pair);
+      assert.equal(physical?.historyType, "array");
+      const stored = saved?.overridesJson;
+      assert.ok(Array.isArray(stored), "feedback must write a native JSONB array");
+      assert.equal(stored.length, 2);
+      assert.deepEqual(stored[0], original[0]);
+      assert.deepEqual(stored[1], {
+        id: stored[1].id,
+        type: "feedback",
+        rating: "positive",
+        recordedAt: stored[1].recordedAt,
+      });
+      assert.ok(typeof stored[1].recordedAt === "string");
+    }
+  }
+  await dbAdmin.delete(candidateJobIntelligenceTable).where(pair);
 });
 
 /* verify.ts — GET /verify/:candidateId (enforceOwnership candidateId → application→jobId) */

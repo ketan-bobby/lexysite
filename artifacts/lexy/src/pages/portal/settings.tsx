@@ -22,6 +22,8 @@
  */
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CandidateDataDownload } from "@/components/portal/CandidateDataDownload";
+import {SignOutAllDevices} from "@/components/settings/SignOutAllDevices";
 import { apiBase, apiFetch } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -216,6 +218,7 @@ export default function PortalSettings() {
           <p className="text-sm text-muted-foreground">Manage your personal details and contact information.</p>
         </div>
 
+        <SignOutAllDevices />
         {error && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-red-400/10 border border-red-400/20 text-sm text-red-400">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -485,6 +488,8 @@ export default function PortalSettings() {
               </div>
             </CardContent>
           </Card>
+
+          <CandidateDataDownload />
 
           {/* Save */}
           <div className="flex items-center justify-between">

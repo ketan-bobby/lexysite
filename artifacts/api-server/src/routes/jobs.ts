@@ -80,6 +80,9 @@ const CreateJobBody = z.object({
   jdFileName: z.string().optional().nullable(),
   language: z.string().optional().nullable(),
   isConfidential: z.boolean().optional(),
+  internalMobility: z.boolean().optional(),
+  recruitingMode: z.enum(["human_assisted", "lexy_autonomous"]).optional(),
+  interviewPath: z.enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"]).optional(),
   assignedRecruiterId: z.string().optional().nullable(),
   // Additional recruiters staffed on this work order. The first id (or an
   // explicit assignedRecruiterId) becomes the PRIMARY; the rest are stored in
@@ -97,6 +100,13 @@ const CreateJobBody = z.object({
  * Unknown keys are stripped by zod by default, so a caller cannot use
  * this route to set tenantId, createdById, approvedById, or any other
  * system-managed column via mass-assignment. */
+const RecruitingConfigurationUpdate = z.object({
+  recruitingMode: z.enum(["human_assisted", "lexy_autonomous"]).optional(),
+  interviewPath: z.enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"]).optional(),
+}).strict().refine(v => Object.keys(v).length > 0, { message: "At least one configuration setting is required" });
+
+const CONFIGURE_RECRUITING_ROLES = ["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"];
+
 const UpdateJobBody = z.object({
   title: z.string().min(1).optional(),
   department: z.string().nullable().optional(),
@@ -110,6 +120,7 @@ const UpdateJobBody = z.object({
   jdFileName: z.string().nullable().optional(),
   language: z.string().optional(),
   isConfidential: z.boolean().optional(),
+  internalMobility: z.boolean().optional(),
   assignedRecruiterId: z.string().nullable().optional(),
   // Full recruiter roster for this work order. When present it REPLACES the
   // join-table set; the first id (or an explicit assignedRecruiterId) becomes
@@ -197,6 +208,11 @@ async function jobWithCount(job: any) {
 
   return {
     ...job,
+    recruitingMode: job.recruitingMode ?? "human_assisted",
+    interviewPath: job.interviewPath ?? "recruiter_choice",
+    // Server-owned capabilities, NEVER accepted as writable mode/authority flags.
+    autonomyExecutionEnabled: false,
+    progressionAuthority: "human_review",
     applicationCount: Number(apps.count),
     assignedRecruiterName,
     assignedRecruiterIds: assignedRecruiters.map(a => a.id),
@@ -501,10 +517,15 @@ router.post("/jobs", validate({ body: CreateJobBody }), async (req, res) => {
   const user = await getCallerUser(req);
   const { title, department, location, workType, employmentType, salaryMin, salaryMax, clientWorkOrderNumber,
           description, clientId, subClientId, jdSource, jdFileName, language,
-          isConfidential, assignedRecruiterId, assignedRecruiterIds, assignedHiringManagerId } = req.body;
+          isConfidential, internalMobility = false, recruitingMode = "human_assisted",
+          interviewPath = "recruiter_choice", assignedRecruiterId, assignedRecruiterIds, assignedHiringManagerId } = req.body;
 
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (!STAFF_ROLES.includes(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  if ((req.body.recruitingMode !== undefined || req.body.interviewPath !== undefined)
+      && !CONFIGURE_RECRUITING_ROLES.includes(user.role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
 
   let tenantId: string;
 
@@ -626,6 +647,9 @@ router.post("/jobs", validate({ body: CreateJobBody }), async (req, res) => {
     jdFileName: jdFileName || null,
     language: language || "en",
     isConfidential: !!isConfidential,
+    internalMobility,
+    recruitingMode,
+    interviewPath,
     assignedRecruiterId: resolvedRecruiterId,
     assignedHiringManagerId: resolvedHmId,
     status: initialStatus,
@@ -670,12 +694,21 @@ router.post("/jobs", validate({ body: CreateJobBody }), async (req, res) => {
     });
   }
 
-  /* Brochure parity (slide 7 — "On open"): when this tenant posts a role,
-     fan out a role-open alert to every candidate who put them in their
-     target-companies list. Done in the background — never blocks the
-     job-create response. */
-  (async () => {
+  // Creation is internal (active/pending approval), not candidate publication.
+  // Role alerts are deferred to the explicit publish transition below.
+});
+
+async function fanOutRoleOpenAlerts(jobId: string): Promise<void> {
     try {
+      const [job] = await db.select({
+        id: jobsTable.id, title: jobsTable.title, tenantId: jobsTable.tenantId,
+        status: jobsTable.status, isConfidential: jobsTable.isConfidential,
+      }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
+      if (!job || job.status !== "published" || job.isConfidential) {
+        logger.info({ jobId, matched: 0 }, "Role-open fan-out complete");
+        return;
+      }
+      const { tenantId, title } = job;
       const { candidateCareerProfilesTable } = await import("@workspace/db");
       const { recordRoleOpenAtTarget } = await import("../lib/market-event-emitter");
       const [tenantRow] = await db.select({ name: tenantsTable.name }).from(tenantsTable)
@@ -684,17 +717,22 @@ router.post("/jobs", validate({ body: CreateJobBody }), async (req, res) => {
       if (!tenantName) return;
       const tlc = tenantName.toLowerCase().trim();
 
-      /* Pull every candidate's targetCompanies array. For dev volumes this is
-         fine; at scale move to a GIN-indexed jsonb query. */
+      /* Candidate-private alert subscription lookup, NOT hiring evidence.
+         Only identity and company preferences may enter this fan-out; never
+         add baseline, coaching, learning or narrative fields to the projection.
+         Nothing from this read is returned to staff or sent to the ICP agent. */
       const profiles = await db.select({
-        candidateId: (candidateCareerProfilesTable as any).candidateId,
-        targets:     (candidateCareerProfilesTable as any).targetCompanies,
+        candidateId: candidateCareerProfilesTable.candidateId,
+        targets:     candidateCareerProfilesTable.targetCompanies,
       }).from(candidateCareerProfilesTable);
 
       const matched = profiles.filter(p => {
-        const targets: string[] = (p.targets ?? []) as string[];
+        // Persisted legacy JSON can be malformed even though new writes are
+        // typed. One bad subscription must not abort everybody else's alerts.
+        const targets = Array.isArray(p.targets) ? p.targets : [];
         return targets.some(t => {
-          const x = (t || "").toLowerCase().trim();
+          if (typeof t !== "string") return false;
+          const x = t.toLowerCase().trim();
           return x && (x === tlc || x.includes(tlc) || tlc.includes(x));
         });
       });
@@ -709,10 +747,9 @@ router.post("/jobs", validate({ body: CreateJobBody }), async (req, res) => {
       }
       logger.info({ jobId: job.id, matched: matched.length }, "Role-open fan-out complete");
     } catch (err: any) {
-      logger.warn({ err: err?.message, jobId: job.id }, "Role-open fan-out failed");
+      logger.warn({ err: err?.message, jobId }, "Role-open fan-out failed");
     }
-  })();
-});
+}
 
 /* Recruiter ownership ceiling: a plain recruiter may only act on a requisition
    they are assigned to — either the PRIMARY recruiter (assignedRecruiterId ===
@@ -805,13 +842,51 @@ router.get("/jobs/:jobId", async (req, res) => {
   res.json(await jobWithCount(job));
 });
 
+/* Dedicated config-only write. Do not reuse PUT's ICP regeneration path:
+ * editing planned mode/path must never launch agents or mutate workflow state. */
+router.patch("/jobs/:jobId/recruiting-configuration", validate({ body: RecruitingConfigurationUpdate }), async (req, res) => {
+  const user = await getCallerUser(req);
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!CONFIGURE_RECRUITING_ROLES.includes(user.role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+  const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, req.params.jobId)).limit(1);
+  if (!job) { res.status(404).json({ error: "Not found" }); return; }
+  if (user.role !== "platform_admin") {
+    const allowed = await getDataScopeTenantIds(user);
+    if (!allowed || !allowed.includes(job.tenantId) || await recruiterBlockedFromJob(user, job)) {
+      res.status(404).json({ error: "Not found" }); return;
+    }
+    if (user.role === "hiring_manager" && job.assignedHiringManagerId !== user.id) {
+      res.status(404).json({ error: "Not found" }); return;
+    }
+  }
+  const [updated] = await db.update(jobsTable)
+    .set({ ...req.body, updatedAt: new Date() })
+    .where(and(eq(jobsTable.id, job.id), eq(jobsTable.tenantId, job.tenantId)))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  await recordAudit({
+    tenantId: job.tenantId, actorType: "user", actorId: user.id,
+    actorLabel: user.name ?? user.email, action: "job.recruiting_configuration.updated",
+    subjectType: "system", subjectId: job.id, subjectLabel: job.title,
+    channel: "system", direction: "internal",
+    title: "Planned recruiting configuration saved",
+    metadata: { recruitingMode: updated.recruitingMode, interviewPath: updated.interviewPath, autonomyExecutionEnabled: false },
+  });
+  res.json(await jobWithCount(updated));
+});
+
 /* ── PUT /jobs/:jobId ─────────────────────────────────────────────────── */
 router.put("/jobs/:jobId", validate({ body: UpdateJobBody }), async (req, res) => {
   const user = await getCallerUser(req);
   /* Mandatory auth — previously authz only ran inside `if (user && …)`,
      so an unauthenticated caller could PUT any job by ID. */
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const [existing] = await db.select({ id: jobsTable.id, tenantId: jobsTable.tenantId, assignedRecruiterId: jobsTable.assignedRecruiterId }).from(jobsTable)
+  if (!CONFIGURE_RECRUITING_ROLES.includes(user.role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+  const [existing] = await db.select({ id: jobsTable.id, tenantId: jobsTable.tenantId, assignedRecruiterId: jobsTable.assignedRecruiterId, status: jobsTable.status, isConfidential: jobsTable.isConfidential }).from(jobsTable)
     .where(eq(jobsTable.id, req.params.jobId)).limit(1);
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
@@ -829,6 +904,19 @@ router.put("/jobs/:jobId", validate({ body: UpdateJobBody }), async (req, res) =
     }
   }
 
+  if (existing.status === "published" && existing.isConfidential && req.body.isConfidential === false
+      && !["platform_admin", "tenant_admin", "recruiter", "hiring_manager"].includes(user.role)) {
+    res.status(403).json({ error: "Publishing permission is required to reveal this role" });
+    return;
+  }
+  // Publication and approval have dedicated role/ownership gates. A general
+  // edit must not bypass them by directly changing a protected status.
+  if (req.body.status !== undefined && req.body.status !== existing.status
+      && (req.body.status === "published"
+        || ["pending_approval", "draft", "rejected"].includes(existing.status))) {
+    res.status(400).json({ error: "Use the work-order approval or Publish action to change this status" });
+    return;
+  }
   const updateData = { ...req.body, updatedAt: new Date() };
   /* `assignedRecruiterIds` is the multi-recruiter roster — NOT a jobs column.
      Pull it out of updateData (it would break the UPDATE otherwise) and handle
@@ -885,6 +973,7 @@ router.put("/jobs/:jobId", validate({ body: UpdateJobBody }), async (req, res) =
 
   const result = await jobWithCount(job);
   res.json(result);
+  if (job.status === "published" && !job.isConfidential) void fanOutRoleOpenAlerts(job.id);
 
   if (req.body.description && req.body.description.length > 20) {
     logger.info({ jobId: job.id }, "Job updated → re-triggering ICP agent");
@@ -1167,6 +1256,7 @@ router.patch("/jobs/:jobId/publish", async (req, res) => {
     .returning();
   logger.info({ jobId: updated.id, by: user.id }, "Job published → career site");
   res.json(await jobWithCount(updated));
+  void fanOutRoleOpenAlerts(updated.id);
 });
 
 /* ── PATCH /jobs/:jobId/close ─────────────────────────────────────────────

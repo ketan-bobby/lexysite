@@ -31,6 +31,7 @@
 import {
   db,
   applicationsTable,
+  applicationStageEnum,
   sourcedCandidatesTable,
   candidateEventsTable,
   auditLogsTable,
@@ -38,6 +39,7 @@ import {
 import { eq } from "drizzle-orm";
 import { logger } from "./logger.js";
 import { resolveLinxRequisitionTerminal } from "./linx-terminal.js";
+import { lockAtsStageOwner, assertNativeStageOwner } from "./ats-stage-owner";
 
 /** Normalised actor kinds accepted by the choke-point. Never null. */
 export type StageActorType = "user" | "hiring_manager" | "candidate" | "agent" | "system";
@@ -145,33 +147,48 @@ export async function changeCandidateStage(
   }
 
   const result = await db.transaction(async (tx) => {
+    await lockAtsStageOwner(tx, params.candidateId, params.jobId);
+    await assertNativeStageOwner(tx, params.candidateId, params.jobId);
+    if (
+      (params.applicationPatch?.candidateId !== undefined && params.applicationPatch.candidateId !== params.candidateId) ||
+      (params.applicationPatch?.jobId !== undefined && params.applicationPatch.jobId !== params.jobId) ||
+      (params.sourcedColumnPatch?.normalizedCandidateId !== undefined && params.sourcedColumnPatch.normalizedCandidateId !== params.candidateId) ||
+      (params.sourcedRawDataPatch && "jobId" in params.sourcedRawDataPatch && params.sourcedRawDataPatch.jobId !== params.jobId)
+    ) throw new Error("Stage changes cannot reassign candidate or requisition identity");
     let from: string | null = params.from ?? null;
 
     // ── 1. Write the stage column(s), reading the authoritative current stage ──
     if (params.applicationId) {
+      const stage = applicationStageEnum.enumValues.find(value => value === params.to);
+      if (!stage) throw new Error("changeCandidateStage: unsupported application stage");
       const [cur] = await tx
-        .select({ stage: applicationsTable.stage })
+        .select({ stage: applicationsTable.stage, candidateId: applicationsTable.candidateId, jobId: applicationsTable.jobId })
         .from(applicationsTable)
         .where(eq(applicationsTable.id, params.applicationId))
         .for("update")
         .limit(1);
       if (!cur) throw new Error(`changeCandidateStage: application ${params.applicationId} not found`);
+      if ((cur.candidateId && cur.candidateId !== params.candidateId) || (cur.jobId && cur.jobId !== params.jobId))
+        throw new Error("Stage change application identity does not match");
       from = cur.stage ?? from;
       await tx
         .update(applicationsTable)
-        .set({ ...(params.applicationPatch ?? {}), stage: params.to, updatedAt: new Date() })
+        .set({ ...(params.applicationPatch ?? {}), stage, updatedAt: new Date() })
         .where(eq(applicationsTable.id, params.applicationId));
     }
 
     if (params.sourcedId) {
       const [sc] = await tx
-        .select({ rawData: sourcedCandidatesTable.rawData })
+        .select({ rawData: sourcedCandidatesTable.rawData, normalizedCandidateId: sourcedCandidatesTable.normalizedCandidateId })
         .from(sourcedCandidatesTable)
         .where(eq(sourcedCandidatesTable.id, params.sourcedId))
         .for("update")
         .limit(1);
       if (!sc) throw new Error(`changeCandidateStage: sourced ${params.sourcedId} not found`);
       const raw = (sc.rawData ?? {}) as Record<string, unknown>;
+      if ((sc.normalizedCandidateId && sc.normalizedCandidateId !== params.candidateId) ||
+          (raw.jobId && raw.jobId !== params.jobId))
+        throw new Error("Stage change sourced identity does not match");
       if (from == null && typeof raw.stage === "string") from = raw.stage;
       await tx
         .update(sourcedCandidatesTable)

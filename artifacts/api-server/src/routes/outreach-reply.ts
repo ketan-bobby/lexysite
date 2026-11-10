@@ -286,13 +286,15 @@ router.post("/outreach/reply/:token", validate({ body: OutreachReplyBody }), asy
         .set({ status: "replied", repliedAt: now, updatedAt: now } as any)
         .where(eq(outreachEnrollmentsTable.id, enrollmentId));
 
+      let invitationDeferred = false;
       try {
         const { sendInterviewInviteFromReply } = await import("../lib/agents/interview-reply");
-        await sendInterviewInviteFromReply({
+        const result = await sendInterviewInviteFromReply({
           jobId: enrBefore.jobId,
           sourcedId: sc?.id ?? enrBefore.candidateId,
           replyBody: "[Quick reply: Yes, I'm interested]",
         });
+        invitationDeferred = result.deferred === true;
       } catch (err: any) {
         logger.error({ err: err?.message, enrollmentId }, "[quick-reply] interview invite failed");
       }
@@ -306,7 +308,9 @@ router.post("/outreach/reply/:token", validate({ body: OutreachReplyBody }), asy
       });
 
       title = "Great — we're on it!";
-      message = "Thanks for confirming your interest. You'll receive an interview invite by email within a few minutes.";
+      message = invitationDeferred
+        ? "Thanks for confirming your interest. The hiring team will review the next step before an interview invitation is sent."
+        : "Thanks for confirming your interest. You'll receive an interview invite by email within a few minutes.";
       color = "#0f6f3a";
     }
 
@@ -649,6 +653,7 @@ router.post("/outreach/reply-msg/:token", validate({ body: OutreachReplyBody }),
   let title = "", message = "", color = "#0f6f3a";
   try {
     if (action === "interested") {
+      let invitationDeferred = false;
       // Mirror the enrollment path: trigger the interview-invite flow.
       try {
         const { sendInterviewInviteFromReply } = await import("../lib/agents/interview-reply");
@@ -657,7 +662,8 @@ router.post("/outreach/reply-msg/:token", validate({ body: OutreachReplyBody }),
           sourcedId: sc?.id ?? cand?.id ?? msgBefore.candidateId,
           replyBody: "[Quick reply: Yes, I'm interested]",
         });
-        if (!inviteResult.ok) {
+        invitationDeferred = inviteResult.deferred === true;
+        if (!inviteResult.ok && !inviteResult.deferred) {
           logger.error(
             { messageId, jobId: msgBefore.jobId, error: inviteResult.error },
             "[quick-reply-msg] interview invite returned not-ok",
@@ -676,7 +682,9 @@ router.post("/outreach/reply-msg/:token", validate({ body: OutreachReplyBody }),
       });
 
       title = "Great — we're on it!";
-      message = "Thanks for confirming your interest. You'll receive an interview invite by email within a few minutes.";
+      message = invitationDeferred
+        ? "Thanks for confirming your interest. The hiring team will review the next step before an interview invitation is sent."
+        : "Thanks for confirming your interest. You'll receive an interview invite by email within a few minutes.";
       color = "#0f6f3a";
     }
 

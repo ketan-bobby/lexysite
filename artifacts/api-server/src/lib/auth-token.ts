@@ -1,11 +1,11 @@
 /**
  * auth-token.ts — HMAC-signed bearer tokens
  *
- * Compact, stateless session tokens used by every protected route. Replaces
+ * Compact, signed session credentials used by every protected route. Replaces
  * the previous "demo_token_<userId>" scheme which was trivially forgeable.
  *
  * Format:  v2.<base64url(payload)>.<base64url(hmac)>
- *   payload = { sub, role, tenantId, iat, exp }
+ *   payload = { sub, role, tenantId, sid, cv, iat, exp }
  *   hmac    = HMAC-SHA256(secret, "v2." + base64url(payload))
  *
  * Secret:
@@ -73,6 +73,10 @@ function timingSafeStrEq(a: string, b: string): boolean {
 }
 
 export interface TokenPayload {
+  /** Account credential epoch; absent pre-rollout tokens represent epoch "0". */
+  cv?: string;
+  /** Distinguishes independent logins even within the same clock second. */
+  sid?: string;
   sub: string;        // userId
   role: string;
   tenantId: string | null;
@@ -85,9 +89,16 @@ export interface TokenPayload {
   exp: number;        // expires-at, seconds
 }
 
-export function issueToken(p: { userId: string; role: string; tenantId: string | null; region?: string | null }): string {
+/** Migration compatibility: old signed v2 sessions belong to initial epoch 0. */
+export function hasCurrentCredentialVersion(payload:Pick<TokenPayload,"cv">, current:string):boolean {
+  return current === (payload.cv ?? "0");
+}
+
+export function issueToken(p: { userId: string; role: string; tenantId: string | null; region?: string | null; credentialVersion?: string }): string {
   const now = Math.floor(Date.now() / 1000);
   const payload: TokenPayload = {
+    sid: crypto.randomUUID(),
+    cv: p.credentialVersion ?? "0",
     sub: p.userId,
     role: p.role,
     tenantId: p.tenantId,
@@ -106,8 +117,9 @@ export type VerifyResult =
 
 /**
  * Verify a bearer token. Returns the decoded payload or a structured error.
- * Does NOT touch the database — callers still resolve the user row to pick
- * up role/tenant changes that happened after issuance.
+ * Does NOT touch the database — the common HTTP revocation guard checks account
+ * epoch/session authority and callers still resolve current role/tenant state.
+ * A valid signature alone is not proof of an authorized current session.
  */
 export function verifyToken(raw: string | null | undefined): VerifyResult {
   if (!raw) return { ok: false, reason: "missing" };
@@ -179,9 +191,7 @@ export const SESSION_COOKIE_NAME = "session_token";
 type CookieRequest = {
   secure?: boolean;
   protocol?: string;
-  headers?: {
-    "x-forwarded-proto"?: string | string[];
-  };
+  headers?: import("node:http").IncomingHttpHeaders;
 };
 
 function requestUsesHttps(req?: CookieRequest): boolean {

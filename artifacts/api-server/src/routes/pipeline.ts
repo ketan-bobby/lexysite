@@ -335,7 +335,9 @@ router.get("/jobs/:jobId/pipeline-stages", async (req, res) => {
       applicationId: a.id,
       stage: a.stage || "applied",
       score: a.matchScore ?? c?.resumeScreenScore ?? null,
-      nba: a.nextBestAction ?? null,
+      // Applications do not store recommendations; the scoped intelligence
+      // overlay below supplies the canonical next-best action when available.
+      nba: null,
       notes: a.notes ?? null,
       updatedAt: a.updatedAt.toISOString(),
       createdAt: a.createdAt.toISOString(),
@@ -355,7 +357,7 @@ router.get("/jobs/:jobId/pipeline-stages", async (req, res) => {
         source: c.source ?? null,
         skills: c.skills ?? [],
         linkedinUrl: c.linkedinUrl ?? null,
-        githubProfile: c.githubProfile ?? null,
+        githubProfile: c.githubUrl ?? null,
         resumeScreenScore: c.resumeScreenScore ?? null,
         verificationStatus: c.verificationStatus ?? null,
         interviewSessionId: latestInterviewSessionId,
@@ -1086,7 +1088,11 @@ router.post("/jobs/:jobId/pipeline/card-action", validate({ body: CardActionBody
           }
         : {}),
     };
-    if (s.normalizedCandidateId) {
+    if (inviteResult?.deferred) {
+      await db.update(sourcedCandidatesTable).set({
+        rawData: { ...raw, ...replyRawPatch },
+      }).where(and(eq(sourcedCandidatesTable.id, s.id), eq(sourcedCandidatesTable.tenantId, s.tenantId)));
+    } else if (s.normalizedCandidateId) {
       await changeCandidateStage({
         tenantId: s.tenantId ?? "",
         candidateId: s.normalizedCandidateId,
@@ -1144,7 +1150,7 @@ router.post("/jobs/:jobId/pipeline/card-action", validate({ body: CardActionBody
     }
 
     /* Emit lifecycle event for the reply-driven stage advance (sourced path) */
-    if (s.normalizedCandidateId) {
+    if (s.normalizedCandidateId && !inviteResult?.deferred) {
       const replyEventMap: Record<string, "INTERVIEW_INVITED" | "REJECTED"> = {
         interview_scheduled: "INTERVIEW_INVITED",
         rejected: "REJECTED",
@@ -1165,7 +1171,7 @@ router.post("/jobs/:jobId/pipeline/card-action", validate({ body: CardActionBody
 
     res.json({
       ok: true,
-      stage: nextStage,
+      stage: inviteResult?.deferred ? raw?.stage : nextStage,
       sentiment,
       messageUpdated: msgs.length > 0,
       interviewInvite: inviteResult,
@@ -1311,7 +1317,7 @@ router.post("/jobs/:jobId/pipeline/card-action", validate({ body: CardActionBody
     const inviteResult = await sendInterviewInviteFromReply({ jobId, sourcedId });
 
     if (!inviteResult.ok) {
-      res.status(502).json({ ok: false, error: inviteResult.error || "Failed to send interview invite" });
+      res.status(inviteResult.deferred ? 409 : 502).json({ ok: false, error: inviteResult.error || "Failed to send interview invite" });
       return;
     }
 

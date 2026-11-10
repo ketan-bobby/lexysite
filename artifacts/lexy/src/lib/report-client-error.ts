@@ -33,7 +33,7 @@ export function reportClientError(
           phase: typeof phase === "string" ? phase : undefined,
           extra: Object.keys(rest).length ? rest : undefined,
         },
-      }),
+      }).replace(/(\/(?:offer|controlled-offers\/public)\/)[a-f0-9]{64}/g, "$1[redacted]"),
     }).catch(() => {
       /* best-effort — telemetry only */
     });

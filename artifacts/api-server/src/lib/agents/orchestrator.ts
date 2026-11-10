@@ -43,11 +43,16 @@
  *   routes/agents.ts    — all agent trigger and status APIs
  *   routes/pipeline.ts  — runPipeline() for canvas pipeline execution
  */
-import { generateJSON, generateText } from "../ai";
+import { generateJSON } from "../ai";
 import { logger } from "../logger";
+import { vendorUsageScope } from "../vendor-usage";
+import { interviewScreeningBlockReason } from "../interview-screening-gate";
+import { WorkflowPreEffectError, WORKFLOW_PRE_EFFECT_RESULT } from "../workflow-action-recovery";
+const INTERVIEW_PREFLIGHT = Symbol("read-only-interview-preflight");
 import { isJobApprovedForInterview } from "../job-approval";
 import { scoreExternalCandidates, type SearchContext } from "../external-sourcing.js";
 import { runSourcingProviders } from "../sourcing-providers.js";
+import { searchInternalDatabase } from "../../routes/sourcing";
 import { generateIcpForJob } from "../icp-generator.js";
 import { changeCandidateStage } from "../change-candidate-stage.js";
 import { db } from "@workspace/db";
@@ -72,8 +77,12 @@ import { sendEmail, plainToHtml, isEmailConfigured } from "../email";
 import { generateFirstTouchDraft } from "../outreach-generate";
 import { buildMessageContext, renderContextBlock } from "../ai-message-context";
 import { dispatchOutreachMessage } from "../outreach-dispatch";
+import { executeWorkflowAction, type WorkflowActionContext } from "../workflow-execution";
+import { fingerprint, WorkflowConflict } from "../recruiting-workflows";
+import { createWorkflowOutreachDraft, WORKFLOW_OUTREACH_CONTEXT, WORKFLOW_INVITATION_RECIPIENT } from "../workflow-outreach";
 import { realEmailOrEmpty, isRealEmail } from "../real-email";
 import { emitPipelineRunEvent, type PipelineRunRef } from "../pipeline-runs/recorder";
+import { ensureSourcedApplication } from "../sourced-application";
 
 /** Hard per-candidate budget for background similar-hire enrichment (Task #26).
  *  Covers the embedding round trip plus, on inactive/below-gate tenants, the
@@ -334,8 +343,103 @@ class AgentOrchestrator {
     agentId: AgentId,
     input: Record<string, any>,
     triggeredBy = "user",
-    meta?: { tenantId?: string | null; jobId?: string | null; triggeredByUserId?: string | null },
+    meta?: { tenantId?: string | null; jobId?: string | null; triggeredByUserId?: string | null; workflow?: WorkflowActionContext },
   ): Promise<AgentRun> {
+    // Only explicitly bound new workflows enter this lane. Existing assisted
+    // callers remain unchanged; no job is implicitly enrolled or migrated.
+    if (meta?.workflow) {
+      const context = meta.workflow;
+      let invitationRecipient: string | undefined;
+      const steps: Partial<Record<AgentId, string>> = {
+        screening: "screening",
+        verification: "verification",
+        outreach: "engagement",
+        interview: "ai_interview",
+        scheduling: "human_interview",
+      };
+      if (
+        steps[agentId] !== context.input.stepKey ||
+        context.input.actionKind !== "agent" ||
+        context.input.payloadHash !== fingerprint({ agentId, input })
+      )
+        throw new WorkflowConflict("Agent does not match the bound workflow action.", 409);
+      const result = await executeWorkflowAction(context, {
+        mode: "live",
+        isSuccessful: (run) => run.status === "completed" && (agentId !== "screening" ||
+          (run.output?.screened === 1 && run.output?.screeningResults?.some((row: any) =>
+            row.candidateId === context.input.candidateId && Number.isFinite(row.score) &&
+            row.score >= 0 && row.score <= 100 && ["advance", "hold", "reject"].includes(row.recommendation)))) &&
+          (agentId !== "verification" || (run.output?.checked === 1 && run.output?.identityVerified === false &&
+            run.output?.results?.some((row: any) => row.candidateId === context.input.candidateId &&
+              typeof row.verificationRecordId === "string" && row.status === "pending"))) &&
+          (agentId !== "outreach" || (run.output?.messagesPending === 1 &&
+            run.output?.outreachIds?.length === 1 && run.output?.messagesSent === 0)) &&
+          (agentId !== "interview" || (run.output?.interviewLinksGenerated === 1 &&
+            run.output?.sessionIds?.length === 1 && run.output?.invitationAccepted === 1)),
+        preEffectFailure: (run) => (run as any)[WORKFLOW_PRE_EFFECT_RESULT] ?? null,
+        prepare: ["verification", "interview"].includes(agentId) ? async () => {
+          const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, context.input.candidateId));
+          if (agentId === "verification") {
+            if (!candidate?.tenantId) throw new WorkflowConflict("Candidate owner is required for the identity pilot.", 409);
+            const { assertNoWorkflowIdentityRecord } = await import("../workflow-identity-review");
+            await assertNoWorkflowIdentityRecord(candidate.id, candidate.tenantId);
+          } else {
+            if (!candidate?.email) throw new WorkflowConflict("Controlled invitation inbox is required.", 409);
+            invitationRecipient = candidate.email.trim().toLowerCase();
+            const { interviewRoomUrl } = await import("../interview-link-url");
+            interviewRoomUrl("configuration-preflight");
+            const preflight = await this._runInterview({
+              jobId: context.scope.jobId, candidateId: context.input.candidateId,
+              passedCandidateIds: [context.input.candidateId],
+              [WORKFLOW_OUTREACH_CONTEXT]: context, [INTERVIEW_PREFLIGHT]: true,
+            });
+            if (!preflight.eligible) throw new WorkflowPreEffectError("Interview eligibility is not confirmed.");
+          }
+        } : undefined,
+        invoke: async () => {
+          // Screening and verification take canonical IDs; outreach/interview
+          // take sourced IDs. Never fall back to a whole-job batch.
+          let candidateIds = [context.input.candidateId];
+          if (agentId === "interview") {
+            const sourceRows = await db.select({ id: sourcedCandidatesTable.id })
+              .from(sourcedCandidatesTable)
+              .where(and(
+                sql`EXISTS (SELECT 1 FROM applications a WHERE a.candidate_id=${sourcedCandidatesTable.normalizedCandidateId} AND a.job_id=${context.scope.jobId})`,
+                eq(sourcedCandidatesTable.tenantId, context.scope.tenantId),
+                eq(sourcedCandidatesTable.normalizedCandidateId, context.input.candidateId),
+                sql`${sourcedCandidatesTable.rawData}->>'jobId' = ${context.scope.jobId}`,
+              ));
+            if (sourceRows.length !== 1)
+              throw new WorkflowConflict("Resolve the candidate's sourced-row identity first.", 409);
+            candidateIds = [sourceRows[0].id];
+          }
+          return vendorUsageScope.run({
+            tenantId: context.scope.tenantId,
+            area: `workflow:${context.input.workflowId}:${context.input.stepKey}`,
+          }, () => this.triggerAgent(agentId, {
+            ...input,
+            jobId: context.scope.jobId,
+            tenantId: context.scope.tenantId,
+            candidateId: context.input.candidateId,
+            candidateIds,
+            ...(["outreach", "interview"].includes(agentId) ? { passedCandidateIds: [context.input.candidateId] } : {}),
+            ...(agentId === "screening" ? { topCandidateIds: [context.input.candidateId] } : {}),
+            autoSendOutreach: false,
+            manualOverride: false,
+            _workflowBound: true,
+            [WORKFLOW_OUTREACH_CONTEXT]: context,
+            [WORKFLOW_INVITATION_RECIPIENT]: invitationRecipient,
+          }, triggeredBy, {
+            jobId: context.scope.jobId,
+            tenantId: context.scope.tenantId,
+            triggeredByUserId: context.scope.actorId,
+          }));
+        },
+      });
+      if (result.state !== "succeeded")
+        throw new WorkflowConflict("Workflow action was claimed or is uncertain. Human reconciliation is required.", 409);
+      return result.output;
+    }
     // Resolve run provenance so getRecentRuns/getEvents/getAgentStatuses can be
     // tenant-scoped. runPipeline passes `meta` explicitly; other direct callers
     // don't, so fall back to deriving the tenant from input.jobId (one cheap
@@ -387,9 +491,12 @@ class AgentOrchestrator {
       this._emit(agentId, `${agentId}_completed`, { runId: run.id, output }, tenantId);
       logger.info({ agentId, durationMs }, "Agent run completed");
 
-      /* Feed intelligence table — non-blocking, non-critical */
-      this._feedIntelligence(agentId, input, output).catch(() => {});
+      // A bounded workflow owns only its requested action. Background rescoring
+      // is another paid action; it needs its own authority, not a legacy escape.
+      if (!(input as any)[WORKFLOW_OUTREACH_CONTEXT]) this._feedIntelligence(agentId, input, output).catch(() => {});
     } catch (err: any) {
+      if (err instanceof WorkflowPreEffectError)
+        (run as any)[WORKFLOW_PRE_EFFECT_RESULT] = err.reason;
       run.status = "failed";
       run.error = err?.message || "Unknown error";
       run.completedAt = new Date().toISOString();
@@ -617,24 +724,50 @@ class AgentOrchestrator {
       maxResults: maxPerSource,
     };
 
-    logger.info({ jobId, jobTitle: ctx.jobTitle, domain: ctx.domain, skills: ctx.requiredSkills }, "Sourcing: starting external search");
+    const internalMobility = (job as any).internalMobility === true;
+    const mode = internalMobility ? "internal_mobility" : "known_talent";
+    logger.info(
+      { jobId, jobTitle: ctx.jobTitle, domain: ctx.domain, skills: ctx.requiredSkills, mode },
+      "Sourcing: starting job-scoped discovery",
+    );
 
-    // Run the external providers through the adapter layer (Task #28). Phase 1
-    // discovery (GitHub, PDL, SerpAPI) runs in parallel; Phase 2 enrichment
-    // (EnrichLayer) is seeded from the discovery LinkedIn URLs. Provider
-    // selection/disabling is config-driven and failures degrade gracefully —
-    // see lib/sourcing-providers.ts.
-    const providerResults = await runSourcingProviders(ctx);
+    // The shared internal search enforces pool='tenant', the job's exact tenant,
+    // compliance filters, and the stored employee-mode partition. Internal
+    // Mobility is employee-only and must never invoke external discovery.
+    const [internalRes, providerResults] = await Promise.all([
+      searchInternalDatabase(ctx, job.tenantId || "", db, mode),
+      internalMobility
+        ? Promise.resolve({
+            github: { candidates: [], query: "GitHub: disabled by Internal Mobility job setting", skipped: "Internal Mobility mode" },
+            pdl: { candidates: [], query: "PDL: disabled by Internal Mobility job setting", skipped: "Internal Mobility mode" },
+            serp: { candidates: [], query: "SERP: disabled by Internal Mobility job setting", skipped: "Internal Mobility mode" },
+            enrichlayer: { candidates: [], query: "EnrichLayer: disabled by Internal Mobility job setting", skipped: "Internal Mobility mode" },
+          } as any)
+        : runSourcingProviders(ctx),
+    ]);
     const ghCandidates   = providerResults.github.candidates;
     const pdlCandidates  = providerResults.pdl.candidates;
     const serpCandidates = providerResults.serp.candidates;
     const elCandidates   = providerResults.enrichlayer.candidates;
 
-    const all = [...ghCandidates, ...pdlCandidates, ...serpCandidates, ...elCandidates];
-    logger.info({ jobId, github: ghCandidates.length, pdl: pdlCandidates.length, serp: serpCandidates.length, enrichlayer: elCandidates.length, total: all.length }, "Sourcing: external search complete");
+    const externalAll = [...ghCandidates, ...pdlCandidates, ...serpCandidates, ...elCandidates];
 
-    const scored = icp ? await scoreExternalCandidates(all, icp as any) : all.map(c => ({ ...c, matchScore: 50 }));
-    const qualified = scored.filter(c => (c.matchScore ?? 0) >= minScore).sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+    const externalScored = icp
+      ? await scoreExternalCandidates(externalAll, icp as any)
+      : externalAll.map(c => ({ ...c, matchScore: 50 }));
+    const internalScored = icp && internalRes.candidates.length > 0
+      ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
+      : internalRes.candidates;
+    const internalFinal = internalScored.map((candidate: any) => {
+      const original = internalRes.candidates.find((item: any) => item.id === candidate.id);
+      return {
+        ...candidate,
+        candidateId: (original && "candidateId" in original ? original.candidateId : undefined) ?? candidate.candidateId,
+        isInternalCandidate: true,
+      };
+    });
+    const all = [...internalFinal, ...externalScored];
+    const qualified = all.filter(c => (c.matchScore ?? 0) >= minScore).sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
 
     let sourced = 0;
     for (const c of qualified) {
@@ -643,25 +776,41 @@ class AgentOrchestrator {
         // proper UUID. Match an existing person on LinkedIn URL first, then on
         // email, so a second sourcing run never creates a duplicate row (and
         // never trips the (tenant, lower(email)) unique index).
-        let normalizedId: string = c.id; // fallback to raw id
-        const tid = job.tenantId || "acme";
+        const isInternalCandidate = c.isInternalCandidate === true;
+        let normalizedId: string | null = isInternalCandidate ? c.candidateId ?? null : null;
+        const tid = job.tenantId || "";
+        if (!tid) continue;
         const realEmail = typeof c.email === "string" && c.email.trim()
           && !c.email.trim().toLowerCase().endsWith("@unknown.local")
           && !c.email.trim().toLowerCase().endsWith("@import.local")
           ? c.email.trim().toLowerCase() : "";
-        let existingCand: any = null;
-        if (c.linkedinUrl) {
+        let reusedExistingCandidate = false;
+        let existingCand: any = isInternalCandidate && c.candidateId
+          ? { id: c.candidateId }
+          : null;
+        if (!isInternalCandidate && !existingCand && c.linkedinUrl) {
           const r = await db.select().from(candidatesTable)
             .where(and(eq(candidatesTable.tenantId, tid), eq(candidatesTable.linkedinUrl, c.linkedinUrl))).limit(1);
           existingCand = r[0] ?? null;
         }
-        if (!existingCand && realEmail) {
+        if (!isInternalCandidate && !existingCand && realEmail) {
           const r = await db.select().from(candidatesTable)
             .where(and(eq(candidatesTable.tenantId, tid), sql`lower(${candidatesTable.email}) = ${realEmail}`)).limit(1);
           existingCand = r[0] ?? null;
         }
+        if (
+          !isInternalCandidate &&
+          existingCand &&
+          (existingCand.pool !== "tenant" ||
+            existingCand.isCurrentEmployee ||
+            existingCand.doNotContact ||
+            existingCand.dataErasedAt)
+        ) {
+          continue;
+        }
         if (existingCand) {
           normalizedId = existingCand.id;
+          reusedExistingCandidate = !isInternalCandidate;
         } else {
           const [inserted] = await db.insert(candidatesTable).values({
             tenantId: tid,
@@ -679,6 +828,7 @@ class AgentOrchestrator {
           }).returning({ id: candidatesTable.id }).catch(() => [null]);
           if (inserted?.id) normalizedId = inserted.id;
         }
+        if (!normalizedId) continue;
 
         const existingSourced = await db.select().from(sourcedCandidatesTable)
           .where(eq(sourcedCandidatesTable.normalizedCandidateId, normalizedId)).limit(1);
@@ -692,6 +842,27 @@ class AgentOrchestrator {
           });
           sourced++;
         }
+        await ensureSourcedApplication({
+          dbc: db,
+          tenantId: tid,
+          jobId,
+          candidateId: normalizedId,
+          channel: isInternalCandidate
+            ? internalMobility
+              ? "internal_mobility"
+              : "known_talent_rediscovery"
+            : reusedExistingCandidate
+              ? "known_talent_rediscovery"
+              : "ai_sourcing",
+          evidence: {
+            source: c.source,
+            jobId,
+            via: "agent_orchestrator",
+            matchScore: c.matchScore ?? null,
+          },
+          setBy: "sourcing_agent",
+          matchScore: typeof c.matchScore === "number" ? c.matchScore : null,
+        });
       } catch { /* skip duplicates */ }
     }
 
@@ -700,6 +871,24 @@ class AgentOrchestrator {
 
     return {
       candidatesFound: all.length,
+      sourceSummary: {
+        mode,
+        label: internalMobility ? "Internal Mobility" : "Known Talent Rediscovery",
+        internalLabel: internalMobility ? "Internal Mobility" : "Known Talent Rediscovery",
+        externalLabel: internalMobility ? null : "External Discovery",
+        internalMobility,
+        externalEnabled: !internalMobility,
+        bySource: {
+          internal: internalRes.candidates.length,
+          github: ghCandidates.length,
+          pdl: pdlCandidates.length,
+          serp: serpCandidates.length,
+          enrichlayer: elCandidates.length,
+        },
+        total: all.length,
+        icpMissing: !icp,
+        noMatches: all.length === 0,
+      },
       bySource: { github: ghCandidates.length, pdl: pdlCandidates.length, serp: serpCandidates.length, enrichlayer: elCandidates.length },
       qualified: qualified.length,
       highMatch,
@@ -732,32 +921,47 @@ class AgentOrchestrator {
     const screeningTenantId: string | null = jobId
       ? (await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1))[0]?.tenantId ?? null
       : null;
-
     // --- Path 1: screen specific candidates by ID (from applications/pipeline chain)
     const explicitIds: string[] = topCandidateIds ?? (candidateId ? [candidateId] : []);
     if (explicitIds.length > 0) {
       for (const cid of explicitIds.slice(0, 15)) {
         const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, cid)).limit(1);
         if (!candidate) continue;
+        if ((input as any)[WORKFLOW_OUTREACH_CONTEXT]) {
+          if (!screeningTenantId) throw new WorkflowConflict("Screening job owner is required.", 409);
+          const { ensureWorkflowProfileSource } = await import("../workflow-profile-screening");
+          await ensureWorkflowProfileSource(screeningTenantId, jobId, candidate);
+        }
         const ctx = { name: `${candidate.firstName} ${candidate.lastName}`, currentTitle: candidate.currentTitle, currentCompany: candidate.currentCompany, location: candidate.location, skills: candidate.skills, source: candidate.source };
         const result = await generateJSON<any>(
           buildScreeningPrompt(ctx, icpContext),
           SCREENING_SYSTEM_PROMPT,
         );
+        if ((input as any)[WORKFLOW_OUTREACH_CONTEXT] &&
+            (!Number.isFinite(result.score) || result.score < 0 || result.score > 100 ||
+             !["advance", "hold", "reject"].includes(result.recommendation)))
+          throw new WorkflowConflict("Screening returned no usable grade. Reconcile the claimed action.", 409);
+        const evidenceRecordedAt = new Date().toISOString();
         await db.update(candidatesTable).set({ resumeScreenScore: result.score, updatedAt: new Date() }).where(eq(candidatesTable.id, cid));
 
         // Also update the matching sourced_candidates row so the pipeline kanban
         // moves the card from "Sourced" → "Screening" / "Rejected".
         try {
           const sourcedRows = await db.select().from(sourcedCandidatesTable)
-            .where(eq(sourcedCandidatesTable.normalizedCandidateId, cid));
+            .where(and(eq(sourcedCandidatesTable.normalizedCandidateId, cid),
+              input._workflowBound === true && screeningTenantId ? eq(sourcedCandidatesTable.tenantId, screeningTenantId) : undefined));
           for (const sr of sourcedRows) {
             const sraw = (sr.rawData as any) || {};
-            if (jobId && sraw.jobId && sraw.jobId !== jobId) continue;
+            if (jobId && sraw.jobId !== jobId) continue;
             // Mirror the board's derivation EXACTLY (reject → "rejected",
             // advance/hold → "screening"); never write "sourced".
             const nextStage = result.recommendation === "reject" ? "rejected" : "screening";
             if (screeningTenantId && jobId) {
+              const applicationId = input._workflowBound === true
+                ? await (await import("../workflow-profile-screening")).workflowScreeningApplication(
+                    screeningTenantId, jobId, cid,
+                  )
+                : undefined;
               await changeCandidateStage({
                 tenantId: screeningTenantId,
                 candidateId: cid,
@@ -766,18 +970,32 @@ class AgentOrchestrator {
                 actor: { type: "agent", label: "Screening Agent", runId },
                 source: "agent_orchestrator",
                 sourcedId: sr.id,
-                sourcedRawDataPatch: { screeningScore: result.score, screeningResult: result, screened: true },
+                applicationId,
+                sourcedRawDataPatch: { screeningScore: result.score, screeningResult: result, screened: true,
+                  screeningEvidence: { jobId, candidateId: cid, recordedAt: evidenceRecordedAt } },
                 sourcedColumnPatch: { mergeConfidence: result.score / 100 },
               });
+              if ((input as any)[WORKFLOW_OUTREACH_CONTEXT]) {
+                const [saved] = await db.select().from(sourcedCandidatesTable)
+                  .where(and(eq(sourcedCandidatesTable.id, sr.id),
+                    eq(sourcedCandidatesTable.tenantId, screeningTenantId)));
+                const savedRaw = saved?.rawData as any;
+                if (savedRaw?.screeningEvidence?.recordedAt !== evidenceRecordedAt ||
+                    savedRaw?.screeningResult?.score !== result.score ||
+                    savedRaw?.screeningResult?.recommendation !== result.recommendation)
+                  throw new WorkflowConflict("Screening source was not saved. Reconcile the claimed action.", 409);
+              }
             } else {
               // stage-write-exempt: no resolvable tenant/job — no auditable trail; persist signal only
               await db.update(sourcedCandidatesTable).set({
                 mergeConfidence: result.score / 100,
-                rawData: { ...sraw, screeningScore: result.score, screeningResult: result, screened: true },
+                rawData: { ...sraw, screeningScore: result.score, screeningResult: result, screened: true,
+                  screeningEvidence: { jobId, candidateId: cid, recordedAt: new Date().toISOString() } },
               }).where(eq(sourcedCandidatesTable.id, sr.id));
             }
           }
         } catch (e) {
+          if ((input as any)[WORKFLOW_OUTREACH_CONTEXT]) throw e;
           logger.warn({ err: e, cid }, "Failed to update sourced_candidates after screening");
         }
 
@@ -785,22 +1003,22 @@ class AgentOrchestrator {
         if (result.recommendation === "advance") passedIds.push(cid);
         screeningResults.push({ candidateId: cid, name: ctx.name, ...result });
       }
-      await notifyRecruiterOfScreeningBatch(jobId, screeningResults, triggeredBy);
+      if (!(input as any)[WORKFLOW_OUTREACH_CONTEXT])
+        await notifyRecruiterOfScreeningBatch(jobId, screeningResults, triggeredBy);
       return { screened: screenedIds.length, passed: passedIds.length, passedCandidateIds: passedIds, screeningResults };
     }
 
     // --- Path 2: screen sourced candidates for this job (standalone run)
     if (!jobId) return { screened: 0, passed: 0, message: "No jobId and no candidates provided" };
 
-    const sourced = await db.select().from(sourcedCandidatesTable)
+    const sourced = await db
+      .select()
+      .from(sourcedCandidatesTable)
       .orderBy(desc(sourcedCandidatesTable.createdAt))
       .limit(50);
 
     // Only screen candidates explicitly sourced for this job
-    const forJob = sourced.filter(s => {
-      const raw = s.rawData as any;
-      return raw?.jobId === jobId;
-    });
+    const forJob = sourced.filter((s) => (s.rawData as any)?.jobId === jobId);
 
     if (forJob.length === 0) return { screened: 0, passed: 0, message: "No sourced candidates for this job. Run the Sourcing agent first." };
 
@@ -866,14 +1084,16 @@ class AgentOrchestrator {
           actor: { type: "agent", label: "Screening Agent", runId },
           source: "agent_orchestrator",
           sourcedId: s.id,
-          sourcedRawDataPatch: { screeningScore: result.score, screeningResult: result, screened: true },
+          sourcedRawDataPatch: { screeningScore: result.score, screeningResult: result, screened: true,
+            screeningEvidence: { jobId, candidateId: s.normalizedCandidateId, recordedAt: new Date().toISOString() } },
           sourcedColumnPatch: { mergeConfidence: result.score / 100 },
         }).catch((e) => { logger.warn({ err: e, sourcedId: s.id }, "screening stage-change failed"); });
       } else {
         // stage-write-exempt: pre-normalized sourced row has no canonical candidate id to audit
         await db.update(sourcedCandidatesTable).set({
           mergeConfidence: result.score / 100,
-          rawData: { ...raw, screeningScore: result.score, screeningResult: result, screened: true },
+          rawData: { ...raw, screeningScore: result.score, screeningResult: result, screened: true,
+            screeningEvidence: { jobId, candidateId: s.normalizedCandidateId, recordedAt: new Date().toISOString() } },
         }).where(eq(sourcedCandidatesTable.id, s.id));
       }
 
@@ -927,7 +1147,7 @@ class AgentOrchestrator {
     // verified candidates (or screened+advance, when no verification step is
     // configured) are eligible for a first-touch email.
     let requireApproval = input.autoSendOutreach !== true;
-    if (requireApproval && jobId) {
+    if (requireApproval && jobId && input._workflowBound !== true) {
       const [priorApproved] = await db
         .select({ id: outreachMessagesTable.id })
         .from(outreachMessagesTable)
@@ -1000,7 +1220,7 @@ class AgentOrchestrator {
           // Verify gate (matches the sourced path): a candidates-table record is
           // eligible for a first-touch cold email only once verification has
           // cleared. Enforces verify→outreach ordering on the explicit-id path.
-          if (!manualOverride && c.verificationStatus !== "verified") {
+          if (!input[WORKFLOW_OUTREACH_CONTEXT as any] && !manualOverride && c.verificationStatus !== "verified") {
             skippedUnverified.push(cid);
             logger.info({ candidateId: cid, jobId, verificationStatus: c.verificationStatus }, "[outreach] skipped — candidate has not passed verification");
             continue;
@@ -1037,6 +1257,10 @@ class AgentOrchestrator {
           const [s] = await db.select().from(sourcedCandidatesTable).where(eq(sourcedCandidatesTable.id, cid)).limit(1);
           if (s) {
             const raw = s.rawData as any;
+            if (jobId && raw?.jobId !== jobId) {
+              skippedUnverified.push(cid);
+              continue;
+            }
             // Verify gate (matches the standalone path): a sourced candidate is
             // eligible only once they've passed verification, or — when no
             // verification step is configured — they're screened + advance.
@@ -1064,9 +1288,12 @@ class AgentOrchestrator {
     } else if (jobId) {
       // Standalone run: find verification-stage sourced candidates (verified and ready for outreach)
       // Falls back to screened+advance candidates if no verified ones exist
-      const allSourced = await db.select().from(sourcedCandidatesTable).orderBy(desc(sourcedCandidatesTable.createdAt)).limit(200);
-
-      const jobSourced = allSourced.filter(s => (s.rawData as any)?.jobId === jobId);
+      const jobSourced = (await db
+        .select()
+        .from(sourcedCandidatesTable)
+        .orderBy(desc(sourcedCandidatesTable.createdAt))
+        .limit(200))
+        .filter((s) => (s.rawData as any)?.jobId === jobId);
       const alreadySent = jobSourced.filter(s => { const r = s.rawData as any; return r?.outreachSent === true || r?.outreachDrafted === true; });
 
       const readyForOutreach = jobSourced.filter(s => {
@@ -1160,7 +1387,7 @@ class AgentOrchestrator {
         logCtx: { jobId, candidateId: cid },
       });
 
-      const [msg] = await db.insert(outreachMessagesTable).values({
+      const draftValues = {
         jobId: jobId ?? "unknown",
         candidateId: cid,
         tenantId: resolvedTenant,
@@ -1171,7 +1398,11 @@ class AgentOrchestrator {
         callToAction: draft.callToAction,
         followUpSchedule: draft.followUpSchedule,
         estimatedOpenRate: draft.estimatedOpenRate?.toString(),
-      }).returning();
+      };
+      const boundContext = input[WORKFLOW_OUTREACH_CONTEXT as any] as WorkflowActionContext | undefined;
+      const msg = boundContext
+        ? await createWorkflowOutreachDraft(draftValues, boundContext)
+        : (await db.insert(outreachMessagesTable).values(draftValues).returning())[0];
 
       outreachIds.push(msg.id);
 
@@ -1239,6 +1470,7 @@ class AgentOrchestrator {
   /* ── Interview Agent ─────────────────────────────────────────────────── */
   private async _runInterview(input: Record<string, any>): Promise<Record<string, any>> {
     const { jobId, candidateId, passedCandidateIds, questionCount = 5 } = input;
+    const bound = input[WORKFLOW_OUTREACH_CONTEXT as any] as WorkflowActionContext | undefined;
     const runId: string | null = (input as any)._runId ?? null;
     let { interviewType } = input as { interviewType?: string };
 
@@ -1299,23 +1531,36 @@ class AgentOrchestrator {
     const isEligible = async (cid: string): Promise<{ ok: boolean; reason?: string; sourcedId?: string }> => {
       // Find the matching sourced row (cid may be candidates.id OR sourced_candidates.id)
       const byCandidate = await db.select().from(sourcedCandidatesTable)
-        .where(eq(sourcedCandidatesTable.normalizedCandidateId, cid)).limit(1);
+        .where(and(eq(sourcedCandidatesTable.normalizedCandidateId, cid),
+          bound ? eq(sourcedCandidatesTable.tenantId, bound.scope.tenantId) : undefined,
+          bound ? sql`${sourcedCandidatesTable.rawData}->>'jobId' = ${jobId}` : undefined,
+        )).limit(1);
       const byId = byCandidate.length === 0
         ? await db.select().from(sourcedCandidatesTable).where(eq(sourcedCandidatesTable.id, cid)).limit(1)
         : [];
       const sourced = byCandidate[0] || byId[0];
       const raw = (sourced?.rawData as any) || {};
+      if (!sourced || raw?.jobId !== jobId) {
+        return { ok: false, reason: "not_sourced_for_job", sourcedId: sourced?.id };
+      }
 
-      // Gate 1: screening must say "advance"
+      // Unbound automation still needs "advance". A bound workflow's persisted
+      // human review can release a hold; retain the original grade and verdict.
       const rec = raw?.screeningResult?.recommendation;
-      if (raw?.screened !== true) return { ok: false, reason: "not_yet_screened", sourcedId: sourced?.id };
-      if (rec !== "advance") return { ok: false, reason: `screening_${rec ?? "unknown"}`, sourcedId: sourced?.id };
+      const screeningBlock = interviewScreeningBlockReason(raw?.screened, rec, !!bound);
+      if (screeningBlock) return { ok: false, reason: screeningBlock, sourcedId: sourced?.id };
 
       // Gate 2: manual candidates must pass verification first
       const candId = sourced?.normalizedCandidateId;
+      if (!bound) {
+        const { hasBoundInvitationWorkflow } = await import("../workflow-contact-gates");
+        if (await hasBoundInvitationWorkflow(jobId, jobForInterview.tenantId, candId ?? cid)) {
+          return { ok: false, reason: "workflow_invitation_requires_approval", sourcedId: sourced?.id };
+        }
+      }
       if (candId) {
         const [cand] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, candId)).limit(1);
-        if (cand && cand.source === "manual" && (cand.verificationStatus ?? "unverified") !== "verified") {
+        if (!bound && cand && cand.source === "manual" && (cand.verificationStatus ?? "unverified") !== "verified") {
           return { ok: false, reason: "manual_unverified", sourcedId: sourced?.id };
         }
       }
@@ -1336,12 +1581,10 @@ class AgentOrchestrator {
     if (candidatesToInterview.length === 0 && skipped.length === 0) {
       // Pull screened+passed sourced candidates for this job
       const allSourced = await db.select().from(sourcedCandidatesTable)
-        .orderBy(desc(sourcedCandidatesTable.createdAt))
-        .limit(50);
-
+        .orderBy(desc(sourcedCandidatesTable.createdAt)).limit(50);
       const advanced = allSourced.filter(s => {
         const raw = s.rawData as any;
-        return (raw?.jobId === jobId || !raw?.jobId)
+        return raw?.jobId === jobId
           && raw?.screened === true
           && raw?.screeningResult?.recommendation === "advance"
           && !raw?.interviewSessionId; // don't re-create sessions
@@ -1351,6 +1594,13 @@ class AgentOrchestrator {
       const eligible: typeof advanced = [];
       for (const s of advanced) {
         const candId = s.normalizedCandidateId;
+        if (!bound) {
+          const { hasBoundInvitationWorkflow } = await import("../workflow-contact-gates");
+          if (await hasBoundInvitationWorkflow(jobId, jobForInterview.tenantId, candId ?? s.id)) {
+            skipped.push({ id: candId ?? s.id, reason: "workflow_invitation_requires_approval" });
+            continue;
+          }
+        }
         if (!candId) { eligible.push(s); continue; }
         const [cand] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, candId)).limit(1);
         if (cand && cand.source === "manual" && (cand.verificationStatus ?? "unverified") !== "verified") {
@@ -1380,6 +1630,9 @@ class AgentOrchestrator {
     }
 
     if (candidatesToInterview.length === 0) {
+      if (bound) throw new WorkflowPreEffectError(
+        `No interview candidate is eligible: ${skipped.map((s) => s.reason).join(", ")}`,
+      );
       return {
         interviewLinksGenerated: 0,
         skipped,
@@ -1387,11 +1640,15 @@ class AgentOrchestrator {
       };
     }
 
+    if (input[INTERVIEW_PREFLIGHT as any]) return { eligible: true };
     const linksGenerated: string[] = [];
+    let invitationAccepted = 0;
 
     // Generate one shared interview plan for this job (reuse if exists)
     const existingPlans = await db.select().from(interviewPlansTable)
-      .where(and(eq(interviewPlansTable.jobId, jobId), eq(interviewPlansTable.interviewType, interviewType as any)))
+      .where(and(eq(interviewPlansTable.jobId, jobId), eq(interviewPlansTable.interviewType, interviewType as any),
+        bound ? eq(interviewPlansTable.tenantId, tenantId) : undefined,
+        bound ? eq(interviewPlansTable.language, interviewLang) : undefined))
       .limit(1);
 
     let planId: string;
@@ -1410,6 +1667,8 @@ Return a JSON array. Each element: { id (UUID), text (in the required language),
       );
 
       const questions = Array.isArray(questionsResult) ? questionsResult : [];
+      if (bound && (!questions.length || questions.some((q: any) => typeof q?.text !== "string" || !q.text.trim())))
+        throw new WorkflowConflict("Interview questions were not confirmed; no invitation was created.", 409);
       const [plan] = await db.insert(interviewPlansTable).values({
         tenantId,
         jobId,
@@ -1423,6 +1682,8 @@ Return a JSON array. Each element: { id (UUID), text (in the required language),
     }
 
     const [planRow] = await db.select().from(interviewPlansTable).where(eq(interviewPlansTable.id, planId)).limit(1);
+    if (bound && (!(planRow?.questions as any[])?.length))
+      throw new WorkflowConflict("The saved interview plan has no questions.", 409);
 
     for (const c of candidatesToInterview) {
       try {
@@ -1455,8 +1716,14 @@ Return a JSON array. Each element: { id (UUID), text (in the required language),
         }
 
         await db.update(outreachMessagesTable)
-          .set({ interviewLink: `/interviews/${session.id}/room`, status: "sent", sentAt: new Date() })
-          .where(and(eq(outreachMessagesTable.candidateId, c.id), eq(outreachMessagesTable.jobId, jobId)));
+          // This is an invitation, not another first-touch outreach send.
+          // Preserve the reviewed reply and its original send chronology.
+          .set({ interviewLink: `/interviews/${session.id}/room` })
+          .where(and(
+            eq(outreachMessagesTable.tenantId, tenantId),
+            eq(outreachMessagesTable.candidateId, c.id),
+            eq(outreachMessagesTable.jobId, jobId),
+          ));
 
         /* ── Email the full interview link to the candidate ──────────── */
         // Resolve recipient email + name from the sourced raw payload first
@@ -1482,25 +1749,42 @@ Return a JSON array. Each element: { id (UUID), text (in the required language),
           if (cand && (!toName || toName === "Candidate")) toName = `${cand.firstName} ${cand.lastName}`.trim();
         }
 
+        if (bound) {
+          const [canonical] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, bound.input.candidateId));
+          if (!canonical?.email || canonical.dataErasedAt || canonical.doNotContact ||
+            canonical.email.trim().toLowerCase() !== input[WORKFLOW_INVITATION_RECIPIENT as any])
+            throw new WorkflowConflict("The controlled interview recipient is no longer eligible.", 409);
+          toEmail = canonical.email;
+          toName = `${canonical.firstName} ${canonical.lastName}`.trim();
+        }
         if (toEmail) {
+          // Jobs store the employer's tenant ID, not a companyName column.
+          const [employer] = await db
+            .select({ name: tenantsTable.name })
+            .from(tenantsTable)
+            .where(eq(tenantsTable.id, jobForInterview.tenantId))
+            .limit(1);
+          const employerName = employer?.name?.trim() || null;
           const baseUrl = process.env.PUBLIC_APP_URL
             || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "")
             || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "");
           const fullLink = `${baseUrl}/interviews/${session.id}/room`;
+          const { interviewRoomUrl } = await import("../interview-link-url");
+          const invitationLink = bound ? interviewRoomUrl(session.id) : fullLink;
           const firstName = toName.split(" ")[0] || "there";
           const subject = `Your interview for ${jobForInterview.title}`;
           const body = `Hi ${firstName},
 
-Great news — you've been shortlisted for the ${jobForInterview.title} role at ${jobForInterview.companyName || "our company"}, and we'd like to invite you to a short AI-powered video interview.
+Great news — you've been shortlisted for the ${jobForInterview.title} role at ${employerName || "our company"}, and we'd like to invite you to a short AI-powered video interview.
 
 Click the link below to start whenever you're ready (it should take about ${(planRow as any)?.estimatedDurationMinutes ?? questionCount * 8} minutes):
 
-${fullLink}
+${invitationLink}
 
 The link is unique to you — please don't share it. If you have any trouble loading the interview, just reply to this email.
 
 Looking forward to your responses,
-The ${jobForInterview.companyName || "Hiring"} Team`;
+The ${employerName || "Hiring"} Team`;
 
           try {
             const sendResult = await sendEmail({
@@ -1510,6 +1794,7 @@ The ${jobForInterview.companyName || "Hiring"} Team`;
               text: body,
             });
             if (sendResult.ok) {
+              if (!sendResult.simulated && !sendResult.suppressed) invitationAccepted++;
               logger.info({ to: toEmail, sessionId: session.id, simulated: !!sendResult.simulated }, "[interview] invite email dispatched");
             } else {
               logger.error({ to: toEmail, sessionId: session.id, err: sendResult.error }, "[interview] invite email failed");
@@ -1532,6 +1817,7 @@ The ${jobForInterview.companyName || "Hiring"} Team`;
       sessionIds: linksGenerated,
       planId,
       candidatesProcessed: candidatesToInterview.length,
+      invitationAccepted,
     };
   }
 
@@ -1554,6 +1840,8 @@ The ${jobForInterview.companyName || "Hiring"} Team`;
     let candidateCtx: any = input;
     if (candidateId) {
       const [c] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
+      if ((input as any)[WORKFLOW_OUTREACH_CONTEXT] && !c?.tenantId)
+        throw new WorkflowConflict("Canonical candidate owner is required.", 409);
       const apps = await db.select().from(applicationsTable).where(eq(applicationsTable.candidateId, candidateId));
       if (c) candidateCtx = { name: `${c.firstName} ${c.lastName}`, currentTitle: c.currentTitle, applications: apps.map(a => ({ stage: a.stage, updatedAt: a.updatedAt })), silentDays };
     }
@@ -1596,6 +1884,10 @@ Return JSON:
         "You are Lexy's Verification Agent. Conduct thorough digital identity checks. JSON only.",
       );
 
+      if ((input as any)[WORKFLOW_OUTREACH_CONTEXT]) {
+        const { persistWorkflowIdentityAdvice } = await import("../workflow-identity-review");
+        return persistWorkflowIdentityAdvice(candidateId, c!.tenantId!, result);
+      }
       if (result.verdict) {
         const verificationStatus = result.verdict === "clear" ? "verified" : result.verdict === "flag" ? "flagged" : "pending";
         await db.update(candidatesTable).set({ verificationStatus: verificationStatus as any, updatedAt: new Date() }).where(eq(candidatesTable.id, candidateId));
@@ -1611,8 +1903,7 @@ Return JSON:
       (await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1))[0]?.tenantId ?? null;
 
     const sourced = await db.select().from(sourcedCandidatesTable)
-      .orderBy(desc(sourcedCandidatesTable.createdAt))
-      .limit(50);
+      .orderBy(desc(sourcedCandidatesTable.createdAt)).limit(50);
 
     const forVerification = sourced.filter(s => {
       const raw = s.rawData as any;
@@ -1825,7 +2116,7 @@ Return JSON:
           // hires (or the LLM-vs-ICP fallback), then merges it back via a second
           // analytics-only upsert. Bounded by a per-candidate budget; on
           // timeout/failure prior behavior is left intact.
-          if (jobId && r.candidateId) {
+          if (tenantId && jobId && r.candidateId) {
             void this._enrichSimilarHire(tenantId, jobId, r.candidateId);
           }
         }

@@ -32,7 +32,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable, tenantsTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { resolveUser, requireRole } from "../middlewares/resolveUser";
 import { getAllowedTenantIds } from "../lib/tenantUtils";
 import { MAX_PAGE_SIZE } from "../lib/query-limits";
@@ -164,11 +164,15 @@ router.patch("/users/:userId",
       }
 
       const update: Record<string, unknown> = { updatedAt: new Date() };
+      if (target.accountErasedAt) {
+        res.status(409).json({ error: "An erased account cannot be reactivated or edited." }); return;
+      }
       if (req.body.status !== undefined) update.status = req.body.status;
       if (req.body.name   !== undefined) update.name   = req.body.name;
       if (req.body.role   !== undefined) update.role   = req.body.role;
 
-      const [u] = await db.update(usersTable).set(update).where(eq(usersTable.id, target.id)).returning();
+      const [u] = await db.update(usersTable).set(update).where(and(eq(usersTable.id, target.id), sql`${usersTable.accountErasedAt} IS NULL`)).returning();
+      if (!u) { res.status(409).json({ error: "Account state changed. Reload before editing." }); return; }
       logger.info(
         { userId: u.id, byUserId: caller.id, changed: Object.keys(update).filter((k) => k !== "updatedAt") },
         "[users/patch] admin updated user",

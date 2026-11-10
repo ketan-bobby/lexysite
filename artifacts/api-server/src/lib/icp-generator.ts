@@ -19,6 +19,7 @@
 import { db, icpTable, jobsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { generateJSON } from "./ai.js";
+import { withUsageActivity } from "./vendor-usage-context";
 import { logger } from "./logger.js";
 import { FAIRNESS_DIRECTIVE } from "./fairness.js";
 
@@ -88,10 +89,10 @@ For "location": echo the target hiring location/region for this role (city, stat
   let parsed: any = {};
   let llmFailed = false;
   try {
-    parsed = await generateJSON<any>(
+    parsed = await withUsageActivity(job.tenantId, "matching", () => generateJSON<any>(
       prompt,
       "You are an expert recruiting strategist. Return strictly valid JSON only — no markdown fences, no commentary.",
-    );
+    ));
   } catch (err) {
     logger.error({ err, jobId }, "[icp-generator] LLM failed");
     parsed = {};
@@ -251,7 +252,7 @@ export async function scoreCandidateForJob(
     const SCORE_TIMEOUT_MS = 15_000;
     const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), SCORE_TIMEOUT_MS));
     const result = await Promise.race([
-      generateJSON<{ score?: number; reason?: string }>(
+      withUsageActivity(job.tenantId, "matching", () => generateJSON<{ score?: number; reason?: string }>(
       `Score how well the CANDIDATE matches the ROLE on a 0-100 scale.
 
 Guidance:
@@ -268,7 +269,7 @@ CANDIDATE: ${JSON.stringify(candPayload)}
 
 Return JSON only: { "score": number, "reason": string }`,
         `You are an expert technical recruiter scoring candidate-role fit. Be domain-strict. Return strictly valid JSON only.\n\n${FAIRNESS_DIRECTIVE}`,
-      ),
+      )),
       timeout,
     ]);
     if (!result) return null;

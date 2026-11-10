@@ -15,11 +15,57 @@ export const ASSESSMENT_RUBRIC_VERSION = "support-communication-v1" as const;
 export const ASSESSMENT_TASK_SET_VERSION = 1 as const;
 
 export const RUBRIC_DIMENSIONS: RubricDimension[] = [
-  { id: "clarity_structure", label: "Clarity and structure", description: "States relevant facts in an understandable order.", anchors: { emerging: "Few relevant facts are visible.", developing: "Some relevant facts are organized.", consistent: "Relevant facts and conditions are organized for the reader or listener." } },
-  { id: "empathy_tone", label: "Empathy and tone", description: "Acknowledges the customer's experience with respectful, non-blaming language.", anchors: { emerging: "Little acknowledgement is visible.", developing: "Acknowledgement is present but uneven.", consistent: "Acknowledgement and respectful tone are clear." } },
-  { id: "clarification", label: "Clarification", description: "Uses focused questions to establish missing or ambiguous information.", anchors: { emerging: "The missing detail is not yet narrowed.", developing: "A useful question or check is partly visible.", consistent: "The response narrows the relevant uncertainty with a focused question or check." } },
-  { id: "action_accuracy", label: "Action and next-step accuracy", description: "Separates known actions from conditions and avoids unsupported certainty.", anchors: { emerging: "The next action is sparse or overconfident.", developing: "Some actions or conditions are accurately stated.", consistent: "Actions, conditions, and next steps are accurately bounded." } },
-  { id: "channel_execution", label: "Channel execution", description: "Uses the requested written or spoken response format and captures operational details.", anchors: { emerging: "The requested channel details are sparse.", developing: "Several requested details are captured.", consistent: "The response captures the requested details in a usable channel format." } },
+  {
+    id: "clarity_structure",
+    label: "Clarity and structure",
+    description: "States relevant facts in an understandable order.",
+    anchors: {
+      emerging: "Few relevant facts are visible.",
+      developing: "Some relevant facts are organized.",
+      consistent: "Relevant facts and conditions are organized for the reader or listener.",
+    },
+  },
+  {
+    id: "empathy_tone",
+    label: "Empathy and tone",
+    description: "Acknowledges the customer's experience with respectful, non-blaming language.",
+    anchors: {
+      emerging: "Little acknowledgement is visible.",
+      developing: "Acknowledgement is present but uneven.",
+      consistent: "Acknowledgement and respectful tone are clear.",
+    },
+  },
+  {
+    id: "clarification",
+    label: "Clarification",
+    description: "Uses focused questions to establish missing or ambiguous information.",
+    anchors: {
+      emerging: "The missing detail is not yet narrowed.",
+      developing: "A useful question or check is partly visible.",
+      consistent: "The response narrows the relevant uncertainty with a focused question or check.",
+    },
+  },
+  {
+    id: "action_accuracy",
+    label: "Action and next-step accuracy",
+    description: "Separates known actions from conditions and avoids unsupported certainty.",
+    anchors: {
+      emerging: "The next action is sparse or overconfident.",
+      developing: "Some actions or conditions are accurately stated.",
+      consistent: "Actions, conditions, and next steps are accurately bounded.",
+    },
+  },
+  {
+    id: "channel_execution",
+    label: "Channel execution",
+    description:
+      "Uses the requested written or spoken response format and captures operational details.",
+    anchors: {
+      emerging: "The requested channel details are sparse.",
+      developing: "Several requested details are captured.",
+      consistent: "The response captures the requested details in a usable channel format.",
+    },
+  },
 ];
 
 const DEFINITIONS: AssessmentDefinition[] = [
@@ -41,17 +87,30 @@ function safeRegex(source: string): RegExp {
 
 function observation(text: string): number {
   // These are deliberately broad response-shape observations, not grammar tests.
-  return (/[.!?]/u.test(text) ? 1 : 0) + (/\b(?:check|confirm|next|update|email|question)\b/iu.test(text) ? 1 : 0);
+  return (
+    (/[.!?]/u.test(text) ? 1 : 0) +
+    (/\b(?:check|confirm|next|update|email|question)\b/iu.test(text) ? 1 : 0)
+  );
 }
 
-export function getAssessmentDefinition(courseId: string, path: "voice" | "chat_email"): AssessmentDefinition | undefined {
-  return DEFINITIONS.find((definition) => definition.courseId === courseId && definition.path === path);
+export function getAssessmentDefinition(
+  courseId: string,
+  path: "voice" | "chat_email",
+): AssessmentDefinition | undefined {
+  return DEFINITIONS.find(
+    (definition) => definition.courseId === courseId && definition.path === path,
+  );
 }
 
-export function evaluateAssessment(definition: AssessmentDefinition, responses: AssessmentResponses): AssessmentReport {
+export function evaluateAssessment(
+  definition: AssessmentDefinition,
+  responses: AssessmentResponses,
+): AssessmentReport {
   const outcomes = RUBRIC_DIMENSIONS.map((rubric) => {
     const relevant = definition.tasks.flatMap((task, index) =>
-      task.coveredDimensions.includes(rubric.id) ? [{ task, index, response: responseFor(responses, task.key, index) }] : [],
+      task.coveredDimensions.includes(rubric.id)
+        ? [{ task, index, response: responseFor(responses, task.key, index) }]
+        : [],
     );
     const evidence: string[] = [];
     let possible = 0;
@@ -76,11 +135,16 @@ export function evaluateAssessment(definition: AssessmentDefinition, responses: 
       possible += 1;
       if (observation(text) > 0) observed += 1;
       else evidence.push("No clear response boundary observed");
-      if (item.task.unsafePromises.some((promise) => promise.patterns.map(safeRegex).some((pattern) => pattern.test(text)))) {
+      if (
+        item.task.unsafePromises.some((promise) =>
+          promise.patterns.map(safeRegex).some((pattern) => pattern.test(text)),
+        )
+      ) {
         unsafe = true;
         evidence.push("Unsupported promise pattern observed");
       }
-      for (const lesson of item.task.recommendationLessonIds[rubric.id] ?? []) recommendations.add(lesson);
+      for (const lesson of item.task.recommendationLessonIds[rubric.id] ?? [])
+        recommendations.add(lesson);
     }
 
     let level: AssessmentLevel;
@@ -89,7 +153,8 @@ export function evaluateAssessment(definition: AssessmentDefinition, responses: 
     else if (observed >= possible && !unsafe) level = "consistent";
     else if (observed * 2 >= possible) level = "developing";
     else level = "emerging";
-    if (unsafe && level !== "not_observed") level = levelOrder[Math.max(1, levelOrder.indexOf(level) - 1)];
+    if (unsafe && level !== "not_observed")
+      level = levelOrder[Math.max(1, levelOrder.indexOf(level) - 1)];
     return {
       dimension: rubric.id,
       label: rubric.label,
@@ -100,12 +165,23 @@ export function evaluateAssessment(definition: AssessmentDefinition, responses: 
       recommendationLessonIds: [...recommendations],
     };
   });
-  const recommendations = [...new Set(outcomes.flatMap((outcome) => outcome.recommendationLessonIds))];
+  const recommendations = [
+    ...new Set(outcomes.flatMap((outcome) => outcome.recommendationLessonIds)),
+  ];
   const visible = outcomes.filter((outcome) => outcome.level !== "not_observed");
-  const overallSummary = visible.length === 0
-    ? "No eligible response was supplied, so no current developmental evidence is available."
-    : "This private report summarizes current evidence from the submitted developmental tasks and suggests practice lessons where useful.";
-  return { rubricVersion: ASSESSMENT_RUBRIC_VERSION, taskSetVersion: ASSESSMENT_TASK_SET_VERSION, courseId: definition.courseId, path: definition.path, dimensions: outcomes, overallSummary, recommendations };
+  const overallSummary =
+    visible.length === 0
+      ? "No eligible response was supplied, so no current developmental evidence is available."
+      : "This private report summarizes current evidence from the submitted developmental tasks and suggests practice lessons where useful.";
+  return {
+    rubricVersion: ASSESSMENT_RUBRIC_VERSION,
+    taskSetVersion: ASSESSMENT_TASK_SET_VERSION,
+    courseId: definition.courseId,
+    path: definition.path,
+    dimensions: outcomes,
+    overallSummary,
+    recommendations,
+  };
 }
 
 function validateCatalog(): void {
@@ -122,15 +198,20 @@ function validateCatalog(): void {
         fact.patterns.forEach(safeRegex);
       }
       task.unsafePromises.forEach((promise) => promise.patterns.forEach(safeRegex));
-      Object.values(task.recommendationLessonIds).flat().forEach((lessonId) => {
-        const lesson = courses.get(definition.courseId)?.lessons.find((candidate) => candidate.id === lessonId);
-        if (!lesson || (lesson.track !== "shared" && lesson.track !== definition.path)) {
-          throw new Error(`Recommendation lesson is not in target course path: ${lessonId}`);
-        }
-      });
+      Object.values(task.recommendationLessonIds)
+        .flat()
+        .forEach((lessonId) => {
+          const lesson = courses
+            .get(definition.courseId)
+            ?.lessons.find((candidate) => candidate.id === lessonId);
+          if (!lesson || (lesson.track !== "shared" && lesson.track !== definition.path)) {
+            throw new Error(`Recommendation lesson is not in target course path: ${lessonId}`);
+          }
+        });
     }
     for (const dimension of RUBRIC_DIMENSIONS) {
-      if (!definition.tasks.some((task) => task.coveredDimensions.includes(dimension.id))) throw new Error(`Assessment has no task for ${dimension.id}`);
+      if (!definition.tasks.some((task) => task.coveredDimensions.includes(dimension.id)))
+        throw new Error(`Assessment has no task for ${dimension.id}`);
     }
   }
 }

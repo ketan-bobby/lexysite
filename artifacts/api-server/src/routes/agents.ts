@@ -142,6 +142,14 @@ async function requireAgentWriter(req: any, res: any): Promise<any | null> {
   return caller;
 }
 
+// Role/ownership alone is not a tenant boundary. Keep platform-wide null scope,
+// but treat an empty scoped list as no accessible requisitions.
+async function scopedAgentJob(jobId: string, allowed: string[] | null) {
+  const [job] = await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
+  if (!job || (allowed !== null && !allowed.includes(job.tenantId))) return null;
+  return job;
+}
+
 /* Resolve triggered_by_user_id → a display name so the run history UI can show
  * "Triggered by {user}" instead of an opaque id. Best-effort + batched: one
  * lookup for all runs; users live in the control DB (see controlDb usage above).
@@ -203,18 +211,18 @@ router.get("/agents/runs", async (req, res) => {
   res.json(await withTriggeredByUser(runs));
 });
 
-router.post("/agents/:agentId/run", validate({ body: RunAgentBody }), async (req, res) => {
+router.post("/agents/:agentId/run", validate({ body: RunAgentBody }), async (req, res): Promise<void> => {
   const caller = await requireAgentWriter(req, res);
   if (!caller) return;
   const { agentId } = req.params;
   if (!VALID_IDS.includes(agentId as AgentId)) {
-    return res.status(400).json({ error: "Unknown agent ID" });
+    res.status(400).json({ error: "Unknown agent ID" }); return;
   }
   const { jobId, candidateId, triggeredBy: overrideTriggeredBy } = req.body || {};
-  if (!jobId) return res.status(400).json({ error: "jobId is required" });
+  if (!jobId) { res.status(400).json({ error: "jobId is required" }); return; }
 
   const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  if (!job) return res.status(404).json({ error: "Job not found" });
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
 
   // Resolve a caller-supplied candidateId so it, too, can be tenant-gated
   // before it is fed into the pipeline config.
@@ -222,7 +230,7 @@ router.post("/agents/:agentId/run", validate({ body: RunAgentBody }), async (req
   if (candidateId) {
     [cand] = await db.select({ tenantId: candidatesTable.tenantId })
       .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
-    if (!cand) return res.status(404).json({ error: "Not found" });
+    if (!cand) { res.status(404).json({ error: "Not found" }); return; }
   }
 
   // Tenant-membership gate — copied from gateJobAccess (routes/pipeline.ts):
@@ -232,20 +240,20 @@ router.post("/agents/:agentId/run", validate({ body: RunAgentBody }), async (req
   if (caller.role !== "platform_admin") {
     const allowed = (await getDataScopeTenantIds(caller)) ?? [];
     if (!allowed.includes(job.tenantId ?? "")) {
-      return res.status(404).json({ error: "Not found" });
+      res.status(404).json({ error: "Not found" }); return;
     }
     if (cand && !allowed.includes(cand.tenantId ?? "")) {
-      return res.status(404).json({ error: "Not found" });
+      res.status(404).json({ error: "Not found" }); return;
     }
   }
   /* Plain-recruiter ceiling: the requisition must be ASSIGNED to the caller
      (Tier 2 assigned-to-this-req gate). Returns true for every non-recruiter.
      A supplied candidateId must ALSO be reachable via an assigned req. */
   if (!(await recruiterOwnsResource(caller, { kind: "jobId", value: jobId }))) {
-    return res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Not found" }); return;
   }
   if (candidateId && !(await recruiterOwnsResource(caller, { kind: "candidateId", value: candidateId }))) {
-    return res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Not found" }); return;
   }
 
   const enabledAgents = [{ id: agentId as AgentId, order: 1, config: candidateId ? { candidateId } : {} }];
@@ -286,7 +294,7 @@ router.post("/agents/:agentId/run", validate({ body: RunAgentBody }), async (req
 /* POST /agents/run-selection
  * Run a custom subset of agents against a specific job (and optional candidate).
  * agentIds are sorted into their canonical pipeline order before execution. */
-router.post("/agents/run-selection", validate({ body: RunSelectionBody }), async (req, res) => {
+router.post("/agents/run-selection", validate({ body: RunSelectionBody }), async (req, res): Promise<void> => {
   const caller = await requireAgentWriter(req, res);
   if (!caller) return;
   const { agentIds, jobId, candidateId } = req.body as {
@@ -296,19 +304,19 @@ router.post("/agents/run-selection", validate({ body: RunSelectionBody }), async
   };
 
   if (!Array.isArray(agentIds) || agentIds.length === 0) {
-    return res.status(400).json({ error: "agentIds must be a non-empty array" });
+    res.status(400).json({ error: "agentIds must be a non-empty array" }); return;
   }
   if (!jobId) {
-    return res.status(400).json({ error: "jobId is required" });
+    res.status(400).json({ error: "jobId is required" }); return;
   }
 
   const invalid = agentIds.filter(id => !VALID_IDS.includes(id as AgentId));
   if (invalid.length > 0) {
-    return res.status(400).json({ error: `Unknown agent IDs: ${invalid.join(", ")}` });
+    res.status(400).json({ error: `Unknown agent IDs: ${invalid.join(", ")}` }); return;
   }
 
   const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  if (!job) return res.status(404).json({ error: "Job not found" });
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
 
   // Resolve a caller-supplied candidateId so it, too, can be tenant-gated
   // before it is fed into the pipeline config.
@@ -316,7 +324,7 @@ router.post("/agents/run-selection", validate({ body: RunSelectionBody }), async
   if (candidateId) {
     [cand] = await db.select({ tenantId: candidatesTable.tenantId })
       .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
-    if (!cand) return res.status(404).json({ error: "Not found" });
+    if (!cand) { res.status(404).json({ error: "Not found" }); return; }
   }
 
   // Tenant-membership gate — copied from gateJobAccess (routes/pipeline.ts):
@@ -326,20 +334,20 @@ router.post("/agents/run-selection", validate({ body: RunSelectionBody }), async
   if (caller.role !== "platform_admin") {
     const allowed = (await getDataScopeTenantIds(caller)) ?? [];
     if (!allowed.includes(job.tenantId ?? "")) {
-      return res.status(404).json({ error: "Not found" });
+      res.status(404).json({ error: "Not found" }); return;
     }
     if (cand && !allowed.includes(cand.tenantId ?? "")) {
-      return res.status(404).json({ error: "Not found" });
+      res.status(404).json({ error: "Not found" }); return;
     }
   }
   /* Plain-recruiter ceiling: the requisition must be ASSIGNED to the caller
      (Tier 2 assigned-to-this-req gate). Returns true for every non-recruiter.
      A supplied candidateId must ALSO be reachable via an assigned req. */
   if (!(await recruiterOwnsResource(caller, { kind: "jobId", value: jobId }))) {
-    return res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Not found" }); return;
   }
   if (candidateId && !(await recruiterOwnsResource(caller, { kind: "candidateId", value: candidateId }))) {
-    return res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Not found" }); return;
   }
 
   // Provenance for the in-memory AgentRun records (see POST /agents/:agentId/run).
@@ -466,7 +474,7 @@ async function upsertPipelineRow(
     autoRun: boolean;
     targetCandidates: number;
     status: string;
-    currentStage: string;
+    currentStage: string | null;
     interviewTypes: string[];
     interviewDirection: Record<string, { focusDirective?: string; customQuestions?: string[] }>;
   }>,
@@ -490,6 +498,7 @@ async function upsertPipelineRow(
       autoRun: patch.autoRun ?? false,
       targetCandidates: patch.targetCandidates ?? 5,
       status: patch.status ?? "idle",
+      currentStage: patch.currentStage ?? null,
       /* Persist interview-type selection on FIRST save too — earlier this
        * was missing, so brand-new jobs silently dropped the recruiter's
        * choice and fell back to "general" on first interview run. */
@@ -507,6 +516,11 @@ async function upsertPipelineRow(
 
 router.get("/jobs/:jobId/pipeline-config", async (req, res) => {
   const { jobId } = req.params;
+  const viewer = await resolveAgentViewer(req, res);
+  if (!viewer) return;
+  const job = await scopedAgentJob(jobId, viewer.allowed);
+  if (!job || !(await recruiterOwnsResource(viewer.caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   const [row] = await db.select().from(jobPipelinesTable).where(eq(jobPipelinesTable.jobId, jobId)).limit(1);
   return res.json({
     agentIds:         (row?.agents as string[]) ?? [],
@@ -526,6 +540,11 @@ router.get("/jobs/:jobId/pipeline-config", async (req, res) => {
 
 router.post("/jobs/:jobId/pipeline-config", validate({ body: PipelineConfigBody }), async (req, res) => {
   const { jobId } = req.params;
+  const caller = await requireAgentWriter(req, res);
+  if (!caller) return;
+  const job = await scopedAgentJob(jobId, await getDataScopeTenantIds(caller));
+  if (!job || !(await recruiterOwnsResource(caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   const { agentIds, autoRun, targetCandidates, interviewTypes } = req.body as {
     agentIds: string[];
     autoRun?: boolean;
@@ -541,9 +560,6 @@ router.post("/jobs/:jobId/pipeline-config", validate({ body: PipelineConfigBody 
   const cleanedTypes = Array.isArray(interviewTypes)
     ? interviewTypes.filter((t): t is string => typeof t === "string" && ALLOWED_INTERVIEW_TYPES.has(t))
     : undefined;
-
-  const [job] = await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  if (!job) return res.status(404).json({ error: "Job not found" });
 
   await upsertPipelineRow(jobId, job.tenantId, {
     agents: agentIds,
@@ -568,6 +584,11 @@ const InterviewDirectionBody = z.object({
 
 router.get("/jobs/:jobId/interview-direction", async (req, res) => {
   const { jobId } = req.params;
+  const viewer = await resolveAgentViewer(req, res);
+  if (!viewer) return;
+  const job = await scopedAgentJob(jobId, viewer.allowed);
+  if (!job || !(await recruiterOwnsResource(viewer.caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   const [row] = await db
     .select({ interviewDirection: jobPipelinesTable.interviewDirection })
     .from(jobPipelinesTable)
@@ -578,15 +599,17 @@ router.get("/jobs/:jobId/interview-direction", async (req, res) => {
 
 router.post("/jobs/:jobId/interview-direction", validate({ body: InterviewDirectionBody }), async (req, res) => {
   const { jobId } = req.params;
+  const caller = await requireAgentWriter(req, res);
+  if (!caller) return;
+  const job = await scopedAgentJob(jobId, await getDataScopeTenantIds(caller));
+  if (!job || !(await recruiterOwnsResource(caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   const { type, focusDirective, customQuestions } = req.body as {
     type: string; focusDirective?: string; customQuestions?: string[];
   };
   if (!ALLOWED_DIRECTION_KEYS.has(type)) {
     return res.status(400).json({ error: `Invalid interview direction key: ${type}` });
   }
-
-  const [job] = await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  if (!job) return res.status(404).json({ error: "Job not found" });
 
   /* Merge into the existing map so other types' direction is preserved. Empty
    * focus + no questions removes the entry to keep the map tidy. */
@@ -613,6 +636,11 @@ router.post("/jobs/:jobId/interview-direction", validate({ body: InterviewDirect
 
 router.get("/jobs/:jobId/pipeline-status", async (req, res) => {
   const { jobId } = req.params;
+  const viewer = await resolveAgentViewer(req, res);
+  if (!viewer) return;
+  const job = await scopedAgentJob(jobId, viewer.allowed);
+  if (!job || !(await recruiterOwnsResource(viewer.caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   const [row] = await db.select().from(jobPipelinesTable).where(eq(jobPipelinesTable.jobId, jobId)).limit(1);
   const viableCount = await countViableCandidates(jobId);
 
@@ -653,8 +681,11 @@ router.get("/jobs/:jobId/pipeline-status", async (req, res) => {
 
 router.post("/jobs/:jobId/pipeline-stop", async (req, res) => {
   const { jobId } = req.params;
-  const [job] = await db.select({ tenantId: jobsTable.tenantId }).from(jobsTable).where(eq(jobsTable.id, jobId)).limit(1);
-  if (!job) return res.status(404).json({ error: "Job not found" });
+  const caller = await requireAgentWriter(req, res);
+  if (!caller) return;
+  const job = await scopedAgentJob(jobId, await getDataScopeTenantIds(caller));
+  if (!job || !(await recruiterOwnsResource(caller, { kind: "jobId", value: jobId })))
+    return res.status(404).json({ error: "Not found" });
   await upsertPipelineRow(jobId, job.tenantId, { autoRun: false, status: "idle" });
   return res.json({ ok: true });
 });

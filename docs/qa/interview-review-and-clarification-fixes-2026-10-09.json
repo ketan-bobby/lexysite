@@ -1,0 +1,43 @@
+{
+  "scope": "Future interview capture and recruiter assessment-review safeguards",
+  "modelsPromptsProvidersAndRubricsUnchanged": true,
+  "historicalAssessmentsUnchanged": true,
+  "evaluationWarning": {
+    "surfaces": ["recruiter interview detail", "interview report PDF", "workflow runtime evidence"],
+    "usesExistingInterviewBands": true,
+    "automaticHiringDecision": false,
+    "livePilotEvidenceAttentionRequired": true,
+    "livePilotScorePreserved": 46,
+    "livePilotRecommendationPreserved": "yes",
+    "livePilotEvaluationStatus": "review_required",
+    "livePilotHiringDecision": "pending"
+  },
+  "captureAccounting": {
+    "explicitAudioClarificationsDoNotConsumeSlots": true,
+    "correctedAnswerUsesOriginalQuestion": true,
+    "previousCaptureRetainedAsMetadata": true,
+    "correctionIsNotSeparatelyGraded": true,
+    "writesLocked": true,
+    "identicalRetriesDeduplicated": true,
+    "completedInterviewsProtected": true,
+    "uiWaitsForSaveAndRetainsTextOnFailure": true,
+    "classificationScope": "Conservative explicit audio-recapture phrases; skill gaps and ordinary substantive follow-ups remain assessed questions."
+  },
+  "verification": {
+    "policyUnitTests": "passed",
+    "nativeSaveTurnConcurrentCorrectionResumeAndImmutability": "passed",
+    "existingRuntimeConsentTests": "passed",
+    "existingSummaryIntegrityTests": "passed",
+    "existingResumeStateTests": "passed",
+    "frontendTypecheck": "passed",
+    "apiBuildGuards": "passed",
+    "runningWorkflowEvidenceRead": "passed",
+    "browserCheck": "passed",
+    "browserCoverage": {
+      "realReadOnlyStaffReport": "Warning, score 46 and advance recommendation visible on desktop and mobile; no writes allowed.",
+      "mockedRoomContract": "Failed save retains text and blocks next converse until confirmed retry; audio correction keeps next questionNumber unchanged.",
+      "realProviderInterview": "Not repeated"
+    }
+  },
+  "noPilotInvitationOrAssessmentRepeated": true
+}

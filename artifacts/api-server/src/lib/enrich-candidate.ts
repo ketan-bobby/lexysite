@@ -29,9 +29,11 @@ import { db, candidatesTable, jobsTable, icpTable, resumeScreensTable, applicati
 import { and, eq, or, isNull } from "drizzle-orm";
 import { logger } from "./logger.js";
 import { generateJSON } from "./ai.js";
+import { withUsageActivity } from "./vendor-usage-context";
 import { scoreCandidateForJob } from "./icp-generator.js";
 import { upsertIntelligence } from "./intelligence.js";
 import { ObjectStorageService } from "./objectStorage.js";
+import { isCandidateErased } from "./candidate-erasure-barrier";
 
 /** Case-insensitive union of skill lists, preserving first-seen casing/order. */
 export function unionSkills(
@@ -78,6 +80,7 @@ export async function fillCandidateSocialUrlsIfEmpty(
 ): Promise<void> {
   try {
     const li = normalizeSocialUrl(urls.linkedinUrl, "linkedin.com");
+    if (await isCandidateErased(candidateId)) return;
     const gh = normalizeSocialUrl(urls.githubUrl, "github.com");
 
     if (li) {
@@ -120,12 +123,12 @@ export async function mergeSkillsIntoCandidate(
     // skills. Lock the row FOR UPDATE inside a transaction so the union holds.
     return await db.transaction(async (tx) => {
       const [c] = await tx
-        .select({ skills: candidatesTable.skills })
+        .select({ skills: candidatesTable.skills, dataErasedAt: candidatesTable.dataErasedAt })
         .from(candidatesTable)
         .where(eq(candidatesTable.id, candidateId))
         .limit(1)
         .for("update");
-      if (!c) return null;
+      if (!c || c.dataErasedAt) return null;
 
       const existing = (c.skills as string[]) ?? [];
       const merged = unionSkills(existing, clean);
@@ -216,7 +219,11 @@ export async function enrichCandidateFromResume(
   candidateId: string,
   objectPath: string,
 ): Promise<string[] | null> {
-  const skills = await extractSkillsFromResume(objectPath);
+  if (await isCandidateErased(candidateId)) return null;
+  const [candidate] = await db.select({ tenantId: candidatesTable.tenantId })
+    .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
+  const skills = await withUsageActivity(candidate?.tenantId ?? null, "screening",
+    () => extractSkillsFromResume(objectPath));
   if (skills.length === 0) return null;
   return mergeSkillsIntoCandidate(candidateId, skills);
 }
@@ -246,7 +253,7 @@ export async function rescoreCandidateForJob(
 
     const [candidate] = await db.select().from(candidatesTable)
       .where(eq(candidatesTable.id, candidateId)).limit(1);
-    if (!candidate) return null;
+      if (!candidate || candidate.dataErasedAt) return null;
 
     // Score against the JOB's own tenant (tenants form a tree — a parent-tenant
     // recruiter may link a candidate onto a child-tenant job). Mirrors the
@@ -349,6 +356,7 @@ export async function screenCandidateResume(
     const [candidate] = await db.select().from(candidatesTable)
       .where(eq(candidatesTable.id, candidateId)).limit(1);
     if (!candidate) return { screened: false, reason: "candidate_not_found" };
+    if (candidate.dataErasedAt || await isCandidateErased(candidateId)) return { screened: false, reason: "candidate_erased" };
     if (!candidate.resumeUrl) return { screened: false, reason: "no_resume" };
 
     const [job] = await db.select().from(jobsTable)
@@ -374,7 +382,7 @@ export async function screenCandidateResume(
       .where(eq(icpTable.jobId, jobId)).limit(1);
     const requiredSkills = (icp?.requiredSkills as string[] | undefined) ?? [];
 
-    const result = await generateJSON<{
+    const result = await withUsageActivity(job.tenantId, "screening", () => generateJSON<{
       screeningScore?: number;
       extractedSkills?: string[];
       missingSkills?: string[];
@@ -406,7 +414,7 @@ Return JSON with keys:
   githubUrl (string|null — candidate's GitHub profile URL if it appears in the resume),
   recruiterSummary (2-3 sentence plain-language summary for the recruiter).`,
       "You are an expert technical recruiter. Screen resumes objectively and return valid JSON only — no markdown, no commentary.",
-    );
+    ));
 
     const extractedSkills = (result.extractedSkills ?? []).map((s) => (s ?? "").trim()).filter(Boolean);
 

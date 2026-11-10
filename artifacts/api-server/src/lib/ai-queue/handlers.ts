@@ -36,6 +36,9 @@ import { rescoreCandidateForJob } from "../enrich-candidate";
 import { logCandidateEvent } from "../candidate-event-logger.js";
 import { logger } from "../logger";
 import { enqueueAiJob } from "./queue";
+import { enqueueInterviewFollowups } from "./interview-followups";
+import { resolveInterviewSummary } from "../interview-summary-result.js";
+import { isValidInterviewScore, parseInterviewGrade } from "../interview-turn-policy.js";
 
 type Handler = (job: AiJob) => Promise<unknown>;
 
@@ -48,8 +51,8 @@ async function gradeAnswer(args: {
   language: string;
   focusLine: string;
 }): Promise<{ score: number; feedback?: string } | null> {
-  const ans = (args.answer ?? "").toString().trim();
-  if (!ans) return { score: 0 }; // no answer given → a real, low signal
+  const ans = typeof args.answer === "string" ? args.answer.trim() : "";
+  if (!ans) return null; // absent capture is not a demonstrated non-answer
   const langLabel = resolveLangMeta(args.language).label;
   try {
     const r = await generateJSON<{ score: number; feedback: string }>(
@@ -57,10 +60,7 @@ async function gradeAnswer(args: {
       `You are a rigorous interviewer grading a single answer. Be honest and calibrated — never inflate a weak or non-serious answer. Respond with valid JSON only.\n\n${FAIRNESS_DIRECTIVE}`,
       args.language,
     );
-    return {
-      score: Math.min(100, Math.max(0, Math.round(r.score ?? 0))),
-      feedback: r.feedback,
-    };
+    return parseInterviewGrade(r);
   } catch {
     return null;
   }
@@ -114,7 +114,7 @@ const summarizeInterview: Handler = async (job) => {
     : "";
 
   /* Per-question scoring (parallel). A failed rating leaves the answer unscored. */
-  const unscored = answers.filter((a: any) => a && typeof a.score !== "number");
+  const unscored = answers.filter((a: any) => a && !isValidInterviewScore(a.score));
   if (unscored.length > 0) {
     await Promise.all(
       unscored.map(async (a: any) => {
@@ -133,14 +133,6 @@ const summarizeInterview: Handler = async (job) => {
       .where(eq(interviewSessionsTable.id, sessionId));
   }
 
-  /* Defaults used only if the AI summary call fails. */
-  let strengths = ["Clear communication", "Relevant experience"];
-  let weaknesses = ["Could provide more specific examples"];
-  let overallScore = 75;
-  let recruiterSummary = "Solid candidate. Recommend advancing to next round.";
-  let recommendation = "maybe";
-  let redFlags: string[] = [];
-
   const transcript = answers
     .map((a: any) => {
       const q = questions.find((q: any) => q.id === a.questionId);
@@ -149,41 +141,27 @@ const summarizeInterview: Handler = async (job) => {
     })
     .join("\n\n");
 
+  if (!answers.some((a: any) => isValidInterviewScore(a?.score) &&
+    typeof a.answer === "string" && a.answer.trim())) {
+    throw new Error("Interview summary has no valid assessment score");
+  }
+  let generatedSummary: unknown;
   try {
-    const summary = await generateJSON<any>(
+    generatedSummary = await generateJSON<any>(
       `Analyze this interview transcript and produce a hiring recommendation.\n\nEvaluate ONLY the substance of the candidate's answers (relevance, depth, correctness, specific examples). Do NOT reward or penalize accent, dialect, grammar, fluency, verbosity, speaking style, or interview-answer format (e.g. presence or absence of STAR structure or other interview coaching conventions) except where it genuinely prevents job-relevant communication. Judge substance: reserve high scores for verifiable specifics (numbers, named decisions, verifiable outcomes) regardless of how the answer is formatted.${summaryFocusLine}\n\nTranscript:\n${transcript}\n\nReturn JSON:\n{\n  "overallScore": number (0-100),\n  "strengths": string[] (3-5 specific strengths),\n  "weaknesses": string[] (1-3 areas for improvement),\n  "redFlags": string[] (serious concerns, or empty),\n  "recommendation": "yes" | "maybe" | "no",\n  "recruiterSummary": string (3-4 sentences specific to this candidate)\n}\nAll text in ${langLabel}.`,
       `You are a senior recruiter writing a post-interview evaluation. Be specific to the candidate's actual responses. Respond with valid JSON only.\n\n${FAIRNESS_DIRECTIVE}`,
       language,
     );
 
-    /* Quote-anchoring: drop AI bullets whose quoted phrase isn't in the transcript. */
-    const transcriptLower = transcript.toLowerCase();
-    const anchorOk = (s: string): boolean => {
-      if (typeof s !== "string") return false;
-      const quotes = [...s.matchAll(/[""'']([^""''\n]{4,})[""'']/g)].map((m) => m[1].trim().toLowerCase());
-      if (quotes.length === 0) return true;
-      return quotes.every((q) => transcriptLower.includes(q));
-    };
-    const anchorList = (arr: any): string[] => (Array.isArray(arr) ? arr.filter(anchorOk) : []);
-
-    const anchoredStrengths = anchorList(summary.strengths);
-    const anchoredWeaknesses = anchorList(summary.weaknesses);
-    const anchoredRedFlags = anchorList(summary.redFlags);
-    const summaryAnchored = anchorOk(summary.recruiterSummary);
-
-    strengths = anchoredStrengths.length ? anchoredStrengths : strengths;
-    weaknesses = anchoredWeaknesses.length ? anchoredWeaknesses : weaknesses;
-    redFlags = anchoredRedFlags;
-    /* Overall = average of per-question scores so the headline matches the breakdown. */
-    const scoredForOverall = answers.filter((a: any) => typeof a.score === "number");
-    overallScore = scoredForOverall.length
-      ? Math.round(scoredForOverall.reduce((sum: number, a: any) => sum + a.score, 0) / scoredForOverall.length)
-      : summary.overallScore ?? overallScore;
-    recommendation = summary.recommendation ?? "maybe";
-    recruiterSummary = summaryAnchored ? summary.recruiterSummary ?? recruiterSummary : recruiterSummary;
   } catch (err: any) {
-    logger.warn({ sessionId, err: err?.message }, "[ai-queue] summary generation failed — using fallbacks");
+    logger.warn({ sessionId, err: err?.message }, "[ai-queue] summary generation failed — assessment not saved");
+    // The queue's existing retry/failure handling applies. Never save a made-up
+    // successful assessment or enqueue downstream hiring signals on failure.
+    throw err;
   }
+
+  const { strengths, weaknesses, redFlags, overallScore, recruiterSummary, recommendation } =
+    resolveInterviewSummary(generatedSummary, answers, transcript);
 
   const [dbSummary] = await dbAdmin
     .insert(interviewSummariesTable)
@@ -253,31 +231,15 @@ async function chainDownstream(session: typeof interviewSessionsTable.$inferSele
     .where(eq(interviewPlansTable.id, session.planId))
     .limit(1);
   const jobId = plan?.jobId ?? null;
-  if (jobId && session.candidateId) {
-    /* enqueueAiJob returns null (never throws) on a persist failure. A dropped
-       downstream enqueue must NOT be silent — throw so the parent
-       summarize_interview job is retried. Both child enqueues are dedupe-keyed,
-       and summarize itself short-circuits on the existing summary, so a retry is
-       idempotent: it just re-attempts the missing child without redoing grading. */
-    const insights = await enqueueAiJob({
-      type: "generate_candidate_insights",
-      payload: { sessionId: session.id },
+  await enqueueInterviewFollowups(
+    {
+      sessionId: session.id,
       tenantId: session.tenantId,
-      interviewSessionId: session.id,
-      dedupeKey: `insights:${session.id}`,
-      priority: 5,
-    });
-    if (!insights) throw new Error(`chainDownstream: failed to enqueue generate_candidate_insights for session ${session.id}`);
-    const match = await enqueueAiJob({
-      type: "match_candidate_to_job",
-      payload: { candidateId: session.candidateId, jobId },
-      tenantId: session.tenantId,
-      interviewSessionId: session.id,
-      dedupeKey: `match:${session.candidateId}:${jobId}`,
-      priority: 1,
-    });
-    if (!match) throw new Error(`chainDownstream: failed to enqueue match_candidate_to_job for session ${session.id}`);
-  }
+      candidateId: session.candidateId,
+      jobId,
+    },
+    enqueueAiJob,
+  );
 }
 
 /* ── generate_candidate_insights ─────────────────────────────────────────────

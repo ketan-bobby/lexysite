@@ -48,6 +48,7 @@ import {
 } from "@workspace/db";
 import { eq, count, desc, and, inArray } from "drizzle-orm";
 import { changeCandidateStage } from "../lib/change-candidate-stage.js";
+import { AtsStageOwnershipConflict, assertNativeStageOwner, lockAtsStageOwner } from "../lib/ats-stage-owner";
 import { orchestrator } from "../lib/agents/orchestrator";
 import { logger } from "../lib/logger";
 import { recruiterLinkOrigin } from "../lib/sourcing-origin";
@@ -342,7 +343,12 @@ router.post("/applications", validate({ body: CreateApplicationBody }), async (r
     actorId: user?.id ?? null,
   });
 
-  const [app] = await db
+  const [app] = await db.transaction(async (tx) => {
+    if (candidateId && jobId) {
+      await lockAtsStageOwner(tx, candidateId, jobId);
+      await assertNativeStageOwner(tx, candidateId, jobId);
+    }
+    return tx
     .insert(applicationsTable)
     .values({
       tenantId,
@@ -353,6 +359,7 @@ router.post("/applications", validate({ body: CreateApplicationBody }), async (r
       ...origin,
     })
     .returning();
+  });
 
   const result = await mapApplication(app);
   res.status(201).json(result);
@@ -672,6 +679,10 @@ router.put(
           sourcedRawDataPatch: sc ? { jobId: existing.jobId } : undefined,
         });
       } catch (err) {
+        if (err instanceof AtsStageOwnershipConflict) {
+          res.status(409).json({ error: err.message, code: err.code });
+          return;
+        }
         logger.error(
           { err, applicationId: req.params.applicationId },
           "Stage change transaction failed — rolled back (stage/mirror/event/audit)",
@@ -940,4 +951,11 @@ router.put(
   },
 );
 
+router.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+  if (error instanceof AtsStageOwnershipConflict) {
+    res.status(409).json({error:error.message,code:error.code});
+    return;
+  }
+  next(error);
+});
 export default router;

@@ -45,7 +45,12 @@ const SRC = join(__dirname, ".."); // api-server/src
 const ALLOWED = new Set<string>([
   "routes/career-profile.ts",
   "routes/analytics.ts",
+  // Isolated development authorization fixture, never a runtime reader.
+  // Keep this explicit: other test files must not gain blanket access.
+  "routes/compliance-analytics-authorization.test.ts",
   "routes/admin-deletion.ts",
+  // Erasure-only inventory and DELETE cascade; never reads demographics or scores candidates.
+  "lib/candidate-erasure.ts",
   "lib/fairness-firewall.test.ts",
 ]);
 

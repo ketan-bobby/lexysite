@@ -100,7 +100,8 @@ export interface Evaluation {
   updatedAt: string;
   content: MergedEvaluationContent;
   aiContent: EvaluationContent;
-  humanEdits: EvaluationHumanEdits | null;
+  reviewEditsStatus?: "none" | "verified" | "requires_review";
+  evidenceProvenanceVerified?: boolean;
 }
 
 export interface EvaluationGetResponse {

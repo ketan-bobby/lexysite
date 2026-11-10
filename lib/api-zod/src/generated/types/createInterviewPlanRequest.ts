@@ -5,9 +5,17 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateInterviewPlanRequestInterviewType } from "./createInterviewPlanRequestInterviewType";
 
 export interface CreateInterviewPlanRequest {
+  /** @minLength 1 */
   jobId: string;
-  interviewType?: string;
+  interviewType?: CreateInterviewPlanRequestInterviewType;
+  /**
+   * @minimum 1
+   * @maximum 9007199254740991
+   */
   questionCount?: number;
+  /** @minLength 1 */
+  language?: string;
 }

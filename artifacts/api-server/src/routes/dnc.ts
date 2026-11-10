@@ -33,11 +33,13 @@ import {
   candidatesTable, nurturePoolTable, outreachEnrollmentsTable,
   applicationsTable, usersTable, tenantsTable,
 } from "@workspace/db";
-import { eq, and, desc, inArray, isNull } from "drizzle-orm";
+import { eq, and, desc, inArray, isNull, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getAuthUserId } from "../lib/auth-token";
 import { validate } from "../middlewares/validate";
 import { getAllowedTenantIds } from "../lib/tenantUtils";
+import { purgeCandidateLinkedData, collectCandidateRecordingPaths } from "../lib/candidate-erasure";
+import { stageErasureCleanup, processErasureCleanup, latestCandidateCleanup } from "../lib/erasure-cleanup";
 
 const AddDncBody = z.object({
   reason: z.string().optional(),
@@ -208,6 +210,9 @@ router.delete("/dnc/:candidateId", validate({ body: RemoveDncBody }), async (req
 router.delete("/dnc/:candidateId/data", async (req, res) => {
   const user = await getCallerUser(req);
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (!["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager", "interviewer"].includes(user.role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
   const allowed = await getAllowedTenantIds(user);
   const { candidateId } = req.params;
 
@@ -218,10 +223,10 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
 
     if (!cand) { res.status(404).json({ error: "Candidate not found" }); return; }
     if (allowed !== null && !allowed.includes(cand.tenantId ?? "")) {
-      res.status(403).json({ error: "Forbidden" }); return;
+      res.status(404).json({ error: "Candidate not found" }); return;
     }
     if (cand.dataErasedAt as any) {
-      res.json({ ok: true, message: "Data already erased." }); return;
+      res.json({ ok: true, message: "Candidate database records already erased. File status is tracked separately.", ...await latestCandidateCleanup(candidateId) }); return;
     }
 
     const now = new Date();
@@ -235,6 +240,8 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
        whose row was restored. Worst case is an orphan S3 object, which is
        cleaned up by the audit retry pipeline. */
     const purgeSummary: Record<string, number | string> = { candidateId };
+    let recordingPaths: string[] = [];
+    let cleanupRequestId = "";
     const {
       candidateJobIntelligenceTable,
       outreachMessagesTable,
@@ -249,12 +256,16 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
     const { inArray } = await import("drizzle-orm");
 
     await db.transaction(async (tx) => {
+      recordingPaths = await collectCandidateRecordingPaths(tx, candidateId);
+      cleanupRequestId = await stageErasureCleanup(tx, {
+        candidateId, paths: recordingPaths, origin: "staff", actorId: user.id,
+      });
       // Anonymise PII fields in candidates table
       await tx.update(candidatesTable)
         .set({
           firstName:      "[Erased]",
           lastName:       "[Erased]",
-          email:          `erased+${candidateId.slice(0, 8)}@deleted.invalid`,
+          email:          `erased+${candidateId}@deleted.invalid`,
           phone:          null,
           location:       null,
           linkedinUrl:    null,
@@ -263,10 +274,21 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
           currentCompany: null,
           resumeUrl:      null,
           skills:         [],
+          timezone:       null,
+          verificationResult: null,
+          workAuthorized: null,
+          requiresSponsorship: null,
+          sponsorshipCountry: null,
+          sponsorshipNotes: null,
+          screeningCompletedAt: null,
+          workAuthSource: null,
+          currentEmployerDomain: null,
+          blockedCompanyDomains: [],
+          isCurrentEmployee: false,
+          discoveryPaused: true,
           doNotContact:   true,
           dncAt:          (cand.dncAt as any) ?? now,
           dncReason:      "gdpr_erasure",
-          dataErasedAt:   now,
           updatedAt:      now,
         } as any)
         .where(eq(candidatesTable.id, candidateId));
@@ -296,9 +318,13 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
       // (final_decision = candidate_withdrawn + an immutable decision_event
       // per row), which is a STRONGER audit record than a generic
       // STAGE_CHANGED for a right-to-erasure cascade.
+      await tx.update(applicationsTable)
+        .set({ notes: "Candidate data erased per GDPR request.", updatedAt: now })
+        .where(eq(applicationsTable.candidateId, candidateId));
       const affected = await tx.update(applicationsTable)
         .set({ notes: "Candidate data erased per GDPR request.", stage: "rejected" as any, updatedAt: now })
-        .where(eq(applicationsTable.candidateId, candidateId))
+        .where(and(eq(applicationsTable.candidateId, candidateId),
+          sql`${applicationsTable.stage}::text NOT IN ('hired', 'started', 'rejected', 'withdrawn', 'offer_declined')`))
         .returning({ id: applicationsTable.id });
       (purgeSummary as any).__gdprAffectedAppIds = affected.map((a) => a.id);
 
@@ -325,9 +351,7 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
       const sessionIds = sessions.map(s => s.id);
       if (sessionIds.length > 0) {
         await tx.delete(interviewSummariesTable)
-          .where(inArray(interviewSummariesTable.sessionId, sessionIds));
-        await tx.delete(interviewSchedulesTable)
-          .where(inArray(interviewSchedulesTable.sessionId, sessionIds));
+          .where(inArray(interviewSummariesTable.interviewSessionId, sessionIds));
       }
       const sessDel = await tx.delete(interviewSessionsTable)
         .where(eq(interviewSessionsTable.candidateId, candidateId));
@@ -343,6 +367,8 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
 
       const vDel = await tx.delete(verificationRecordsTable)
         .where(eq(verificationRecordsTable.candidateId, candidateId));
+      await tx.update(candidatesTable).set({ dataErasedAt: now }).where(eq(candidatesTable.id, candidateId));
+      await purgeCandidateLinkedData(tx, candidateId, { retainApplications: true });
       purgeSummary.verification = (vDel as any)?.rowCount ?? "ok";
     });
 
@@ -378,36 +404,27 @@ router.delete("/dnc/:candidateId/data", async (req, res) => {
       }
     }
 
-    /* S3 object purge: resume + any interview recording bytes. The S3 client
-       lives in lib/s3.ts; we send DeleteObject best-effort. */
-    try {
-      if (cand.resumeUrl) {
-        const { s3Client } = await import("../lib/s3");
-        const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-        const bucket = process.env.AWS_S3_BUCKET;
-        const url = cand.resumeUrl as string;
-        const key = url.startsWith("http")
-          ? new URL(url).pathname.replace(/^\//, "")
-          : url.replace(/^\//, "");
-        if (bucket && key) {
-          await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-          purgeSummary.resumeObject = "deleted";
-        }
-      }
-    } catch (s3Err: any) {
-      logger.warn({ candidateId, err: s3Err?.message }, "[GDPR] S3 resume delete failed");
-      purgeSummary.s3Error = s3Err?.message ?? "unknown";
-    }
+    let recordingCleanup: { cleanupPending: boolean };
+    try { recordingCleanup = await processErasureCleanup(cleanupRequestId); }
+    catch { recordingCleanup = { cleanupPending: true }; }
+    purgeSummary.recordingCleanup = recordingCleanup.cleanupPending ? "pending" : "complete";
+
+    if (cand.resumeUrl) purgeSummary.resumeObject = recordingCleanup.cleanupPending ? "pending" : "deleted";
 
     logger.info({ candidateId, purgeSummary }, "[GDPR] Candidate PII + cascade erased");
     res.json({
       ok: true,
-      message: "All personal data has been anonymised and downstream artifacts purged. Application records are retained for audit purposes.",
+      cleanupRequestId,
+      cleanupPending: Boolean(recordingCleanup.cleanupPending || purgeSummary.s3Error || purgeSummary.resumeObject === "pending"),
+      message: recordingCleanup.cleanupPending || purgeSummary.s3Error || purgeSummary.resumeObject === "pending"
+        ? "Candidate database records were erased or anonymised. File cleanup still needs attention. Required audit records are retained."
+        : "Candidate data was erased or anonymised. Required application, decision and financial audit records are retained.",
       erasedRef,
       purgeSummary,
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    logger.error({ candidateId, err: err?.message }, "[GDPR] erasure failed");
+    res.status(500).json({ error: "Erasure failed" });
   }
 });
 

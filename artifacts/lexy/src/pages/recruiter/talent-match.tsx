@@ -50,7 +50,10 @@ export default function TalentMatch() {
   const matches = (rediscover.data ?? []) as any[];
   const loading = rediscover.isPending;
   const errored = rediscover.isError;
-  const selectedJobTitle = jobs.find((j: any) => j.id === selectedJob)?.title;
+  const selectedJobRecord = jobs.find((j: any) => j.id === selectedJob);
+  const selectedJobTitle = selectedJobRecord?.title;
+  const isInternalMobility = !!selectedJobRecord?.internalMobility;
+  const sourcingModeLabel = isInternalMobility ? "Internal Mobility" : "Known Talent Rediscovery";
 
   return (
     <AppLayout>
@@ -64,7 +67,8 @@ export default function TalentMatch() {
           disabled={!selectedJob || loading}
           onClick={() => selectedJob && rediscover.mutate({ data: { jobId: selectedJob, limit: 25 } })}
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />} Run Fresh Match
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}{" "}
+          {isInternalMobility ? "Refresh Internal Mobility Match" : "Run Fresh Match"}
         </Button>
       </div>
 
@@ -74,16 +78,35 @@ export default function TalentMatch() {
             <Magnet className="w-5 h-5 text-primary" />
             <div>
               <p className="text-sm font-medium">Match Against Job</p>
-              <p className="text-xs text-muted-foreground">Select a job to see ranked candidates from your pipeline</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedJob
+                  ? isInternalMobility
+                    ? "Internal Mobility ranks current employees at this client's tenant only."
+                    : "Known Talent Rediscovery ranks nonemployee candidates already in the database."
+                  : "Select a job to see its sourcing mode and ranked candidates."}
+              </p>
             </div>
           </div>
+          {selectedJob && (
+            <Badge
+              variant="outline"
+              className={isInternalMobility
+                ? "border-violet-500/35 bg-violet-500/10 text-violet-300"
+                : "border-primary/30 bg-primary/5 text-primary"}
+              data-testid="badge-talent-match-mode"
+            >
+              {sourcingModeLabel}
+            </Badge>
+          )}
           <Select value={selectedJob} onValueChange={setSelectedJob}>
             <SelectTrigger className="w-full md:w-72">
               <SelectValue placeholder="Select a job..." />
             </SelectTrigger>
             <SelectContent>
               {jobs.map((j: any) => (
-                <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
+                <SelectItem key={j.id} value={j.id}>
+                  {j.title}{j.internalMobility ? " · Internal Mobility" : ""}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -101,7 +124,10 @@ export default function TalentMatch() {
       {loading && (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin mb-3" />
-          <p className="text-sm">Scoring candidates against {selectedJobTitle || "the role"}…</p>
+          <p className="text-sm">
+            {isInternalMobility ? "Scoring current employees against " : "Scoring known talent against "}
+            {selectedJobTitle || "the role"}…
+          </p>
         </div>
       )}
 
@@ -133,8 +159,16 @@ export default function TalentMatch() {
       {!loading && !errored && selectedJob && matches.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
           <SearchX className="w-8 h-8 mb-3 opacity-40" />
-          <p className="text-sm">No candidates in your pool match this role yet.</p>
-          <p className="text-xs mt-1 opacity-70">Source or add candidates, then run a match.</p>
+          <p className="text-sm">
+            {isInternalMobility
+              ? "No current employees match this role yet."
+              : "No known nonemployee candidates match this role yet."}
+          </p>
+          <p className="text-xs mt-1 opacity-70">
+            {isInternalMobility
+              ? "Review the client’s current employee records, then refresh the match."
+              : "Run Known Talent Rediscovery or add candidates, then refresh the match."}
+          </p>
         </div>
       )}
 

@@ -70,6 +70,7 @@ import {
   UserX,
   Mail,
   User,
+  Users,
   UserCog,
   Edit,
   Save,
@@ -122,6 +123,7 @@ import { useToast } from "@workspace/react-hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import {
   canApproveWorkOrder,
+  canSubmitWorkOrder,
   isHmCreated,
   buildApprovePayload,
   ASSIGN_ON_APPROVE_ROLES,
@@ -136,6 +138,8 @@ import { JobOutreachPanel } from "@/components/agents/JobOutreachDrafts";
 import { ExecutiveJobView } from "@/components/intelligence/ExecutiveJobView";
 import { CsvImportDialog } from "@/components/candidates/CsvImportDialog";
 import { ShareAndEmbedPanel } from "@/components/jobs/ShareAndEmbedPanel";
+import { RecruitingConfigurationCard } from "@/components/jobs/RecruitingConfiguration";
+import { WorkflowPlanningCard } from "@/components/jobs/WorkflowPlanning";
 import { copyToClipboard } from "@/lib/clipboard";
 import { NurtureSequenceEditor } from "@/components/agents/NurtureSequenceEditor";
 
@@ -917,6 +921,7 @@ export default function JobDetail() {
     salaryMax: "",
     description: "",
     isConfidential: false,
+    internalMobility: false,
   });
   // Open-state for the three location comboboxes (kept outside editForm so we
   // don't trigger a form-wide re-render when only a popover toggles).
@@ -976,6 +981,7 @@ export default function JobDetail() {
       salaryMax: job.salaryMax != null ? String(job.salaryMax) : "",
       description: job.description ?? "",
       isConfidential: !!job.isConfidential,
+      internalMobility: job.internalMobility,
     });
     setEditOpen(true);
   };
@@ -1004,6 +1010,7 @@ export default function JobDetail() {
           salaryMax: editForm.salaryMax ? Number(editForm.salaryMax) : null,
           description: editForm.description,
           isConfidential: editForm.isConfidential,
+          internalMobility: editForm.internalMobility,
         }),
       });
       if (!res.ok) {
@@ -1055,11 +1062,14 @@ export default function JobDetail() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
-      await queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}`] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}`] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/jobs"] }),
+      ]);
       const msg =
         user?.role === "hiring_manager"
           ? "Your work order has been sent to the Tenant Admin for review."
-          : "The hiring manager will be notified to review this work order.";
+          : "Your work order is now pending approval. An authorized reviewer must approve it before recruiting can begin.";
       toast({ title: "Submitted for approval", description: msg });
     } catch (e: any) {
       toast({ title: "Could not submit", description: e.message, variant: "destructive" });
@@ -1796,6 +1806,15 @@ export default function JobDetail() {
               >
                 {job.status === "pending_approval" ? "Pending Approval" : job.status}
               </Badge>
+              {job.internalMobility && (
+                <Badge
+                  variant="outline"
+                  className="gap-1.5 border-violet-500/35 bg-violet-500/10 text-violet-300"
+                  data-testid="badge-internal-mobility"
+                >
+                  <Users className="w-3 h-3" /> Internal Mobility
+                </Badge>
+              )}
               <LinxStatusBadge jobId={job.id} />
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-2">
@@ -1883,6 +1902,21 @@ export default function JobDetail() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 items-center">
+            <Button
+              variant="outline"
+              data-testid="button-workflow-controls"
+              onClick={() => {
+                setActiveTab("overview");
+                requestAnimationFrame(() =>
+                  document.getElementById("workflow-controls")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  }),
+                );
+              }}
+            >
+              Workflow controls
+            </Button>
             {/* ── Sourcing ────────────────────────────────────────────── */}
             {/* Kicks off an agent run and opens its live feed. Only offered on
                 approved/live roles — sourcing creates candidate records. */}
@@ -1891,13 +1925,18 @@ export default function JobDetail() {
                 className="hover-elevate gap-2"
                 onClick={() => triggerSourcing(job.id)}
                 disabled={sourcingPending}
+                title={
+                  job.internalMobility
+                    ? "Search current employees at the client only. External Discovery is disabled for this requisition."
+                    : "Starts a live provider search. Use Workflow controls to review saved results without starting a search."
+                }
               >
                 {sourcingPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Sparkles className="w-4 h-4" />
                 )}
-                Source Candidates
+                {job.internalMobility ? "Source Internal Mobility Candidates" : "Start live sourcing"}
               </Button>
             )}
 
@@ -1983,9 +2022,7 @@ export default function JobDetail() {
             )}
 
             {/* HM submitting their own requisition to Tenant Admin */}
-            {["draft", "active"].includes(job.status) &&
-              user?.role === "hiring_manager" &&
-              job.createdById === user?.id && (
+            {canSubmitWorkOrder(job, user) && user?.role === "hiring_manager" && (
                 <Button
                   variant="outline"
                   className="hover-elevate gap-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
@@ -2002,9 +2039,7 @@ export default function JobDetail() {
               )}
 
             {/* Recruiter / admin: submit for HM approval */}
-            {["draft", "active"].includes(job.status) &&
-              ["recruiter", "tenant_admin", "platform_admin"].includes(user?.role) &&
-              job.assignedHiringManagerId && (
+            {canSubmitWorkOrder(job, user) && user?.role !== "hiring_manager" && (
                 <Button
                   variant="outline"
                   className="hover-elevate gap-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
@@ -2133,11 +2168,19 @@ export default function JobDetail() {
       </div>
 
       {/* ── Approval status banners ─────────────────────────────────────── */}
+      {job.status === "draft" && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-400">
+          This work order is a draft and is not in the Approval list yet.
+          {canSubmitWorkOrder(job, user)
+            ? ' Use "Submit for Approval" above to request review. A different authorized reviewer must approve it.'
+            : " An authorized staff member must submit it for review before it can be approved."}
+        </div>
+      )}
       {job.status === "pending_approval" &&
         (() => {
           const submittedTo = isHmCreatedJob
             ? "the Tenant Admin"
-            : (job.assignedHiringManagerName ?? "the hiring manager");
+            : (job.assignedHiringManagerName ?? "an authorized admin reviewer");
           const actionNote = canApprove
             ? " Use the Approve / Return for Revision buttons above to action it."
             : " You will be notified once it is approved or returned.";
@@ -2549,6 +2592,37 @@ export default function JobDetail() {
 
         {/* ── Overview ──────────────────────────────────────────────────────── */}
         <TabsContent value="overview" className="space-y-6">
+          <RecruitingConfigurationCard
+            key={job.id}
+            job={job}
+            canEdit={
+              ["platform_admin", "tenant_admin", "recruiter_admin", "recruiter"].includes(user?.role) ||
+              (user?.role === "hiring_manager" && (job as any).assignedHiringManagerId === user?.id)
+            }
+          />
+          <div id="workflow-controls" className="scroll-mt-24">
+            <WorkflowPlanningCard key={`wf-${job.id}`} jobId={job.id} briefRevision={job.updatedAt} />
+          </div>
+          <Card
+            className={job.internalMobility ? "border-violet-500/30 bg-violet-500/5 shadow-sm" : "shadow-sm"}
+            data-testid="sourcing-mode-summary"
+          >
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <Users className={`w-4 h-4 mt-0.5 shrink-0 ${job.internalMobility ? "text-violet-400" : "text-muted-foreground"}`} />
+                <div>
+                  <p className="text-sm font-semibold">
+                    Sourcing mode: {job.internalMobility ? "Internal Mobility" : "Known Talent Rediscovery + External Discovery"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {job.internalMobility
+                      ? "This requisition searches only current employees at the client. Known nonemployee database talent and external sources are not included."
+                      : "This requisition can rediscover known nonemployee talent already in the database and discover candidates through external sources."}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <Card className="shadow-sm">
             <CardHeader>
               <CardTitle>Work Order Description</CardTitle>
@@ -3148,6 +3222,7 @@ export default function JobDetail() {
           value="agents"
           className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6"
         >
+          <WorkflowPlanningCard jobId={job.id} briefRevision={job.updatedAt} />
           <WorkflowCanvas jobId={jobId} roleTitle={job?.title} />
           <RunHistoryPanel workOrderId={jobId} />
         </TabsContent>
@@ -4028,6 +4103,23 @@ export default function JobDetail() {
                 className="rounded"
               />
               Confidential — hide company name on the public careers page
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-violet-500/25 bg-violet-500/[0.04] p-3 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editForm.internalMobility}
+                onChange={(e) => setEditForm((f) => ({ ...f, internalMobility: e.target.checked }))}
+                className="mt-1 rounded"
+                data-testid="checkbox-edit-internal-mobility"
+              />
+              <span>
+                <span className="font-medium block">Internal Mobility</span>
+                <span className="text-xs text-muted-foreground block mt-0.5">
+                  Search only current employees at this client. External discovery and known
+                  nonemployee talent rediscovery are excluded. When unchecked, Lexy can search
+                  known nonemployee talent in your database and external sources.
+                </span>
+              </span>
             </label>
           </div>
           <DialogFooter>

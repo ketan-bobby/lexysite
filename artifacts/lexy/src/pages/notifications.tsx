@@ -15,14 +15,14 @@
  *   reply_received        — "View Inbox" → /recruiter/outreach/inbox
  *
  * ─── Data source ─────────────────────────────────────────────────────────────
- *   GET  /api/user-notifications          — list (last 50)
+ *   GET  /api/user-notifications          — cursor-paginated history (50 per page)
  *   POST /api/user-notifications/:id/read — mark one read
  *   POST /api/user-notifications/read-all — mark all read
  *
  * ─── Route ───────────────────────────────────────────────────────────────────
  *   /notifications  (shared route — AppLayout picks the right nav based on role)
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import { Bell, Check, Loader2, Video, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { apiFetch, apiBase } from "@/lib/api";
 import { format, parseISO } from "date-fns";
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth-context";
 
 const BASE = (import.meta as any).env?.BASE_URL || "/";
 
@@ -43,34 +45,82 @@ interface Notification {
   createdAt: string;
 }
 
-export default function StaffNotifications() {
-  const [items, setItems] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+interface NotificationPage {
+  items: Notification[];
+  nextCursor: string | null;
+}
 
-  async function load() {
-    setLoading(true);
+export default function StaffNotifications() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const historyKey = ["staff-notification-history", user?.id] as const;
+  const history = useInfiniteQuery({
+    queryKey: historyKey,
+    enabled: !!user,
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam, signal }): Promise<NotificationPage> => {
+      const params = new URLSearchParams({ limit: "50" });
+      if (pageParam) params.set("cursor", pageParam);
+      const r = await apiFetch(`${apiBase}/user-notifications?${params}`, { signal });
+      const data: unknown = await r.json();
+      if (!Array.isArray(data)) throw new Error("Invalid notification response");
+      return { items: data as Notification[], nextCursor: r.headers.get("X-Next-Cursor") };
+    },
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
+    refetchInterval: 30_000,
+    staleTime: 5_000,
+  });
+  const count = useQuery<{ count: number }>({
+    queryKey: ["staff-notification-count", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const r = await apiFetch(`${apiBase}/user-notifications/unread-count`);
+      return r.json();
+    },
+    refetchInterval: 30_000,
+    staleTime: 5_000,
+  });
+  const items = [...new Map(
+    (history.data?.pages.flatMap(page => page.items) ?? []).map(n => [n.id, n]),
+  ).values()];
+  const loading = history.isPending;
+  const loadError = history.isError || count.isError
+    ? "Could not refresh notifications. Retry to check the latest staff actions."
+    : null;
+
+  function updateRead(id?: string) {
+    queryClient.setQueryData<InfiniteData<NotificationPage>>(historyKey, prev => prev && ({
+      ...prev,
+      pages: prev.pages.map(page => ({
+        ...page,
+        items: page.items.map(n => !id || n.id === id ? { ...n, isRead: true } : n),
+      })),
+    }));
+    void queryClient.invalidateQueries({ queryKey: ["staff-notification-count"] });
+    void queryClient.invalidateQueries({ queryKey: historyKey });
+    setError(null);
+  }
+
+  async function markRead(id: string) {
     try {
-      const r = await apiFetch(`${apiBase}/user-notifications`);
-      const data = await r.json();
-      setItems(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
+      await apiFetch(`${apiBase}/user-notifications/${id}/read`, { method: "POST" });
+      updateRead(id);
+    } catch {
+      setError("Could not mark this notification as read. Please try again.");
     }
   }
 
-  useEffect(() => { load(); }, []);
-
-  async function markRead(id: string) {
-    await apiFetch(`${apiBase}/user-notifications/${id}/read`, { method: "POST" });
-    setItems(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-  }
-
   async function markAllRead() {
-    await apiFetch(`${apiBase}/user-notifications/read-all`, { method: "POST" });
-    setItems(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      await apiFetch(`${apiBase}/user-notifications/read-all`, { method: "POST" });
+      updateRead();
+    } catch {
+      setError("Could not mark notifications as read. Please try again.");
+    }
   }
 
-  const unread = items.filter(n => !n.isRead).length;
+  const unread = Number.isInteger(count.data?.count) ? Math.max(0, count.data!.count) : null;
 
   return (
     <AppLayout>
@@ -79,21 +129,35 @@ export default function StaffNotifications() {
           <div>
             <h1 className="text-2xl font-bold">Notifications</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {unread > 0 ? `${unread} unread` : "You're all caught up."}
+              {unread === null || count.isError ? "Checking unread notifications…" :
+                unread > 0 ? `${unread} unread overall` : "You're all caught up."}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {items.length} notifications loaded, newest first.
             </p>
           </div>
-          {unread > 0 && (
+          {unread !== null && unread > 0 && (
             <Button onClick={markAllRead} variant="outline" size="sm" className="gap-2">
               <Check className="w-4 h-4" /> Mark all as read
             </Button>
           )}
         </div>
 
+        {(error || loadError) && (
+          <div role="alert" className="rounded-lg border p-3 text-sm flex flex-wrap items-center justify-between gap-2">
+            <span>{error || loadError}</span>
+            <Button variant="outline" size="sm" onClick={() => {
+              setError(null);
+              void history.refetch();
+              void count.refetch();
+            }}>Retry</Button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : items.length === 0 ? (
+        ) : items.length === 0 && !history.isError ? (
           <Card>
             <CardContent className="py-16 text-center text-muted-foreground">
               <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -130,6 +194,19 @@ export default function StaffNotifications() {
               );
             })}
           </div>
+        )}
+        {history.hasNextPage && (
+          <div className="flex justify-center">
+            <Button variant="outline" disabled={history.isFetching} onClick={() => {
+              void history.fetchNextPage();
+            }} data-testid="notifications-load-older">
+              {history.isFetchingNextPage && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {history.isFetchingNextPage ? "Loading older notifications…" : "Load older notifications"}
+            </Button>
+          </div>
+        )}
+        {!loading && items.length > 0 && !history.hasNextPage && !history.isError && (
+          <p className="text-center text-xs text-muted-foreground">All available notifications loaded.</p>
         )}
       </div>
     </AppLayout>

@@ -45,8 +45,12 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  // Server-owned security epoch, rotated by a database trigger with the hash.
+  credentialVersion: text("credential_version").notNull().default("0"),
   role: userRoleEnum("role").notNull().default("recruiter"),
   status: userStatusEnum("status").notNull().default("active"),
+  // Permanent candidate-account erasure, separate from reversible suspension.
+  accountErasedAt: timestamp("account_erased_at"),
   avatarUrl: text("avatar_url"),
   // "realtime" = email on every event, "digest" = roll up automated events
   // into a daily 08:00 digest, "off" = no automated emails (decision events

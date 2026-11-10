@@ -1,3 +1,4 @@
+import { maintainAttendance } from "./lib/meeting-attendance-service";
 /**
  * index.ts — API Server Entry Point
  *
@@ -10,10 +11,11 @@
  *   1. Validate PORT env var (required — no default to avoid silent port conflicts)
  *   2. Create an http.Server wrapping the Express app
  *   3. Register SIGTERM / SIGINT handlers for graceful shutdown
- *   4. Call server.listen(port) with an EADDRINUSE retry loop (up to 5 attempts,
+ *   4. Await leader-only run recovery (20-second ceiling); fail closed on error.
+ *   5. Call server.listen(port) with an EADDRINUSE retry loop (up to 5 attempts,
  *      1 second apart) — handles the short window after a restart where the OS
  *      hasn't yet released the port
- *   5. On the first successful "listening" event, start all schedulers:
+ *   6. On the first successful "listening" event, start all schedulers:
  *      • startOutreachScheduler()              — campaign autopilot (every 15 min)
  *      • startAntiGhostScheduler()             — ghosting detection (every 30 min)
  *      • startExternalClickScheduler()         — click follow-ups (every 6h)
@@ -32,9 +34,13 @@ import { createServer } from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startOutreachScheduler } from "./lib/outreach-scheduler";
+import { startOfferNotificationScheduler } from "./lib/offer-notifications";
+import { startZoomLinkAlertScheduler } from "./lib/zoom-link-alerts";
+import { startErasureCleanupScheduler } from "./lib/erasure-cleanup";
 import { startAntiGhostScheduler } from "./lib/anti-ghost-scheduler";
 import { startExternalClickScheduler } from "./lib/external-click-scheduler";
 import { startInterviewInviteScheduler } from "./lib/interview-invite-scheduler";
+import { startZohoCampaignScheduler } from "./lib/ats-connectors/zoho-campaign-dispatch";
 import { startTrialExpiryScheduler } from "./lib/trial-expiry-scheduler";
 import { startSubscriptionLifecycleScheduler } from "./lib/subscription-lifecycle-scheduler";
 import { startRecruiterDigestScheduler } from "./lib/recruiter-digest-scheduler";
@@ -50,10 +56,16 @@ import { startHttpAccessLogRetentionScheduler } from "./lib/http-access-log-rete
 import { startHistoryRetentionScheduler } from "./lib/history-retention-scheduler";
 import { startLearnedScoringRefreshScheduler } from "./lib/learned-scoring-scheduler";
 import { startPostHirePulseScheduler } from "./lib/post-hire-pulse-scheduler";
+import { startAtsRefreshScheduler } from "./lib/ats-refresh-scheduler";
 import { startLinkedInProfileMonitor, runLinkedInProfileMonitor, getLastLinkedInScanResult } from "./lib/linkedin-profile-monitor";
 import { startAiWorker } from "./lib/ai-queue/worker";
 import { reconcileStaleAgentRuns } from "./lib/agent-runs/recorder";
 import { reconcileStalePipelineRuns } from "./lib/pipeline-runs/reconcile";
+import { recoverBeforeListening } from "./lib/startup-recovery";
+
+/* Node's process-start clock predates imports, DB connection and HTTP startup.
+ * Never classify a run created while this process boots as a prior orphan. */
+const processStartedAt = new Date(performance.timeOrigin);
 
 const rawPort = process.env["PORT"];
 
@@ -192,9 +204,10 @@ function stripeDormancySentinel() {
   // Human-facing escalation: in-app + email to platform_admins, daily.
   const escalate = async () => {
     try {
-      const { db, usersTable, userNotificationsTable } = await import("@workspace/db");
+      const { controlDb: db, usersTable, userNotificationsTable } = await import("@workspace/db");
       const { eq } = await import("drizzle-orm");
       const { sendEmail, plainToHtml } = await import("./lib/email");
+      const { isPublicNotificationAddress } = await import("./lib/notification-address");
       const admins = await db
         .select({ id: usersTable.id, email: usersTable.email, tenantId: usersTable.tenantId })
         .from(usersTable)
@@ -212,6 +225,13 @@ function stripeDormancySentinel() {
           })
           .catch(() => {});
         if (!admin.email) continue;
+        if (!isPublicNotificationAddress(admin.email)) {
+          logger.warn(
+            { userId: admin.id },
+            "[stripe-sentinel] non-public notification address: retained in-app warning, skipped external email",
+          );
+          continue;
+        }
         const text = `${message}\n\n— L3xy Platform Sentinel`;
         await sendEmail({
           to: admin.email,
@@ -243,10 +263,19 @@ server.on("listening", () => {
   if (!schedulersStarted) {
     schedulersStarted = true;
     if (isSchedulerLeader) {
+      // Maintenance only validates authority and removes bots/media. It never dispatches.
+      const attendanceTimer = setInterval(() => {
+        void maintainAttendance().catch(() => logger.warn("Meeting assistant maintenance requires attention"));
+      }, 60_000);
+      attendanceTimer.unref();
       startOutreachScheduler();
+      startOfferNotificationScheduler();
+      startZoomLinkAlertScheduler();
+      startErasureCleanupScheduler();
       startAntiGhostScheduler();
       startExternalClickScheduler();
       startInterviewInviteScheduler();
+      startZohoCampaignScheduler();
       startTrialExpiryScheduler();
       startSubscriptionLifecycleScheduler();
       startRecruiterDigestScheduler();
@@ -261,6 +290,7 @@ server.on("listening", () => {
       startHistoryRetentionScheduler();
       startLearnedScoringRefreshScheduler();
       startPostHirePulseScheduler();
+      startAtsRefreshScheduler();
       /* Candidate Status Check-in engine — runs DAILY, emails candidates whose
        * profile hasn't been updated in 6+ months (90-day per-candidate cooldown).
        * LinkedIn scanning inside it is optional and only activates when
@@ -272,13 +302,6 @@ server.on("listening", () => {
         logger.info("[status-checkin-scheduler] Disabled (STATUS_CHECKIN_ENABLED=false)");
       }
       startGraphReplyPollScheduler();
-      /* Agent runs execute in-process; reconcile any left mid-flight by a prior
-       * restart so their audit trail terminates and the UI stops spinning. */
-      void reconcileStaleAgentRuns();
-      /* Pipeline runs (routes/agents.ts + routes/pipeline.ts) also execute
-       * in-process; flip any stuck past the staleness threshold to the distinct
-       * terminal `interrupted` status (kept out of failure metrics). */
-      void reconcileStalePipelineRuns();
     } else {
       logger.info("Schedulers disabled on this replica (SCHEDULER_LEADER=false)");
     }
@@ -315,4 +338,18 @@ server.on("error", (err: NodeJS.ErrnoException) => {
   }
 });
 
-startListening();
+/* Recovery failures/timeouts must not advertise readiness or accept new work.
+ * Followers retain the existing single-scheduler-leader contract and never
+ * reconcile another replica's runs. Port retries do not rerun recovery. */
+void recoverBeforeListening({
+  recover: async () => {
+    if (!isSchedulerLeader) return;
+    await reconcileStaleAgentRuns(processStartedAt);
+    await reconcileStalePipelineRuns({ strict: true });
+    logger.info("Startup run recovery complete");
+  },
+  listen: startListening,
+}).catch((err) => {
+  logger.error({ err }, "Startup run recovery failed — refusing to accept traffic");
+  process.exit(1);
+});

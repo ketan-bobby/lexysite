@@ -204,7 +204,7 @@ export function verifyCookie(value: string | undefined, sid: string): { ok: true
   return { ok: true, nonce: parsed.nonce };
 }
 
-export function fingerprintFor(req: Request): { fp: string; ua: string; ipPrefix: string } {
+export function fingerprintFor(req: Request<unknown>): { fp: string; ua: string; ipPrefix: string } {
   const ua = String(req.headers["user-agent"] ?? "");
   const al = String(req.headers["accept-language"] ?? "");
   const ch = String(req.headers["sec-ch-ua"] ?? "");
@@ -286,8 +286,8 @@ async function logSuspicious(sessionId: string, kind: string, detail: Record<str
  * The route handler can read the loaded session at `req.interviewSession`
  * (avoids a duplicate DB hit).
  */
-export async function requireInterviewSessionCookie(
-  req: Request,
+export async function requireInterviewSessionCookie<Params>(
+  req: Request<Params>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -399,7 +399,10 @@ export async function requireInterviewSessionCookie(
     .catch(() => {});
 
   (req as any).interviewSession = session;
-  next();
+  // Cookie-auth routes bypass HTTP tenant context. Attribute only after the
+  // session ownership/authentication gates above; no session/candidate IDs.
+  const { vendorUsageScope } = await import("./vendor-usage");
+  vendorUsageScope.run({ tenantId: session.tenantId ?? null, area: "interview_unclassified" }, next);
 }
 
 export async function bindOrResumeOnBegin(

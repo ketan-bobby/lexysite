@@ -24,7 +24,7 @@ import crypto from "crypto";
 import { Router, type IRouter, type Request } from "express";
 import { z } from "zod";
 import { controlDb, db } from "@workspace/db";
-import { tenantsTable, billingSubscriptionsTable, billingInvoicesTable, pendingTrialSignupsTable, usersTable, stripeProcessedEventsTable } from "@workspace/db";
+import { tenantsTable, tenantRegionEnum, billingSubscriptionsTable, billingInvoicesTable, pendingTrialSignupsTable, usersTable, stripeProcessedEventsTable } from "@workspace/db";
 import { desc, eq, and, isNull } from "drizzle-orm";
 import { resolveUser } from "../middlewares/resolveUser";
 import { validate } from "../middlewares/validate";
@@ -40,6 +40,7 @@ const CheckoutSessionBody = z.object({
 const PortalLinkBody = z.object({
   returnUrl: z.string().url().optional(),
 });
+import { activePilot } from "../lib/pilot-codes";
 
 /**
  * verifyStripeSignature — HMAC-SHA256 verification of the Stripe-Signature header.
@@ -133,6 +134,9 @@ router.post("/billing/checkout-session", validate({ body: CheckoutSessionBody })
   try {
     const [tenant] = await controlDb.select().from(tenantsTable).where(eq(tenantsTable.id, user.tenantId)).limit(1);
     if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return; }
+    if (await activePilot(tenant.id)) {
+      res.status(409).json({error:"This account has complimentary Enterprise access. No checkout is required."}); return;
+    }
 
     // Resolve the price id from the tenant's region (with USD fallback inside
     // getRegionalPrice when the regional Stripe Price isn't configured yet).
@@ -234,7 +238,8 @@ router.get("/billing/me/subscriptions", resolveUser, async (req, res) => {
     paidThroughAt: t.paidThroughAt ? new Date(t.paidThroughAt).toISOString() : null,
     planActivatedAt: t.planActivatedAt ? new Date(t.planActivatedAt).toISOString() : null,
   } : null;
-  res.json({ subscriptions: subs, invoices, manualBilling });
+  const pilot = await activePilot(user.tenantId);
+  res.json({ subscriptions: subs, invoices, manualBilling, complimentary: !!pilot, pilot });
 });
 
 /* ── POST /billing/webhook ───────────────────────────────────────────────
@@ -432,7 +437,7 @@ const stripeWebhookHandler = async (req: Request, res: any) => {
                   contactEmail: pending.email,
                   stripeCustomerId: pending.stripeCustomerId ?? obj.customer ?? null,
                   planActivatedAt: new Date(),
-                  region: pending.region ?? "us",
+                  region: z.enum(tenantRegionEnum.enumValues).parse(pending.region ?? "us"),
                 }).returning();
                 await tx.insert(usersTable).values({
                   tenantId: t.id,

@@ -1,3 +1,4 @@
+import { recallEventsHandler } from "./routes/recall-events";
 /**
  * app.ts — Express Application Factory
  *
@@ -35,6 +36,7 @@ import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { sessionRevocationGuard } from "./middlewares/sessionRevocation";
 import pinoHttp from "pino-http";
 import path from "path";
 import fs from "fs";
@@ -42,6 +44,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { httpAccessLogMiddleware } from "./lib/http-access-log";
 import { withTenantContext } from "./middlewares/withTenantContext";
+import { rejectErasedAccount } from "./middlewares/rejectErasedAccount";
 import { csrfOriginGuard } from "./middlewares/requireSameOriginPost";
 import { seedDemoData } from "./lib/seed";
 import { seedClientHierarchy } from "./lib/seedClients";
@@ -112,7 +115,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: req.url?.split("?")[0].replace(/(\/controlled-offers\/public\/)[a-f0-9]{64}/g, "$1[redacted]"),
         };
       },
       res(res) {
@@ -150,11 +153,7 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json", limit: 
 /* 12mb JSON limit (default is 100kb): the "Send to hiring manager" package POSTs
  * a client-generated evaluation PDF as base64 (base64 inflates ~33%), which blew
  * past the default and returned 413 "request entity too large". */
-app.use(
-  "/api/webhooks/ses-events",
-  express.text({ type: "text/plain", limit: "1mb" }),
-);
-
+app.post("/api/meeting-assistant/recall-events", express.raw({ type: "application/json", limit: "128kb" }), recallEventsHandler);
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 /* Cookie parser — required for the resumable interview-session cookie that
@@ -165,6 +164,7 @@ app.use(cookieParser());
    (POST /api/interviews/:interviewId/transcribe). Regex-mounted so only that
    exact shape gets raw-body treatment; JSON routes are unaffected. */
 app.use(/^\/api\/interviews\/[A-Za-z0-9_-]+\/transcribe$/, express.raw({ type: "*/*", limit: "10mb" }));
+app.use("/api/portal/career-interview/transcribe", express.raw({ type: "*/*", limit: "10mb" }));
 
 /* Health check — required by AWS ALB / ECS / EC2 Auto Scaling.
  *
@@ -184,6 +184,7 @@ app.get("/health", async (_req: Request, res: Response) => {
  * routes lives in requireSameOriginPost.ts (CSRF_EXEMPT). Must be mounted
  * after cookieParser() and before the /api router. */
 app.use("/api", csrfOriginGuard);
+app.use("/api", sessionRevocationGuard);
 
 /* RLS pilot — per-request tenant context.
  *
@@ -195,6 +196,7 @@ app.use("/api", csrfOriginGuard);
  * Pilot coverage: tables candidates, applications, interview_sessions.
  * Cross-tenant access on those 3 tables is now refused by Postgres itself
  * (RLS policy + lexy_app role) when called from within an authed request. */
+app.use("/api", rejectErasedAccount);
 app.use("/api", withTenantContext);
 
 app.use("/api", router);

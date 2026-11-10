@@ -109,9 +109,9 @@ import {
   computeStageProbs,
   computeConfidence,
   decayFactor,
-  DEFAULT_POLICY as _DEFAULT_POLICY,
 } from "../lib/intelligence";
 import { getPolicy, savePolicy, validatePolicy, DEFAULT_POLICY } from "../lib/policies";
+import { readOverrideHistory } from "../lib/intelligence-override-history";
 import { db } from "@workspace/db";
 import {
   candidateJobIntelligenceTable,
@@ -619,6 +619,7 @@ router.put("/policies/:tenantId", validate({ body: PolicyUpdateBody }), async (r
     logger.error({ err }, "Failed to save tenant policy");
     res.status(500).json({ error: "Failed to save policy" });
   }
+  return;
 });
 
 /* ── GET /intelligence/:jobId/:candidateId ────────────────────────────────── */
@@ -661,6 +662,7 @@ router.get(
       logger.error({ err }, "Failed to fetch pair intelligence");
       res.status(500).json({ error: "Failed to fetch intelligence record" });
     }
+    return;
   },
 );
 
@@ -748,6 +750,7 @@ router.get(
       logger.error({ err }, "Failed to compute decision");
       res.status(500).json({ error: "Failed to compute decision" });
     }
+    return;
   },
 );
 
@@ -781,6 +784,7 @@ router.post(
       logger.error({ err }, "Failed to compute intelligence");
       res.status(400).json({ error: err?.message ?? "Failed to compute intelligence" });
     }
+    return;
   },
 );
 
@@ -911,6 +915,7 @@ router.post(
       logger.error({ err }, "Failed to trigger action");
       res.status(500).json({ error: err?.message ?? "Failed to trigger action" });
     }
+    return;
   },
 );
 
@@ -968,6 +973,7 @@ router.post(
       logger.error({ err }, "Failed to record override");
       res.status(500).json({ error: err?.message ?? "Failed to record override" });
     }
+    return;
   },
 );
 
@@ -1001,7 +1007,7 @@ router.post(
         return res.status(404).json({ error: "Intelligence record not found" });
       }
 
-      const overrides: any[] = JSON.parse(row.overridesJson ?? "[]");
+      const overrides = readOverrideHistory(row.overridesJson);
       overrides.push({
         id: `fb_${Date.now()}`,
         type: "feedback",
@@ -1011,7 +1017,7 @@ router.post(
 
       await db
         .update(candidateJobIntelligenceTable)
-        .set({ overridesJson: JSON.stringify(overrides) })
+        .set({ overridesJson: overrides })
         .where(
           and(
             eq(candidateJobIntelligenceTable.jobId, req.params.jobId),
@@ -1029,6 +1035,7 @@ router.post(
       logger.error({ err }, "Failed to record feedback");
       res.status(500).json({ error: err?.message ?? "Failed to record feedback" });
     }
+    return;
   },
 );
 
@@ -1072,6 +1079,7 @@ router.patch(
       logger.error({ err }, "Failed to record outcome");
       res.status(400).json({ error: err?.message ?? "Failed to record outcome" });
     }
+    return;
   },
 );
 

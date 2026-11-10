@@ -16,7 +16,7 @@ import {
   noteSuccess,
   breakerOpen,
   type AzureAccount,
-} from "./azure-pool.ts";
+} from "./azure-pool";
 
 /* ── Env parsing ─────────────────────────────────────────────────────────── */
 

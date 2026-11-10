@@ -74,6 +74,7 @@ import type { Evaluation, EvaluationGetResponse, RecommendationBand } from "@/li
 import { CandidateEvaluationReport } from "@/components/recruiter/CandidateEvaluationReport";
 import { SendToHiringManagerModal, type HmIncludeOpts } from "@/components/share/SendToHiringManagerModal";
 // ── Connection Engine (additive import) ───────────────────────────────────────
+import { MeetingNotesPanel } from "@/components/meeting-notes-panel";
 import { ConnectionStrengthBadge, ConnectionStrengthPanel, useConnectionScore } from "@/components/ui-custom/ConnectionStrengthBadge";
 
 // Verification risk-score cutoff (INVERTED: above = high risk; own cutoff, not the match band).
@@ -1650,6 +1651,9 @@ export default function CandidateProfile() {
             <TabsTrigger value="timeline" className="rounded-lg py-2.5 px-4 flex items-center gap-1.5">
               <Clock className="w-3 h-3" /> Timeline
             </TabsTrigger>
+            <TabsTrigger value="meeting-notes" className="rounded-lg py-2.5 px-4 flex items-center gap-1.5" data-testid="tab-meeting-notes">
+              <FileText className="w-3 h-3" /> Meeting notes
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -1700,129 +1704,7 @@ export default function CandidateProfile() {
             </Card>
           )}
 
-          {/* ── Career Snapshot (from AI interview) ── */}
-          {false && (
-            <Card className="shadow-sm border-violet-500/20">
-              <div className="h-1 bg-gradient-to-r from-violet-500 to-primary rounded-t-lg" />
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Sparkles className="w-4 h-4 text-violet-400" />
-                  Career Snapshot
-                  <Badge className="ml-auto bg-violet-500/10 text-violet-400 border-violet-500/20 text-xs font-normal">
-                    From Career Interview
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* Bio + role/company/exp */}
-                <div className="flex flex-col md:flex-row gap-5">
-                  {cp.bio && (
-                    <p className="flex-1 text-sm text-muted-foreground leading-relaxed italic border-l-2 border-violet-500/30 pl-3">
-                      "{cp.bio}"
-                    </p>
-                  )}
-                  <div className="grid grid-cols-2 md:grid-cols-1 gap-3 md:w-52 shrink-0 text-sm">
-                    {(cp.currentTitle || cp.currentCompany) && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current Role</p>
-                        <p className="font-medium">{[cp.currentTitle, cp.currentCompany].filter(Boolean).join(" · ")}</p>
-                      </div>
-                    )}
-                    {cp.yearsExperience != null && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Experience</p>
-                        <p className="font-medium">{cp.yearsExperience} yrs</p>
-                      </div>
-                    )}
-                    {cp.education && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Education</p>
-                        <p className="font-medium text-xs leading-snug">{cp.education}</p>
-                      </div>
-                    )}
-                    {cp.location && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Location</p>
-                        <p className="font-medium">{cp.location}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Goals + targets */}
-                {(cp.careerGoal3yr || cp.careerGoal5yr || (cp.targetIndustries?.length > 0) || (cp.preferredRoles?.length > 0)) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border/40">
-                    {cp.careerGoal3yr && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1">
-                          <Target className="w-3 h-3" /> 3-Year Goal
-                        </p>
-                        <p className="text-sm leading-relaxed">{cp.careerGoal3yr}</p>
-                      </div>
-                    )}
-                    {cp.careerGoal5yr && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" /> 5-Year Goal
-                        </p>
-                        <p className="text-sm leading-relaxed">{cp.careerGoal5yr}</p>
-                      </div>
-                    )}
-                    {cp.targetIndustries?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1">
-                          <Building className="w-3 h-3" /> Target Industries
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {cp.targetIndustries.map((ind: string) => (
-                            <Badge key={ind} variant="outline" className="text-xs">{ind}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {cp.preferredRoles?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1 flex items-center gap-1">
-                          <FileText className="w-3 h-3" /> Preferred Roles
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {cp.preferredRoles.map((r: string) => (
-                            <Badge key={r} variant="outline" className="text-xs">{r}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Strengths + Growth */}
-                {(cp.strengthAreas?.length > 0 || cp.growthAreas?.length > 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border/40">
-                    {cp.strengthAreas?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-emerald-500 font-semibold mb-1">Strength Areas</p>
-                        <div className="flex flex-wrap gap-1">
-                          {cp.strengthAreas.map((s: string) => (
-                            <Badge key={s} className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">{s}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {cp.growthAreas?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-amber-500 font-semibold mb-1">Growth Areas</p>
-                        <div className="flex flex-wrap gap-1">
-                          {cp.growthAreas.map((g: string) => (
-                            <Badge key={g} className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">{g}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* Private career coaching is not an employer-facing assessment. */}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
@@ -2059,6 +1941,10 @@ export default function CandidateProfile() {
               <CandidateTimeline candidateId={candidateId} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="meeting-notes" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <MeetingNotesPanel candidateId={candidateId} jobId={new URLSearchParams(window.location.search).get("jobId") ?? evalJobId} />
         </TabsContent>
 
         <TabsContent value="evaluation" className="animate-in fade-in slide-in-from-bottom-4 duration-500">

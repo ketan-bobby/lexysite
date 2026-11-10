@@ -33,7 +33,7 @@
  *   routes/career-profile.ts  — /portal/candidate/deletion-request (submit)
  *   routes/admin-deletion.ts  — /admin/deletion-requests (list, fulfil)
  */
-import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 
 export const deletionRequestsTable = pgTable(
   "deletion_requests",
@@ -57,6 +57,8 @@ export const deletionRequestsTable = pgTable(
     /* Free-form note from the admin (e.g. "fulfilled — cascade verified",
      * or "denied — open lawsuit, legal hold from counsel"). */
     handlerNotes: text("handler_notes"),
+    /* Privileged, durable storage outbox. Never serialize file paths to portal clients. */
+    storageCleanup: jsonb("storage_cleanup"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

@@ -50,6 +50,7 @@ import {
   jobsTable,
 } from "@workspace/db";
 import { eq, and, ne, isNotNull, inArray, desc } from "drizzle-orm";
+import { restrictToRealCandidates } from "./synthetic-fixture-scope";
 import { intelTenantScope } from "./class-b-access";
 import { logger } from "./logger";
 import { generateEmbedding, EMBEDDING_MODEL, EMBEDDING_DIMS } from "./ai";
@@ -296,6 +297,7 @@ export async function loadSuccessfulHireVectors(
   try {
     const conds = [
       inArray(candidateJobIntelligenceTable.outcome, POSITIVE_OUTCOMES),
+      restrictToRealCandidates(candidateJobIntelligenceTable.candidateId),
       eq(icpTable.roleFamily, roleFamily),
       eq(candidateEmbeddingsTable.model, EMBEDDING_MODEL),
     ];
@@ -472,6 +474,7 @@ async function loadLabeledRowsForSimilarHire(tenantId: string): Promise<SimilarH
         // Per-tenant labeled-row load, scoped via the canonical Class-B accessor.
         intelTenantScope([tenantId]),
         isNotNull(candidateJobIntelligenceTable.outcome),
+        restrictToRealCandidates(candidateJobIntelligenceTable.candidateId),
       ),
     );
 

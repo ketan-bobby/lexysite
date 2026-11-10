@@ -45,8 +45,8 @@
  * concerns, recommendation), saves to interview_summaries, updates
  * applications.stage and calls upsertIntelligenceFromInterviewSession().
  */
-import { Router, type IRouter } from "express";
-import { controlDb, db } from "@workspace/db";
+import { Router, type IRouter, type Request } from "express";
+import { controlDb, db, dbAdmin } from "@workspace/db";
 import {
   interviewPlansTable,
   interviewSessionsTable,
@@ -71,8 +71,17 @@ import {
   getDataScopeTenantIds,
 } from "../lib/tenantUtils";
 import { recruiterOwnsResource } from "../lib/ownership";
+import { calendarStaff } from "../lib/calendar-staff";
+import { CalendarError } from "../lib/outlook-calendar-core";
+import { compliantCandidatePredicate } from "../lib/compliance-scope";
+import {
+  CreateScheduleBody,
+  UpdateScheduleBody,
+  assertFutureSchedule,
+} from "../lib/coordinator-schedule-input";
 import { usersTable } from "@workspace/db";
 import OpenAI from "openai";
+import { synthesizeInterviewSpeech } from "../lib/interview-speech";
 import {
   generateWithAI,
   generateJSON,
@@ -82,6 +91,12 @@ import {
 } from "../lib/ai";
 import { upsertIntelligenceFromInterviewSession } from "../lib/intelligence";
 import { changeCandidateStage } from "../lib/change-candidate-stage.js";
+import { AtsStageOwnershipConflict } from "../lib/ats-stage-owner.js";
+import { candidateInterviewConfiguration } from "../lib/candidate-interview-configuration.js";
+import {
+  buildInterviewContinuationDirective,
+  buildInterviewSystemPrompt,
+} from "../lib/interview-conversation-prompt.js";
 import { FAIRNESS_DIRECTIVE } from "../lib/fairness";
 import { interviewInviteTips, inviteEmailHtml } from "../lib/interview-invite-copy";
 import { logger } from "../lib/logger";
@@ -95,7 +110,6 @@ import {
 } from "../lib/stt-metrics";
 import { getSttAlertConfig } from "../lib/stt-alert-scheduler";
 import { transcribeAudio } from "../lib/transcribe";
-import { getTtsAccounts, pickAccount, noteSuccess, noteFailure } from "../lib/azure-pool";
 import { admit } from "../lib/admission";
 import {
   checkInterviewCreationAllowed,
@@ -103,6 +117,7 @@ import {
   recordCreditEvent,
 } from "../lib/plan-enforcement";
 import { getAuthUserId, issueToken } from "../lib/auth-token";
+import { interviewRoomUrl } from "../lib/interview-link-url";
 import { MAX_PAGE_SIZE } from "../lib/query-limits";
 import {
   requireInterviewSessionCookie,
@@ -120,11 +135,25 @@ import {
   TrustEventType,
 } from "../lib/interview-session-cookie";
 import { sendEmail, plainToHtml, isEmailConfigured } from "./../lib/email";
+import { recordingSegmentUpload, uploadRecordingSegment, listRecordingSegments, downloadRecordingSegment } from "../lib/interview-recording-segments";
+import { CaptureDiagnosticBody, saveCaptureDiagnostic, readCaptureDiagnostics } from "../lib/interview-capture-diagnostics";
 import nodeCrypto from "crypto";
+import { interviewMintLockKey } from "../lib/interview-mint-lock";
+import { createScheduleOnce, sameScheduleInput, scheduleRequestId, ScheduleSaveConflict } from "../lib/coordinator-schedule-save";
+import { scheduleVersion, scheduleSnapshotPredicate, SCHEDULE_CHANGED_MESSAGE } from "../lib/coordinator-schedule-version";
+import { assertSavedPanel } from "../lib/interview-schedule-panel";
+import { ScheduleFeedbackBody } from "../lib/coordinator-schedule-input";
 import { z } from "zod";
 import { validate } from "../middlewares/validate";
 import { logCandidateEvent, actorTypeFromRole } from "../lib/candidate-event-logger.js";
 import { enqueueAiJob } from "../lib/ai-queue/queue";
+import { accountInterviewTurn, isValidInterviewScore, parseInterviewGrade, type ConversationAnswer } from "../lib/interview-turn-policy";
+import {
+  createInterviewPlanInput,
+  interviewPlanJobContext,
+  interviewPlanGenerationFailure,
+  parseInterviewPlanQuestions,
+} from "../lib/interview-plan-questions";
 
 const router: IRouter = Router();
 
@@ -156,14 +185,7 @@ const WorkAuthBody = z
   })
   .passthrough();
 
-const CreatePlanBody = z
-  .object({
-    jobId: z.string().min(1),
-    interviewType: z.string().optional(),
-    questionCount: z.number().optional(),
-    language: z.string().optional(),
-  })
-  .passthrough();
+const CreatePlanBody = createInterviewPlanInput;
 
 const PatchRecordingBody = z
   .object({
@@ -199,6 +221,8 @@ const GenerateLinkBody = z
      existing live session and issues a new one. Absent/false = idempotent:
      a live session for this (candidate, job, type) is returned unchanged. */
     regenerate: z.boolean().optional(),
+    /* Explicitly prepare a shareable link without dispatching an invitation. */
+    sendInvite: z.boolean().optional(),
   })
   .passthrough();
 
@@ -239,44 +263,6 @@ const ProctorEventBody = z
   })
   .passthrough();
 
-const CreateScheduleBody = z
-  .object({
-    applicationId: z.string().min(1),
-    interviewerId: z.string().optional().nullable(),
-    interviewerName: z.string().optional().nullable(),
-    location: z.string().optional().nullable(),
-    scheduledAt: z.string().min(1),
-    durationMinutes: z.number().optional(),
-    type: z.string().min(1),
-    notes: z.string().optional().nullable(),
-  })
-  .passthrough();
-
-/* Strict allowlist for PUT /coordinator/schedules/:scheduleId.
- *
- * Unknown keys are stripped — tenantId, id, applicationId, createdAt
- * cannot be remapped via this route. scheduledAt is a string here and
- * coerced to Date in the handler. */
-const UpdateScheduleBody = z.object({
-  interviewerId: z.string().nullable().optional(),
-  interviewerName: z.string().nullable().optional(),
-  location: z.string().nullable().optional(),
-  scheduledAt: z.string().optional(),
-  durationMinutes: z.number().int().optional(),
-  type: z.string().optional(),
-  status: z.string().optional(),
-  notes: z.string().nullable().optional(),
-  feedbackRating: z.number().int().nullable().optional(),
-  feedbackNotes: z.string().nullable().optional(),
-});
-
-const FeedbackBody = z
-  .object({
-    rating: z.number(),
-    notes: z.string().optional().nullable(),
-  })
-  .passthrough();
-
 /* ── STT: audio → transcript via Azure Speech (primary) / Whisper (fallback)
  * Skipped Zod body validation: req.body is a raw audio Buffer (binary upload),
  * not JSON, so an object schema would never apply.
@@ -308,7 +294,17 @@ async function requireActiveAiConsent(req: any, res: any, next: any): Promise<vo
         .json({ error: "AI_CONSENT_REQUIRED", consentVersion: CURRENT_AI_CONSENT_VERSION });
       return;
     }
-    next();
+    const { vendorUsageScope } = await import("../lib/vendor-usage");
+    vendorUsageScope.run(
+      {
+        tenantId:
+          typeof req.interviewSession?.tenantId === "string"
+            ? req.interviewSession.tenantId
+            : null,
+        area: "interview_unclassified",
+      },
+      next,
+    );
   } catch (err) {
     /* Fail closed: if the consent check itself errors we must not process
        candidate data on an unverified consent state. */
@@ -403,133 +399,8 @@ router.post("/interviews/tts", validate({ body: TtsBody }), admit(), async (req,
     return;
   }
   try {
-    const langMeta = resolveLangMeta(language);
-
-    /* ── ElevenLabs multilingual TTS (per-language primary) ───────────────── */
-    /* Languages whose meta sets ttsProvider:"elevenlabs" (e.g. Filipino) get
-       ElevenLabs' multilingual voice first — Azure's voice for them is weak or
-       missing. Any failure/timeout falls through to the normal Azure → OpenAI
-       chain below, so this branch can never freeze an interview. */
-    if (langMeta.ttsProvider === "elevenlabs" && process.env.ELEVENLABS_API_KEY) {
-      const voiceId =
-        process.env.ELEVENLABS_TTS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL"; /* Sarah — warm female */
-      const elAc = new AbortController();
-      const elTo = setTimeout(() => elAc.abort(), 9000);
-      try {
-        const elRes = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_96`,
-          {
-            method: "POST",
-            headers: {
-              "xi-api-key": process.env.ELEVENLABS_API_KEY,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ text, model_id: "eleven_multilingual_v2" }),
-            signal: elAc.signal,
-          },
-        );
-        if (elRes.ok) {
-          const buffer = Buffer.from(await elRes.arrayBuffer());
-          res.setHeader("Content-Type", "audio/mpeg");
-          res.setHeader("Content-Length", buffer.length);
-          res.send(buffer);
-          return;
-        }
-        logger.warn(
-          { status: elRes.status, language },
-          "[TTS] ElevenLabs failed — falling back to Azure/OpenAI",
-        );
-      } catch (err: any) {
-        logger.warn(
-          { err: err?.message, language },
-          "[TTS] ElevenLabs errored/timed out — falling back to Azure/OpenAI",
-        );
-      } finally {
-        clearTimeout(elTo);
-      }
-    }
-
-    /* ── Azure Neural TTS (preferred) ──────────────────────────────────────── */
-    /* TTS draws on its OWN pool of Azure account(s) — separate from STT — so
-       speech-to-text and Lexy's voice never starve each other's per-region
-       concurrency quota. getTtsAccounts() prefers the dedicated AZURE_TTS_* /
-       AZURE_TTS_KEYS accounts and falls back to the shared AZURE_SPEECH_* creds
-       so nothing breaks until a dedicated TTS key is configured. Each account's
-       key+region travel together as a pair (never mix a TTS key with an STT
-       region), and a per-account breaker isolates a throttled account. When all
-       accounts are tripped, pickAccount returns null → fall through to OpenAI. */
-    const picked = pickAccount("tts", getTtsAccounts());
-    if (picked) {
-      const key = picked.account.key;
-      const region = picked.account.region;
-      /* Lexy is always British — override to her voice for all English interviews.
-         AdaMultilingual is a young, natural-sounding British female (the older
-         LibbyNeural read as matronly), keeping Lexy warm but contemporary. */
-      const isEnglish = langMeta.family === "english";
-      const voice = isEnglish ? "en-GB-AdaMultilingualNeural" : langMeta.azureVoice;
-      const locale = isEnglish ? "en-GB" : langMeta.azureLocale;
-
-      /* Warm, alluring delivery: an unhurried, relaxed pace with a slightly LOWER,
-         richer pitch reads as smooth, confident and lovely to listen to. The earlier
-         raised-pitch tuning (+10%) read as peppy/shrill rather than warm, so we drop
-         the pitch a touch below natural and slow the rate for an intimate, easy cadence.
-         Applied via prosody so it works on EVERY voice (express-as styles are only
-         supported by a handful of voices). */
-      const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const ssml = `<speak version='1.0' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voice}'><prosody rate='-7%' pitch='-3%'>${escaped}</prosody></voice></speak>`;
-
-      /* Bound the Azure call so a hung TTS provider can't freeze the interview —
-         on timeout we abort and fall through to the OpenAI fallback below. */
-      const azureAc = new AbortController();
-      const azureTo = setTimeout(() => azureAc.abort(), 8000);
-      let ttsRes: Response;
-      let threw = false;
-      try {
-        ttsRes = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
-          method: "POST",
-          headers: {
-            "Ocp-Apim-Subscription-Key": key,
-            "Content-Type": "application/ssml+xml",
-            "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
-          },
-          body: ssml,
-          signal: azureAc.signal,
-        });
-      } catch {
-        threw = true;
-        ttsRes = new Response(null, { status: 504 }); /* timeout/abort → fall through */
-      } finally {
-        clearTimeout(azureTo);
-      }
-
-      if (ttsRes.ok) {
-        noteSuccess(picked.breakerKey);
-        const buffer = Buffer.from(await ttsRes.arrayBuffer());
-        res.setHeader("Content-Type", "audio/mpeg");
-        res.setHeader("Content-Length", buffer.length);
-        res.send(buffer);
-        return;
-      }
-      /* Azure TTS failed (HTTP error or timeout/abort) — count it toward the
-         account's breaker and fall through to OpenAI. */
-      noteFailure(picked.breakerKey, picked.account?.id);
-      logger.warn(
-        { status: ttsRes.status, account: picked.account?.id, aborted: threw },
-        "[TTS] Azure failed — falling back to OpenAI",
-      );
-    }
-
-    /* ── OpenAI TTS fallback ────────────────────────────────────────────────── */
-    /* Use direct OpenAI API (no proxy base URL) — the Replit AI proxy does not
-       support the audio/speech endpoint and will 500 if baseURL is overridden. */
-    const ttsApiKey = process.env.OPENAI_API_KEY ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-    if (!ttsApiKey) {
-      res.status(503).json({ error: "TTS not configured" });
-      return;
-    }
-    const openai = new OpenAI({ apiKey: ttsApiKey, timeout: 12000, maxRetries: 1 });
-    const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "shimmer", input: text });
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const { audio: buffer, provider } = await synthesizeInterviewSpeech(text, language);
+    logger.info({ language, provider }, "[TTS] Interview speech generated");
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Content-Length", buffer.length);
     res.send(buffer);
@@ -542,7 +413,7 @@ router.post("/interviews/tts", validate({ body: TtsBody }), admit(), async (req,
    Rate-limited because every call hits the LLM (cost) and produces TTS audio
    (bandwidth + cost). 60 turns / minute is generous for a real interview but
    shuts down a runaway client / token-burner. */
-import { rateLimit } from "../middlewares/rateLimit";
+import { rateLimit, stringRouteParam } from "../middlewares/rateLimit";
 import { requireSameOriginPost } from "../middlewares/requireSameOriginPost";
 
 /* Two-tier farewell detection — MUST stay in sync with room.tsx. The STT
@@ -588,7 +459,7 @@ const beginInterviewLimit = rateLimit({
   windowMs: 15 * 60_000,
   max: 8,
   scope: "interviews-begin-id",
-  keyFn: (req) => `begin:${req.params.interviewId || "missing"}`,
+  keyFn: (req) => `begin:${stringRouteParam(req, "interviewId") || "missing"}`,
 });
 
 router.post(
@@ -596,7 +467,7 @@ router.post(
   rateLimit({
     windowMs: 60_000,
     max: 60,
-    keyFn: (req) => req.params.interviewId || req.ip || "anon",
+    keyFn: (req) => stringRouteParam(req, "interviewId") || req.ip || "anon",
   }),
   validate({ body: ConverseBody }),
   requireSameOriginPost,
@@ -728,12 +599,7 @@ router.post(
     } else if (isClosing) {
       directive = `The conversation has naturally run its course. Wrap up warmly — thank the candidate genuinely for sharing so much, mention one specific thing that stood out from the conversation, and let them know the hiring team will be in touch. 2-3 sentences, genuine and human.`;
     } else {
-      directive = `Continue the conversation naturally based on what the candidate just said. You may:
-- Dig deeper into something interesting they mentioned ("That's fascinating — when you say X, can you walk me through what that actually looked like?")
-- Explore a new area you haven't touched on yet from: ${topics}
-- Ask a follow-up that shows you genuinely listened ("You mentioned Y earlier — how did that shape how you approach Z?")
-
-Do NOT ask a rigid "next question". React like a curious, engaged human interviewer who is genuinely interested in this person. Keep it to 2-4 sentences. Never refer to question numbers or say things like "my next question is".`;
+      directive = buildInterviewContinuationDirective(topics);
     }
 
     /* NOTE: The EEO guardrail below stays FULLY intact — the assessed conversation
@@ -741,34 +607,16 @@ Do NOT ask a rigid "next question". React like a curious, engaged human intervie
      here is scored. Work-eligibility logistics are instead captured by a separate,
      non-scored step (GET/POST /interviews/:id/work-auth) that runs after the
      assessed questions and never writes into session.answers. */
-    const systemPrompt = `You are Lexy, a warm, charming, and genuinely engaging AI interviewer conducting a real job interview for: ${jobTitle} (${interviewType} interview). Lexy is a British woman in her late 20s — she uses she/her pronouns. She has the kind of voice and presence that instantly puts people at ease: relaxed, lovely to talk to, quietly confident, and genuinely curious about the person in front of her. She speaks in a natural, confident British English style — warm and unhurried, articulate without being stiff, occasionally using understated British expressions ("that's quite interesting", "brilliant", "right then", "I'd love to hear more about that") — but never overdoing it. She does not put on an accent or announce she's British; it simply comes through naturally in her word choices and tone.
-
-People should finish the interview thinking Lexy was a pleasure to talk to. You make the candidate feel genuinely heard, comfortable, and respected — warm, gracious, and human throughout. That said, your purpose is still to ASSESS the candidate, so you do not coach them, give tips, or critique their answers during the interview — you draw the best out of them and let them shine, then evaluate fairly afterwards.
-
-Your style:
-- You are warm, gracious, and easy to talk to — the candidate should feel relaxed and genuinely welcome
-- You listen closely and respond to what was actually said — never ignore the candidate's answer
-- You ask one question at a time — never stack multiple questions
-- You acknowledge warmly when needed ("that's lovely", "I really like that", "makes complete sense") and then move forward with a question
-- You probe deeper with genuine curiosity when answers are vague: "I'd love to hear more about that — walk me through it concretely?"
-- You sound like a real, likeable person while staying in interviewer mode — you draw people out, you don't coach or critique
-- You NEVER give tips, corrective feedback, or coaching during the interview, and you never tell the candidate how they're doing
-- You NEVER use question numbers, bullet points, or say "my next question is"
-- Flowing natural sentences only, 2-4 sentences max per turn
-
-EQUAL-OPPORTUNITY GUARDRAIL (absolute, non-negotiable):
-You must NEVER ask about, hint at, or follow up on any of:
-- race, ethnicity, or national origin
-- age, date of birth, or year of graduation / school-leaving
-- religion, religious practice, or holidays observed
-- gender identity or sexual orientation (do NOT ask for pronouns — use what the candidate has used, or none)
-- marital or family status, pregnancy, children, or childcare arrangements
-- disability, mental health, or medical history
-- veteran status, or citizenship / work-authorization / visa / sponsorship status
-These topics are either irrelevant to the role or are collected through a separate, voluntary, non-decisional disclosure surface outside this interview. If the candidate volunteers any of them, briefly and warmly acknowledge ("thanks for sharing that") and steer back to job-relevant skills, experience, or motivation — never probe, never repeat back, and never use it as a thread you return to later.
-${candidateCtxBlock}${jobCtxBlock}${focusBlock}${customQBlock}
-
-Always respond entirely in ${langLabel}.`;
+    const systemPrompt = buildInterviewSystemPrompt({
+      jobTitle,
+      interviewType,
+      langLabel,
+      candidateCtxBlock,
+      jobCtxBlock,
+      focusBlock,
+      customQBlock,
+      phase: isOpening ? "opening" : isClosing ? "closing" : "continuing",
+    });
 
     const prompt = `${directive}
 
@@ -799,6 +647,10 @@ router.post(
   async (req, res) => {
     if (!(await assertSessionJobApproved(res, req.params.interviewId))) return;
     const { questionText = "", answerText = "", turnNumber = 1 } = req.body;
+    if (turnNumber === 1 && /^(hi|hello|hey|good morning|good afternoon|good evening)(\s+(lexy|lexi))?[.!?,\s]*$/i.test(answerText.trim())) {
+      res.status(422).json({ error: "GREETING_ONLY", message: "Please answer the interview question; a greeting does not consume a question." });
+      return;
+    }
 
     const [session] = await db
       .select()
@@ -810,24 +662,36 @@ router.post(
       return;
     }
 
-    const answers = (session.answers as any[]) || [];
-    answers.push({
-      questionId: `turn-${turnNumber}`,
-      questionText,
-      answer: answerText,
-      /* Conversational turns are NOT scored inline — the candidate's answer is
-       graded once, holistically, when the interview ends (see /end, where each
-       unscored answer is rated against its question). A null sentinel marks the
-       turn as "pending evaluation"; never store a fabricated placeholder score. */
-      score: null,
-    });
-
-    await db
-      .update(interviewSessionsTable)
-      .set({ answers, currentQuestionIndex: turnNumber })
-      .where(eq(interviewSessionsTable.id, req.params.interviewId));
-
-    res.json({ ok: true, turns: answers.length });
+    try {
+      const result = await db.transaction(async tx => {
+        const [locked] = await tx.select().from(interviewSessionsTable)
+          .where(eq(interviewSessionsTable.id, session.id)).for("update");
+        if (!locked || !["in_progress", "active", "resumed"].includes(locked.status)) {
+          throw new Error("Interview is not accepting answers");
+        }
+        // Audio recapture updates the preceding ungraded answer. It is retained
+        // as capture metadata, never as another graded question or budget slot.
+        const next = accountInterviewTurn(
+          (locked.answers ?? []) as ConversationAnswer[],
+          locked.currentQuestionIndex,
+          { questionText, answerText, turnNumber },
+        );
+        if (!next.clarification && turnNumber > locked.totalQuestions) {
+          throw new Error("Interview turn is out of sequence");
+        }
+        await tx.update(interviewSessionsTable)
+          .set({ answers: next.answers, currentQuestionIndex: next.currentQuestionIndex })
+          .where(eq(interviewSessionsTable.id, locked.id));
+        return next;
+      });
+      res.json({ ok: true, turns: result.answers.length });
+    } catch (error) {
+      if (error instanceof Error && /^(Invalid interview turn|Audio clarification requires|An assessed answer|This interview turn|Interview turn is out of sequence|Interview is not accepting)/.test(error.message)) {
+        res.status(409).json({ error: error.message });
+        return;
+      }
+      throw error;
+    }
   },
 );
 
@@ -973,6 +837,7 @@ router.post(
 
 /* ── Languages ───────────────────────────────────────────────────────────── */
 router.get("/interviews/languages", (_req, res) => {
+  const openaiReady = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY);
   const deepgramReady = !!process.env.DEEPGRAM_API_KEY;
   const iflytekReady = !!(
     process.env.IFLYTEK_APP_ID &&
@@ -994,14 +859,12 @@ router.get("/interviews/languages", (_req, res) => {
         nativeName: meta.nativeName,
         family: meta.family,
         speechProvider: meta.speechProvider,
-        llmProvider: meta.llmProvider,
+        llmProvider: meta.llmProvider === "azure" && azureReady ? "azure" : "openai",
         region: meta.region,
-        ready:
-          meta.speechProvider === "deepgram"
-            ? deepgramReady
-            : code === "zh"
-              ? iflytekReady || azureReady /* iFlytek primary; Azure/Whisper lane still serves zh */
-              : azureReady,
+        // Configuration readiness, not a quality certificate. Azure Speech
+        // credentials are NOT Azure OpenAI credentials; OpenAI serves all
+        // these languages when the optional Azure LLM deployment is absent.
+        ready: openaiReady || (meta.llmProvider === "azure" && azureReady),
         deepgramReady,
         iflytekReady,
         azureReady,
@@ -1230,6 +1093,9 @@ router.get("/interviews", async (req: any, res) => {
      completed sessions; the real assessment lives in interview_summaries
      (one row per session, keyed by interview_session_id). */
   const sessionIds = sessions.map((s) => s.id);
+  // classb-scope [guard-invisible]: summaries have no tenant column and a
+  // unique session key. Use ONLY IDs from the staff/tenant/ownership-filtered
+  // sessions above; never substitute the unfiltered session set.
   const summaryRows = sessionIds.length
     ? await db
         .select({
@@ -1325,22 +1191,27 @@ router.post("/interviews/plans", validate({ body: CreatePlanBody }), async (req:
 
   const prompt = `Generate ${questionCount} interview questions for a ${interviewType} interview.
 Return a JSON array. Each element must have: id (UUID string), text (the question), category ("technical" | "behavioral" | "competency" | "situational"), followUpPrompts (array of 2 follow-up prompts), order (integer starting at 1).
-All question text and follow-up prompts must be written in ${langLabel}.`;
+All question text and follow-up prompts must be written in ${langLabel}.
 
-  let questions: any[] = [];
+${interviewPlanJobContext(jobRow)}`;
+
+  let questions: ReturnType<typeof parseInterviewPlanQuestions>;
+  let generationPhase = "provider";
   try {
     const aiResponse = await generateWithAI(
       prompt,
       `You are an expert AI interviewer. Generate structured, insightful interview questions. Respond with a valid JSON array only — no markdown fences, no explanation.`,
       language,
     );
-    const cleaned = aiResponse
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    questions = Array.isArray(JSON.parse(cleaned)) ? JSON.parse(cleaned) : [];
+    generationPhase = "validation";
+    questions = parseInterviewPlanQuestions(aiResponse, questionCount);
   } catch {
-    questions = [];
+    logger.warn(
+      { jobId, tenantId, phase: generationPhase },
+      "Interview plan generation failed; no plan saved",
+    );
+    res.status(502).json(interviewPlanGenerationFailure);
+    return;
   }
 
   const [plan] = await db
@@ -1351,7 +1222,7 @@ All question text and follow-up prompts must be written in ${langLabel}.`;
       title: `${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} Interview — ${langLabel}`,
       interviewType,
       language,
-      questions: questions.map((q, i) => ({ ...q, id: q.id || crypto.randomUUID(), order: i + 1 })),
+      questions,
       estimatedDurationMinutes: 30,
     })
     .returning();
@@ -1587,6 +1458,12 @@ router.patch(
 );
 
 router.get("/interviews/plans/:planId", async (req: any, res) => {
+  /* Legacy authenticated plan route: reject tokenless requests BEFORE the RLS DB. */
+  const userId = getAuthUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const [plan] = await db
     .select()
     .from(interviewPlansTable)
@@ -1597,11 +1474,6 @@ router.get("/interviews/plans/:planId", async (req: any, res) => {
     return;
   }
   /* Mandatory auth + tenant gate — anonymous callers could read any plan. */
-  const userId = getAuthUserId(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
   const [caller] = await controlDb
     .select()
     .from(usersTable)
@@ -1796,22 +1668,6 @@ function findLiveInterviewSessions(
     .orderBy(desc(interviewSessionsTable.createdAt));
 }
 
-/** Map a mint identity to a signed 64-bit int for pg_advisory_xact_lock. Hash
- *  → first 8 bytes → signed bigint (same technique as public.ts lockKeyForUser).
- *  Namespaced so it can't collide with other advisory-lock users. */
-function interviewMintLockKey(
-  tenantId: string,
-  candidateId: string,
-  jobId: string,
-  interviewType: string,
-): bigint {
-  const h = nodeCrypto
-    .createHash("sha256")
-    .update(`interview_mint:${tenantId}:${candidateId}:${jobId}:${interviewType}`)
-    .digest();
-  return h.readBigInt64BE(0);
-}
-
 /** Single source of truth for the generate-link response body, so the fresh-mint
  *  path and the idempotent-reuse path return an identical shape. */
 function buildGenerateLinkResponse(
@@ -1861,6 +1717,7 @@ router.post(
       focusDirective,
       difficulty,
       regenerate = false,
+      sendInvite = true,
     } = req.body;
 
     if (!jobId) {
@@ -1976,7 +1833,7 @@ router.post(
      interview types now (previously cultural-only). For cultural, fall back to
      the saved per-job config when nothing was passed in. */
     let resolvedCulturalDoc = culturalDoc;
-    let resolvedCustomQuestions = customQuestions;
+    let resolvedCustomQuestions: string[] | undefined = customQuestions;
     if (interviewType === "cultural" && !culturalDoc) {
       const saved = culturalConfigStore[jobId];
       if (saved) {
@@ -2285,10 +2142,11 @@ router.post(
      only (a dev "simulated" send counts as not sent so the UI stays honest). */
     let candidateEmailSent = false;
     let candidateEmailedTo: string | null = null;
+    if (sendInvite) {
     try {
       const { email: candEmail, firstName: candFirst } = await lookupCandidateEmail(session);
       if (candEmail) {
-        const roomUrl = `${process.env.APP_BASE_URL || "https://app.l3xy.ai"}/interviews/${session.id}/room`;
+        const roomUrl = interviewRoomUrl(session.id);
         const greet = candFirst || "there";
         const roleLine = jobRow?.title ? ` for the ${jobRow.title} role` : "";
         const subject = `You're invited to an interview${jobRow?.title ? ` — ${jobRow.title}` : ""}`;
@@ -2333,6 +2191,7 @@ ${interviewInviteTips(plan.estimatedDurationMinutes)}
         { err, sessionId: session.id },
         "[interviews] candidate invite email failed (non-fatal)",
       );
+    }
     }
 
     res.status(201).json(
@@ -2771,7 +2630,7 @@ router.post(
     windowMs: 60_000,
     max: 3,
     scope: "stepup-start-id",
-    keyFn: (req) => `stepup-start:${req.params.interviewId}`,
+    keyFn: (req) => `stepup-start:${stringRouteParam(req, "interviewId")}`,
   }), // per session
   async (req, res) => {
     const sid = req.params.interviewId;
@@ -2857,7 +2716,7 @@ router.post(
     windowMs: 60_000,
     max: 10,
     scope: "stepup-verify-id",
-    keyFn: (req) => `stepup-verify:${req.params.interviewId}`,
+    keyFn: (req) => `stepup-verify:${stringRouteParam(req, "interviewId")}`,
   }), // per session
   validate({ body: StepUpVerifyBody }),
   async (req, res) => {
@@ -3137,6 +2996,7 @@ router.get("/interviews/:interviewId/intro", async (req: any, res) => {
     can_skip: true,
     next_action: "start_lexy_interview" as const,
     script_text: null,
+    totalQuestions: null as number | null,
   };
   try {
     const [session] = await db
@@ -3150,6 +3010,7 @@ router.get("/interviews/:interviewId/intro", async (req: any, res) => {
     }
 
     const planId = (session as any).planId as string | null;
+    lexyFallback.totalQuestions = session.totalQuestions;
     const [plan] = planId
       ? await db
           .select()
@@ -3236,7 +3097,7 @@ router.get("/interviews/:interviewId/intro", async (req: any, res) => {
       return;
     }
 
-    res.json(resp);
+    res.json({ ...resp, totalQuestions: session.totalQuestions });
   } catch (err) {
     logger.warn(
       { err, interviewId: req.params.interviewId },
@@ -3245,6 +3106,65 @@ router.get("/interviews/:interviewId/intro", async (req: any, res) => {
     res.json(lexyFallback);
   }
 });
+
+/* Session-cookie path is essential: its cookie is not sent to /interviews/plans.
+ * Resolve the plan from the authenticated session, never a caller-supplied planId. */
+router.get("/interviews/:interviewId/configuration", requireInterviewSessionCookie, async (req: any, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const session = req.interviewSession;
+  if (!(await assertSessionJobApproved(res, session.id))) return;
+  const [plan] = await db.select().from(interviewPlansTable)
+    .where(and(eq(interviewPlansTable.id, session.planId), eq(interviewPlansTable.tenantId, session.tenantId)))
+    .limit(1);
+  if (!plan) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
+  res.json(candidateInterviewConfiguration(plan, session.language));
+});
+
+router.post(
+  "/interviews/:interviewId/recording-segments",
+  requireSameOriginPost,
+  requireInterviewSessionCookie,
+  requireActiveAiConsent,
+  recordingSegmentUpload.single("file"),
+  async (req: Request<{ interviewId: string }>, res) => {
+    if (!(await assertSessionJobApproved(res, req.params.interviewId))) return;
+    await uploadRecordingSegment(req, res);
+  },
+);
+router.post(
+  "/interviews/:interviewId/capture-diagnostics",
+  requireSameOriginPost,
+  requireInterviewSessionCookie,
+  requireActiveAiConsent,
+  rateLimit({ windowMs: 60_000, max: 120, scope: "interview-capture-diagnostics", keyFn: req => String(stringRouteParam(req, "interviewId")) }),
+  validate({ body: CaptureDiagnosticBody }),
+  async (req: any, res) => {
+    if (!(await assertSessionJobApproved(res, req.params.interviewId))) return;
+    try {
+      await saveCaptureDiagnostic(req.interviewSession, req.body);
+      res.status(202).json({ recorded: true });
+    } catch {
+      logger.warn({ interviewId: req.params.interviewId }, "[interviews] capture diagnostic persistence failed");
+      res.status(503).json({ error: "capture_diagnostics_unavailable" });
+    }
+  },
+);
+router.get("/interviews/:interviewId/capture-diagnostics", gateInterviewRead, async (req: any, res) => {
+  if (!req.interviewStaffRead) {
+    res.status(403).json({ error: "Staff access required" });
+    return;
+  }
+  try {
+    res.json(await readCaptureDiagnostics(req.interviewSession));
+  } catch {
+    res.status(503).json({ error: "capture_diagnostics_unavailable" });
+  }
+});
+router.get("/interviews/:interviewId/recording-segments", gateInterviewRead, listRecordingSegments);
+router.get("/interviews/:interviewId/recording-segments/:attemptId", gateInterviewRead, downloadRecordingSegment);
 
 router.get("/interviews/:interviewId", gateInterviewRead, async (req: any, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -3374,13 +3294,12 @@ router.post(
 
     // Calibrated grading — kept in lockstep with the /end per-question grader so a
     // non-answer ("next question", "skip", "I don't know") scores very low instead
-    // of defaulting to a flattering 70. An empty answer is a real, low signal → 0.
+    // of defaulting to a flattering 70. Missing capture stays unscored.
     // On a grading error we leave the score null (never fabricate a number).
     let answerScore: number | null = null;
     const trimmedAnswer = (answerText ?? "").toString().trim();
     if (!trimmedAnswer) {
-      answerScore = 0;
-      answers.push({ questionId, answer: answerText, score: 0 });
+      answers.push({ questionId, answer: answerText, score: null });
     } else {
       try {
         const langLabel = resolveLangMeta(language).label;
@@ -3390,12 +3309,13 @@ router.post(
           `You are a rigorous interviewer grading a single answer. Be honest and calibrated — never inflate a weak or non-serious answer. Respond with valid JSON only.\n\n${FAIRNESS_DIRECTIVE}`,
           language,
         );
-        answerScore = Math.min(100, Math.max(0, Math.round(scoreResult.score ?? 0)));
+        const grade = parseInterviewGrade(scoreResult);
+        answerScore = grade?.score ?? null;
         answers.push({
           questionId,
           answer: answerText,
           score: answerScore,
-          feedback: scoreResult.feedback,
+          feedback: grade?.feedback,
         });
       } catch {
         answers.push({ questionId, answer: answerText, score: null });
@@ -3407,7 +3327,7 @@ router.post(
 
     // Average only over answers that were actually scored (numeric); null grades
     // are excluded rather than counted as a flattering 70.
-    const scoredAnswers = answers.filter((a: any) => typeof a.score === "number");
+    const scoredAnswers = answers.filter((a: any) => isValidInterviewScore(a.score) && typeof a.answer === "string" && a.answer.trim());
     const avgScore = scoredAnswers.length
       ? scoredAnswers.reduce((sum: number, a: any) => sum + a.score, 0) / scoredAnswers.length
       : null;
@@ -3486,6 +3406,9 @@ router.post(
         const openai = new OpenAI({
           apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY,
           baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+          fetch: (await import("../lib/vendor-usage")).meteredFetch(
+            process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct",
+          ),
         });
         const visionRes = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -3812,7 +3735,7 @@ router.post(
       }
       if (app && PRE_COMPLETION.includes(app.stage)) {
         if (app.candidateId && app.jobId) {
-          await changeCandidateStage({
+          await updateInterviewCompletionStage({
             tenantId: app.tenantId ?? session.tenantId ?? "",
             candidateId: app.candidateId,
             jobId: app.jobId,
@@ -3880,7 +3803,7 @@ router.post(
          * pipeline stage for this candidate+job. */
         if (PRE_COMPLETION.includes(targetApp.stage)) {
           if (targetApp.candidateId && targetApp.jobId) {
-            await changeCandidateStage({
+            await updateInterviewCompletionStage({
               tenantId: targetApp.tenantId ?? session.tenantId ?? "",
               candidateId: targetApp.candidateId,
               jobId: targetApp.jobId,
@@ -3925,7 +3848,7 @@ router.post(
           const currentStage = raw.stage || "sourced";
           if (PRE_COMPLETION.includes(currentStage)) {
             if (sourced.normalizedCandidateId && sessionJobId) {
-              await changeCandidateStage({
+              await updateInterviewCompletionStage({
                 tenantId: sourced.tenantId ?? session.tenantId ?? "",
                 candidateId: sourced.normalizedCandidateId,
                 jobId: sessionJobId,
@@ -4125,7 +4048,6 @@ router.post(
           raw.createdById ??
           raw.uploadedById ??
           raw.sourcedById ??
-          null ??
           job?.assignedRecruiterId ??
           job?.assignedHiringManagerId ??
           null;
@@ -4267,7 +4189,10 @@ ${reviewUrl}
       .orderBy(desc(interviewSummariesTable.createdAt))
       .limit(1);
     if (existingSummary) {
-      res.json({ ...existingSummary, createdAt: existingSummary.createdAt.toISOString() });
+      // This is a candidate capability endpoint, not a staff assessment read.
+      // A completed evaluation is proof of processing, never permission to
+      // disclose recruiter-only scores, recommendations or private comments.
+      res.json({ status: "completed", sessionId: session.id });
       return;
     }
 
@@ -4336,6 +4261,8 @@ router.get("/interviews/:interviewId/summary", async (req: any, res) => {
     res.status(404).json({ error: "Summary not found" });
     return;
   }
+  // classb-scope [guard-invisible]: this tenantless, unique child is keyed
+  // only to the session authorised above. Keep the staff + ownership gate.
   const [summary] = await db
     .select()
     .from(interviewSummariesTable)
@@ -4404,32 +4331,84 @@ router.patch(
   },
 );
 
+async function coordinatorScheduleStaff(req: any, res: any, next: any) {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    res.locals.scheduleCaller = await calendarStaff(getAuthUserId(req));
+    next();
+  } catch (error) {
+    if (error instanceof CalendarError)
+      res.status(error.status).json({ error: error.message, code: error.code });
+    else next(error);
+  }
+}
+router.use("/coordinator/schedules", coordinatorScheduleStaff);
+router.use("/interviews/:scheduleId/feedback", coordinatorScheduleStaff);
+
+async function coordinatorJobScope(caller: Awaited<ReturnType<typeof calendarStaff>>) {
+  const allowed = await getDataScopeTenantIds(caller);
+  return and(
+    allowed === null ? undefined : inArray(jobsTable.tenantId, allowed),
+    caller.role === "recruiter"
+      ? inArray(jobsTable.id, await getRecruiterAssignedJobIds(caller))
+      : undefined,
+    caller.role === "hiring_manager" ? eq(jobsTable.assignedHiringManagerId, caller.id) : undefined,
+  );
+}
+
+async function coordinatorInterviewerAllowed(interviewerId: string | null | undefined, jobId: string) {
+  if (!interviewerId) return true;
+  try {
+    const interviewer = await calendarStaff(interviewerId);
+    const [job] = await db.select().from(jobsTable)
+      .where(and(eq(jobsTable.id, jobId), await coordinatorJobScope(interviewer))).limit(1);
+    return Boolean(job && await recruiterOwnsResource(interviewer, { kind: "jobId", value: jobId }));
+  } catch (error) {
+    if (error instanceof CalendarError) return false;
+    throw error;
+  }
+}
+
+async function findCoordinatorScheduleRequest(
+  caller: Awaited<ReturnType<typeof calendarStaff>>, requestId: string,
+) {
+  const [row] = await db.select({ schedule: interviewSchedulesTable })
+    .from(interviewSchedulesTable)
+    .innerJoin(applicationsTable, eq(interviewSchedulesTable.applicationId, applicationsTable.id))
+    .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
+    .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
+    .where(and(
+      eq(interviewSchedulesTable.id, scheduleRequestId(caller.id, requestId)),
+      eq(interviewSchedulesTable.tenantId, applicationsTable.tenantId),
+      await coordinatorJobScope(caller),
+      compliantCandidatePredicate(),
+      caller.role === "interviewer" ? eq(interviewSchedulesTable.interviewerId, caller.id) : undefined,
+    )).limit(1);
+  return row?.schedule ?? null;
+}
+
+router.get("/coordinator/schedules/requests/:requestId", async (req: any, res) => {
+  const parsed = CreateScheduleBody.shape.requestId.safeParse(req.params.requestId);
+  if (!parsed.success || !parsed.data) {
+    res.status(400).json({ error: "A valid save request ID is required." });
+    return;
+  }
+  const schedule = await findCoordinatorScheduleRequest(res.locals.scheduleCaller, parsed.data);
+  if (!schedule) {
+    res.status(404).json({ error: "Schedule request not found" });
+    return;
+  }
+  res.json({ ...schedule, version: scheduleVersion(schedule), replayed: true });
+});
+
 router.get("/coordinator/schedules", async (req: any, res) => {
-  /* Staff-only — schedule data is tenant-scoped recruiter information. */
-  const userId = getAuthUserId(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const [caller] = await controlDb
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1);
-  if (!caller) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  let allowedTenants: string[] | null = null;
-  if (caller.role !== "platform_admin") {
-    allowedTenants = await getAllowedTenantIds(caller as any);
-    if (!allowedTenants || allowedTenants.length === 0) {
-      res.json([]);
-      return;
-    }
-  }
+  const caller = res.locals.scheduleCaller as Awaited<ReturnType<typeof calendarStaff>>;
 
   const { applicationId: filterAppId } = req.query;
+  if (filterAppId !== undefined && typeof filterAppId !== "string") {
+    res.status(400).json({ error: "Invalid application filter" });
+    return;
+  }
 
   const rows = await db
     .select({
@@ -4440,20 +4419,26 @@ router.get("/coordinator/schedules", async (req: any, res) => {
       jobTitle: jobsTable.title,
     })
     .from(interviewSchedulesTable)
-    .leftJoin(applicationsTable, eq(interviewSchedulesTable.applicationId, applicationsTable.id))
-    .leftJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
-    .leftJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
+    .innerJoin(applicationsTable, eq(interviewSchedulesTable.applicationId, applicationsTable.id))
+    .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
+    .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
+    .where(and(
+      await coordinatorJobScope(caller),
+      eq(interviewSchedulesTable.tenantId, applicationsTable.tenantId),
+      compliantCandidatePredicate(),
+      filterAppId ? eq(applicationsTable.id, filterAppId) : undefined,
+      caller.role === "interviewer" ? eq(interviewSchedulesTable.interviewerId, caller.id) : undefined,
+    ))
     .orderBy(desc(interviewSchedulesTable.scheduledAt));
 
   const schedules = rows
-    .filter((r) => !filterAppId || r.schedule.applicationId === filterAppId)
-    .filter((r) => !allowedTenants || allowedTenants.includes(r.schedule.tenantId ?? ""))
     .map((r) => {
       const first = r.firstName ?? "";
       const last = r.lastName ?? "";
       const candidateName = [first, last].filter(Boolean).join(" ") || "Unknown Candidate";
       return {
         ...r.schedule,
+        version: scheduleVersion(r.schedule),
         scheduledAt: r.schedule.scheduledAt.toISOString(),
         createdAt: r.schedule.createdAt.toISOString(),
         candidateName,
@@ -4478,150 +4463,195 @@ router.post(
       durationMinutes,
       type,
       notes,
+      requestId,
     } = req.body;
     /* Staff-only — and tenant is derived from the application's tenant rather
      than the previous hard-coded "acme" insert that corrupted multi-tenant
      reporting and bypassed authz. */
-    const userId = getAuthUserId(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const [caller] = await controlDb
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, userId))
-      .limit(1);
-    if (!caller) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+    const caller = res.locals.scheduleCaller as Awaited<ReturnType<typeof calendarStaff>>;
     const [appRow] = await db
-      .select()
+      .select({ application: applicationsTable, job: jobsTable })
       .from(applicationsTable)
-      .where(eq(applicationsTable.id, applicationId))
+      .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
+      .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
+      .where(and(eq(applicationsTable.id, applicationId), await coordinatorJobScope(caller), compliantCandidatePredicate()))
       .limit(1);
-    if (!appRow) {
+    if (!appRow || !(await recruiterOwnsResource(caller, { kind: "jobId", value: appRow.job.id }))) {
       res.status(404).json({ error: "Application not found" });
       return;
     }
-    if (caller.role !== "platform_admin") {
-      const allowed = await getAllowedTenantIds(caller as any);
-      if (!allowed || !allowed.includes(appRow.tenantId ?? "")) {
-        res.status(404).json({ error: "Application not found" });
+    const values = {
+      tenantId: appRow.application.tenantId as string,
+      applicationId,
+      interviewerId: interviewerId ?? null,
+      interviewerName: interviewerName ?? null,
+      location: location ?? null,
+      scheduledAt: new Date(scheduledAt),
+      durationMinutes: durationMinutes ?? 60,
+      type,
+      notes: notes ?? null,
+      status: "pending" as const,
+    };
+    if (requestId) {
+      const existing = await findCoordinatorScheduleRequest(caller, requestId);
+      if (existing) {
+        if (!sameScheduleInput(existing, values)) {
+          res.status(409).json({ error: new ScheduleSaveConflict().message });
+          return;
+        }
+        // Recovery is a read: do not recreate, reopen or revalidate a past slot.
+        res.status(200).json({ ...existing, version: scheduleVersion(existing), replayed: true });
         return;
       }
     }
-    const [sched] = await db
-      .insert(interviewSchedulesTable)
-      .values({
-        tenantId: appRow.tenantId as string,
-        applicationId,
-        interviewerId: interviewerId ?? null,
-        interviewerName: interviewerName ?? null,
-        location: location ?? null,
-        scheduledAt: new Date(scheduledAt),
-        durationMinutes: durationMinutes ?? 60,
-        type,
-        notes: notes ?? null,
-        status: "pending",
-      })
-      .returning();
-    res.status(201).json({
-      ...sched,
-      scheduledAt: sched.scheduledAt.toISOString(),
-      createdAt: sched.createdAt.toISOString(),
-    });
+    if (!isJobApprovedForInterview(appRow.job.status)) {
+      res.status(403).json({ error: JOB_NOT_APPROVED_MESSAGE });
+      return;
+    }
+    if (!assertFutureSchedule(scheduledAt)) {
+      res.status(400).json({ error: "Choose a future interview time." });
+      return;
+    }
+    if ((caller.role === "interviewer" && interviewerId !== caller.id) ||
+      !(await coordinatorInterviewerAllowed(interviewerId, appRow.job.id))) {
+      res.status(404).json({ error: "Interviewer not available for this work order." });
+      return;
+    }
+    try {
+      const { schedule, replayed } = await createScheduleOnce(db, values, caller.id, requestId);
+      res.status(replayed ? 200 : 201).json({ ...schedule, version: scheduleVersion(schedule), replayed });
+    } catch (error) {
+      if (!(error instanceof ScheduleSaveConflict)) throw error;
+      res.status(409).json({ error: error.message });
+    }
   },
 );
 
-router.put(
-  "/coordinator/schedules/:scheduleId",
-  validate({ body: UpdateScheduleBody }),
-  async (req: any, res) => {
+async function updateCoordinatorSchedule(req: any, res: any) {
     /* Staff-only — schedule mutations affect interviewer calendars and must
      be tenant-scoped. */
-    const userId = getAuthUserId(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const [caller] = await controlDb
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, userId))
-      .limit(1);
-    if (!caller) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    const [existing] = await db
-      .select()
+    const caller = res.locals.scheduleCaller as Awaited<ReturnType<typeof calendarStaff>>;
+    const [row] = await db
+      .select({ schedule: interviewSchedulesTable, job: jobsTable })
       .from(interviewSchedulesTable)
-      .where(eq(interviewSchedulesTable.id, req.params.scheduleId))
+      .innerJoin(applicationsTable, eq(interviewSchedulesTable.applicationId, applicationsTable.id))
+      .innerJoin(jobsTable, eq(applicationsTable.jobId, jobsTable.id))
+      .innerJoin(candidatesTable, eq(applicationsTable.candidateId, candidatesTable.id))
+      .where(and(
+        eq(interviewSchedulesTable.id, req.params.scheduleId),
+        eq(interviewSchedulesTable.tenantId, applicationsTable.tenantId),
+        await coordinatorJobScope(caller),
+        req.body.status === "cancelled" ? undefined : compliantCandidatePredicate(),
+        caller.role === "interviewer" ? eq(interviewSchedulesTable.interviewerId, caller.id) : undefined,
+      ))
       .limit(1);
-    if (!existing) {
+    if (!row || !(await recruiterOwnsResource(caller, { kind: "jobId", value: row.job.id }))) {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    if (caller.role !== "platform_admin") {
-      const allowed = await getAllowedTenantIds(caller as any);
-      if (!allowed || !allowed.includes(existing.tenantId ?? "")) {
-        res.status(404).json({ error: "Not found" });
-        return;
-      }
+    const existing = row.schedule;
+    if (req.body.expectedVersion && req.body.expectedVersion !== scheduleVersion(existing)) {
+      res.status(409).json({ error: SCHEDULE_CHANGED_MESSAGE, code: "schedule_changed" });
+      return;
+    }
+    const timingChange = req.body.scheduledAt !== undefined || req.body.durationMinutes !== undefined;
+    const activating = req.body.status && !["completed", "cancelled"].includes(req.body.status);
+    if (existing.panelRevision &&
+      ((req.body.interviewerId !== undefined && req.body.interviewerId !== existing.interviewerId) ||
+        req.body.type === "ai_interview")) {
+      res.status(409).json({ error: "Remove or review the saved panel before changing the primary interviewer or switching to an AI interview." });
+      return;
+    }
+    if (["completed", "cancelled"].includes(existing.status) &&
+      req.body.status !== undefined && req.body.status !== existing.status) {
+      res.status(409).json({ error: "This schedule is closed. Create a new schedule instead." });
+      return;
+    }
+    if ((timingChange || activating) && !isJobApprovedForInterview(row.job.status)) {
+      res.status(403).json({ error: JOB_NOT_APPROVED_MESSAGE });
+      return;
+    }
+    if ((timingChange || activating) && ["completed", "cancelled"].includes(existing.status)) {
+      res.status(409).json({ error: "This schedule is closed. Create a new schedule instead." });
+      return;
+    }
+    if ((timingChange || activating) &&
+      !assertFutureSchedule(req.body.scheduledAt ?? existing.scheduledAt.toISOString())) {
+      res.status(400).json({ error: "Choose a future interview time." });
+      return;
+    }
+    if (req.body.interviewerId !== undefined &&
+      ((caller.role === "interviewer" && req.body.interviewerId !== caller.id) ||
+        !(await coordinatorInterviewerAllowed(req.body.interviewerId, row.job.id)))) {
+      res.status(404).json({ error: "Interviewer not available for this work order." });
+      return;
     }
     const update: any = { ...req.body };
     if (update.scheduledAt) update.scheduledAt = new Date(update.scheduledAt);
     /* Don't allow tenantId reassignment via PUT body. */
     delete update.tenantId;
-    const [sched] = await db
-      .update(interviewSchedulesTable)
-      .set(update)
-      .where(eq(interviewSchedulesTable.id, req.params.scheduleId))
-      .returning();
+    delete update.expectedVersion;
+    if (existing.panelRevision && timingChange) update.status = "pending";
+    let sched;
+    try {
+      if (existing.panelRevision && (timingChange || activating)) {
+        [sched] = await dbAdmin.transaction(async tx => {
+          await assertSavedPanel(tx, existing,
+            update.scheduledAt?.toISOString() ?? existing.scheduledAt.toISOString(),
+            update.durationMinutes ?? existing.durationMinutes);
+          return tx.update(interviewSchedulesTable).set(update).where(scheduleSnapshotPredicate(existing)).returning();
+        });
+      } else {
+        [sched] = await db.update(interviewSchedulesTable).set(update).where(scheduleSnapshotPredicate(existing)).returning();
+      }
+    } catch (error) {
+      if (!(error instanceof CalendarError)) throw error;
+      res.status(error.status >= 500 ? 503 : 409).json({
+        error: "The whole panel could not be confirmed for this time. Nothing was saved. Review the panel or try again.",
+      });
+      return;
+    }
     if (!sched) {
-      res.status(404).json({ error: "Not found" });
+      res.status(409).json({ error: SCHEDULE_CHANGED_MESSAGE, code: "schedule_changed" });
       return;
     }
     res.json({
       ...sched,
+      version: scheduleVersion(sched),
       scheduledAt: sched.scheduledAt.toISOString(),
       createdAt: sched.createdAt.toISOString(),
     });
-  },
+}
+router.put(
+  "/coordinator/schedules/:scheduleId",
+  validate({ body: UpdateScheduleBody }),
+  updateCoordinatorSchedule,
 );
 
 /* ── POST /interviews/:id/feedback ── interviewer submits feedback ────────── */
 router.post(
   "/interviews/:scheduleId/feedback",
-  validate({ body: FeedbackBody }),
-  resolveUser,
-  async (req, res) => {
-    try {
-      const { rating, notes } = req.body as { rating?: number; notes?: string };
-      if (!rating || rating < 1 || rating > 5) {
-        res.status(400).json({ error: "rating must be 1–5" });
-        return;
-      }
-      const [sched] = await db
-        .update(interviewSchedulesTable)
-        .set({ feedbackRating: rating, feedbackNotes: notes ?? null })
-        .where(eq(interviewSchedulesTable.id, req.params.scheduleId))
-        .returning();
-      if (!sched) {
-        res.status(404).json({ error: "Interview not found" });
-        return;
-      }
-      res.json({
-        id: sched.id,
-        feedbackRating: sched.feedbackRating,
-        feedbackNotes: sched.feedbackNotes,
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: "Failed to submit feedback" });
-    }
+  validate({ body: ScheduleFeedbackBody }),
+  async (req: any, res) => {
+    req.body = {
+      feedbackRating: req.body.rating,
+      feedbackNotes: req.body.notes ?? null,
+      expectedVersion: req.body.expectedVersion,
+    };
+    await updateCoordinatorSchedule(req, res);
   },
 );
+
+async function updateInterviewCompletionStage(params: Parameters<typeof changeCandidateStage>[0]) {
+  try {
+    await changeCandidateStage(params);
+  } catch (error) {
+    if (!(error instanceof AtsStageOwnershipConflict)) throw error;
+    // Assessment evidence/queue handoff remain valid independently of a native
+    // pipeline move. Never fail the candidate's completed interview for this.
+    logger.info({code:error.code,jobId:params.jobId},
+      "[interviews] ATS-owned hiring stage preserved; assessment completion continues");
+  }
+}
 
 export default router;

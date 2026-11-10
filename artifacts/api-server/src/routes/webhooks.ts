@@ -39,7 +39,7 @@
  * in explicit DATA delimiters with instructions to treat it as data only.
  * ASCII control characters are stripped before the AI call.
  */
-import { Router, type IRouter } from "express";
+import { Router, json, type IRouter } from "express";
 import multer from "multer";
 import { simpleParser, type ParsedMail, type Attachment as ParsedAttachment } from "mailparser";
 import { db } from "@workspace/db";
@@ -53,6 +53,9 @@ import { classifyReply } from "../lib/outreach-engine";
 import { recordAudit } from "../lib/audit";
 import { changeCandidateStage } from "../lib/change-candidate-stage.js";
 import nodeCryptoForSns from "node:crypto";
+import { parseOfferProviderEvent, recordOfferProviderEvent } from "../lib/offer-provider-events";
+import { parseInvitationProviderEvent } from "../lib/interview-provider-policy";
+import { recordInvitationProviderEvent } from "../lib/interview-provider-events";
 
 /**
  * Inline-image attachment surfaced to the recruiter inbox.
@@ -660,25 +663,11 @@ async function parseInboundPayload(
  * of `requireInboundSecret`), not a body-shape allowlist. Adding a strict
  * schema here would only block legitimate AWS payloads when AWS evolves
  * the envelope. The body is parsed defensively before use. */
-router.post("/webhooks/ses-events", async (req, res) => {
+// SNS defaults to text/plain JSON; do not require a non-default AWS content-type policy.
+router.post("/webhooks/ses-events", requireInboundSecret,
+  json({ type: ["application/json", "text/plain"], limit: "1mb" }), async (req, res) => {
   try {
-    let envelope: any = req.body || {};
-
-    /* SNS HTTP/S deliveries may use text/plain for a JSON envelope.
-       Parse the string before checking the SNS signature. */
-    if (typeof envelope === "string") {
-      try {
-        envelope = JSON.parse(envelope);
-      } catch {
-        res.status(400).json({ error: "invalid_sns_json" });
-        return;
-      }
-    }
-
-    if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
-      res.status(400).json({ error: "expected_sns_envelope" });
-      return;
-    }
+    const envelope: any = req.body || {};
 
     /* Hard requirement: every SNS-wrapped payload must carry a valid AWS
        signature. This blocks payload-spoofing even when the shared secret
@@ -713,61 +702,40 @@ router.post("/webhooks/ses-events", async (req, res) => {
       }
       res.status(200).json({ ok: true, confirmed: true }); return;
     }
-    let sesMessageParsed = true;
     if (payload?.Type === "Notification" && typeof payload?.Message === "string") {
-      try {
-        payload = JSON.parse(payload.Message);
-      } catch {
-        sesMessageParsed = false;
-      }
+      try { payload = JSON.parse(payload.Message); } catch { /* keep raw */ }
     }
 
-    logger.info(
-      {
-        snsType: envelope?.Type ?? null,
-        sesMessageParsed,
-        notificationType: payload?.notificationType ?? null,
-        eventType: payload?.eventType ?? null,
-        payloadKeys: payload && typeof payload === "object" && !Array.isArray(payload)
-          ? Object.keys(payload).slice(0, 30)
-          : [],
-      },
-      "[ses-events] payload diagnostic",
-    );
-
-    const sesEventType = payload?.notificationType ?? payload?.eventType;
+    const eventKind = payload?.eventType ?? payload?.notificationType;
+    const offerEvent = parseOfferProviderEvent(payload);
+    const invitationEvent = parseInvitationProviderEvent(payload);
+    if (invitationEvent && (offerEvent || envelope.Type !== "Notification" ||
+        !SNS_TOPIC_ALLOWLIST.includes(String(envelope.TopicArn ?? "")))) {
+      res.status(403).json({ error: "invitation_event_requires_exclusive_allowlisted_signed_sns" }); return;
+    }
+    if (offerEvent && (envelope.Type !== "Notification" ||
+        !SNS_TOPIC_ALLOWLIST.includes(String(envelope.TopicArn ?? "")))) {
+      res.status(403).json({ error: "offer_event_requires_allowlisted_signed_sns" }); return;
+    }
+    const offerDelivery = offerEvent ? await recordOfferProviderEvent(offerEvent) : null;
+    const invitationDelivery = invitationEvent ? await recordInvitationProviderEvent(invitationEvent) : null;
     const kind: "Bounce" | "Complaint" | null =
-      sesEventType === "Bounce" ? "Bounce" :
-      sesEventType === "Complaint" ? "Complaint" : null;
+      eventKind === "Bounce" ? "Bounce" :
+      eventKind === "Complaint" ? "Complaint" : null;
     if (!kind) {
-      /* SES sends several valid event types through this destination.
-         After SNS signature verification, acknowledge events that this
-         handler does not process to prevent unnecessary SNS retries. */
-      logger.info(
-        { notificationType: payload?.notificationType ?? null },
-        "[ses-events] valid SNS notification acknowledged without processing",
-      );
-      res.status(200).json({ ok: true, ignored: true });
-      return;
+      if (["Send", "Delivery", "DeliveryDelay", "Reject", "Rendering Failure"].includes(eventKind)) {
+        res.status(200).json({ ok: true, kind: eventKind, offerDelivery, invitationDelivery }); return;
+      }
+      res.status(400).json({ error: "Unsupported SES event type" }); return;
     }
 
     /* Hard-bounces only — soft bounces (e.g. "MailboxFull") will retry.
        Also dedupe + cap recipients per request (defense-in-depth blast-radius
        limit even if a valid SNS event ever names thousands of recipients). */
     const MAX_RECIPIENTS_PER_EVENT = 100;
-    const bounceType = kind === "Bounce" ? payload.bounce?.bounceType ?? null : null;
-    const bounceRecipientCount = kind === "Bounce"
-      ? (payload.bounce?.bouncedRecipients?.length ?? 0)
-      : 0;
-
-    logger.info(
-      { kind, bounceType, bounceRecipientCount },
-      "[ses-events] recipient classification",
-    );
-
     const rawRecipients: { emailAddress?: string }[] =
       kind === "Bounce"
-        ? (bounceType === "Permanent" ? (payload.bounce?.bouncedRecipients ?? []) : [])
+        ? (payload.bounce?.bounceType === "Permanent" ? (payload.bounce?.bouncedRecipients ?? []) : [])
         : (payload.complaint?.complainedRecipients ?? []);
     const seen = new Set<string>();
     const recipients = rawRecipients.filter(r => {
@@ -784,45 +752,6 @@ router.post("/webhooks/ses-events", async (req, res) => {
     for (const r of recipients) {
       const email = (r.emailAddress || "").trim().toLowerCase();
       if (!email) continue;
-
-      const matches = await db.select({
-        doNotContact: candidatesTable.doNotContact,
-      })
-        .from(candidatesTable)
-        .where(sql`lower(${candidatesTable.email}) = ${email}`)
-        .limit(5);
-
-      const crypto = await import("node:crypto");
-      const recipientFingerprint = crypto
-        .createHash("sha256")
-        .update(email)
-        .digest("hex");
-
-      const sourcedMatches = await db.select({
-        rawData: sourcedCandidatesTable.rawData,
-        normalizedCandidateId: sourcedCandidatesTable.normalizedCandidateId,
-      })
-        .from(sourcedCandidatesTable)
-        .where(sql`lower(${sourcedCandidatesTable.rawData}->>'email') = ${email}`)
-        .limit(5);
-
-      logger.info({
-        recipientFingerprint,
-        candidateMatches: matches.length,
-        sourcedCandidateMatches: sourcedMatches.length,
-        sourcedMatchesWithNormalizedCandidate: sourcedMatches.filter(
-          (x) => Boolean(x.normalizedCandidateId)
-        ).length,
-        alreadyDoNotContact: matches.filter((x) => x.doNotContact).length,
-        eligibleForUpdate: matches.filter((x) => !x.doNotContact).length,
-      }, "[ses-events] recipient fingerprint diagnostic");
-
-      logger.info({
-        matchingCandidates: matches.length,
-        alreadyDoNotContact: matches.filter((x) => x.doNotContact).length,
-        eligibleForUpdate: matches.filter((x) => !x.doNotContact).length,
-      }, "[ses-events] candidate match diagnostic");
-
       const result = await db.update(candidatesTable)
         .set({
           doNotContact: true,
@@ -856,7 +785,7 @@ router.post("/webhooks/ses-events", async (req, res) => {
     }
 
     logger.info({ kind, recipients: recipients.length, updated }, "[ses-events] processed");
-    res.status(200).json({ ok: true, kind, recipients: recipients.length, updated });
+    res.status(200).json({ ok: true, kind, recipients: recipients.length, updated, offerDelivery, invitationDelivery });
   } catch (err: any) {
     logger.error({ err: err.message }, "[ses-events] handler failed");
     res.status(500).json({ error: err.message });
@@ -1282,8 +1211,13 @@ Return JSON: { "classification": "<one of the seven above>", "sentiment": "posit
             }
           : {}),
       };
+      if (inviteResult?.deferred) nextStage = raw?.stage;
       const replyCandidateId = sc.normalizedCandidateId ?? normalized?.id ?? null;
-      if (replyCandidateId && nextStage) {
+      if (inviteResult?.deferred) {
+        await db.update(sourcedCandidatesTable).set({
+          rawData: { ...raw, ...replyRawPatch },
+        }).where(and(eq(sourcedCandidatesTable.id, sc.id), eq(sourcedCandidatesTable.tenantId, sc.tenantId)));
+      } else if (replyCandidateId && nextStage) {
         // Inbound reply is a candidate-driven, AI-classified event → system actor.
         // A "hold" that doesn't change the stage folds into the no-op branch of the
         // choke-point (patch applied, no transition trail).

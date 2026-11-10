@@ -8,7 +8,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createSemaphore } from "./admission.ts";
+import { createSemaphore } from "./admission";
 
 test("admits immediately while under the cap", async () => {
   const s = createSemaphore(2, 50);

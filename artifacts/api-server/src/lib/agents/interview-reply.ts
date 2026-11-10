@@ -62,6 +62,8 @@ import { logger } from "../logger";
 import { isJobApprovedForInterview } from "../job-approval";
 import { withInviteTips, inviteEmailHtml } from "../interview-invite-copy";
 import { changeCandidateStage } from "../change-candidate-stage.js";
+import { candidateDisplayName } from "../candidate-display-name";
+import {sendRecordedCommunication} from "../recorded-communication";
 
 const INVITE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -387,6 +389,7 @@ export async function sendInterviewInviteFromReply(opts: {
   emailOk?: boolean;
   error?: string;
   simulated?: boolean;
+  deferred?: boolean;
 }> {
   const { jobId, sourcedId, replyBody } = opts;
 
@@ -417,6 +420,14 @@ export async function sendInterviewInviteFromReply(opts: {
     email: (sourced as any)?.email ?? (sourced?.rawData as any)?.email ?? null,
   };
   let normalizedCandidateId = sourced?.normalizedCandidateId || null;
+  const { hasBoundInvitationWorkflow } = await import("../workflow-contact-gates");
+  if (await hasBoundInvitationWorkflow(jobId, tenantId, normalizedCandidateId ?? sourcedId)) {
+    return {
+      ok: false,
+      deferred: true,
+      error: "Interest recorded. The workflow needs separate invitation approval; no invitation was created or sent.",
+    };
+  }
 
   if (!sourced) {
     /* No sourced row for this id. Callers fall back to passing the
@@ -433,7 +444,7 @@ export async function sendInterviewInviteFromReply(opts: {
       .limit(1);
     if (!c) return { ok: false, error: "Sourced candidate not found" };
     normalizedCandidateId = c.id;
-    candidate = { fullName: c.fullName, email: c.email };
+    candidate = { fullName: candidateDisplayName(c), email: c.email };
   } else if (normalizedCandidateId) {
     const [c] = await db
       .select()
@@ -441,7 +452,7 @@ export async function sendInterviewInviteFromReply(opts: {
       .where(eq(candidatesTable.id, normalizedCandidateId))
       .limit(1);
     if (c) {
-      candidate = { fullName: c.fullName, email: c.email };
+      candidate = { fullName: candidateDisplayName(c), email: c.email };
     }
   }
   if (!candidate.email) return { ok: false, error: "Candidate has no email on file" };
@@ -550,7 +561,7 @@ export async function sendInterviewInviteFromReply(opts: {
    * have a healthy connected mailbox — same hybrid rule as first-touch outreach
    * (so the candidate's thread stays in the recruiter's mailbox instead of
    * jumping to a generic SES sender). The email router falls back to SES
-   * automatically when the recruiter hasn't connected Outlook or Graph fails. */
+   * for a disconnected mailbox or explicit rejection, not an uncertain outcome. */
   const senderUserId = job.assignedRecruiterId || null;
   const recruiterSend = senderUserId ? { senderUserId, useRecruiterMailbox: true as const } : {};
   const subjectLabel = candidate.fullName || candidate.email!;
@@ -625,7 +636,7 @@ export async function sendInterviewInviteFromReply(opts: {
     applicationId: session.id,
     type: "next_steps",
     channel: "email",
-    status: sendRes.ok ? "sent" : "failed",
+    status: sendRes.ok ? "sent" : sendRes.reviewRequired ? "pending" : "failed",
     subject,
     body,
     sentAt: sendRes.ok ? sentAt : null,
@@ -645,11 +656,30 @@ export async function sendInterviewInviteFromReply(opts: {
  * Called by the scheduler for sessions whose 24-hour invite was never opened.
  * Generates a fresh token (extends another 24h), AI-drafts a re-engagement
  * email, sends it, and logs the comm event. Idempotent — safe to call only
- * once per session because reEngagementSentAt is set after success.
+ * once per session because reEngagementSentAt is claimed BEFORE provider I/O.
+ * That timestamp is a local claim, not proof of provider acceptance or delivery.
  */
 export async function sendReEngagement(
   sessionId: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  // Check ownership before rotating a token or consuming the re-engagement
+  // claim. Bound workflow contact cannot inherit a legacy scheduler's authority.
+  const [existing] = await db.select().from(interviewSessionsTable)
+    .where(eq(interviewSessionsTable.id, sessionId)).limit(1);
+  if (!existing) return { ok: false, error: "Session missing" };
+  // Campaign approval covers the captured batch's first invitation only.
+  // Legacy re-engagement must not create a new contact outside that authority.
+  if (existing.applicationId.startsWith("ats-campaign:"))
+    return { ok: false, error: "Campaign reminders require separate employer approval." };
+  const [existingPlan] = await db.select().from(interviewPlansTable)
+    .where(eq(interviewPlansTable.id, existing.planId)).limit(1);
+  const { hasBoundInvitationWorkflow, unownedWorkflowContactCondition } = await import("../workflow-contact-gates");
+  if (existingPlan && await hasBoundInvitationWorkflow(
+    existingPlan.jobId, existingPlan.tenantId, existing.candidateId,
+  )) return {
+    ok: false,
+    error: "Re-engagement held: this candidate's contact is workflow-owned and needs separate workflow approval.",
+  };
   /* Atomic claim — conditional update guarantees only one worker wins the
    * race to send the re-engagement email even if the scheduler ticks twice
    * concurrently. We also generate the new token here so it's tied to the
@@ -666,6 +696,9 @@ export async function sendReEngagement(
       and(
         eq(interviewSessionsTable.id, sessionId),
         isNull(interviewSessionsTable.reEngagementSentAt),
+        existingPlan ? unownedWorkflowContactCondition(
+          existingPlan.jobId, existingPlan.tenantId, existing.candidateId,
+        ) : undefined,
       ),
     )
     .returning();
@@ -683,7 +716,7 @@ export async function sendReEngagement(
     .limit(1);
 
   let email = normCandidate?.email || null;
-  let fullName = normCandidate?.fullName || null;
+  let fullName = candidateDisplayName(normCandidate);
   if (!email) {
     const [sc] = await db
       .select()
@@ -731,23 +764,16 @@ export async function sendReEngagement(
     jobId: plan?.jobId ?? null,
   });
 
-  const sendRes = await sendEmail({
+  const sendRes = await sendRecordedCommunication({
+    id:`interview-reengagement:${session.id}`,
+    tenantId:session.tenantId,candidateId:session.candidateId,
+    applicationId:session.id,type:"re_engagement",
     to: email,
     subject,
-    text: body,
-    html: inviteEmailHtml(body),
-  });
-
-  await db.insert(communicationEventsTable).values({
-    tenantId: session.tenantId,
-    candidateId: session.candidateId,
-    applicationId: session.id,
-    type: "re_engagement",
-    channel: "email",
-    status: sendRes.ok ? "sent" : "failed",
-    subject,
     body,
-    sentAt: sendRes.ok ? now : null,
+    html: inviteEmailHtml(body),
+    actorLabel:"Interview re-engagement",subjectLabel:fullName??email,
+    action:"interview.reengagement.sent",metadata:{sessionId:session.id,jobId:plan?.jobId??null},
   });
 
   return { ok: sendRes.ok, error: sendRes.error };

@@ -31,18 +31,19 @@
  * (e.g. talent rediscovery reads), opts out with exemptFromOwnership(route, JUST)
  * where JUST is a NAMED constant from OWNERSHIP_EXEMPTION — no anonymous exemptions.
  */
-import type { Request, Response, NextFunction, RequestHandler } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   controlDb,
   usersTable,
+  candidatesTable,
   applicationsTable,
   outreachCampaignsTable,
   sourcedCandidatesTable,
   talentPoolSubmissionsTable,
 } from "@workspace/db";
-import { getRecruiterAssignedJobIds } from "./tenantUtils";
+import { getRecruiterAssignedJobIds, type TenantScopeReader } from "./tenantUtils";
 import { getAuthUserId } from "./auth-token";
 import { logger } from "./logger";
 
@@ -65,17 +66,17 @@ interface OwnershipCaller {
  * valid token resolves to null (⇒ 401), and role/tenant come straight from the
  * users row, exactly as the in-handler helpers derive them.
  */
-async function resolveCaller(req: Request): Promise<OwnershipCaller | null> {
+async function resolveCaller(req: Request<unknown>): Promise<OwnershipCaller | null> {
   const existing = (req as any).resolvedUser as OwnershipCaller | undefined;
   if (existing?.id) return existing;
   const userId = getAuthUserId(req);
   if (!userId) return null;
   const [user] = await controlDb
-    .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId })
+    .select({ id: usersTable.id, role: usersTable.role, tenantId: usersTable.tenantId, status: usersTable.status })
     .from(usersTable)
     .where(eq(usersTable.id, userId))
     .limit(1);
-  if (!user) return null;
+  if (!user || user.status === "suspended") return null;
   const caller: OwnershipCaller = { id: user.id, role: user.role, tenantId: user.tenantId };
   (req as any).resolvedUser = (req as any).resolvedUser ?? caller;
   return caller;
@@ -144,7 +145,7 @@ const exemptionRegistry: ExemptionRecord[] = [];
 export function exemptFromOwnership(
   route: string,
   justification: OwnershipExemption,
-): RequestHandler {
+) {
   const known = Object.values(OWNERSHIP_EXEMPTION) as string[];
   if (!justification || !known.includes(justification)) {
     throw new Error(
@@ -152,7 +153,7 @@ export function exemptFromOwnership(
     );
   }
   exemptionRegistry.push({ route, justification });
-  const mw: RequestHandler = (_req, _res, next) => next();
+  const mw = <Params>(_req: Request<Params>, _res: Response, next: NextFunction) => next();
   (mw as any).__ownershipExempt = { route, justification };
   return mw;
 }
@@ -172,7 +173,7 @@ interface ExtractedId {
 /** Read the raw value for a kind from params then body, honouring aliases.
  *  Returns { present, malformed, value }. */
 function readId(
-  req: Request,
+  req: Request<unknown>,
   kind: OwnershipIdKind,
   opts: EnforceOwnershipOptions,
 ): { present: boolean; malformed: boolean; value: string } {
@@ -199,7 +200,7 @@ function readId(
 
 /** The recruiter's assigned-req id set, resolved once and cached on the request. */
 async function assignedJobSet(
-  req: Request,
+  req: Request<unknown>,
   user: { id: string; role: string; tenantId: string | null },
 ): Promise<{ set: Set<string>; list: string[] }> {
   const cached = (req as any).__ownershipAssignedJobs as
@@ -291,10 +292,29 @@ async function isOwned(
 export async function recruiterOwnsResource(
   user: { id: string; role: string; tenantId: string | null },
   id: { kind: OwnershipIdKind; value: string },
+  reader?: TenantScopeReader,
 ): Promise<boolean> {
   if (user.role !== "recruiter") return true;
-  const list = await getRecruiterAssignedJobIds(user);
+  const list = await getRecruiterAssignedJobIds(user, reader);
   return isOwned({ kind: id.kind, value: id.value }, { set: new Set(list), list });
+}
+
+/** Bulk equivalent of isOwned(candidateId), applied BEFORE ordering/pagination.
+ * Keep all three assigned-requisition paths aligned with the single-row gate.
+ * The caller must also apply the candidate's tenant/data-scope predicate. */
+export function recruiterCandidatePredicate(jobIds: string[]) {
+  if (jobIds.length === 0) return sql`false`;
+  return sql`(
+    EXISTS (SELECT 1 FROM ${applicationsTable}
+      WHERE ${applicationsTable.candidateId} = ${candidatesTable.id}
+      AND ${inArray(applicationsTable.jobId, jobIds)})
+    OR EXISTS (SELECT 1 FROM ${sourcedCandidatesTable}
+      WHERE ${sourcedCandidatesTable.normalizedCandidateId} = ${candidatesTable.id}
+      AND ${inArray(sql`${sourcedCandidatesTable.rawData}->>'jobId'`, jobIds)})
+    OR EXISTS (SELECT 1 FROM ${talentPoolSubmissionsTable}
+      WHERE ${talentPoolSubmissionsTable.candidateId} = ${candidatesTable.id}
+      AND ${inArray(talentPoolSubmissionsTable.jobPostingId, jobIds)})
+  )`;
 }
 
 /* ────────────────────────────── middleware ──────────────────────────────── */
@@ -304,12 +324,13 @@ export async function recruiterOwnsResource(
  * it AFTER resolveUser (needs req.resolvedUser) and after any existing tenant
  * guard on a route.
  */
-export function enforceOwnership(opts: EnforceOwnershipOptions = {}): RequestHandler {
+export function enforceOwnership(opts: EnforceOwnershipOptions = {}) {
   const kinds = opts.kinds ?? (Object.keys(CANONICAL_KEYS) as OwnershipIdKind[]);
   const requireId = opts.requireId !== false;
 
-  return async function ownershipMiddleware(
-    req: Request,
+  // Match the route's own parameter types; do not widen named IDs to wildcard arrays.
+  return async function ownershipMiddleware<Params>(
+    req: Request<Params>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {

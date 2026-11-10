@@ -28,6 +28,7 @@ import { logger } from "./logger.js";
 import { heartbeat } from "./heartbeat.js";
 import { sendEmail, plainToHtml } from "./email.js";
 import { PLAN_PACKAGES } from "./plans.js";
+import { activePilot } from "./pilot-codes";
 
 const TICK_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -133,7 +134,7 @@ async function claimSendSlot(tenantId: string, column: SentColumnName): Promise<
   return rows.length > 0;
 }
 
-async function tick() {
+export async function runTrialExpiryCheck() {
   const demoTenants = await db.select().from(tenantsTable).where(eq(tenantsTable.plan, "demo"));
   if (demoTenants.length === 0) return;
 
@@ -141,6 +142,9 @@ async function tick() {
   let sent = 0;
 
   for (const tenant of demoTenants) {
+    // A newly added client can still store "demo" while inheriting its main
+    // account's complimentary pilot. Never claim an expiry notice for it.
+    if (await activePilot(tenant.id)) continue;
     const anchor = (tenant.planActivatedAt ?? tenant.createdAt) as Date;
     const daysSince = (now - new Date(anchor).getTime()) / 86_400_000;
 
@@ -221,7 +225,7 @@ async function tick() {
 export function startTrialExpiryScheduler() {
   logger.info(`[trial-expiry-scheduler] Started — runs every ${TICK_MS / 3_600_000}h`);
   const run = () =>
-    tick()
+    runTrialExpiryCheck()
       .then(() => heartbeat("trial_expiry"))
       .catch((err) => {
         logger.error({ err: err?.message }, "[trial-expiry] tick failed");

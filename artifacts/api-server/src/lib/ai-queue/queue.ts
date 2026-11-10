@@ -11,8 +11,9 @@
  * dbAdmin anyway. We import dbAdmin explicitly to make that intent obvious.
  */
 import { dbAdmin, aiJobsTable, type AiJob, type AiJobType } from "@workspace/db";
-import { sql, and, eq, lt, inArray } from "drizzle-orm";
+import { sql, and, eq, lt, inArray, getTableColumns } from "drizzle-orm";
 import { logger } from "../logger";
+import { isErasedAiWork, isErasureBarrierError } from "../candidate-erasure-barrier";
 
 /* Exponential backoff (ms) applied to runAt after a failed attempt, indexed by
  * retryCount. Capped at the last entry for any further retries. */
@@ -54,6 +55,7 @@ export async function enqueueAiJob(args: EnqueueArgs): Promise<AiJob | null> {
   };
 
   try {
+    if (await isErasedAiWork(args.payload, args.interviewSessionId)) return null;
     /* Fast path: skip the insert if a live job already exists. */
     if (args.dedupeKey) {
       const existing = await findLive(args.dedupeKey);
@@ -73,10 +75,13 @@ export async function enqueueAiJob(args: EnqueueArgs): Promise<AiJob | null> {
       .returning();
     return job ?? null;
   } catch (err: any) {
+    if (isErasureBarrierError(err)) return null;
     /* Race backstop: a concurrent enqueue won the partial unique index
        (ai_jobs_dedupe_live_uq). 23505 = unique_violation — resolve to the
        winner's row rather than reporting a spurious enqueue failure. */
-    if (args.dedupeKey && err?.code === "23505") {
+    // Drizzle wraps PostgreSQL errors in DrizzleQueryError.cause.
+    const pgCode = err?.code ?? err?.cause?.code;
+    if (args.dedupeKey && pgCode === "23505") {
       try {
         const existing = await findLive(args.dedupeKey);
         if (existing) return existing;
@@ -101,6 +106,14 @@ export async function enqueueAiJob(args: EnqueueArgs): Promise<AiJob | null> {
  * Returns null when there is nothing to do.
  */
 export async function claimNextJob(workerId: string): Promise<AiJob | null> {
+  // execute() returns raw driver names, not Drizzle's camel-cased properties.
+  // Alias every column so retry counts, limits and session linkage survive.
+  const returning = sql.join(
+    Object.entries(getTableColumns(aiJobsTable)).map(
+      ([property, column]) => sql`${sql.identifier(column.name)} AS ${sql.identifier(property)}`,
+    ),
+    sql`, `,
+  );
   const result = await dbAdmin.execute(sql`
     UPDATE ${aiJobsTable}
        SET status = 'processing',
@@ -117,10 +130,17 @@ export async function claimNextJob(workerId: string): Promise<AiJob | null> {
         LIMIT 1
         FOR UPDATE SKIP LOCKED
      )
-     RETURNING *
+     RETURNING ${returning}
   `);
   const row = (result as any).rows?.[0];
-  return (row as AiJob) ?? null;
+  if (!row) return null;
+  // Raw execute also bypasses column decoders (notably timestamp → Date).
+  return Object.fromEntries(
+    Object.entries(getTableColumns(aiJobsTable)).map(([property, column]) => {
+      const value = row[property];
+      return [property, value == null ? value : column.mapFromDriverValue(value)];
+    }),
+  ) as AiJob;
 }
 
 /** Mark a claimed job completed and store its result. */
@@ -136,7 +156,7 @@ export async function completeJob(jobId: string, result: unknown): Promise<void>
       completedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(aiJobsTable.id, jobId));
+    .where(and(eq(aiJobsTable.id, jobId), eq(aiJobsTable.status, "processing")));
 }
 
 /**
@@ -144,6 +164,15 @@ export async function completeJob(jobId: string, result: unknown): Promise<void>
  * remain; otherwise marks the job terminally `failed`.
  */
 export async function failJob(job: AiJob, error: unknown): Promise<void> {
+  if (isErasureBarrierError(error) || await isErasedAiWork(job.payload, job.interviewSessionId)) {
+    await dbAdmin.update(aiJobsTable).set({
+      status: "failed", lastError: "candidate_erased", payload: {
+        ...(typeof (job.payload as any)?.candidateId === "string"
+          ? { candidateId: (job.payload as any).candidateId } : {}),
+      }, result: null, lockedAt: null, lockedBy: null, updatedAt: new Date(),
+    }).where(and(eq(aiJobsTable.id, job.id), eq(aiJobsTable.status, "processing")));
+    return;
+  }
   const message = error instanceof Error ? error.message : String(error);
   const attemptsUsed = job.retryCount; // already incremented by claimNextJob
   const exhausted = attemptsUsed >= job.maxAttempts;
@@ -157,7 +186,7 @@ export async function failJob(job: AiJob, error: unknown): Promise<void> {
         lockedBy: null,
         updatedAt: new Date(),
       })
-      .where(eq(aiJobsTable.id, job.id));
+      .where(and(eq(aiJobsTable.id, job.id), eq(aiJobsTable.status, "processing")));
     logger.error({ jobId: job.id, type: job.type, attemptsUsed }, "[ai-queue] job permanently failed");
     return;
   }
@@ -172,7 +201,7 @@ export async function failJob(job: AiJob, error: unknown): Promise<void> {
       runAt: new Date(Date.now() + backoff),
       updatedAt: new Date(),
     })
-    .where(eq(aiJobsTable.id, job.id));
+    .where(and(eq(aiJobsTable.id, job.id), eq(aiJobsTable.status, "processing")));
   logger.warn(
     { jobId: job.id, type: job.type, attemptsUsed, backoffMs: backoff },
     "[ai-queue] job failed — will retry",

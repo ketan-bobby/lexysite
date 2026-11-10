@@ -1,3 +1,5 @@
+import { meteredFetch } from "./vendor-usage";
+
 /**
  * lib/heygen.ts — HeyGen API client (Talking Photo → talking-avatar video)
  *
@@ -68,7 +70,7 @@ export function createHeyGenClient(opts: HeyGenClientOptions = {}): HeyGenClient
   const apiKey = opts.apiKey ?? process.env.HEYGEN_API_KEY ?? "";
   const baseUrl = (opts.baseUrl ?? process.env.HEYGEN_API_BASE_URL ?? DEFAULT_BASE).replace(/\/$/, "");
   const uploadBaseUrl = (opts.uploadBaseUrl ?? process.env.HEYGEN_UPLOAD_BASE_URL ?? DEFAULT_UPLOAD_BASE).replace(/\/$/, "");
-  const doFetch: FetchImpl = opts.fetchImpl ?? fetch;
+  const doFetch: FetchImpl = opts.fetchImpl ?? meteredFetch("heygen");
 
   const authHeaders = (extra: Record<string, string> = {}) => ({ "X-Api-Key": apiKey, ...extra });
 

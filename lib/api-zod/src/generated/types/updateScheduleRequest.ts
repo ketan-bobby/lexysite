@@ -5,9 +5,35 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateScheduleRequestStatus } from "./updateScheduleRequestStatus";
+import type { UpdateScheduleRequestType } from "./updateScheduleRequestType";
 
 export interface UpdateScheduleRequest {
-  scheduledAt?: string;
-  status?: string;
-  notes?: string;
+  /**
+   * Revision from the saved schedule being edited. Legacy callers may omit it; new clients must send it to detect stale drafts.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  expectedVersion?: string;
+  scheduledAt?: Date;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
+  durationMinutes?: number;
+  interviewerId?: string | null;
+  /** @maxLength 200 */
+  interviewerName?: string | null;
+  /** @maxLength 2000 */
+  location?: string | null;
+  type?: UpdateScheduleRequestType;
+  status?: UpdateScheduleRequestStatus;
+  /** @maxLength 10000 */
+  notes?: string | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  feedbackRating?: number | null;
+  /** @maxLength 10000 */
+  feedbackNotes?: string | null;
 }

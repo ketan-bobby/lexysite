@@ -8,9 +8,30 @@
 import type { InterviewScheduleStatus } from "./interviewScheduleStatus";
 
 export interface InterviewSchedule {
+  /**
+   * Content revision for conditional native schedule edits; not an authorization token.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  version: string;
   id: string;
   applicationId: string;
   interviewerId?: string | null;
+  /** @nullable */
+  interviewerName?: string | null;
+  /** @nullable */
+  location?: string | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  feedbackRating?: number | null;
+  /** @nullable */
+  feedbackNotes?: string | null;
+  candidateName?: string;
+  /** @nullable */
+  candidateEmail?: string | null;
+  jobTitle?: string;
   scheduledAt: string;
   durationMinutes: number;
   type: string;

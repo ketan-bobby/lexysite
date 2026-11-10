@@ -13,6 +13,7 @@ import { Trash2, Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { apiBase, apiFetch } from "@/lib/api";
 import { BackToHome } from "@/components/layout/BackToHome";
+import { erasureAccountStatus } from "@/lib/erasure-account-status";
 
 interface Request {
   id: string;
@@ -24,6 +25,7 @@ interface Request {
   handlerNotes: string | null;
   handledAt: string | null;
   createdAt: string;
+  cleanup?: { state: string; remaining: number; attempts: number; lastFailure: string | null; confirmation: string; account?: string | null } | null;
   /* Server-computed GDPR Art. 12(3) SLA fields. */
   slaDueAt?: string;
   slaStatus?: "on_track" | "warning" | "breached" | "resolved";
@@ -36,7 +38,7 @@ const JURISDICTION_CLOCK_DAYS: Record<string, number> = {
 export default function AdminDeletionRequests() {
   const [rows, setRows] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"" | "pending" | "fulfilled" | "denied">("pending");
+  const [filter, setFilter] = useState<"" | "pending" | "in_progress" | "fulfilled" | "denied">("pending");
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = () => {
@@ -46,9 +48,25 @@ export default function AdminDeletionRequests() {
       .catch(() => setLoading(false));
   };
   useEffect(load, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const timer = setInterval(load, 30_000);
+    return () => clearInterval(timer);
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const retryCleanup = async (id: string) => {
+    setBusy(id);
+    try {
+      const response = await apiFetch(`${apiBase}/admin/deletion-requests/${id}/retry-cleanup`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      load();
+    } catch { alert("Cleanup remains pending. Refresh to check its progress."); }
+    finally { setBusy(null); }
+  };
 
   const fulfil = async (id: string) => {
-    if (!confirm("Permanently delete this candidate and all linked data? This cannot be undone.")) return;
+    if (!confirm("Permanently erase this candidate and eligible linked data? The candidate-only login will close if no other live profile uses it. Shared staff identities and required legal history remain. This cannot be undone.")) return;
     const notes = prompt("Optional notes for the audit trail:") ?? "";
     setBusy(id);
     try {
@@ -57,7 +75,13 @@ export default function AdminDeletionRequests() {
         body: JSON.stringify({ handlerNotes: notes || undefined }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      load();
+      const result = await r.json();
+      if (result.cleanupPending) {
+        alert("Candidate database records were deleted. File cleanup is durably queued for retry; final confirmation is withheld until it finishes. Check the in_progress view.");
+        setFilter("in_progress");
+      } else {
+        load();
+      }
     } catch (e: any) { alert(`Failed: ${e?.message}`); }
     finally { setBusy(null); }
   };
@@ -67,10 +91,11 @@ export default function AdminDeletionRequests() {
     if (!notes) return;
     setBusy(id);
     try {
-      await apiFetch(`${apiBase}/admin/deletion-requests/${id}/deny`, {
+      const response = await apiFetch(`${apiBase}/admin/deletion-requests/${id}/deny`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ handlerNotes: notes }),
       });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       load();
     } catch (e: any) { alert(`Failed: ${e?.message}`); }
     finally { setBusy(null); }
@@ -98,7 +123,7 @@ export default function AdminDeletionRequests() {
         </div>
 
         <div className="flex gap-2 mb-6">
-          {(["pending", "fulfilled", "denied", ""] as const).map((s) => (
+          {(["pending", "in_progress", "fulfilled", "denied", ""] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -150,7 +175,14 @@ export default function AdminDeletionRequests() {
                       <div className="text-xs text-muted-foreground mt-1">candidateId: {r.candidateId}</div>
                       {r.reason && <p className="text-sm mt-2"><strong>Reason:</strong> {r.reason}</p>}
                       {r.handlerNotes && <p className="text-sm mt-2 text-muted-foreground"><strong>Handler notes:</strong> {r.handlerNotes}</p>}
+                      {r.cleanup && <div className="text-sm mt-2 text-muted-foreground">
+                        <p>Database erased · File cleanup: {r.cleanup.state} · {r.cleanup.remaining} remaining · {r.cleanup.attempts} attempts</p>
+                        {erasureAccountStatus(r.cleanup.account) && <p>{erasureAccountStatus(r.cleanup.account)}</p>}
+                        {r.cleanup.lastFailure && <p>Last issue: {r.cleanup.lastFailure.replaceAll("_", " ")}. Supported targets retry automatically.</p>}
+                        {r.cleanup.confirmation === "uncertain" && <p className="text-amber-600">Confirmation delivery needs review. It will not be resent automatically.</p>}
+                      </div>}
                     </div>
+                    {r.status === "in_progress" && r.cleanup && <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => retryCleanup(r.id)}>Retry file cleanup</Button>}
                     {r.status === "pending" && (
                       <div className="flex items-center gap-2 shrink-0">
                         <Button size="sm" variant="destructive" onClick={() => fulfil(r.id)} disabled={busy === r.id}>

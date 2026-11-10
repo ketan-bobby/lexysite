@@ -26,6 +26,7 @@ import { outreachCampaignsTable } from "@workspace/db";
 import { runAutopilot } from "./outreach-engine";
 import { logger } from "./logger";
 import { heartbeat } from "./heartbeat";
+import { dispatchDueWorkflowFollowUps } from "./workflow-follow-ups";
 
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -34,6 +35,16 @@ export function startOutreachScheduler() {
 
   async function tick() {
     try {
+      try {
+        await dispatchDueWorkflowFollowUps();
+      } catch (error) {
+        // A follow-up queue failure must be visible without disabling the
+        // existing assisted campaign scheduler.
+        logger.error(
+          { errorKind: error instanceof Error ? error.name : "unknown" },
+          "[workflow-follow-up] Queue failed; assisted campaigns remain independent",
+        );
+      }
       const activeCampaigns = await db.select()
         .from(outreachCampaignsTable)
         .where(eq(outreachCampaignsTable.status, "active"));

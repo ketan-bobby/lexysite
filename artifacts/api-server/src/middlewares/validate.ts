@@ -46,14 +46,23 @@
  *     adds latency to every successful call for protection against a class
  *     of bugs that integration tests already catch.
  */
-import type { Request, Response, NextFunction, RequestHandler } from "express";
-import type { ZodTypeAny, ZodIssue } from "zod";
+import type { Request, Response, NextFunction } from "express";
 import { logger } from "../lib/logger";
 
+// The shared safeParse contract supports both installed Zod generations.
+// Do not depend on one version's private schema implementation fields.
+type ValidationIssue = { path: readonly PropertyKey[]; code: string; message: string };
+type ValidationSchema = {
+  safeParse(
+    data: unknown,
+  ):
+    | { success: true; data: unknown }
+    | { success: false; error: { issues: readonly ValidationIssue[] } };
+};
 type Schemas = {
-  body?: ZodTypeAny;
-  query?: ZodTypeAny;
-  params?: ZodTypeAny;
+  body?: ValidationSchema;
+  query?: ValidationSchema;
+  params?: ValidationSchema;
 };
 
 type Part = keyof Schemas;
@@ -75,7 +84,7 @@ export interface ValidatedLocals {
   params?: unknown;
 }
 
-function issuesFor(part: Part, issues: ZodIssue[]) {
+function issuesFor(part: Part, issues: readonly ValidationIssue[]) {
   return issues.map((i) => ({
     part,
     path: [part, ...i.path.map((p) => String(p))].join("."),
@@ -84,8 +93,10 @@ function issuesFor(part: Part, issues: ZodIssue[]) {
   }));
 }
 
-export function validate(schemas: Schemas): RequestHandler {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function validate(schemas: Schemas) {
+  // Stay polymorphic over the matching route's parameters. A concrete default
+  // RequestHandler here widens named IDs into Express's wildcard-capable map.
+  return <Params>(req: Request<Params>, res: Response, next: NextFunction) => {
     const allIssues: ReturnType<typeof issuesFor> = [];
     const validated: ValidatedLocals = {};
 

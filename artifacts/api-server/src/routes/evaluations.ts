@@ -31,7 +31,7 @@ import {
   jobsTable,
   sourcedCandidatesTable,
 } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { getDataScopeTenantIds, getRecruiterAssignedJobIds } from "../lib/tenantUtils";
 import {
@@ -47,6 +47,12 @@ import {
   type EvaluationContent,
 } from "../lib/evaluation-synthesis";
 import { COMPETENCY_LIBRARY } from "../lib/competency-library";
+import {
+  EvaluationReviewEditsSchema,
+  readEvaluationReviewEdits,
+  reviewEditsStatus,
+  sealEvaluationReviewEdits,
+} from "../lib/evaluation-review-edits";
 
 const router = Router();
 router.use(resolveUser);
@@ -151,13 +157,16 @@ function hasTrustedEvaluationProvenance(
   candidateId: string,
 ): content is EvaluationContent {
   const p = (content as EvaluationContent | null)?.evidenceBasis?.provenance;
-  return p?.kind === "job_bound_evaluation_v1" && p.jobId === jobId && p.candidateId === candidateId;
+  return (
+    p?.kind === "job_bound_evaluation_v1" && p.jobId === jobId && p.candidateId === candidateId
+  );
 }
 
 function untrustedEvaluationContent(): EvaluationContent {
   return {
     headline: "Evaluation unavailable",
-    executiveSummary: "This historical evaluation has no verified job-bound evidence provenance. Regenerate it for this requisition before sharing.",
+    executiveSummary:
+      "This historical evaluation has no verified job-bound evidence provenance. Regenerate it for this requisition before sharing.",
     roleAlignment: "",
     competencies: [],
     behavioralInsights: [],
@@ -166,7 +175,12 @@ function untrustedEvaluationContent(): EvaluationContent {
     riskAssessment: { concerns: [], toValidate: [] },
     verification: { status: "not_available", summary: "Verification status is unavailable." },
     recommendation: { band: "further_assessment", rationale: "" },
-    evidenceBasis: { hasInterview: false, interviewAnswers: 0, hasIntelligence: false, hasResume: false },
+    evidenceBasis: {
+      hasInterview: false,
+      interviewAnswers: 0,
+      hasIntelligence: false,
+      hasResume: false,
+    },
   };
 }
 
@@ -176,11 +190,19 @@ function untrustedEvaluationContent(): EvaluationContent {
 async function serialize(row: typeof candidateEvaluationsTable.$inferSelect) {
   const trusted = hasTrustedEvaluationProvenance(row.aiContent, row.jobId, row.candidateId);
   const merged = mergeEvaluation(
-    trusted ? row.aiContent as EvaluationContent : untrustedEvaluationContent(),
-    // Never merge unprovenanced recruiter prose into a client presentation.
+    trusted ? (row.aiContent as EvaluationContent) : untrustedEvaluationContent(),
+    trusted ? row.humanEdits : null,
+    row.competencyKeys ?? [],
+    row,
+  );
+  // Explicit, employer-safe baseline for sparse editing. Never return the raw
+  // stored AI/source blob or historical manual notes to the browser.
+  const baseline = mergeEvaluation(
+    trusted ? (row.aiContent as EvaluationContent) : untrustedEvaluationContent(),
     null,
     row.competencyKeys ?? [],
   );
+  const edits = readEvaluationReviewEdits(row.aiContent, row.humanEdits, row);
   try {
     const [c] = await db
       .select({
@@ -190,7 +212,14 @@ async function serialize(row: typeof candidateEvaluationsTable.$inferSelect) {
       .from(candidatesTable)
       .where(eq(candidatesTable.id, row.candidateId))
       .limit(1);
-    if (c) merged.verification = verificationStateFor(c);
+    if (c) {
+      const live = verificationStateFor(c);
+      baseline.verification = live;
+      merged.verification = {
+        status: live.status,
+        summary: edits?.verification?.summary ?? live.summary,
+      };
+    }
   } catch (err) {
     logger.warn(
       { err, evaluationId: row.id },
@@ -211,9 +240,11 @@ async function serialize(row: typeof candidateEvaluationsTable.$inferSelect) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     content: merged,
-     // Historical source blobs can contain candidate-development notes. The
-     // report content above is the only employer-safe representation.
-     evidenceProvenanceVerified: trusted,
+    aiContent: baseline,
+    reviewEditsStatus: reviewEditsStatus(row),
+    // Historical source blobs can contain candidate-development notes. The
+    // report content above is the only employer-safe representation.
+    evidenceProvenanceVerified: trusted,
   };
 }
 
@@ -366,6 +397,8 @@ async function loadAuthorized(req: any, res: any, id: string) {
     res.status(404).json({ error: "Not found" });
     return null;
   }
+  await authorizeJob(req, res, row.jobId);
+  if (res.headersSent || !(await authorizeCandidate(req, res, row.candidateId))) return null;
   // Recruiter req-assignment ceiling.
   if (req.resolvedUser!.role === "recruiter") {
     const assigned = new Set(await getRecruiterAssignedJobIds(req.resolvedUser!));
@@ -378,19 +411,27 @@ async function loadAuthorized(req: any, res: any, id: string) {
 }
 
 const PatchBody = z.object({
-  humanEdits: z.record(z.unknown()).optional(),
+  humanEdits: EvaluationReviewEditsSchema.optional(),
   competencyKeys: z.array(z.string()).optional(),
+  expectedUpdatedAt: z.string().datetime().optional(),
 });
 
 /* ── PATCH /evaluations/:id ────────────────────────────────────────────────── */
 router.patch("/:id", validate({ body: PatchBody }), async (req, res) => {
   try {
-    const row = await loadAuthorized(req, res, req.params.id);
+    const row = await loadAuthorized(req, res, req.params.id as string);
     if (!row) return;
-    const { humanEdits, competencyKeys } = req.body as z.infer<typeof PatchBody>;
+    const { humanEdits, competencyKeys, expectedUpdatedAt } = req.body as z.infer<typeof PatchBody>;
+    if (!hasTrustedEvaluationProvenance(row.aiContent, row.jobId, row.candidateId)) {
+      res
+        .status(409)
+        .json({ error: "Regenerate this report with verified job evidence before editing." });
+      return;
+    }
 
     const set: Record<string, unknown> = { updatedAt: new Date() };
-    if (humanEdits !== undefined) set.humanEdits = humanEdits;
+    if (humanEdits !== undefined)
+      set.humanEdits = sealEvaluationReviewEdits(row, humanEdits, req.resolvedUser!.id);
     if (competencyKeys !== undefined)
       set.competencyKeys = competencyKeys.filter((k) => COMPETENCY_LIBRARY[k]);
 
@@ -403,11 +444,15 @@ router.patch("/:id", validate({ body: PatchBody }), async (req, res) => {
         and(
           eq(candidateEvaluationsTable.id, row.id),
           eq(candidateEvaluationsTable.approvalState, "draft"),
+          eq(candidateEvaluationsTable.aiContent, row.aiContent),
+          sql`date_trunc('milliseconds', ${candidateEvaluationsTable.updatedAt}) = ${expectedUpdatedAt ?? row.updatedAt.toISOString()}::timestamp`,
         ),
       )
       .returning();
     if (!updated) {
-      res.status(409).json({ error: "Evaluation is approved — reopen it before editing." });
+      res.status(409).json({
+        error: "Report changed or was approved. Reload it; reopen approved reports before editing.",
+      });
       return;
     }
     res.json({ evaluation: await serialize(updated) });
@@ -418,10 +463,22 @@ router.patch("/:id", validate({ body: PatchBody }), async (req, res) => {
 });
 
 /* ── POST /evaluations/:id/approve ─────────────────────────────────────────── */
-router.post("/:id/approve", async (req, res) => {
+const ApprovalBody = z.object({ expectedUpdatedAt: z.string().datetime().optional() }).default({});
+router.post("/:id/approve", validate({ body: ApprovalBody }), async (req, res) => {
   try {
-    const row = await loadAuthorized(req, res, req.params.id);
+    const row = await loadAuthorized(req, res, req.params.id as string);
     if (!row) return;
+    if (
+      !hasTrustedEvaluationProvenance(row.aiContent, row.jobId, row.candidateId) ||
+      reviewEditsStatus(row) === "requires_review"
+    ) {
+      res.status(409).json({
+        error:
+          "Regenerate unverified evidence or resave job-specific review edits before approval. Historical private notes remain excluded.",
+      });
+      return;
+    }
+    const { expectedUpdatedAt } = req.body as z.infer<typeof ApprovalBody>;
     const [updated] = await db
       .update(candidateEvaluationsTable)
       .set({
@@ -434,11 +491,15 @@ router.post("/:id/approve", async (req, res) => {
         and(
           eq(candidateEvaluationsTable.id, row.id),
           eq(candidateEvaluationsTable.approvalState, "draft"),
+          eq(candidateEvaluationsTable.aiContent, row.aiContent),
+          sql`date_trunc('milliseconds', ${candidateEvaluationsTable.updatedAt}) = ${expectedUpdatedAt ?? row.updatedAt.toISOString()}::timestamp`,
         ),
       )
       .returning();
     if (!updated) {
-      res.status(409).json({ error: "Already approved." });
+      res
+        .status(409)
+        .json({ error: "Already approved or report changed. Reload before approving." });
       return;
     }
     res.json({ evaluation: await serialize(updated) });
@@ -451,7 +512,7 @@ router.post("/:id/approve", async (req, res) => {
 /* ── POST /evaluations/:id/reopen ──────────────────────────────────────────── */
 router.post("/:id/reopen", async (req, res) => {
   try {
-    const row = await loadAuthorized(req, res, req.params.id);
+    const row = await loadAuthorized(req, res, req.params.id as string);
     if (!row) return;
     const [updated] = await db
       .update(candidateEvaluationsTable)
@@ -475,7 +536,7 @@ const RegenerateBody = z.object({ competencyKeys: z.array(z.string()).optional()
 /* ── POST /evaluations/:id/regenerate ──────────────────────────────────────── */
 router.post("/:id/regenerate", validate({ body: RegenerateBody }), async (req, res) => {
   try {
-    const row = await loadAuthorized(req, res, req.params.id);
+    const row = await loadAuthorized(req, res, req.params.id as string);
     if (!row) return;
     const { competencyKeys } = req.body as z.infer<typeof RegenerateBody>;
 

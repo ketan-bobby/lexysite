@@ -1,7 +1,59 @@
 # Runbook — Right-to-Erasure Fulfilment
 
+## Durable file recovery update
+
+Late-write suppression and deployment prerequisites are documented in
+[the background-write verification](qa/candidate-erasure-write-barrier-2026-10-11.md).
+
+Candidate-only identity closure is now part of eligible erasures; staff identities
+and accounts shared by other live candidate profiles are not automatically
+disabled. Review the account outcome in the cleanup summary and follow
+[account-closure boundaries](qa/candidate-account-closure-2026-10-11.md).
+
+New erasures persist storage receipts before deleting database rows and remain
+`in_progress` until file cleanup completes. The existing scheduler retries failed
+targets; platform admins can use **Retry file cleanup** in the `in_progress`
+queue. Review `needs_review` targets and `uncertain` confirmation delivery
+separately. Do not re-fulfil or reset a committed request to `pending` to retry
+its files. Historical requests without receipts still need manual review.
+
+Apply `scripts/sql/2026-10-11-erasure-cleanup-outbox.sql` to the correct database
+before rollout. See
+[recovery behaviour and verification](qa/erasure-cleanup-recovery-2026-10-11.md).
+This update supersedes older statements below about best-effort-only cleanup or
+database fulfilment while files remain. Live AWS proof is still pending.
+
 **Owner:** platform_admin on-call
-**Last updated:** 16 May 2026
+**Last updated:** 11 October 2026
+
+## Current erasure behaviour
+
+Admin fulfilment, staff anonymisation and self-service anonymisation now share
+the candidate-linked data cleanup in `src/lib/candidate-erasure.ts`. The
+database drift check covers the shared inventory and explicit retention list.
+Indirect interview summaries, application-linked schedules, external sourcing
+mirrors and workflow-event children are also removed.
+
+Self-service and staff paths retain anonymised application records. Historical
+hire/start/terminal stages are not rewritten as rejections; only open
+applications are closed. The admin fulfilment path deletes the candidate row.
+
+`decision_events` is immutable, and `fee_line_items` has a financial retention
+basis. These and `deletion_requests` are explicitly retained; erasure must not
+remove the immutable-event trigger or silently delete the fee ledger. Access to
+retained records remains restricted. Retention and legal-hold decisions need
+the responsible human review; this cleanup is not a legal certification.
+
+File references and recording-checkpoint prefixes are collected before deleting
+their owning rows. File deletion occurs only after database commit. If storage
+cleanup fails, the API reports `cleanupPending`; the admin sees a warning and
+the full-deletion confirmation email is withheld. Database fulfilment is not
+proof of successful file deletion. Review the audit storage receipt and perform
+the outstanding cleanup when AWS permissions are ready. Automatic durable
+storage retries and login-account closure are separate remaining work.
+
+The following historical procedure remains useful for triage and legal clocks;
+its old table count and storage-future note are superseded by this section.
 
 When a candidate submits a deletion request via
 `/portal/deletion-request`, a row is inserted into `deletion_requests`

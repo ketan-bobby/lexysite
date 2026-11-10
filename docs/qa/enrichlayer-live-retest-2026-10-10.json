@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-10-10T03:15:36.114Z",
+  "status": "passed",
+  "scope": "One authorised standalone request through Lexy's native EnrichLayer adapter, not a workflow rerun",
+  "operationKey": "enrichlayer_check_6063e97c-e7b3-4d25-bf2c-1feafdfdfb57",
+  "providerRequests": 1,
+  "httpStatus": 200,
+  "usableProfilesReturned": 1,
+  "usage": {
+    "durableRecords": 1,
+    "status": "succeeded",
+    "controlledTenantAttributionVerified": true,
+    "operationKeyVerified": true,
+    "providerRequestIdRecorded": true,
+    "providerReportedCredits": null,
+    "actualDollarCost": null,
+    "costStatus": "unknown"
+  },
+  "completedPilotSevenProtectedGroupsUnchanged": true,
+  "candidateMessagesTriggered": false,
+  "interviewsRerun": false,
+  "modelsPromptsOrProviderRoutingChanged": false,
+  "limitations": [
+    "This proves one usable native-adapter response and durable request attribution, not a complete sourcing workflow rerun.",
+    "HTTP success and a request receipt do not establish actual billed credits or dollar cost.",
+    "Raw profile data, profile URLs and credentials are not included in this report."
+  ]
+}

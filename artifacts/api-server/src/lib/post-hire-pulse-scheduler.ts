@@ -16,7 +16,8 @@
  * the next tick.
  *
  * Best-effort: a send that fails AFTER the claim leaves the slot consumed
- * (prefers under-emailing to spamming). Re-NULL the column to retry one row.
+ * (prefers under-emailing to spamming). These timestamps are claims, not delivery
+ * receipts. Never clear an ambiguous claim merely to retry: review evidence first.
  */
 import { db, candidateOutcomesTable, jobsTable, tenantsTable, usersTable } from "@workspace/db";
 import { and, eq, isNull, isNotNull, lte, sql } from "drizzle-orm";
@@ -161,6 +162,7 @@ async function tick() {
     const text = pulseBody(recipient.name, jobTitle, chosen.phase, row.applicationId);
 
     const result = await sendEmail({
+      singleAttempt:true,
       to: recipient.email,
       subject: `Quick ${chosen.phase}-day check-in on your hire for "${jobTitle}"`,
       text,
@@ -170,18 +172,20 @@ async function tick() {
         actorLabel: "Post-Hire Pulse Scheduler",
         subjectType: "external",
         subjectLabel: recipient.email,
-        action: `hire_pulse.${chosen.phase}d.sent`,
+        action: `hire_pulse.${chosen.phase}d.attempt`,
         metadata: { applicationId: row.applicationId, jobId: row.jobId, daysSinceHire: Math.round(daysSince) },
       },
     });
 
-    if (!result.ok) {
-      logger.error({ outcomeId: row.id, phase: chosen.phase, err: result.error }, "[post-hire-pulse] send failed AFTER claim — slot consumed; manual re-trigger required");
+    if (!result.ok||result.simulated||result.suppressed) {
+      logger.warn({ outcomeId: row.id, phase: chosen.phase, acceptance:result.acceptance,
+        reviewRequired:result.reviewRequired,simulated:result.simulated,suppressed:result.suppressed },
+        "[post-hire-pulse] Claim retained without counted acceptance; review transport evidence before any retry");
       continue;
     }
 
     sent += 1;
-    logger.info({ outcomeId: row.id, phase: chosen.phase, simulated: result.simulated ?? false }, "[post-hire-pulse] sent");
+    logger.info({ outcomeId: row.id, phase: chosen.phase }, "[post-hire-pulse] Provider accepted; delivery unverified");
   }
 
   if (sent > 0) logger.info({ count: sent }, "[post-hire-pulse-scheduler] tick complete");

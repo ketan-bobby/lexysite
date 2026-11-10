@@ -13,7 +13,7 @@
  * tenant-scoped `db` role in the routes — so isolation is preserved.
  */
 import { dbAdmin, agentRunsTable, agentRunEventsTable } from "@workspace/db";
-import { and, eq, sql, inArray } from "drizzle-orm";
+import { and, eq, sql, inArray, lt } from "drizzle-orm";
 import type { AgentRunStatus, RunEventType } from "@workspace/db";
 import { logger } from "../logger";
 
@@ -293,9 +293,14 @@ export async function completeAgentRun(
  * Runs execute in-process (fire-and-forget), so a process restart mid-run leaves
  * rows stuck in `queued`/`running` forever — an in-memory executor can never
  * resume them. On boot we reconcile any such orphans to `failed` with a terminal
- * event so the audit trail is honest and the UI stops spinning. Best-effort.
+ * event so the audit trail is honest and the UI stops spinning. Only rows
+ * created before this boot's cutoff are prior orphans. Status-update failures
+ * propagate so startup cannot silently accept work after failed recovery.
  */
-export async function reconcileStaleAgentRuns(): Promise<void> {
+export async function reconcileStaleAgentRuns(startedBefore: Date): Promise<void> {
+  if (!Number.isFinite(startedBefore.getTime())) {
+    throw new Error("Agent-run recovery requires a valid startup cutoff");
+  }
   try {
     const stale = await dbAdmin
       .update(agentRunsTable)
@@ -305,7 +310,12 @@ export async function reconcileStaleAgentRuns(): Promise<void> {
         completedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(inArray(agentRunsTable.status, ["queued", "running"]))
+      .where(
+        and(
+          inArray(agentRunsTable.status, ["queued", "running"]),
+          lt(agentRunsTable.createdAt, startedBefore),
+        ),
+      )
       .returning({ id: agentRunsTable.id, tenantId: agentRunsTable.tenantId });
 
     for (const run of stale) {
@@ -319,5 +329,6 @@ export async function reconcileStaleAgentRuns(): Promise<void> {
     }
   } catch (err) {
     logger.error({ err }, "[agent-runs] reconcileStaleAgentRuns failed");
+    throw err;
   }
 }

@@ -173,6 +173,33 @@ test("forced failure after the stage writes rolls back ALL four — the two stag
   }
 });
 
+test("unsupported application stage leaves both stage values and the audit trail untouched", async () => {
+  const s = await seed();
+  try {
+    await assert.rejects(changeCandidateStage({
+      tenantId: s.tenantId,
+      candidateId: s.candidateId,
+      jobId: s.jobId,
+      to: "fixture_custom_lane",
+      actor: { type: "user", role: "recruiter", id: "user_test_123" },
+      applicationId: s.applicationId,
+      sourcedId: s.sourcedId,
+    }), /unsupported application stage/);
+    const [application] = await db.select().from(applicationsTable)
+      .where(eq(applicationsTable.id, s.applicationId));
+    const [sourced] = await db.select().from(sourcedCandidatesTable)
+      .where(eq(sourcedCandidatesTable.id, s.sourcedId));
+    assert.equal(application.stage, "applied");
+    assert.equal((sourced.rawData as Record<string, unknown>).stage, "applied");
+    assert.equal((await db.select().from(candidateEventsTable)
+      .where(eq(candidateEventsTable.tenantId, s.tenantId))).length, 0);
+    assert.equal((await db.select().from(auditLogsTable)
+      .where(eq(auditLogsTable.tenantId, s.tenantId))).length, 0);
+  } finally {
+    await cleanup(s.tenantId);
+  }
+});
+
 test("same-stage call is a no-op — patches apply, but no transition trail is written", async () => {
   const s = await seed();
   try {

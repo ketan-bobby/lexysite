@@ -100,7 +100,7 @@ export const aiSemaphore: Semaphore = createSemaphore(MAX, WAIT_MS);
  * with Retry-After so clients back off and retry.
  */
 export function admit(sem: Semaphore = aiSemaphore) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async <Params>(req: Request<Params>, res: Response, next: NextFunction): Promise<void> => {
     const ok = await sem.acquire();
     if (!ok) {
       logger.warn({ path: req.path, inFlight: sem.inFlight(), waiting: sem.waiting(), max: sem.max }, "[admission] saturated — shedding request with 503");

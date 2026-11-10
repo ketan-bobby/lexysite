@@ -23,7 +23,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { transcribeAudio, cleanWhisperOutput, sarvamLanguageCode, sttModelFor, DEFAULT_STT_MODEL, type TranscribeDeps, type SttHttpResponse } from "./transcribe.ts";
+import { transcribeAudio, cleanWhisperOutput, sarvamLanguageCode, sttModelFor, DEFAULT_STT_MODEL, type TranscribeDeps, type SttHttpResponse } from "./transcribe";
 
 /* A buffer comfortably over the 100-byte minimum so it isn't treated as too-short. */
 const audioBuf = Buffer.alloc(2048, 1);
@@ -719,7 +719,7 @@ test("Deepgram fallback output still passes through the hallucination filter", a
 });
 
 test("deepgramLanguageFor maps supported base codes and auto-detects the rest", async () => {
-  const { deepgramLanguageFor } = await import("./transcribe.ts");
+  const { deepgramLanguageFor } = await import("./transcribe");
   assert.equal(deepgramLanguageFor("es-PE"), "es");
   assert.equal(deepgramLanguageFor("pt-BR"), "pt");
   assert.equal(deepgramLanguageFor("hi-IN"), "hi");
@@ -831,7 +831,7 @@ test("iFlytek output still passes through the hallucination filter", async () =>
 });
 
 test("iflytekSignedUrl produces a stable HMAC-signed wss URL", async () => {
-  const { iflytekSignedUrl, iflytekHandlesLanguage } = await import("./transcribe.ts");
+  const { iflytekSignedUrl, iflytekHandlesLanguage } = await import("./transcribe");
   const env = { IFLYTEK_APP_ID: "app", IFLYTEK_API_KEY: "key", IFLYTEK_API_SECRET: "secret" } as NodeJS.ProcessEnv;
   const url = new URL(iflytekSignedUrl(env, new Date("2026-07-20T00:00:00Z")));
   assert.equal(url.protocol, "wss:");

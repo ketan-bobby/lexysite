@@ -76,6 +76,10 @@ const BARRED = [CAND.erased, CAND.dnc];
 let server: Server;
 let baseUrl: string;
 
+/** Optional augmentation used by the private synthetic-reporting harness.
+ * Run inside this suite's seed lifecycle, not a parent node:test before hook. */
+export const complianceFixtureExtensions: { afterSeed?: () => Promise<void> } = {};
+
 function tok(userId: string, role: string) {
   return issueToken({ userId, role, tenantId: id("t") });
 }
@@ -122,11 +126,12 @@ async function seed() {
     { id: id("jobA"), tenantId: id("t"), title: "Job A", description: "desc", status: "active", assignedRecruiterId: id("recr") },
   ]);
 
-  // Three candidates, identical except the compliance flag.
+  // Seed historical activity while all candidates are active. Apply compliance
+  // flags after all fixture extensions, as a real erasure/opt-out happens later.
   await dbAdmin.insert(candidatesTable).values([
     { id: CAND.ok, tenantId: id("t"), firstName: "Cand", lastName: "Ok", email: CAND.ok + "@t.test", pool: "tenant", source: "linkedin" },
-    { id: CAND.erased, tenantId: id("t"), firstName: "Cand", lastName: "Erased", email: CAND.erased + "@t.test", pool: "tenant", source: "linkedin", dataErasedAt: new Date() },
-    { id: CAND.dnc, tenantId: id("t"), firstName: "Cand", lastName: "Dnc", email: CAND.dnc + "@t.test", pool: "tenant", source: "linkedin", doNotContact: true },
+    { id: CAND.erased, tenantId: id("t"), firstName: "Cand", lastName: "Erased", email: CAND.erased + "@t.test", pool: "tenant", source: "linkedin" },
+    { id: CAND.dnc, tenantId: id("t"), firstName: "Cand", lastName: "Dnc", email: CAND.dnc + "@t.test", pool: "tenant", source: "linkedin" },
   ]);
 
   // One HIRED application per candidate (entry_type applied). We use the hired
@@ -163,11 +168,11 @@ async function seed() {
   // ghosting assertion guards against (an all-completed fixture would read 0%
   // whether sealed or leaking, so the barred ghosting sessions are essential).
   await dbAdmin.insert(interviewSessionsTable).values([
-    { id: id("is_ok"), tenantId: id("t"), applicationId: app(CAND.ok), planId: "plan", candidateId: CAND.ok, jobId: id("jobA"), status: "completed", totalQuestions: 2, score: 85, completedAt: now },
-    { id: id("is_erased"), tenantId: id("t"), applicationId: app(CAND.erased), planId: "plan", candidateId: CAND.erased, jobId: id("jobA"), status: "completed", totalQuestions: 2, score: 85, completedAt: now },
-    { id: id("is_dnc"), tenantId: id("t"), applicationId: app(CAND.dnc), planId: "plan", candidateId: CAND.dnc, jobId: id("jobA"), status: "completed", totalQuestions: 2, score: 85, completedAt: now },
-    { id: id("is_erased_ghost"), tenantId: id("t"), applicationId: app(CAND.erased), planId: "plan", candidateId: CAND.erased, jobId: id("jobA"), status: "abandoned", totalQuestions: 2 },
-    { id: id("is_dnc_ghost"), tenantId: id("t"), applicationId: app(CAND.dnc), planId: "plan", candidateId: CAND.dnc, jobId: id("jobA"), status: "expired", totalQuestions: 2 },
+    { id: id("is_ok"), tenantId: id("t"), applicationId: app(CAND.ok), planId: "plan", candidateId: CAND.ok, status: "completed", totalQuestions: 2, score: 85, completedAt: now },
+    { id: id("is_erased"), tenantId: id("t"), applicationId: app(CAND.erased), planId: "plan", candidateId: CAND.erased, status: "completed", totalQuestions: 2, score: 85, completedAt: now },
+    { id: id("is_dnc"), tenantId: id("t"), applicationId: app(CAND.dnc), planId: "plan", candidateId: CAND.dnc, status: "completed", totalQuestions: 2, score: 85, completedAt: now },
+    { id: id("is_erased_ghost"), tenantId: id("t"), applicationId: app(CAND.erased), planId: "plan", candidateId: CAND.erased, status: "abandoned", totalQuestions: 2 },
+    { id: id("is_dnc_ghost"), tenantId: id("t"), applicationId: app(CAND.dnc), planId: "plan", candidateId: CAND.dnc, status: "expired", totalQuestions: 2 },
   ]);
 
   // A terminal `hired` outcome per candidate (candidate_outcomes = enum axis).
@@ -187,6 +192,11 @@ async function seed() {
 
 before(async () => {
   await seed();
+  await complianceFixtureExtensions.afterSeed?.();
+  await dbAdmin.update(candidatesTable).set({ dataErasedAt: new Date() })
+    .where(eq(candidatesTable.id, CAND.erased));
+  await dbAdmin.update(candidatesTable).set({ doNotContact: true })
+    .where(eq(candidatesTable.id, CAND.dnc));
   const app = express();
   app.use(express.json());
   // Mounted exactly as routes/index.ts does.

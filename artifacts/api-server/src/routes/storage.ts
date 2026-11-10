@@ -96,6 +96,7 @@ const PartFields = z
   })
   .strict();
 import { ObjectStorageService, ObjectNotFoundError, s3Client } from "../lib/objectStorage";
+import { readBoundCandidateResume } from "../lib/candidate-resume-access";
 import { ObjectPermission, getObjectAclPolicy } from "../lib/objectAcl";
 import {
   controlDb,
@@ -226,13 +227,13 @@ async function attachRecordingToSession(
  * recording upload endpoint can't be hit anonymously (it accepts up to
  * 500 MB per request — unauthenticated access would be a DoS / S3 cost
  * abuse vector). */
-async function resolveCaller(req: Request): Promise<{ id: string } | null> {
+async function resolveCaller(req: Request): Promise<{ id: string; tenantId: string | null } | null> {
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const userId = getAuthUserId(req);
   if (!userId) return null;
   const [u] = await controlDb.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
-  return u ? { id: u.id } : null;
+  return u ? { id: u.id, tenantId: u.tenantId } : null;
 }
 
 /* Auth gate for upload endpoints. Runs BEFORE multer so an unauthenticated
@@ -366,10 +367,22 @@ router.post(
       return;
     }
     try {
-      const objectPath = await objectStorageService.uploadBuffer(file.buffer, file.mimetype);
+      const caller = await resolveCaller(req);
+      if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
+      const objectPath = await objectStorageService.uploadBuffer(
+        file.buffer, file.mimetype, "resumes",
+        { owner: caller.id, visibility: "private", resumeUploadTenantId: caller.tenantId ?? undefined },
+      );
       res.json({ objectPath });
     } catch (err) {
       req.log.error({ err }, "Server-side file upload failed");
+      if ((err as { name?: string }).name === "AccessDenied") {
+        res.status(503).json({
+          error: "Private résumé storage is unavailable. The storage account needs résumé-object tagging permissions.",
+          code: "resume_storage_permissions",
+        });
+        return;
+      }
       res.status(500).json({ error: "Failed to upload file" });
     }
   },
@@ -927,7 +940,13 @@ router.post("/storage/uploads/request-url", requireCaller, async (req: Request, 
   try {
     const { name, size, contentType } = parsed.data;
 
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    const caller = await resolveCaller(req);
+    if (!caller) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const isResume = ALLOWED_RESUME_TYPES.includes(contentType);
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL(
+      isResume ? "resumes" : "uploads",
+      isResume ? { owner: caller.id, visibility: "private", resumeUploadTenantId: caller.tenantId ?? undefined } : undefined,
+    );
     const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
     res.json(
@@ -1095,6 +1114,9 @@ async function canCallerReadObject(
     }
     return allowed;
   }
+
+  const resumeAccess = await readBoundCandidateResume(callerId, objectPath, objectFile);
+  if (resumeAccess !== null) return resumeAccess;
 
   let canAccess = await objectStorageService.canAccessObjectEntity({
     userId: callerId,
@@ -1290,6 +1312,10 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
 
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (objectPath.startsWith("/objects/resumes/")) {
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("Vary", "Cookie, Authorization");
+    }
 
     if (response.body) {
       const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);

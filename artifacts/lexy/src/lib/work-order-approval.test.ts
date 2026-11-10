@@ -13,6 +13,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   canApproveWorkOrder,
+  canSubmitWorkOrder,
   buildApprovePayload,
   isHmCreated,
   ASSIGN_ON_APPROVE_ROLES,
@@ -30,6 +31,44 @@ const pendingHmJob = {
 };
 
 /* ── canApprove gate ─────────────────────────────────────────────────────── */
+
+test("imported drafts without a hiring manager can request admin review", () => {
+  const draft = { status: "draft", createdById: "importer", assignedHiringManagerId: null };
+  for (const role of ["tenant_admin", "platform_admin", "recruiter"]) {
+    assert.equal(canSubmitWorkOrder(draft, { id: "importer", role }), true);
+    assert.equal(canApproveWorkOrder(draft, { id: "reviewer", role }), false);
+  }
+});
+
+test("submission respects supported roles, creator rule and review state", () => {
+  const job = { status: "draft", createdById: "hm-1" };
+  assert.equal(canSubmitWorkOrder(job, { id: "hm-1", role: "hiring_manager" }), true);
+  assert.equal(canSubmitWorkOrder(job, { id: "hm-2", role: "hiring_manager" }), false);
+  for (const role of ["candidate", "recruiter_admin", undefined]) {
+    assert.equal(canSubmitWorkOrder(job, { id: "u", role }), false);
+  }
+  for (const status of ["pending_approval", "rejected", "closed", "paused", "published"]) {
+    assert.equal(canSubmitWorkOrder({ ...job, status }, { id: "u", role: "tenant_admin" }), false);
+  }
+  assert.equal(canSubmitWorkOrder(null, { id: "u", role: "tenant_admin" }), false);
+  assert.equal(canSubmitWorkOrder(job, null), false);
+});
+
+test("creator never sees self-approval even after submitting", () => {
+  for (const role of ["tenant_admin", "platform_admin", "recruiter_admin", "hiring_manager"]) {
+    assert.equal(
+      canApproveWorkOrder({ ...pendingRecruiterJob, createdById: "hm-1" }, { id: "hm-1", role }),
+      false,
+    );
+  }
+  assert.equal(
+    canApproveWorkOrder(
+      { ...pendingRecruiterJob, createdById: "creator" },
+      { id: "reviewer", role: "tenant_admin" },
+    ),
+    true,
+  );
+});
 
 test("recruiter_admin sees the approval action on a pending_approval work order", () => {
   const ra = { id: "ra-1", role: "recruiter_admin" };

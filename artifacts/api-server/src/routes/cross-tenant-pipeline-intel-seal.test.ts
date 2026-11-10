@@ -36,10 +36,13 @@ import {
   candidatesTable,
   sourcedCandidatesTable,
   candidateJobIntelligenceTable,
+  applicationsTable,
+  talentMatchesTable,
 } from "@workspace/db";
 import { issueToken } from "../lib/auth-token";
 import pipelineRouter from "./pipeline";
 import intelligenceRouter from "./intelligence";
+import talentMatchRouter from "./talent_match";
 
 const P = "xtpi_";
 const id = (s: string) => P + s;
@@ -61,6 +64,8 @@ async function api(method: string, path: string, token: string): Promise<{ statu
 }
 
 async function cleanup() {
+  await dbAdmin.delete(talentMatchesTable).where(inArray(talentMatchesTable.tenantId, TENANT_IDS));
+  await dbAdmin.delete(applicationsTable).where(inArray(applicationsTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(candidateJobIntelligenceTable).where(inArray(candidateJobIntelligenceTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(sourcedCandidatesTable).where(inArray(sourcedCandidatesTable.tenantId, TENANT_IDS));
   await dbAdmin.delete(candidatesTable).where(inArray(candidatesTable.tenantId, TENANT_IDS));
@@ -81,15 +86,26 @@ async function seed() {
   await dbAdmin.insert(jobsTable).values([
     { id: id("jobT1"), tenantId: T1, title: "Job T1", description: "d", status: "active" },
     { id: id("jobT2"), tenantId: T2, title: "Job T2", description: "d", status: "active" },
+    { id: id("jobNull"), tenantId: T1, title: "Unscored role", description: "d", status: "active" },
+    { id: id("jobIntel"), tenantId: T1, title: "Intelligence role", description: "d", status: "active" },
   ]);
   // A candidate that lives in T1 (so the by-candidate ownership gate passes for
   // adminT1) but carries an intelligence row scored against T2's job as well.
   await dbAdmin.insert(candidatesTable).values([
-    { id: id("candShared"), tenantId: T1, firstName: "Shared", lastName: "Cand", email: id("candShared") + "@t.test", pool: "tenant", source: "career_site" },
+    { id: id("candShared"), tenantId: T1, firstName: "Shared", lastName: "Cand", email: id("candShared") + "@t.test", pool: "tenant", source: "career_site", githubUrl: "https://github.com/fixture-only" },
   ]);
   await dbAdmin.insert(candidateJobIntelligenceTable).values([
-    { id: id("intelOwn"),  tenantId: T1, jobId: id("jobT1"), candidateId: id("candShared"), hireProbability: 90 },
+    { id: id("intelOwn"),  tenantId: T1, jobId: id("jobT1"), candidateId: id("candShared"), hireProbability: 90, fitScore: 0, nextBestAction: "recruiter_review" },
     { id: id("intelLeak"), tenantId: T2, jobId: id("jobT2"), candidateId: id("candShared"), hireProbability: 80 },
+    { id: id("intelOnly"), tenantId: T1, jobId: id("jobIntel"), candidateId: id("candShared"), fitScore: 75, nextBestAction: "advance" },
+  ]);
+  await dbAdmin.insert(applicationsTable).values([
+    { id: id("appOwn"), tenantId: T1, candidateId: id("candShared"), jobId: id("jobT1"), stage: "applied", matchScore: 88 },
+    { id: id("appNull"), tenantId: T1, candidateId: id("candShared"), jobId: id("jobNull"), stage: "applied", matchScore: null },
+    { id: id("appForeignJob"), tenantId: T1, candidateId: id("candShared"), jobId: id("jobT2"), stage: "applied", matchScore: 100 },
+  ]);
+  await dbAdmin.insert(talentMatchesTable).values([
+    { id: id("matchOwn"), tenantId: T1, candidateId: id("candShared"), jobId: id("jobT1"), fitScore: 0, recommendation: "hold", matchExplanation: "Disposable fixture" },
   ]);
   // Sourced leads: one legit T1 lead attributed to jobT1, plus two T2 leads that
   // the old query would have surfaced on T1's board (one unattributed, one whose
@@ -106,6 +122,7 @@ before(async () => {
   const app = express();
   app.use(express.json());
   app.use(pipelineRouter);                       // pipeline routes mount at root
+  app.use(talentMatchRouter);
   app.use("/intelligence", intelligenceRouter);  // intelligence router self-applies resolveUser
   await new Promise<void>((resolve) => {
     server = app.listen(0, () => {
@@ -118,8 +135,11 @@ before(async () => {
 });
 
 after(async () => {
-  await new Promise<void>((resolve) => server.close(() => resolve()));
-  await cleanup();
+  try {
+    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+  } finally {
+    await cleanup();
+  }
 });
 
 /* ── PIPELINE BOARD sourced branch ─────────────────────────────────────────── */
@@ -140,6 +160,58 @@ test("pipeline board: another tenant's sourced leads NEVER appear on this job's 
   );
   assert.ok(!sourcedIds.has(id("srcLeakUnattr")), "LEAK: a foreign-tenant UNATTRIBUTED sourced lead appeared on the board");
   assert.ok(!sourcedIds.has(id("srcLeakAttr")), "LEAK: a foreign-tenant sourced lead (rawData.jobId spoofed to this job) appeared on the board");
+});
+
+test("pipeline application card: canonical GitHub URL and intelligence action survive serialization", async () => {
+  const { status, json } = await api("GET", `/jobs/${id("jobT1")}/pipeline-stages`, adminT1());
+  assert.equal(status, 200, JSON.stringify(json));
+  const row = Object.values(json.stages ?? {}).flat()
+    .find((entry: any) => entry.applicationId === id("appOwn")) as {
+      candidate: { githubProfile: string | null }; score: number | null; nba: string | null;
+    } | undefined;
+  assert.ok(row, "the own application must appear");
+  assert.equal(row.candidate.githubProfile, "https://github.com/fixture-only");
+  assert.equal(row.score, 0, "real zero must override the application score");
+  assert.equal(row.nba, "recruiter_review", "recommendation must come from scoped intelligence");
+});
+
+test("pipeline application card: missing intelligence keeps a null recommendation", async () => {
+  const { status, json } = await api("GET", `/jobs/${id("jobNull")}/pipeline-stages`, adminT1());
+  assert.equal(status, 200, JSON.stringify(json));
+  const row = Object.values(json.stages ?? {}).flat()
+    .find((entry: any) => entry.applicationId === id("appNull")) as {
+      score: number | null; nba: string | null;
+    } | undefined;
+  assert.ok(row);
+  assert.equal(row.nba, null);
+  assert.equal(row.score, null);
+});
+
+test("talent matches: stored, application and intelligence variants preserve zero, null and ordering", async () => {
+  const { status, json } = await api("GET", `/talent-matches/by-candidate/${id("candShared")}`, adminT1());
+  assert.equal(status, 200, JSON.stringify(json));
+  assert.deepEqual(json.matches.map((row: { jobId: string; fitScore: number | null; recommendation: string | null }) =>
+    [row.jobId, row.fitScore, row.recommendation]),
+  [
+    [id("jobIntel"), 75, "advance"],
+    [id("jobT1"), 0, "hold"],
+    [id("jobNull"), null, null],
+  ]);
+  assert.equal(json.matches[1].id, id("matchOwn"), "stored row retains precedence over duplicate application");
+});
+
+test("talent matches: foreign-job application and intelligence rows stay hidden", async () => {
+  const { status, json } = await api("GET", `/talent-matches/by-candidate/${id("candShared")}`, adminT1());
+  assert.equal(status, 200, JSON.stringify(json));
+  assert.ok(json.matches.length > 0, "positive control must not be empty");
+  assert.ok(!json.matches.some((row: { jobId: string }) => row.jobId === id("jobT2")));
+});
+
+test("talent matches: tokenless and missing-candidate reads are rejected", async () => {
+  const anonymous = await api("GET", `/talent-matches/by-candidate/${id("candShared")}`, "");
+  assert.equal(anonymous.status, 401);
+  const missing = await api("GET", `/talent-matches/by-candidate/${id("missing")}`, adminT1());
+  assert.equal(missing.status, 404);
 });
 
 /* ── INTELLIGENCE by-candidate ─────────────────────────────────────────────── */

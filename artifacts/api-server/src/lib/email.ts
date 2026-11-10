@@ -39,8 +39,12 @@
  */
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { logger } from "./logger.js";
+import { offerEmailTags } from "./offer-provider-events";
+import { invitationEmailTags } from "./interview-provider-policy";
+import { brandEmailHtml, withLexyLogo, type EmailAttachment } from "./email-branding";
 import { recordAudit } from "./audit.js";
 import { isDemoEmail } from "./demo-email.js";
+import { meterSesHandler } from "./vendor-usage-ses";
 
 const REGION = process.env.SES_REGION || process.env.AWS_REGION || "us-east-1";
 const FROM_ADDR = process.env.SES_FROM_EMAIL || "";
@@ -48,9 +52,13 @@ const REPLY_TO = process.env.SES_REPLY_TO || "";
 const CONFIG_SET = process.env.SES_CONFIGURATION_SET || "";
 
 let _client: SESv2Client | null = null;
-function getClient(): SESv2Client {
-  if (_client) return _client;
+let _offerClient: SESv2Client | null = null;
+function getClient(singleAttempt = false): SESv2Client {
+  const cached = singleAttempt ? _offerClient : _client;
+  if (cached) return cached;
   const cfg: ConstructorParameters<typeof SESv2Client>[0] = { region: REGION };
+  // A financial letter must not be automatically retried after an unknown send.
+  if (singleAttempt) cfg.maxAttempts = 1;
   if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
     cfg.credentials = {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -58,8 +66,11 @@ function getClient(): SESv2Client {
       sessionToken: process.env.AWS_SESSION_TOKEN,
     };
   }
-  _client = new SESv2Client(cfg);
-  return _client;
+  const client = new SESv2Client(cfg);
+  meterSesHandler(client.config.requestHandler);
+  if (singleAttempt) _offerClient = client;
+  else _client = client;
+  return client;
 }
 
 export function isEmailConfigured(): boolean {
@@ -72,6 +83,8 @@ export function isEmailConfigured(): boolean {
 
 export interface SendEmailInput {
   to: string;
+  /** Durable campaign dispatch owns retries; never replay a provider-uncertain send. */
+  singleAttempt?: boolean;
   subject: string;
   html?: string;
   text?: string;
@@ -79,8 +92,8 @@ export interface SendEmailInput {
   replyTo?: string;
   /** When set together with `useRecruiterMailbox`, this recruiter's connected
    *  Microsoft 365 / Outlook mailbox is used to send the message via Graph
-   *  ("as the recruiter") instead of the shared SES sender. Any failure (no
-   *  mailbox, revoked token, Graph error) transparently falls back to SES. */
+   *  ("as the recruiter") instead of the shared SES sender. Known non-attempts
+   *  and explicit rejections fall back to SES; uncertain outcomes do not. */
   senderUserId?: string;
   useRecruiterMailbox?: boolean;
   /** Optional one-click unsubscribe URL. When set, RFC 8058 List-Unsubscribe
@@ -91,7 +104,7 @@ export interface SendEmailInput {
   /** Optional file attachments. When present, the email is sent as a raw MIME
    *  message (SES v2 Content.Raw) built with nodemailer's MailComposer, since the
    *  Simple content API cannot carry attachments. `content` is base64-encoded. */
-  attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+  attachments?: EmailAttachment[];
   /** Audit context: who/what triggered this send, so audit_logs has a clean trail. */
   audit?: {
     tenantId?: string | null;
@@ -112,6 +125,12 @@ export interface SendEmailResult {
    *  at the transport (no dispatch). ok:true so callers don't mark it failed. */
   suppressed?: boolean;
   error?: string;
+  transport?: "graph"|"ses";
+  acceptance?: "accepted"|"unknown"|"rejected"|"not_attempted";
+  delivery?: "unverified";
+  clientRequestId?:string;
+  providerRequestId?:string;
+  reviewRequired?:boolean;
 }
 
 /**
@@ -123,13 +142,16 @@ export async function sendEmail(
   input: SendEmailInput,
 ): Promise<SendEmailResult> {
   const { to, subject } = input;
-  const html = input.html;
-  const text = input.text ?? (html ? stripHtml(html) : "");
+  const originalHtml = input.html;
+  const originalText = input.text ?? (originalHtml ? stripHtml(originalHtml) : "");
+  const text = `${originalText}\n\nSent with Lexy · AI hiring platform`;
+  const html = brandEmailHtml(originalHtml || plainToHtml(originalText));
+  const attachments = withLexyLogo(input.attachments);
   const from = input.from || FROM_ADDR;
   const replyTo = input.replyTo || REPLY_TO;
 
   if (!to || !subject) {
-    return { ok: false, error: "Missing recipient or subject" };
+    return { ok: false, error: "Missing recipient or subject",acceptance:"not_attempted" };
   }
 
   const auditCtx = input.audit ?? {};
@@ -143,7 +165,7 @@ export async function sendEmail(
     channel: "email" as const,
     direction: "outbound" as const,
     title: subject,
-    body: text || (html ? stripHtml(html) : ""),
+    body: (text || (html ? stripHtml(html) : "")).replace(/(\/offer\/)[a-f0-9]{64}/g, "$1[redacted]"),
     metadata: { to, from, ...(auditCtx.metadata ?? {}) },
   };
 
@@ -166,46 +188,47 @@ export async function sendEmail(
      Eligible messages (manual 1:1 + the first/approved outreach step for an
      owned candidate) set useRecruiterMailbox + senderUserId. When that recruiter
      has a healthy connected mailbox we send "as them" via Graph and return.
-     ANY failure (no mailbox, revoked token, Graph error, or even a thrown
-     router error) falls through to the SES path below — the user-chosen
-     fallback behaviour. Placed BEFORE the SES-config check so a connected
+     Known non-attempts/rejections fall through to SES. Timeouts, server errors
+     and throws after dispatch cannot safely trigger another provider send.
+     Placed BEFORE the SES-config check so a connected
      mailbox can deliver even when SES is not configured (e.g. dev). */
   if (input.useRecruiterMailbox && input.senderUserId) {
-    try {
-      const { hasHealthyMailbox } = await import("./recruiter-mail.js");
-      if (await hasHealthyMailbox(input.senderUserId)) {
-        const { sendViaGraph } = await import("./graph-mail.js");
-        const g = await sendViaGraph(input.senderUserId, {
+      const {routeRecruiterMail}=await import("./graph-mail-transport");
+      const routed=await routeRecruiterMail({
+        healthy:async()=>{
+          const {hasHealthyMailbox}=await import("./recruiter-mail.js");
+          return hasHealthyMailbox(input.senderUserId!);
+        },
+        send:async()=>{
+          const {sendViaGraph}=await import("./graph-mail.js");
+          return sendViaGraph(input.senderUserId!, {
           to,
           subject,
           html,
           text,
           replyTo: input.replyTo || undefined,
-          attachments: input.attachments,
-        });
-        if (g.ok) {
-          logger.info(
-            { to, subject, senderUserId: input.senderUserId },
-            "[email] sent via Graph (recruiter mailbox)",
-          );
-          void recordAudit({
-            ...auditBase,
-            action: auditCtx.action ?? "email.sent",
-            metadata: { ...auditBase.metadata, transport: "graph", senderUserId: input.senderUserId, messageId: g.messageId },
+          attachments,
           });
-          return { ok: true, messageId: g.messageId };
+        },
+      });
+      if(routed.evidence){
+        const g=routed.evidence;
+        // Await the existing best-effort audit writer. Do not record raw
+        // Graph errors or mistake a request correlation ID for a message ID.
+        await recordAudit({
+            ...auditBase,
+            action: g.ok ? auditCtx.action ?? "email.accepted" : g.acceptance==="unknown"?"email.review_required":g.acceptance==="not_attempted"?"email.graph_not_attempted":"email.graph_rejected",
+            metadata: { ...auditBase.metadata, transport: "graph", senderUserId: input.senderUserId,
+              acceptance:g.acceptance,delivery:"unverified",clientRequestId:g.clientRequestId,
+              providerRequestId:g.providerRequestId,providerMessageId:null,intendedAction:auditCtx.action??null,
+              fallbackPrevented:routed.kind==="complete"&&!g.ok },
+        });
+        if(routed.kind==="complete"){
+          return {ok:g.ok,transport:"graph",acceptance:g.acceptance,delivery:"unverified",
+            clientRequestId:g.clientRequestId,providerRequestId:g.providerRequestId,
+            ...(!g.ok?{error:g.error,reviewRequired:true}:{})};
         }
-        logger.warn(
-          { to, senderUserId: input.senderUserId, error: g.error },
-          "[email] Graph send failed — falling back to SES",
-        );
       }
-    } catch (err: any) {
-      logger.warn(
-        { err: err?.message },
-        "[email] recruiter-mailbox router error — falling back to SES",
-      );
-    }
   }
 
   if (!isEmailConfigured()) {
@@ -224,7 +247,7 @@ export async function sendEmail(
         action: "email.failed",
         metadata: { ...auditBase.metadata, error: "EMAIL_NOT_CONFIGURED" },
       });
-      return { ok: false, error: "Email provider not configured (production)" };
+      return { ok: false, error: "Email provider not configured (production)",acceptance:"not_attempted" };
     }
     logger.warn(
       { to, subject, from },
@@ -245,7 +268,6 @@ export async function sendEmail(
 
   try {
     let cmd: SendEmailCommand;
-    const attachments = input.attachments ?? [];
     if (attachments.length > 0) {
       /* Attachments require a raw MIME message — the SES Simple content API
          cannot carry them. Build the MIME with nodemailer's MailComposer and
@@ -263,6 +285,8 @@ export async function sendEmail(
           filename: a.filename,
           content: Buffer.from(a.content, "base64"),
           contentType: a.contentType || undefined,
+          cid: a.contentId,
+          contentDisposition: a.contentId ? "inline" : "attachment",
         })),
       });
       const raw: Buffer = await new Promise((resolve, reject) => {
@@ -275,6 +299,7 @@ export async function sendEmail(
         Destination: { ToAddresses: [to] },
         ReplyToAddresses: replyTo ? [replyTo] : undefined,
         ConfigurationSetName: CONFIG_SET || undefined,
+        EmailTags: offerEmailTags(auditCtx.action, auditCtx.metadata) ?? invitationEmailTags(auditCtx.action, auditCtx.metadata),
         Content: { Raw: { Data: new Uint8Array(raw) } },
       });
     } else {
@@ -283,6 +308,7 @@ export async function sendEmail(
         Destination: { ToAddresses: [to] },
         ReplyToAddresses: replyTo ? [replyTo] : undefined,
         ConfigurationSetName: CONFIG_SET || undefined,
+        EmailTags: offerEmailTags(auditCtx.action, auditCtx.metadata) ?? invitationEmailTags(auditCtx.action, auditCtx.metadata),
         Content: {
           Simple: {
             Subject: { Data: subject, Charset: "UTF-8" },
@@ -295,7 +321,7 @@ export async function sendEmail(
         },
       });
     }
-    const out = await getClient().send(cmd);
+    const out = await getClient(input.singleAttempt || auditCtx.action === "offer.delivery").send(cmd);
     logger.info(
       { to, subject, messageId: out.MessageId },
       "[email] sent via SES",
@@ -303,9 +329,9 @@ export async function sendEmail(
     void recordAudit({
       ...auditBase,
       action: auditCtx.action ?? "email.sent",
-      metadata: { ...auditBase.metadata, messageId: out.MessageId },
+      metadata: { ...auditBase.metadata, transport: "ses", messageId: out.MessageId },
     });
-    return { ok: true, messageId: out.MessageId };
+    return { ok: true, messageId: out.MessageId,transport:"ses",acceptance:"accepted",delivery:"unverified" };
   } catch (err: any) {
     logger.error(
       { to, subject, err: err?.message, code: err?.name },
@@ -316,7 +342,10 @@ export async function sendEmail(
       action: "email.failed",
       metadata: { ...auditBase.metadata, error: err?.message, code: err?.name },
     });
-    return { ok: false, error: err?.message || "SES send failed" };
+    const rejected=[400,401,403,404,405,413,415,422,429].includes(err?.$metadata?.httpStatusCode);
+    return { ok: false,transport:"ses",acceptance:rejected?"rejected":"unknown",
+      delivery:"unverified",reviewRequired:!rejected,
+      error:rejected?err?.message||"SES rejected the request":"Email provider outcome uncertain. Review the original attempt before any resend." };
   }
 }
 

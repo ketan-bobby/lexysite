@@ -320,6 +320,11 @@ async function makeResetToken(userId: string, requestIp: string | null): Promise
   const lockKey = lockKeyForUser(userId);
   await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
+    // Serialize with erasure's user lock, so no recovery token can be minted
+    // after account closure commits (including a stale preflight lookup).
+    const account = await tx.execute(sql`SELECT id FROM users
+      WHERE id=${userId} AND account_erased_at IS NULL FOR UPDATE`);
+    if (!account.rows.length) throw new Error("Recovery account unavailable");
     await tx
       .update(passwordResetTokensTable)
       .set({ usedAt: new Date() })
@@ -593,7 +598,8 @@ router.post("/signup-checkout", validate({ body: SignupCheckoutBody }), async (r
       return res.status(409).json({ error: "An account with this email already exists. Please sign in." });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // validatePasswordStrength above rejects missing/non-string passwords.
+    const passwordHash = await bcrypt.hash(password!, 10);
     const token = crypto.randomBytes(32).toString("base64url");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
@@ -735,7 +741,7 @@ router.get("/jobs", async (req, res) => {
 });
 
 /* ── GET /api/public/jobs/:id ─────────────────────────────────────────────── */
-router.get("/jobs/:id", async (req, res) => {
+router.get("/jobs/:id", async (req, res): Promise<void> => {
   try {
     const rows = await db
       .select({
@@ -757,15 +763,15 @@ router.get("/jobs/:id", async (req, res) => {
       .limit(1);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Job not found", reason: "not_found" });
+      res.status(404).json({ error: "Job not found", reason: "not_found" }); return;
     }
     if (rows[0].status !== "published") {
       const notYetPublished = ["draft", "active", "pending_approval"].includes(rows[0].status ?? "");
-      return res.status(404).json({
+      res.status(404).json({
         error: notYetPublished ? "Job not yet published to career site" : "Job no longer available",
         reason: notYetPublished ? "not_yet_published" : "closed",
         jobStatus: rows[0].status,
-      });
+      }); return;
     }
 
     // Redact tenantId from public response
@@ -778,7 +784,7 @@ router.get("/jobs/:id", async (req, res) => {
 });
 
 /* ── POST /api/public/jobs/:id/apply ─────────────────────────────────────── */
-router.post("/jobs/:id/apply", applyIpLimit, validate({ body: JobApplyBody }), async (req, res) => {
+router.post("/jobs/:id/apply", applyIpLimit, validate({ body: JobApplyBody }), async (req, res): Promise<void> => {
   try {
     const jobId = req.params.id;
     const {
@@ -804,10 +810,10 @@ router.post("/jobs/:id/apply", applyIpLimit, validate({ body: JobApplyBody }), a
     };
 
     // Validation
-    if (!firstName?.trim()) return res.status(400).json({ error: "First name is required" });
-    if (!lastName?.trim())  return res.status(400).json({ error: "Last name is required" });
+    if (!firstName?.trim()) { res.status(400).json({ error: "First name is required" }); return; }
+    if (!lastName?.trim())  { res.status(400).json({ error: "Last name is required" }); return; }
     if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return res.status(400).json({ error: "A valid email address is required" });
+      { res.status(400).json({ error: "A valid email address is required" }); return; }
 
     // Look up job to get tenantId
     const jobRows = await db
@@ -816,8 +822,8 @@ router.post("/jobs/:id/apply", applyIpLimit, validate({ body: JobApplyBody }), a
       .where(eq(jobsTable.id, jobId))
       .limit(1);
 
-    if (jobRows.length === 0) return res.status(404).json({ error: "Job not found" });
-    if (jobRows[0].status !== "active") return res.status(400).json({ error: "This position is no longer accepting applications" });
+    if (jobRows.length === 0) { res.status(404).json({ error: "Job not found" }); return; }
+    if (jobRows[0].status !== "active") { res.status(400).json({ error: "This position is no longer accepting applications" }); return; }
 
     const { tenantId, title: jobTitle } = jobRows[0];
 
@@ -1028,7 +1034,8 @@ router.post("/career-register", careerRegisterIpLimit, validate({ body: CareerRe
     }
 
     // Hash the password
-    const passwordHash = await bcrypt.hash(password, 10);
+    // validatePasswordStrength above rejects missing/non-string passwords.
+    const passwordHash = await bcrypt.hash(password!, 10);
 
     /* ── Account-enumeration guard ────────────────────────────────────────
      * This endpoint is unauthenticated and internet-facing. It MUST return a
@@ -1182,13 +1189,14 @@ router.post("/forgot-password", forgotPasswordIpLimit, forgotPasswordEmailLimit,
     }
 
     const [user] = await db
-      .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name })
+      .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name, accountErasedAt: usersTable.accountErasedAt })
       .from(usersTable)
       .where(eq(usersTable.email, email))
       .limit(1);
 
     // Always respond 200 so we don't leak account existence.
-    if (!user) {
+    // Read the permanent closure marker as part of this same preflight.
+    if (!user || user.accountErasedAt) {
       logger.info({ email }, "[forgot-password] no user found, responding ok");
       return res.json({ ok: true });
     }
@@ -1266,8 +1274,8 @@ router.post("/reset-password", resetPasswordIpLimit, validate({ body: ResetPassw
     const [updated] = await db
       .update(usersTable)
       .set({ passwordHash })
-      .where(and(eq(usersTable.id, verified.userId), isNull(usersTable.lockedAt)))
-      .returning({ id: usersTable.id, tenantId: usersTable.tenantId, email: usersTable.email, name: usersTable.name, role: usersTable.role, avatarUrl: usersTable.avatarUrl, createdAt: usersTable.createdAt });
+      .where(and(eq(usersTable.id, verified.userId), isNull(usersTable.lockedAt), isNull(usersTable.accountErasedAt)))
+      .returning({ id: usersTable.id, credentialVersion:usersTable.credentialVersion, tenantId: usersTable.tenantId, email: usersTable.email, name: usersTable.name, role: usersTable.role, avatarUrl: usersTable.avatarUrl, createdAt: usersTable.createdAt });
 
     if (!updated) {
       /* Either the user no longer exists OR the account is locked. Re-read
@@ -1330,11 +1338,11 @@ router.post("/reset-password", resetPasswordIpLimit, validate({ body: ResetPassw
     })();
 
     logger.info({ userId: updated.id }, "[reset-password] password updated");
-    const resetToken = issueToken({ userId: updated.id, role: updated.role, tenantId: updated.tenantId, region: await getTenantRegion(updated.tenantId) });
+    const resetToken = issueToken({ userId: updated.id, role: updated.role, tenantId: updated.tenantId, credentialVersion:updated.credentialVersion, region: await getTenantRegion(updated.tenantId) });
     setSessionTokenCookie(res, resetToken, req);
     return res.json({
       ok: true,
-      user: { ...updated, createdAt: updated.createdAt.toISOString() },
+      user: { id:updated.id, tenantId:updated.tenantId, email:updated.email, name:updated.name, role:updated.role, avatarUrl:updated.avatarUrl, createdAt: updated.createdAt.toISOString() },
       ...devOnlyTokenBody(resetToken),
     });
   } catch (err) {
@@ -1418,7 +1426,7 @@ router.post("/talent-pool", talentPoolIpLimit, validate({ body: TalentPoolBody }
 //   - Client (sub-tenant) page  → only non-confidential jobs where tenantId = this tenant
 //   - Agency/parent page        → own internal jobs + confidential child-client jobs (masked)
 //
-router.get("/careers/:slug", async (req, res) => {
+router.get("/careers/:slug", async (req, res): Promise<void> => {
   try {
     const { slug } = req.params;
 
@@ -1438,7 +1446,7 @@ router.get("/careers/:slug", async (req, res) => {
       .limit(1);
 
     if (!tenant) {
-      return res.status(404).json({ error: "Careers page not found" });
+      res.status(404).json({ error: "Careers page not found" }); return;
     }
 
     // Find child tenants (if any) — used to pull confidential jobs up to agency page

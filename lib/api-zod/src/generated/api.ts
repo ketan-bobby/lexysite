@@ -7,6 +7,5918 @@
  */
 import * as zod from "zod";
 
+export const GetZohoRecruitAccountResponse = zod.object({
+  configured: zod.boolean(),
+  redirectUri: zod.string().nullable(),
+  region: zod.enum(["India", "United States"]).nullable(),
+  revision: zod.string().nullable(),
+  state: zod.enum(["disconnected", "review_required", "connected", "reconnect_required"]),
+  companyName: zod.string().nullable(),
+  canApprove: zod.boolean(),
+  connectedAt: zod.string().nullable(),
+  importsEnabled: zod.boolean(),
+});
+
+export const ConnectZohoRecruitAccountBody = zod.object({
+  confirmEmployerAuthority: zod.boolean(),
+  includeStageMetadata: zod.boolean().optional(),
+  includeInterviewNotes: zod.boolean().optional(),
+  includeStageWrites: zod.boolean().optional(),
+});
+
+export const ConnectZohoRecruitAccountResponse = zod.object({
+  authorizationUrl: zod.string(),
+});
+
+export const ApproveZohoRecruitAccountBody = zod.object({
+  revision: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const ApproveZohoRecruitAccountResponse = zod.object({
+  configured: zod.boolean(),
+  redirectUri: zod.string().nullable(),
+  region: zod.enum(["India", "United States"]).nullable(),
+  revision: zod.string().nullable(),
+  state: zod.enum(["disconnected", "review_required", "connected", "reconnect_required"]),
+  companyName: zod.string().nullable(),
+  canApprove: zod.boolean(),
+  connectedAt: zod.string().nullable(),
+  importsEnabled: zod.boolean(),
+});
+
+export const DisconnectZohoRecruitAccountBody = zod.object({
+  revision: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const DisconnectZohoRecruitAccountResponse = zod.object({
+  configured: zod.boolean(),
+  redirectUri: zod.string().nullable(),
+  region: zod.enum(["India", "United States"]).nullable(),
+  revision: zod.string().nullable(),
+  state: zod.enum(["disconnected", "review_required", "connected", "reconnect_required"]),
+  companyName: zod.string().nullable(),
+  canApprove: zod.boolean(),
+  connectedAt: zod.string().nullable(),
+  importsEnabled: zod.boolean(),
+});
+
+/**
+ * @summary Manually check read permissions without importing records
+ */
+export const CheckZohoRecruitAccessBody = zod.object({
+  revision: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const checkZohoRecruitAccessResponseModulesMin = 3;
+export const checkZohoRecruitAccessResponseModulesMax = 3;
+
+export const CheckZohoRecruitAccessResponse = zod.object({
+  revision: zod.string().uuid(),
+  checkedAt: zod.date(),
+  importsEnabled: zod.boolean(),
+  modules: zod
+    .array(
+      zod.object({
+        module: zod.enum(["Job_Openings", "Candidates", "Applications"]),
+        status: zod.enum(["readable", "empty", "unavailable"]),
+        reason: zod
+          .union([
+            zod.literal("scope_missing"),
+            zod.literal("access_denied"),
+            zod.literal("unsupported"),
+            zod.literal("request_failed"),
+            zod.literal(null),
+          ])
+          .nullable(),
+      }),
+    )
+    .min(checkZohoRecruitAccessResponseModulesMin)
+    .max(checkZohoRecruitAccessResponseModulesMax),
+});
+
+export const previewZohoRecruitImportBodyRecordIdRegExp = new RegExp("^[1-9][0-9]{0,39}$");
+
+export const PreviewZohoRecruitImportBody = zod.object({
+  revision: zod.string().uuid(),
+  kind: zod.enum(["job", "candidate"]),
+  recordId: zod.string().regex(previewZohoRecruitImportBodyRecordIdRegExp),
+  confirm: zod.boolean(),
+});
+
+export const PreviewZohoRecruitImportResponse = zod.object({
+  revision: zod.string(),
+  kind: zod.enum(["job", "candidate"]),
+  recordId: zod.string(),
+  previewToken: zod.string(),
+  expiresAt: zod.date(),
+  fields: zod.object({
+    title: zod.string().nullable(),
+    description: zod.string().nullable(),
+    location: zod.string().nullable(),
+    firstName: zod.string().nullable(),
+    lastName: zod.string().nullable(),
+    email: zod.string().nullable(),
+  }),
+  existingId: zod.string().nullable(),
+  disposition: zod.enum(["create", "link", "already_imported"]),
+});
+
+export const listZohoJobApplicantsBodyJobIdRegExp = new RegExp("^[1-9][0-9]{0,39}$");
+export const listZohoJobApplicantsBodyPageMax = 100;
+
+export const ListZohoJobApplicantsBody = zod.object({
+  revision: zod.string().uuid(),
+  jobId: zod.string().regex(listZohoJobApplicantsBodyJobIdRegExp),
+  page: zod.number().min(1).max(listZohoJobApplicantsBodyPageMax),
+  confirm: zod.boolean(),
+});
+
+export const ListZohoJobApplicantsResponse = zod.object({
+  jobId: zod.string(),
+  jobTitle: zod.string(),
+  page: zod.number(),
+  moreRecords: zod.boolean(),
+  applications: zod.array(
+    zod.object({
+      applicationId: zod.string(),
+      candidateId: zod.string(),
+    }),
+  ),
+});
+
+export const GetZohoCampaignWorkspaceResponse = zod.object({
+  jobs: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      externalJobId: zod.string(),
+      plans: zod.array(
+        zod.object({
+          id: zod.string(),
+          title: zod.string(),
+          language: zod.string(),
+          questionCount: zod.number(),
+        }),
+      ),
+    }),
+  ),
+  campaigns: zod.array(
+    zod.object({
+      id: zod.string(),
+      jobId: zod.string(),
+      externalJobId: zod.string(),
+      planId: zod.string(),
+      state: zod.enum(["draft", "approved", "cancelled"]),
+      snapshotHash: zod.string(),
+      applicationCount: zod.number(),
+      recipientCount: zod.number(),
+      createdAt: zod.date(),
+      counts: zod.array(
+        zod.object({
+          state: zod.string(),
+          count: zod.number(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const createZohoInterviewCampaignBodyJobIdMax = 200;
+
+export const createZohoInterviewCampaignBodyPlanIdMax = 200;
+
+export const CreateZohoInterviewCampaignBody = zod.object({
+  revision: zod.string().uuid(),
+  jobId: zod.string().min(1).max(createZohoInterviewCampaignBodyJobIdMax),
+  planId: zod.string().min(1).max(createZohoInterviewCampaignBodyPlanIdMax),
+  requestId: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const CreateZohoInterviewCampaignResponse = zod.object({
+  campaign: zod.object({
+    id: zod.string(),
+    jobId: zod.string(),
+    externalJobId: zod.string(),
+    planId: zod.string(),
+    state: zod.enum(["draft", "approved", "cancelled"]),
+    snapshotHash: zod.string(),
+    applicationCount: zod.number(),
+    recipientCount: zod.number(),
+    createdAt: zod.date(),
+    counts: zod.array(
+      zod.object({
+        state: zod.string(),
+        count: zod.number(),
+      }),
+    ),
+  }),
+  recipients: zod.array(
+    zod.object({
+      id: zod.string(),
+      applicationId: zod.string(),
+      candidateId: zod.string(),
+      state: zod.string(),
+      reason: zod.string().nullable(),
+      sessionId: zod.string().nullable(),
+      interviewStatus: zod.string().nullable(),
+      deliveryEvidence: zod
+        .object({
+          acceptance: zod.enum(["recorded", "unknown", "simulated"]),
+          providerMessageId: zod.string().nullable(),
+          lastStateChangeAt: zod.date(),
+          needsReview: zod.boolean(),
+          delivery: zod.enum(["unverified"]),
+        })
+        .optional(),
+    }),
+  ),
+});
+
+export const GetZohoInterviewCampaignParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const GetZohoInterviewCampaignResponse = zod.object({
+  campaign: zod.object({
+    id: zod.string(),
+    jobId: zod.string(),
+    externalJobId: zod.string(),
+    planId: zod.string(),
+    state: zod.enum(["draft", "approved", "cancelled"]),
+    snapshotHash: zod.string(),
+    applicationCount: zod.number(),
+    recipientCount: zod.number(),
+    createdAt: zod.date(),
+    counts: zod.array(
+      zod.object({
+        state: zod.string(),
+        count: zod.number(),
+      }),
+    ),
+  }),
+  recipients: zod.array(
+    zod.object({
+      id: zod.string(),
+      applicationId: zod.string(),
+      candidateId: zod.string(),
+      state: zod.string(),
+      reason: zod.string().nullable(),
+      sessionId: zod.string().nullable(),
+      interviewStatus: zod.string().nullable(),
+      deliveryEvidence: zod
+        .object({
+          acceptance: zod.enum(["recorded", "unknown", "simulated"]),
+          providerMessageId: zod.string().nullable(),
+          lastStateChangeAt: zod.date(),
+          needsReview: zod.boolean(),
+          delivery: zod.enum(["unverified"]),
+        })
+        .optional(),
+    }),
+  ),
+});
+
+export const GetZohoCampaignReviewQueueParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const GetZohoCampaignReviewQueueResponse = zod.object({
+  campaignId: zod.string(),
+  rows: zod.array(
+    zod.object({
+      recipientId: zod.string(),
+      applicationId: zod.string(),
+      externalCandidateId: zod.string(),
+      candidateName: zod.string().nullable(),
+      sessionStatus: zod.string().nullable(),
+      score: zod.number().nullable(),
+      reviewable: zod.boolean(),
+      decision: zod
+        .union([
+          zod.literal("advance"),
+          zod.literal("hold"),
+          zod.literal("decline"),
+          zod.literal(null),
+        ])
+        .nullable(),
+      decisionStale: zod.boolean(),
+    }),
+  ),
+});
+
+export const GetZohoStageHandoffParams = zod.object({
+  id: zod.coerce.string(),
+  recipientId: zod.coerce.string(),
+});
+
+export const GetZohoStageHandoffResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  applicationId: zod.string(),
+  externalJobId: zod.string(),
+  externalCandidateId: zod.string(),
+  revision: zod.string(),
+  mapping: zod.object({
+    revision: zod.string(),
+    advance: zod.string().nullable(),
+    hold: zod.string().nullable(),
+    decline: zod.string().nullable(),
+    updatedAt: zod.string().nullable(),
+    updatedBy: zod.string().nullable(),
+  }),
+  decision: zod.string().nullable(),
+  targetStatus: zod.string().nullable(),
+  ready: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  reason: zod.string(),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      state: zod.enum(["simulated"]),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      approvedBy: zod.string(),
+      createdAt: zod.string(),
+    }),
+  ),
+});
+
+export const TestZohoStageHandoffParams = zod.object({
+  id: zod.coerce.string(),
+  recipientId: zod.coerce.string(),
+});
+
+export const TestZohoStageHandoffBody = zod.object({
+  expectedRevision: zod.string(),
+  requestId: zod.string().uuid(),
+  confirm: zod.boolean(),
+  mode: zod.enum(["simulation"]),
+});
+
+export const TestZohoStageHandoffResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  applicationId: zod.string(),
+  externalJobId: zod.string(),
+  externalCandidateId: zod.string(),
+  revision: zod.string(),
+  mapping: zod.object({
+    revision: zod.string(),
+    advance: zod.string().nullable(),
+    hold: zod.string().nullable(),
+    decline: zod.string().nullable(),
+    updatedAt: zod.string().nullable(),
+    updatedBy: zod.string().nullable(),
+  }),
+  decision: zod.string().nullable(),
+  targetStatus: zod.string().nullable(),
+  ready: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  reason: zod.string(),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      state: zod.enum(["simulated"]),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      approvedBy: zod.string(),
+      createdAt: zod.string(),
+    }),
+  ),
+});
+
+export const PreviewZohoInterviewNoteParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const PreviewZohoInterviewNoteBody = zod.object({
+  includeAssessment: zod.boolean(),
+});
+
+export const PreviewZohoInterviewNoteResponse = zod.object({
+  revision: zod.string(),
+  title: zod.string(),
+  content: zod.string(),
+  destination: zod.enum(["Candidates"]),
+  externalCandidateId: zod.string(),
+  applicationId: zod.string(),
+  externalJobId: zod.string(),
+  includeAssessment: zod.boolean(),
+  writeAuthorized: zod.boolean(),
+  canPublish: zod.boolean(),
+  history: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum(["published", "review_required"]),
+      providerNoteId: zod.string().nullable(),
+      at: zod.date(),
+    }),
+  ),
+});
+
+export const PublishZohoInterviewNoteParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const publishZohoInterviewNoteBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const PublishZohoInterviewNoteBody = zod.object({
+  includeAssessment: zod.boolean(),
+  expectedRevision: zod.string().regex(publishZohoInterviewNoteBodyExpectedRevisionRegExp),
+  confirm: zod.literal(true),
+});
+
+export const PublishZohoInterviewNoteResponse = zod.object({
+  id: zod.string().uuid(),
+  revision: zod.string(),
+  state: zod.enum(["published", "review_required"]),
+  providerNoteId: zod.string().nullable(),
+  at: zod.date(),
+});
+
+export const GetZohoStageRequestsParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const GetZohoStageRequestsResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string(),
+  writeConsentSaved: zod.boolean(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  blocker: zod.enum([
+    "employer_connection_required",
+    "current_decision_and_mapping_required",
+    "employer_write_consent_required",
+    "application_transition_contract_required",
+  ]),
+  reason: zod.string(),
+  requests: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum([
+        "prepared",
+        "approved",
+        "withdrawn",
+        "claimed",
+        "provider_accepted",
+        "verified",
+        "not_sent",
+        "review_required",
+        "observed_target",
+        "observed_other",
+      ]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      preparedBy: zod.string(),
+      approvedBy: zod.string().nullable(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+      stale: zod.boolean(),
+      canApprove: zod.boolean(),
+      canWithdraw: zod.boolean(),
+      canRecover: zod.boolean(),
+    }),
+  ),
+});
+
+export const PrepareZohoStageRequestParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const prepareZohoStageRequestBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const PrepareZohoStageRequestBody = zod.object({
+  expectedRevision: zod.string().regex(prepareZohoStageRequestBodyExpectedRevisionRegExp),
+  requestId: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const PrepareZohoStageRequestResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string(),
+  writeConsentSaved: zod.boolean(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  blocker: zod.enum([
+    "employer_connection_required",
+    "current_decision_and_mapping_required",
+    "employer_write_consent_required",
+    "application_transition_contract_required",
+  ]),
+  reason: zod.string(),
+  requests: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum([
+        "prepared",
+        "approved",
+        "withdrawn",
+        "claimed",
+        "provider_accepted",
+        "verified",
+        "not_sent",
+        "review_required",
+        "observed_target",
+        "observed_other",
+      ]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      preparedBy: zod.string(),
+      approvedBy: zod.string().nullable(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+      stale: zod.boolean(),
+      canApprove: zod.boolean(),
+      canWithdraw: zod.boolean(),
+      canRecover: zod.boolean(),
+    }),
+  ),
+});
+
+export const ActOnZohoStageRequestParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+  requestId: zod.coerce.string().uuid(),
+});
+
+export const actOnZohoStageRequestBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const ActOnZohoStageRequestBody = zod.object({
+  expectedRevision: zod.string().regex(actOnZohoStageRequestBodyExpectedRevisionRegExp),
+  action: zod.enum(["approve", "withdraw", "recover"]),
+  confirm: zod.boolean(),
+});
+
+export const ActOnZohoStageRequestResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string(),
+  writeConsentSaved: zod.boolean(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  blocker: zod.enum([
+    "employer_connection_required",
+    "current_decision_and_mapping_required",
+    "employer_write_consent_required",
+    "application_transition_contract_required",
+  ]),
+  reason: zod.string(),
+  requests: zod.array(
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum([
+        "prepared",
+        "approved",
+        "withdrawn",
+        "claimed",
+        "provider_accepted",
+        "verified",
+        "not_sent",
+        "review_required",
+        "observed_target",
+        "observed_other",
+      ]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      preparedBy: zod.string(),
+      approvedBy: zod.string().nullable(),
+      createdAt: zod.string(),
+      updatedAt: zod.string(),
+      stale: zod.boolean(),
+      canApprove: zod.boolean(),
+      canWithdraw: zod.boolean(),
+      canRecover: zod.boolean(),
+    }),
+  ),
+});
+
+export const CheckZohoStageMetadataParams = zod.object({
+  id: zod.coerce.string(),
+  recipientId: zod.coerce.string(),
+});
+
+export const CheckZohoStageMetadataBody = zod.object({
+  expectedRevision: zod.string(),
+  confirm: zod.boolean(),
+});
+
+export const CheckZohoStageMetadataResponse = zod.object({
+  handoffRevision: zod.string(),
+  mappingRevision: zod.string(),
+  connectionRevision: zod.string(),
+  checkedAt: zod.string(),
+  applicationId: zod.string(),
+  externalJobId: zod.string(),
+  externalCandidateId: zod.string(),
+  currentApplicationStatus: zod.string(),
+  identityVerified: zod.boolean(),
+  catalogScope: zod.enum(["organization_default"]),
+  transitionEligibilityVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  catalogRevision: zod.string(),
+  mappings: zod.array(
+    zod.object({
+      decision: zod.enum(["advance", "hold", "decline"]),
+      targetStatus: zod.string().nullable(),
+      result: zod.enum(["unset", "matched", "missing", "ambiguous", "restricted"]),
+      statusId: zod.string().nullable(),
+      stageId: zod.string().nullable(),
+      nextAction: zod.enum([
+        "mapping_required",
+        "mapping_review_required",
+        "separate_human_process",
+        "no_update_needed",
+        "transition_verification_required",
+      ]),
+      explanation: zod.string(),
+      canWrite: zod.boolean(),
+    }),
+  ),
+  reason: zod.string(),
+});
+
+export const SaveZohoStageMappingParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const saveZohoStageMappingBodyAdvanceMax = 100;
+
+export const saveZohoStageMappingBodyHoldMax = 100;
+
+export const saveZohoStageMappingBodyDeclineMax = 100;
+
+export const SaveZohoStageMappingBody = zod.object({
+  expectedRevision: zod.string(),
+  advance: zod.string().max(saveZohoStageMappingBodyAdvanceMax).nullable(),
+  hold: zod.string().max(saveZohoStageMappingBodyHoldMax).nullable(),
+  decline: zod.string().max(saveZohoStageMappingBodyDeclineMax).nullable(),
+  confirm: zod.boolean(),
+});
+
+export const SaveZohoStageMappingResponse = zod.object({
+  revision: zod.string(),
+  advance: zod.string().nullable(),
+  hold: zod.string().nullable(),
+  decline: zod.string().nullable(),
+  updatedAt: zod.string().nullable(),
+  updatedBy: zod.string().nullable(),
+});
+
+/**
+ * @summary Record preparation of a current human-reviewed handoff, not file delivery
+ */
+export const PrepareZohoReviewExportParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const prepareZohoReviewExportBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareZohoReviewExportBodyExpectedHandoffRevisionRegExp = new RegExp(
+  "^[a-f0-9]{64}$",
+);
+
+export const PrepareZohoReviewExportBody = zod.object({
+  expectedRevision: zod.string().regex(prepareZohoReviewExportBodyExpectedRevisionRegExp),
+  expectedHandoffRevision: zod
+    .string()
+    .regex(prepareZohoReviewExportBodyExpectedHandoffRevisionRegExp),
+  confirm: zod.boolean(),
+});
+
+export const PrepareZohoReviewExportResponse = zod.object({
+  id: zod.string().uuid(),
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  reviewId: zod.string().uuid(),
+  reviewRevision: zod.string(),
+  handoffRevision: zod.string(),
+  preparedAt: zod.date(),
+  state: zod.enum(["prepared"]),
+  delivery: zod.enum(["unverified"]),
+});
+
+export const GetZohoCampaignApplicantReviewParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const GetZohoCampaignApplicantReviewResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  candidateName: zod.string(),
+  sessionId: zod.string(),
+  sessionStatus: zod.string(),
+  completedAt: zod.date().nullable(),
+  revision: zod.string(),
+  assessment: zod.object({
+    score: zod.number().nullable(),
+    summary: zod.string().nullable(),
+    recommendation: zod.string().nullable(),
+    strengths: zod.array(zod.string()),
+    developmentAreas: zod.array(zod.string()),
+    concerns: zod.array(zod.string()),
+  }),
+  answers: zod.array(
+    zod.object({
+      question: zod.string(),
+      answer: zod.string(),
+      score: zod.number().nullable(),
+    }),
+  ),
+  answersTruncated: zod.boolean(),
+  reviewable: zod.boolean(),
+  decisionStale: zod.boolean(),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      reason: zod.string(),
+      reviewedBy: zod.string(),
+      createdAt: zod.date(),
+      evidenceCurrent: zod.boolean(),
+    }),
+  ),
+});
+
+export const RecordZohoCampaignApplicantReviewParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const recordZohoCampaignApplicantReviewBodyReasonMin = 10;
+export const recordZohoCampaignApplicantReviewBodyReasonMax = 2000;
+
+export const recordZohoCampaignApplicantReviewBodyExpectedRevisionMin = 64;
+export const recordZohoCampaignApplicantReviewBodyExpectedRevisionMax = 64;
+
+export const RecordZohoCampaignApplicantReviewBody = zod.object({
+  decision: zod.enum(["advance", "hold", "decline"]),
+  reason: zod
+    .string()
+    .min(recordZohoCampaignApplicantReviewBodyReasonMin)
+    .max(recordZohoCampaignApplicantReviewBodyReasonMax),
+  expectedRevision: zod
+    .string()
+    .min(recordZohoCampaignApplicantReviewBodyExpectedRevisionMin)
+    .max(recordZohoCampaignApplicantReviewBodyExpectedRevisionMax),
+  requestId: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const RecordZohoCampaignApplicantReviewResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  candidateName: zod.string(),
+  sessionId: zod.string(),
+  sessionStatus: zod.string(),
+  completedAt: zod.date().nullable(),
+  revision: zod.string(),
+  assessment: zod.object({
+    score: zod.number().nullable(),
+    summary: zod.string().nullable(),
+    recommendation: zod.string().nullable(),
+    strengths: zod.array(zod.string()),
+    developmentAreas: zod.array(zod.string()),
+    concerns: zod.array(zod.string()),
+  }),
+  answers: zod.array(
+    zod.object({
+      question: zod.string(),
+      answer: zod.string(),
+      score: zod.number().nullable(),
+    }),
+  ),
+  answersTruncated: zod.boolean(),
+  reviewable: zod.boolean(),
+  decisionStale: zod.boolean(),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      reason: zod.string(),
+      reviewedBy: zod.string(),
+      createdAt: zod.date(),
+      evidenceCurrent: zod.boolean(),
+    }),
+  ),
+});
+
+export const ActOnZohoInterviewCampaignParams = zod.object({
+  id: zod.coerce.string().uuid(),
+});
+
+export const ActOnZohoInterviewCampaignBody = zod.object({
+  action: zod.enum(["approve", "cancel"]),
+  snapshotHash: zod.string(),
+  confirm: zod.boolean(),
+});
+
+export const ActOnZohoInterviewCampaignResponse = zod.object({
+  campaign: zod.object({
+    id: zod.string(),
+    jobId: zod.string(),
+    externalJobId: zod.string(),
+    planId: zod.string(),
+    state: zod.enum(["draft", "approved", "cancelled"]),
+    snapshotHash: zod.string(),
+    applicationCount: zod.number(),
+    recipientCount: zod.number(),
+    createdAt: zod.date(),
+    counts: zod.array(
+      zod.object({
+        state: zod.string(),
+        count: zod.number(),
+      }),
+    ),
+  }),
+  recipients: zod.array(
+    zod.object({
+      id: zod.string(),
+      applicationId: zod.string(),
+      candidateId: zod.string(),
+      state: zod.string(),
+      reason: zod.string().nullable(),
+      sessionId: zod.string().nullable(),
+      interviewStatus: zod.string().nullable(),
+      deliveryEvidence: zod
+        .object({
+          acceptance: zod.enum(["recorded", "unknown", "simulated"]),
+          providerMessageId: zod.string().nullable(),
+          lastStateChangeAt: zod.date(),
+          needsReview: zod.boolean(),
+          delivery: zod.enum(["unverified"]),
+        })
+        .optional(),
+    }),
+  ),
+});
+
+export const confirmZohoRecruitImportBodyRecordIdRegExp = new RegExp("^[1-9][0-9]{0,39}$");
+export const confirmZohoRecruitImportBodyPreviewTokenMax = 8000;
+
+export const ConfirmZohoRecruitImportBody = zod.object({
+  revision: zod.string().uuid(),
+  kind: zod.enum(["job", "candidate"]),
+  recordId: zod.string().regex(confirmZohoRecruitImportBodyRecordIdRegExp),
+  confirm: zod.boolean(),
+  previewToken: zod.string().min(1).max(confirmZohoRecruitImportBodyPreviewTokenMax),
+  existingId: zod.string().nullable(),
+});
+
+export const ConfirmZohoRecruitImportResponse = zod.object({
+  kind: zod.enum(["job", "candidate"]),
+  localId: zod.string(),
+  outcome: zod.enum(["created", "linked", "already_imported"]),
+});
+
+export const GetZoomStaffAccountResponse = zod.object({
+  configured: zod.boolean(),
+  connected: zod.boolean(),
+  revision: zod.string().nullable(),
+  email: zod.string().nullable(),
+  needsReconnect: zod.boolean(),
+});
+
+export const BeginZoomStaffAccountBody = zod.object({
+  confirmOwnZoom: zod.literal(true),
+});
+
+export const BeginZoomStaffAccountResponse = zod.object({
+  authorizationUrl: zod.string().url(),
+  expiresAt: zod.date(),
+});
+
+export const DisconnectZoomStaffAccountBody = zod.object({
+  revision: zod.string().uuid(),
+  confirmDisconnect: zod.literal(true),
+});
+
+export const DisconnectZoomStaffAccountResponse = zod.object({
+  configured: zod.boolean(),
+  connected: zod.boolean(),
+  revision: zod.string().nullable(),
+  email: zod.string().nullable(),
+  needsReconnect: zod.boolean(),
+});
+
+export const GetStaffZoomMeetingParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetStaffZoomMeetingResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  operationId: zod.string().nullable(),
+  status: zod.enum(["none", "pending", "confirmed", "uncertain", "cancelled"]),
+  joinUrl: zod.string().nullable(),
+  providerVerified: zod.boolean(),
+  approvedAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  hostUserId: zod.string().nullable(),
+});
+
+export const ApproveStaffZoomMeetingParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const ApproveStaffZoomMeetingBody = zod.object({
+  action: zod.enum(["create", "update", "cancel"]),
+  expectedVersion: zod.string(),
+  accountRevision: zod.string().uuid(),
+  expectedOperationId: zod.string().nullable(),
+  confirm: zod.literal(true),
+  expiresAt: zod.date(),
+  approvalToken: zod.string(),
+});
+
+export const ApproveStaffZoomMeetingResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  operationId: zod.string().nullable(),
+  status: zod.enum(["none", "pending", "confirmed", "uncertain", "cancelled"]),
+  joinUrl: zod.string().nullable(),
+  providerVerified: zod.boolean(),
+  approvedAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  hostUserId: zod.string().nullable(),
+});
+
+export const ReviewStaffZoomMeetingParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const ReviewStaffZoomMeetingBody = zod.object({
+  action: zod.enum(["create", "update", "cancel"]),
+  expectedVersion: zod.string(),
+  accountRevision: zod.string().uuid(),
+  expectedOperationId: zod.string().nullable(),
+});
+
+export const ReviewStaffZoomMeetingResponse = zod
+  .object({
+    scheduleId: zod.string(),
+    version: zod.string(),
+    scheduledAt: zod.date(),
+    durationMinutes: zod.number(),
+    jobTitle: zod.string(),
+    operationId: zod.string().nullable(),
+    status: zod.enum(["none", "pending", "confirmed", "uncertain", "cancelled"]),
+    joinUrl: zod.string().nullable(),
+    providerVerified: zod.boolean(),
+    approvedAt: zod.date().nullable(),
+    acceptedAt: zod.date().nullable(),
+    hostUserId: zod.string().nullable(),
+  })
+  .and(
+    zod.object({
+      action: zod.enum(["create", "update", "cancel"]),
+      accountRevision: zod.string().uuid(),
+      expiresAt: zod.date(),
+      approvalToken: zod.string(),
+    }),
+  );
+
+export const ReviewStaffZoomRecoveryParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const reviewStaffZoomRecoveryBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const reviewStaffZoomRecoveryBodyMeetingIdRegExp = new RegExp("^\\d{9,15}$");
+
+export const ReviewStaffZoomRecoveryBody = zod.object({
+  expectedVersion: zod.string().regex(reviewStaffZoomRecoveryBodyExpectedVersionRegExp),
+  accountRevision: zod.string().uuid(),
+  expectedOperationId: zod.string().uuid(),
+  meetingId: zod.string().regex(reviewStaffZoomRecoveryBodyMeetingIdRegExp).optional(),
+});
+
+export const ReviewStaffZoomRecoveryResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  operationId: zod.string().nullable(),
+  status: zod.enum(["pending", "uncertain"]),
+  joinUrl: zod.string().nullable(),
+  providerVerified: zod.boolean(),
+  approvedAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  hostUserId: zod.string().nullable(),
+  accountRevision: zod.string().uuid(),
+  action: zod.enum(["create", "update", "cancel"]),
+  resolution: zod.enum(["confirmed", "cancelled"]),
+  meetingId: zod.string(),
+  hostZoomId: zod.string(),
+  providerStartAt: zod.date().nullable(),
+  providerDurationMinutes: zod.number().nullable(),
+  expiresAt: zod.date(),
+  approvalToken: zod.string(),
+});
+
+export const ApproveStaffZoomRecoveryParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const approveStaffZoomRecoveryBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const approveStaffZoomRecoveryBodyMeetingIdRegExp = new RegExp("^\\d{9,15}$");
+export const approveStaffZoomRecoveryBodyApprovalTokenRegExp = new RegExp("^zm_[a-f0-9]{64}$");
+
+export const ApproveStaffZoomRecoveryBody = zod.object({
+  expectedVersion: zod.string().regex(approveStaffZoomRecoveryBodyExpectedVersionRegExp),
+  accountRevision: zod.string().uuid(),
+  expectedOperationId: zod.string().uuid(),
+  meetingId: zod.string().regex(approveStaffZoomRecoveryBodyMeetingIdRegExp).optional(),
+  confirm: zod.literal(true),
+  reason: zod.enum(["provider_evidence_checked"]),
+  expiresAt: zod.date(),
+  approvalToken: zod.string().regex(approveStaffZoomRecoveryBodyApprovalTokenRegExp),
+});
+
+export const ApproveStaffZoomRecoveryResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  operationId: zod.string().nullable(),
+  status: zod.enum(["none", "pending", "confirmed", "uncertain", "cancelled"]),
+  joinUrl: zod.string().nullable(),
+  providerVerified: zod.boolean(),
+  approvedAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  hostUserId: zod.string().nullable(),
+});
+
+export const GetStaffZoomLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetStaffZoomLinkResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  publicationId: zod.string().nullable(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  state: zod.enum(["none", "published", "stale"]),
+  canPublish: zod.boolean(),
+  reason: zod
+    .union([
+      zod.literal("schedule_ineligible"),
+      zod.literal("calendar_invitation_exists"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  joinUrl: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  providerVerified: zod.literal(false),
+});
+
+export const PublishStaffZoomLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const publishStaffZoomLinkBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const publishStaffZoomLinkBodyJoinUrlMax = 2048;
+
+export const publishStaffZoomLinkBodyApprovalTokenRegExp = new RegExp("^zl_[a-f0-9]{64}$");
+
+export const PublishStaffZoomLinkBody = zod.object({
+  expectedVersion: zod.string().regex(publishStaffZoomLinkBodyExpectedVersionRegExp),
+  expectedPublicationId: zod.string().uuid().nullable(),
+  joinUrl: zod.string().min(1).max(publishStaffZoomLinkBodyJoinUrlMax),
+  approvalToken: zod.string().regex(publishStaffZoomLinkBodyApprovalTokenRegExp),
+  reviewExpiresAt: zod.date(),
+  confirm: zod.literal(true),
+});
+
+export const PublishStaffZoomLinkResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  publicationId: zod.string().nullable(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  state: zod.enum(["none", "published", "stale"]),
+  canPublish: zod.boolean(),
+  reason: zod
+    .union([
+      zod.literal("schedule_ineligible"),
+      zod.literal("calendar_invitation_exists"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  joinUrl: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  providerVerified: zod.literal(false),
+});
+
+export const RemoveStaffZoomLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const removeStaffZoomLinkBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const RemoveStaffZoomLinkBody = zod.object({
+  expectedVersion: zod.string().regex(removeStaffZoomLinkBodyExpectedVersionRegExp),
+  expectedPublicationId: zod.string().uuid(),
+  confirm: zod.literal(true),
+});
+
+export const RemoveStaffZoomLinkResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  publicationId: zod.string().nullable(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  state: zod.enum(["none", "published", "stale"]),
+  canPublish: zod.boolean(),
+  reason: zod
+    .union([
+      zod.literal("schedule_ineligible"),
+      zod.literal("calendar_invitation_exists"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  joinUrl: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  providerVerified: zod.literal(false),
+});
+
+export const ReviewStaffZoomLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const reviewStaffZoomLinkBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const reviewStaffZoomLinkBodyJoinUrlMax = 2048;
+
+export const ReviewStaffZoomLinkBody = zod.object({
+  expectedVersion: zod.string().regex(reviewStaffZoomLinkBodyExpectedVersionRegExp),
+  expectedPublicationId: zod.string().uuid().nullable(),
+  joinUrl: zod.string().min(1).max(reviewStaffZoomLinkBodyJoinUrlMax),
+});
+
+export const ReviewStaffZoomLinkResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  publicationId: zod.string().nullable(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  state: zod.enum(["none", "published", "stale"]),
+  canPublish: zod.boolean(),
+  reason: zod
+    .union([
+      zod.literal("schedule_ineligible"),
+      zod.literal("calendar_invitation_exists"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  joinUrl: zod.string().nullable(),
+  approvedAt: zod.date().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  providerVerified: zod.literal(false),
+});
+
+export const GetCandidateZoomLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetCandidateZoomLinkResponse = zod.object({
+  scheduleId: zod.string(),
+  status: zod.enum(["available", "unavailable"]),
+  joinUrl: zod.string().nullable(),
+  providerVerified: zod.boolean(),
+  source: zod.enum(["staff_provided", "zoom_api"]),
+});
+
+export const GetGooglePanelConsentResponse = zod.object({
+  enabled: zod.boolean(),
+  canEnable: zod
+    .boolean()
+    .describe(
+      "A healthy verified Google connection is required to grant sharing; withdrawal remains possible when unhealthy",
+    ),
+  revision: zod.string().nullable(),
+  grantedAt: zod.date().nullable(),
+});
+
+export const SetGooglePanelConsentBody = zod.object({
+  enabled: zod.boolean(),
+  expectedRevision: zod.string().uuid(),
+  confirmShare: zod
+    .boolean()
+    .optional()
+    .describe("Must be true to enable; never inferred from OAuth or Outlook consent"),
+});
+
+export const SetGooglePanelConsentResponse = zod.object({
+  enabled: zod.boolean(),
+  canEnable: zod
+    .boolean()
+    .describe(
+      "A healthy verified Google connection is required to grant sharing; withdrawal remains possible when unhealthy",
+    ),
+  revision: zod.string().nullable(),
+  grantedAt: zod.date().nullable(),
+});
+
+export const GetSavedGoogleSchedulePanelParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetSavedGoogleSchedulePanelResponse = zod.object({
+  provider: zod.union([zod.literal("google"), zod.literal("outlook"), zod.literal(null)]).nullish(),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  bufferMinutes: zod.number(),
+  calendarReserved: zod.boolean(),
+  invitationSent: zod.boolean(),
+});
+
+export const SaveGoogleSchedulePanelParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const saveGoogleSchedulePanelBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const saveGoogleSchedulePanelBodyUserIdsMin = 0;
+export const saveGoogleSchedulePanelBodyUserIdsMax = 5;
+
+export const saveGoogleSchedulePanelBodyBufferMinutesMin = 0;
+export const saveGoogleSchedulePanelBodyBufferMinutesMax = 60;
+
+export const SaveGoogleSchedulePanelBody = zod.object({
+  expectedVersion: zod.string().regex(saveGoogleSchedulePanelBodyExpectedVersionRegExp),
+  userIds: zod
+    .array(zod.string().min(1))
+    .min(saveGoogleSchedulePanelBodyUserIdsMin)
+    .max(saveGoogleSchedulePanelBodyUserIdsMax),
+  scheduledAt: zod.date(),
+  bufferMinutes: zod
+    .number()
+    .min(saveGoogleSchedulePanelBodyBufferMinutesMin)
+    .max(saveGoogleSchedulePanelBodyBufferMinutesMax),
+});
+
+export const SaveGoogleSchedulePanelResponse = zod.object({
+  provider: zod.union([zod.literal("google"), zod.literal("outlook"), zod.literal(null)]).nullish(),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  bufferMinutes: zod.number(),
+  calendarReserved: zod.boolean(),
+  invitationSent: zod.boolean(),
+});
+
+export const GetGooglePanelMembersParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetGooglePanelMembersResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+});
+
+export const FindGooglePanelTimesParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const findGooglePanelTimesBodyUserIdsMax = 5;
+
+export const findGooglePanelTimesBodyBufferMinutesMin = 0;
+export const findGooglePanelTimesBodyBufferMinutesMax = 60;
+
+export const FindGooglePanelTimesBody = zod.object({
+  expectedVersion: zod.string(),
+  userIds: zod.array(zod.string()).min(1).max(findGooglePanelTimesBodyUserIdsMax),
+  start: zod.date(),
+  end: zod.date(),
+  bufferMinutes: zod
+    .number()
+    .min(findGooglePanelTimesBodyBufferMinutesMin)
+    .max(findGooglePanelTimesBodyBufferMinutesMax),
+});
+
+export const FindGooglePanelTimesResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  checkedAt: zod.date(),
+  panelSize: zod.number(),
+  durationMinutes: zod.number(),
+  calendarReserved: zod.literal(false),
+  invitationSent: zod.literal(false),
+  slots: zod.array(
+    zod.object({
+      start: zod.date(),
+      end: zod.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Candidate-owned current booking Google Meet receipt
+ */
+export const GetCandidateGoogleMeetParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetCandidateGoogleMeetResponse = zod.object({
+  scheduleId: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  status: zod.enum(["ready", "unavailable"]),
+  meetUrl: zod.string().nullable(),
+});
+
+export const GetInterviewBookingLinkStatusParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetInterviewBookingLinkStatusResponse = zod.object({
+  version: zod.string().nullable(),
+  active: zod.boolean(),
+  expiresAt: zod.date().nullable(),
+});
+
+export const CreateInterviewBookingLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const createInterviewBookingLinkBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const CreateInterviewBookingLinkBody = zod.object({
+  expectedVersion: zod.string().regex(createInterviewBookingLinkBodyExpectedVersionRegExp),
+  expectedOfferVersion: zod.string().nullable(),
+  expectedLinkVersion: zod.string().nullable(),
+});
+
+export const createInterviewBookingLinkResponseTokenRegExp = new RegExp("^[A-Za-z0-9_-]{43}$");
+
+export const CreateInterviewBookingLinkResponse = zod.object({
+  version: zod.string(),
+  active: zod.boolean(),
+  expiresAt: zod.date(),
+  token: zod.string().regex(createInterviewBookingLinkResponseTokenRegExp),
+});
+
+export const RevokeInterviewBookingLinkParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const revokeInterviewBookingLinkBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const RevokeInterviewBookingLinkBody = zod.object({
+  expectedVersion: zod.string().regex(revokeInterviewBookingLinkBodyExpectedVersionRegExp),
+  expectedOfferVersion: zod.string().nullable(),
+  expectedLinkVersion: zod.string().nullable(),
+});
+
+export const RevokeInterviewBookingLinkResponse = zod.object({
+  version: zod.string().nullable(),
+  active: zod.boolean(),
+  expiresAt: zod.date().nullable(),
+});
+
+export const readPublicInterviewBookingBodyTokenRegExp = new RegExp("^[A-Za-z0-9_-]{43}$");
+
+export const ReadPublicInterviewBookingBody = zod.object({
+  token: zod.string().regex(readPublicInterviewBookingBodyTokenRegExp),
+});
+
+export const readPublicInterviewBookingResponseProposalOneVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+export const readPublicInterviewBookingResponseProposalOneDurationMinutesMin = 5;
+export const readPublicInterviewBookingResponseProposalOneDurationMinutesMax = 480;
+
+export const readPublicInterviewBookingResponseProposalOneStartsAtMax = 5;
+
+export const readPublicInterviewBookingResponseReceiptOneDurationMinutesMin = 5;
+export const readPublicInterviewBookingResponseReceiptOneDurationMinutesMax = 480;
+
+export const readPublicInterviewBookingResponseReceiptOneVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+
+export const ReadPublicInterviewBookingResponse = zod.object({
+  state: zod.enum(["offered", "confirmed"]),
+  expiresAt: zod.date(),
+  proposal: zod.union([
+    zod.object({
+      scheduleId: zod.string(),
+      version: zod.string().regex(readPublicInterviewBookingResponseProposalOneVersionRegExp),
+      offerVersion: zod.string().nullable(),
+      scheduledAt: zod.date(),
+      durationMinutes: zod
+        .number()
+        .min(readPublicInterviewBookingResponseProposalOneDurationMinutesMin)
+        .max(readPublicInterviewBookingResponseProposalOneDurationMinutesMax),
+      startsAt: zod
+        .array(zod.date())
+        .min(1)
+        .max(readPublicInterviewBookingResponseProposalOneStartsAtMax),
+      expiresAt: zod.date().nullable(),
+    }),
+    zod.null(),
+  ]),
+  receipt: zod.union([
+    zod.object({
+      scheduleId: zod.string(),
+      status: zod.enum(["confirmed"]),
+      scheduledAt: zod.date(),
+      durationMinutes: zod
+        .number()
+        .min(readPublicInterviewBookingResponseReceiptOneDurationMinutesMin)
+        .max(readPublicInterviewBookingResponseReceiptOneDurationMinutesMax),
+      version: zod.string().regex(readPublicInterviewBookingResponseReceiptOneVersionRegExp),
+      calendarReserved: zod.literal(false),
+      invitationSent: zod.literal(false),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const choosePublicInterviewBookingBodyTokenRegExp = new RegExp("^[A-Za-z0-9_-]{43}$");
+export const choosePublicInterviewBookingBodyExpectedVersionRegExp = new RegExp(
+  "^v1_[a-f0-9]{64}$",
+);
+
+export const ChoosePublicInterviewBookingBody = zod.object({
+  token: zod.string().regex(choosePublicInterviewBookingBodyTokenRegExp),
+  confirm: zod.boolean(),
+  expectedVersion: zod.string().regex(choosePublicInterviewBookingBodyExpectedVersionRegExp),
+  expectedOfferVersion: zod.string().nullable(),
+  scheduledAt: zod.date(),
+});
+
+export const choosePublicInterviewBookingResponseDurationMinutesMin = 5;
+export const choosePublicInterviewBookingResponseDurationMinutesMax = 480;
+
+export const choosePublicInterviewBookingResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const ChoosePublicInterviewBookingResponse = zod.object({
+  scheduleId: zod.string(),
+  status: zod.enum(["confirmed"]),
+  scheduledAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(choosePublicInterviewBookingResponseDurationMinutesMin)
+    .max(choosePublicInterviewBookingResponseDurationMinutesMax),
+  version: zod.string().regex(choosePublicInterviewBookingResponseVersionRegExp),
+  calendarReserved: zod.literal(false),
+  invitationSent: zod.literal(false),
+});
+
+export const GetStaffOfferedTimesParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const getStaffOfferedTimesResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const getStaffOfferedTimesResponseProposalVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const getStaffOfferedTimesResponseProposalDurationMinutesMin = 5;
+export const getStaffOfferedTimesResponseProposalDurationMinutesMax = 480;
+
+export const getStaffOfferedTimesResponseProposalStartsAtMax = 5;
+
+export const GetStaffOfferedTimesResponse = zod.object({
+  version: zod.string().regex(getStaffOfferedTimesResponseVersionRegExp),
+  proposal: zod.object({
+    scheduleId: zod.string(),
+    version: zod.string().regex(getStaffOfferedTimesResponseProposalVersionRegExp),
+    offerVersion: zod.string().nullable(),
+    scheduledAt: zod.date(),
+    durationMinutes: zod
+      .number()
+      .min(getStaffOfferedTimesResponseProposalDurationMinutesMin)
+      .max(getStaffOfferedTimesResponseProposalDurationMinutesMax),
+    startsAt: zod.array(zod.date()).min(1).max(getStaffOfferedTimesResponseProposalStartsAtMax),
+    expiresAt: zod.date().nullable(),
+  }),
+});
+
+export const PublishStaffOfferedTimesParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const publishStaffOfferedTimesBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const publishStaffOfferedTimesBodyAlternativesMax = 4;
+
+export const PublishStaffOfferedTimesBody = zod.object({
+  expectedVersion: zod.string().regex(publishStaffOfferedTimesBodyExpectedVersionRegExp),
+  expectedOfferVersion: zod.string().nullable(),
+  alternatives: zod.array(zod.date()).max(publishStaffOfferedTimesBodyAlternativesMax),
+});
+
+export const publishStaffOfferedTimesResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const publishStaffOfferedTimesResponseProposalVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+export const publishStaffOfferedTimesResponseProposalDurationMinutesMin = 5;
+export const publishStaffOfferedTimesResponseProposalDurationMinutesMax = 480;
+
+export const publishStaffOfferedTimesResponseProposalStartsAtMax = 5;
+
+export const PublishStaffOfferedTimesResponse = zod.object({
+  version: zod.string().regex(publishStaffOfferedTimesResponseVersionRegExp),
+  proposal: zod.object({
+    scheduleId: zod.string(),
+    version: zod.string().regex(publishStaffOfferedTimesResponseProposalVersionRegExp),
+    offerVersion: zod.string().nullable(),
+    scheduledAt: zod.date(),
+    durationMinutes: zod
+      .number()
+      .min(publishStaffOfferedTimesResponseProposalDurationMinutesMin)
+      .max(publishStaffOfferedTimesResponseProposalDurationMinutesMax),
+    startsAt: zod.array(zod.date()).min(1).max(publishStaffOfferedTimesResponseProposalStartsAtMax),
+    expiresAt: zod.date().nullable(),
+  }),
+});
+
+export const GetCandidateOfferedTimesParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const getCandidateOfferedTimesResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const getCandidateOfferedTimesResponseDurationMinutesMin = 5;
+export const getCandidateOfferedTimesResponseDurationMinutesMax = 480;
+
+export const getCandidateOfferedTimesResponseStartsAtMax = 5;
+
+export const GetCandidateOfferedTimesResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string().regex(getCandidateOfferedTimesResponseVersionRegExp),
+  offerVersion: zod.string().nullable(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(getCandidateOfferedTimesResponseDurationMinutesMin)
+    .max(getCandidateOfferedTimesResponseDurationMinutesMax),
+  startsAt: zod.array(zod.date()).min(1).max(getCandidateOfferedTimesResponseStartsAtMax),
+  expiresAt: zod.date().nullable(),
+});
+
+export const ChooseCandidateOfferedTimeParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const chooseCandidateOfferedTimeBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const ChooseCandidateOfferedTimeBody = zod.object({
+  confirm: zod.boolean(),
+  expectedVersion: zod.string().regex(chooseCandidateOfferedTimeBodyExpectedVersionRegExp),
+  expectedOfferVersion: zod.string().nullable(),
+  scheduledAt: zod.date(),
+});
+
+export const chooseCandidateOfferedTimeResponseDurationMinutesMin = 5;
+export const chooseCandidateOfferedTimeResponseDurationMinutesMax = 480;
+
+export const chooseCandidateOfferedTimeResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const ChooseCandidateOfferedTimeResponse = zod.object({
+  scheduleId: zod.string(),
+  status: zod.enum(["confirmed"]),
+  scheduledAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(chooseCandidateOfferedTimeResponseDurationMinutesMin)
+    .max(chooseCandidateOfferedTimeResponseDurationMinutesMax),
+  version: zod.string().regex(chooseCandidateOfferedTimeResponseVersionRegExp),
+  calendarReserved: zod.literal(false),
+  invitationSent: zod.literal(false),
+});
+
+export const GetCandidateTimeChangeRequestParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetCandidateTimeChangeRequestResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const RequestCandidateTimeChangeParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const requestCandidateTimeChangeBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const RequestCandidateTimeChangeBody = zod.object({
+  confirm: zod.literal(true),
+  expectedVersion: zod.string().regex(requestCandidateTimeChangeBodyExpectedVersionRegExp),
+});
+
+export const RequestCandidateTimeChangeResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const WithdrawCandidateTimeChangeParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const withdrawCandidateTimeChangeBodyRequestIdMax = 100;
+
+export const withdrawCandidateTimeChangeBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const WithdrawCandidateTimeChangeBody = zod.object({
+  confirm: zod.literal(true),
+  requestId: zod.string().min(1).max(withdrawCandidateTimeChangeBodyRequestIdMax),
+  expectedVersion: zod.string().regex(withdrawCandidateTimeChangeBodyExpectedVersionRegExp),
+});
+
+export const WithdrawCandidateTimeChangeResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const withdrawPublicTimeChangeBodyRequestIdMax = 100;
+
+export const withdrawPublicTimeChangeBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const WithdrawPublicTimeChangeBody = zod.object({
+  token: zod.string(),
+  confirm: zod.literal(true),
+  requestId: zod.string().min(1).max(withdrawPublicTimeChangeBodyRequestIdMax),
+  expectedVersion: zod.string().regex(withdrawPublicTimeChangeBodyExpectedVersionRegExp),
+});
+
+export const WithdrawPublicTimeChangeResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const GetStaffTimeChangeRequestParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetStaffTimeChangeRequestResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const ReviewStaffTimeChangeRequestParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const reviewStaffTimeChangeRequestBodyRequestIdMax = 100;
+
+export const ReviewStaffTimeChangeRequestBody = zod.object({
+  requestId: zod.string().min(1).max(reviewStaffTimeChangeRequestBodyRequestIdMax),
+});
+
+export const ReviewStaffTimeChangeRequestResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const ReadPublicTimeChangeRequestBody = zod.object({
+  token: zod.string(),
+});
+
+export const ReadPublicTimeChangeRequestResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+export const requestPublicTimeChangeBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const RequestPublicTimeChangeBody = zod.object({
+  token: zod.string(),
+  confirm: zod.literal(true),
+  expectedVersion: zod.string().regex(requestPublicTimeChangeBodyExpectedVersionRegExp),
+});
+
+export const RequestPublicTimeChangeResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  canRequest: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  appointmentChanged: zod.literal(false),
+  invitationSent: zod.literal(false),
+  request: zod
+    .object({
+      id: zod.string(),
+      requestedAt: zod.date(),
+      reviewedAt: zod.date().nullable(),
+      withdrawnAt: zod.date().nullable(),
+      currentProposal: zod.boolean(),
+    })
+    .nullable(),
+});
+
+/**
+ * Does not reserve an Outlook event or send an invitation.
+ * @summary Candidate confirms their own proposed native interview time
+ */
+
+export const ConfirmCandidateProposedTimeParams = zod.object({
+  scheduleId: zod.coerce.string().min(1),
+});
+
+export const confirmCandidateProposedTimeBodyExpectedVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+
+export const ConfirmCandidateProposedTimeBody = zod.object({
+  confirm: zod.literal(true),
+  expectedVersion: zod.string().regex(confirmCandidateProposedTimeBodyExpectedVersionRegExp),
+});
+
+export const confirmCandidateProposedTimeResponseDurationMinutesMin = 5;
+export const confirmCandidateProposedTimeResponseDurationMinutesMax = 480;
+
+export const confirmCandidateProposedTimeResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const ConfirmCandidateProposedTimeResponse = zod.object({
+  scheduleId: zod.string(),
+  status: zod.enum(["confirmed"]),
+  scheduledAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(confirmCandidateProposedTimeResponseDurationMinutesMin)
+    .max(confirmCandidateProposedTimeResponseDurationMinutesMax),
+  version: zod.string().regex(confirmCandidateProposedTimeResponseVersionRegExp),
+  calendarReserved: zod.literal(false),
+  invitationSent: zod.literal(false),
+});
+
+/**
+ * @summary Platform-admin review queue for reserved email attempts
+ */
+export const listMailHoldsQueryCursorMax = 300;
+
+export const ListMailHoldsQueryParams = zod.object({
+  cursor: zod.coerce.string().max(listMailHoldsQueryCursorMax).optional(),
+});
+
+export const ListMailHoldsResponse = zod.object({
+  data: zod.array(
+    zod.object({
+      operationId: zod.string(),
+      tenantId: zod.string(),
+      candidateId: zod.string(),
+      kind: zod.string(),
+      reservedAt: zod.string(),
+      version: zod.string(),
+      lastReview: zod
+        .union([zod.literal("keep_held"), zod.literal("closed_no_resend"), zod.literal(null)])
+        .nullable(),
+      lastReviewedAt: zod.string().nullable(),
+    }),
+  ),
+  hasMore: zod.boolean(),
+  nextCursor: zod.string().nullable(),
+});
+
+/**
+ * @summary Record a review without sending or releasing the original hold
+ */
+export const reviewMailHoldBodyOperationIdMax = 300;
+
+export const reviewMailHoldBodyVersionRegExp = new RegExp("^[0-9a-f]{64}$");
+export const reviewMailHoldBodyEvidenceReferenceMin = 3;
+export const reviewMailHoldBodyEvidenceReferenceMax = 120;
+
+export const reviewMailHoldBodyEvidenceReferenceRegExp = new RegExp("^[A-Za-z0-9_.:-]+$");
+
+export const ReviewMailHoldBody = zod.object({
+  operationId: zod.string().min(1).max(reviewMailHoldBodyOperationIdMax),
+  version: zod.string().regex(reviewMailHoldBodyVersionRegExp),
+  disposition: zod.enum(["keep_held", "closed_no_resend"]),
+  evidenceReference: zod
+    .string()
+    .min(reviewMailHoldBodyEvidenceReferenceMin)
+    .max(reviewMailHoldBodyEvidenceReferenceMax)
+    .regex(reviewMailHoldBodyEvidenceReferenceRegExp),
+  acknowledgeNoResend: zod.literal(true),
+});
+
+export const ReviewMailHoldResponse = zod.object({
+  reviewId: zod.string(),
+  disposition: zod.enum(["keep_held", "closed_no_resend"]),
+  holdRetained: zod.literal(true),
+});
+
+/**
+ * @summary Platform-admin-only directory of self-registered candidate accounts
+ */
+export const getCandidateRegistrationsQueryCursorMax = 200;
+
+export const getCandidateRegistrationsQueryCursorRegExp = new RegExp("^[A-Za-z0-9_-]+$");
+export const getCandidateRegistrationsQuerySearchMax = 200;
+
+export const getCandidateRegistrationsQueryLimitDefault = 50;
+export const getCandidateRegistrationsQueryLimitMax = 200;
+
+export const GetCandidateRegistrationsQueryParams = zod.object({
+  cursor: zod.coerce
+    .string()
+    .min(1)
+    .max(getCandidateRegistrationsQueryCursorMax)
+    .regex(getCandidateRegistrationsQueryCursorRegExp)
+    .optional(),
+  search: zod.coerce.string().max(getCandidateRegistrationsQuerySearchMax).optional(),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getCandidateRegistrationsQueryLimitMax)
+    .default(getCandidateRegistrationsQueryLimitDefault),
+});
+
+export const GetCandidateRegistrationsResponse = zod.object({
+  data: zod.array(
+    zod.object({
+      candidateId: zod.string(),
+      name: zod.string(),
+      email: zod.string(),
+      registeredAt: zod.date(),
+      pool: zod.string(),
+    }),
+  ),
+  hasMore: zod.boolean(),
+  nextCursor: zod.string().nullable(),
+});
+
+/**
+ * @summary Read candidate-bound portal progress in stable, authorized pages
+ */
+export const getCareerCampaignStatusQueryCursorMax = 200;
+
+export const getCareerCampaignStatusQueryCursorRegExp = new RegExp("^[A-Za-z0-9_-]+$");
+export const getCareerCampaignStatusQueryLimitDefault = 50;
+export const getCareerCampaignStatusQueryLimitMax = 200;
+
+export const GetCareerCampaignStatusQueryParams = zod.object({
+  cursor: zod.coerce
+    .string()
+    .min(1)
+    .max(getCareerCampaignStatusQueryCursorMax)
+    .regex(getCareerCampaignStatusQueryCursorRegExp)
+    .optional(),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getCareerCampaignStatusQueryLimitMax)
+    .default(getCareerCampaignStatusQueryLimitDefault),
+});
+
+export const GetCareerCampaignStatusResponse = zod.object({
+  data: zod.array(
+    zod.object({
+      candidateId: zod.string(),
+      name: zod.string(),
+      email: zod.string(),
+      jobTitle: zod.string().nullable(),
+      company: zod.string().nullable(),
+      status: zod.enum([
+        "not_invited",
+        "invited",
+        "portal_created",
+        "interview_completed",
+        "profile_complete",
+      ]),
+      invitedAt: zod.date().nullable(),
+      completedAt: zod.date().nullable(),
+      profileCompleteness: zod.number(),
+    }),
+  ),
+  hasMore: zod.boolean(),
+  nextCursor: zod.string().nullable(),
+});
+
+/**
+ * @summary Read only the connected user's busy periods, without event details
+ */
+export const GetOutlookCalendarAvailabilityQueryParams = zod.object({
+  start: zod.date(),
+  end: zod.date(),
+});
+
+export const GetOutlookCalendarAvailabilityResponse = zod.object({
+  start: zod.date(),
+  end: zod.date(),
+  busy: zod.array(
+    zod.object({
+      start: zod.date(),
+      end: zod.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Find the caller's own Outlook hold for an authorized Lexy interview schedule
+ */
+export const GetOutlookScheduleEventParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const getOutlookScheduleEventResponseScheduleVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const getOutlookScheduleEventResponseEventOneDurationMinutesMin = 5;
+export const getOutlookScheduleEventResponseEventOneDurationMinutesMax = 480;
+
+export const GetOutlookScheduleEventResponse = zod.object({
+  scheduleVersion: zod
+    .string()
+    .regex(getOutlookScheduleEventResponseScheduleVersionRegExp)
+    .optional()
+    .describe(
+      "Native schedule content revision returned by the read endpoint. Not an Outlook event revision or booking guarantee.",
+    ),
+  event: zod.union([
+    zod.object({
+      start: zod.date(),
+      end: zod.date(),
+      durationMinutes: zod
+        .number()
+        .min(getOutlookScheduleEventResponseEventOneDurationMinutesMin)
+        .max(getOutlookScheduleEventResponseEventOneDurationMinutesMax),
+      cancelled: zod.boolean(),
+      webLink: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  nativeChanged: zod.boolean().optional(),
+  remoteChanged: zod.boolean().optional(),
+});
+
+/**
+ * No candidate invitations are sent. Guest meetings and recurring events require manual handling in Outlook. Pull is an explicit refresh, not a background webhook subscription.
+ * @summary Explicit human action to create, update, pull or cancel a personal interview hold
+ */
+export const ApplyOutlookScheduleActionParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const applyOutlookScheduleActionBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const ApplyOutlookScheduleActionBody = zod.object({
+  action: zod.enum(["create", "update", "pull", "cancel"]),
+  confirm: zod.literal(true),
+  expectedScheduledAt: zod.date(),
+  expectedVersion: zod
+    .string()
+    .regex(applyOutlookScheduleActionBodyExpectedVersionRegExp)
+    .optional()
+    .describe(
+      "Native schedule revision displayed when the dialog opened. Updated Lexy controls always send this; legacy callers omitting it retain timestamp-only preflight checks.",
+    ),
+});
+
+export const applyOutlookScheduleActionResponseScheduleVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+export const applyOutlookScheduleActionResponseEventOneDurationMinutesMin = 5;
+export const applyOutlookScheduleActionResponseEventOneDurationMinutesMax = 480;
+
+export const ApplyOutlookScheduleActionResponse = zod.object({
+  scheduleVersion: zod
+    .string()
+    .regex(applyOutlookScheduleActionResponseScheduleVersionRegExp)
+    .optional()
+    .describe(
+      "Native schedule content revision returned by the read endpoint. Not an Outlook event revision or booking guarantee.",
+    ),
+  event: zod.union([
+    zod.object({
+      start: zod.date(),
+      end: zod.date(),
+      durationMinutes: zod
+        .number()
+        .min(applyOutlookScheduleActionResponseEventOneDurationMinutesMin)
+        .max(applyOutlookScheduleActionResponseEventOneDurationMinutesMax),
+      cancelled: zod.boolean(),
+      webLink: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  nativeChanged: zod.boolean().optional(),
+  remoteChanged: zod.boolean().optional(),
+});
+
+/**
+ * @summary Review candidate-only Outlook invitation status for an authorized confirmed schedule
+ */
+export const GetOutlookCandidateInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetOutlookCandidateInvitationResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string().email(),
+  status: zod.enum(["not_sent", "needs_review", "accepted"]),
+  acceptedAt: zod.date().nullable(),
+});
+
+/**
+ * Never automatic. Each schedule has one durable send attempt; uncertain acceptance requires reconciliation, not automatic retry. Not an email-delivery guarantee.
+ * @summary Explicit human action to invite only the candidate from the caller's connected Outlook calendar
+ */
+export const SendOutlookCandidateInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const sendOutlookCandidateInvitationBodyExpectedVersionRegExp = new RegExp(
+  "^v1_[a-f0-9]{64}$",
+);
+
+export const SendOutlookCandidateInvitationBody = zod.object({
+  confirm: zod.boolean(),
+  expectedVersion: zod.string().regex(sendOutlookCandidateInvitationBodyExpectedVersionRegExp),
+  expectedRecipientEmail: zod.string().email(),
+});
+
+export const SendOutlookCandidateInvitationResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string().email(),
+  status: zod.enum(["not_sent", "needs_review", "accepted"]),
+  acceptedAt: zod.date().nullable(),
+});
+
+/**
+ * @summary Review the saved panel and connected organizer before inviting
+ */
+export const GetOutlookPanelInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetOutlookPanelInvitationResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string().email(),
+  organizerEmail: zod.string().nullable(),
+  panelRecipients: zod.array(
+    zod.object({
+      userId: zod.string(),
+      name: zod.string(),
+      email: zod.string().email(),
+    }),
+  ),
+  approvalToken: zod.string().nullable(),
+  status: zod.enum(["unavailable", "not_sent", "needs_review", "accepted"]),
+  acceptedAt: zod.date().nullable(),
+});
+
+/**
+ * One committed intent shared with candidate-only invitations. Hidden attendees. No automatic retry or guarantee of guest acceptance or email delivery.
+ * @summary Human-approved invitation to the candidate and saved panel
+ */
+export const SendOutlookPanelInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const sendOutlookPanelInvitationBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const sendOutlookPanelInvitationBodyExpectedApprovalTokenRegExp = new RegExp(
+  "^[0-9a-f]{64}$",
+);
+
+export const SendOutlookPanelInvitationBody = zod.object({
+  confirm: zod.boolean(),
+  expectedVersion: zod.string().regex(sendOutlookPanelInvitationBodyExpectedVersionRegExp),
+  expectedApprovalToken: zod
+    .string()
+    .regex(sendOutlookPanelInvitationBodyExpectedApprovalTokenRegExp),
+});
+
+export const SendOutlookPanelInvitationResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string().email(),
+  organizerEmail: zod.string().nullable(),
+  panelRecipients: zod.array(
+    zod.object({
+      userId: zod.string(),
+      name: zod.string(),
+      email: zod.string().email(),
+    }),
+  ),
+  approvalToken: zod.string().nullable(),
+  status: zod.enum(["unavailable", "not_sent", "needs_review", "accepted"]),
+  acceptedAt: zod.date().nullable(),
+});
+
+/**
+ * @summary Staff-only read-only review or reconciliation of an existing guest meeting
+ */
+export const GetOutlookInvitationChangeParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetOutlookInvitationChangeResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string(),
+  status: zod.enum(["unavailable", "ready", "current", "needs_review"]),
+  approvalVersion: zod.string().nullable(),
+  organizerEmail: zod.string().nullable(),
+  previousScheduledAt: zod.date().nullable(),
+  previousEndAt: zod.date().nullable(),
+});
+
+/**
+ * Durable intent before one conditional PATCH. Never create another event or automatically retry an uncertain write.
+ * @summary Human-approved time-only update to the same Outlook guest event
+ */
+export const UpdateOutlookInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const updateOutlookInvitationBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const updateOutlookInvitationBodyApprovalVersionRegExp = new RegExp("^change_[a-f0-9]{64}$");
+
+export const UpdateOutlookInvitationBody = zod.object({
+  confirm: zod.boolean(),
+  expectedVersion: zod.string().regex(updateOutlookInvitationBodyExpectedVersionRegExp),
+  approvalVersion: zod.string().regex(updateOutlookInvitationBodyApprovalVersionRegExp),
+});
+
+export const UpdateOutlookInvitationResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  recipientEmail: zod.string(),
+  status: zod.enum(["unavailable", "ready", "current", "needs_review"]),
+  approvalVersion: zod.string().nullable(),
+  organizerEmail: zod.string().nullable(),
+  previousScheduledAt: zod.date().nullable(),
+  previousEndAt: zod.date().nullable(),
+});
+
+/**
+ * @summary Review one candidate-only Google invitation or reconcile its existing event by read
+ */
+export const GetGoogleInterviewInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const getGoogleInterviewInvitationResponsePanelRecipientEmailsMax = 5;
+
+export const GetGoogleInterviewInvitationResponse = zod.object({
+  provider: zod.enum(["google"]),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  recipientEmail: zod.string(),
+  panelRecipientEmails: zod
+    .array(zod.string().email())
+    .max(getGoogleInterviewInvitationResponsePanelRecipientEmailsMax)
+    .optional(),
+  organizerEmail: zod.string().nullable(),
+  connectionRevision: zod.string().nullable(),
+  status: zod.enum(["unavailable", "ready", "needs_review", "accepted", "blocked_other_provider"]),
+  reason: zod
+    .union([
+      zod.literal("setup_required"),
+      zod.literal("connection_required"),
+      zod.literal("write_consent_required"),
+      zod.literal("ineligible"),
+      zod.literal("panel_unsupported"),
+      zod.literal("another_provider"),
+      zod.literal("changed"),
+      zod.literal("unknown"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  meetUrl: zod.string().nullable(),
+  conferenceStatus: zod.enum(["not_requested", "pending", "ready", "failed"]),
+  deliveryConfirmed: zod.literal(false),
+});
+
+/**
+ * @summary Approve one immutable candidate invitation and Google Meet request
+ */
+export const SendGoogleInterviewInvitationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const SendGoogleInterviewInvitationBody = zod.object({
+  confirm: zod.literal(true),
+  expectedVersion: zod.string(),
+  expectedApprovalToken: zod.string(),
+  reviewExpiresAt: zod.date(),
+});
+
+export const sendGoogleInterviewInvitationResponsePanelRecipientEmailsMax = 5;
+
+export const SendGoogleInterviewInvitationResponse = zod.object({
+  provider: zod.enum(["google"]),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  jobTitle: zod.string(),
+  recipientEmail: zod.string(),
+  panelRecipientEmails: zod
+    .array(zod.string().email())
+    .max(sendGoogleInterviewInvitationResponsePanelRecipientEmailsMax)
+    .optional(),
+  organizerEmail: zod.string().nullable(),
+  connectionRevision: zod.string().nullable(),
+  status: zod.enum(["unavailable", "ready", "needs_review", "accepted", "blocked_other_provider"]),
+  reason: zod
+    .union([
+      zod.literal("setup_required"),
+      zod.literal("connection_required"),
+      zod.literal("write_consent_required"),
+      zod.literal("ineligible"),
+      zod.literal("panel_unsupported"),
+      zod.literal("another_provider"),
+      zod.literal("changed"),
+      zod.literal("unknown"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  acceptedAt: zod.date().nullable(),
+  meetUrl: zod.string().nullable(),
+  conferenceStatus: zod.enum(["not_requested", "pending", "ready", "failed"]),
+  deliveryConfirmed: zod.literal(false),
+});
+
+/**
+ * @summary Review a native time change or cancellation against the original Google event
+ */
+export const GetGoogleInvitationOperationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const getGoogleInvitationOperationResponsePanelRecipientEmailsMax = 5;
+
+export const GetGoogleInvitationOperationResponse = zod.object({
+  provider: zod.enum(["google"]),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  kind: zod.enum(["reschedule", "cancel"]),
+  status: zod.enum(["unavailable", "ready", "current", "accepted", "needs_review"]),
+  recipientEmail: zod.string(),
+  panelRecipientEmails: zod
+    .array(zod.string().email())
+    .max(getGoogleInvitationOperationResponsePanelRecipientEmailsMax)
+    .optional(),
+  organizerEmail: zod.string().nullable(),
+  previousStart: zod.date().nullable(),
+  previousEnd: zod.date().nullable(),
+  targetStart: zod.date().nullable(),
+  targetEnd: zod.date().nullable(),
+  sourceEtag: zod.string().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  operationId: zod.string().nullable(),
+  acceptedAt: zod.date().nullable(),
+  meetUrl: zod.string().nullable(),
+  deliveryConfirmed: zod.boolean(),
+});
+
+/**
+ * @summary Approve exactly one conditional change to the original Google event
+ */
+export const ApplyGoogleInvitationOperationParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const ApplyGoogleInvitationOperationBody = zod.object({
+  confirm: zod.boolean(),
+  kind: zod.enum(["reschedule", "cancel"]),
+  expectedVersion: zod.string(),
+  expectedApprovalToken: zod.string(),
+  reviewExpiresAt: zod.date(),
+});
+
+export const applyGoogleInvitationOperationResponsePanelRecipientEmailsMax = 5;
+
+export const ApplyGoogleInvitationOperationResponse = zod.object({
+  provider: zod.enum(["google"]),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  kind: zod.enum(["reschedule", "cancel"]),
+  status: zod.enum(["unavailable", "ready", "current", "accepted", "needs_review"]),
+  recipientEmail: zod.string(),
+  panelRecipientEmails: zod
+    .array(zod.string().email())
+    .max(applyGoogleInvitationOperationResponsePanelRecipientEmailsMax)
+    .optional(),
+  organizerEmail: zod.string().nullable(),
+  previousStart: zod.date().nullable(),
+  previousEnd: zod.date().nullable(),
+  targetStart: zod.date().nullable(),
+  targetEnd: zod.date().nullable(),
+  sourceEtag: zod.string().nullable(),
+  approvalToken: zod.string().nullable(),
+  reviewExpiresAt: zod.date().nullable(),
+  operationId: zod.string().nullable(),
+  acceptedAt: zod.date().nullable(),
+  meetUrl: zod.string().nullable(),
+  deliveryConfirmed: zod.boolean(),
+});
+
+/**
+ * @summary Read own separate staff Meet recording authorization
+ */
+export const GetMyGoogleMeetRecordingAccountResponse = zod.object({
+  configured: zod.boolean(),
+  state: zod.enum([
+    "setup_required",
+    "disconnected",
+    "authorization_pending",
+    "connected",
+    "reconnect_required",
+  ]),
+  revision: zod.string().nullable(),
+  accountEmail: zod.string().nullable(),
+  connectedAt: zod.date().nullable(),
+  canReadRecordings: zod
+    .boolean()
+    .describe(
+      "Separate recording grant; never proof of appointment authority or permission to import",
+    ),
+  redirectUri: zod
+    .string()
+    .nullable()
+    .describe("Exact additional callback URI the Google application owner must register"),
+});
+
+/**
+ * @summary Begin separate read-only Meet recording authorization
+ */
+export const ConnectMyGoogleMeetRecordingAccountBody = zod.object({
+  confirmRecordingAccess: zod.literal(true),
+});
+
+export const ConnectMyGoogleMeetRecordingAccountResponse = zod.object({
+  authorizationUrl: zod.string().url(),
+  expiresAt: zod.date(),
+});
+
+/**
+ * @summary Disconnect only the current staff recording grant locally
+ */
+export const DisconnectMyGoogleMeetRecordingAccountBody = zod.object({
+  revision: zod.string().uuid(),
+  confirmDisconnect: zod.literal(true),
+});
+
+export const DisconnectMyGoogleMeetRecordingAccountResponse = zod.object({
+  configured: zod.boolean(),
+  state: zod.enum([
+    "setup_required",
+    "disconnected",
+    "authorization_pending",
+    "connected",
+    "reconnect_required",
+  ]),
+  revision: zod.string().nullable(),
+  accountEmail: zod.string().nullable(),
+  connectedAt: zod.date().nullable(),
+  canReadRecordings: zod
+    .boolean()
+    .describe(
+      "Separate recording grant; never proof of appointment authority or permission to import",
+    ),
+  redirectUri: zod
+    .string()
+    .nullable()
+    .describe("Exact additional callback URI the Google application owner must register"),
+});
+
+/**
+ * @summary Read the current staff member's own Google calendar connection
+ */
+export const GetMyGoogleCalendarResponse = zod.object({
+  configured: zod.boolean(),
+  state: zod.enum([
+    "setup_required",
+    "disconnected",
+    "authorization_pending",
+    "connected",
+    "reconnect_required",
+  ]),
+  revision: zod.string().nullable(),
+  accountEmail: zod.string().nullable(),
+  connectedAt: zod.date().nullable(),
+  canCheckAvailability: zod.boolean(),
+  canSendInvitations: zod
+    .boolean()
+    .describe("Optional verified OAuth permission; never automatic approval"),
+});
+
+/**
+ * @summary Begin own Google authorization with optional explicit invitation permission
+ */
+export const connectMyGoogleCalendarBodyAllowInvitationsDefault = false;
+
+export const ConnectMyGoogleCalendarBody = zod.object({
+  confirmOwnCalendar: zod.literal(true),
+  allowInvitations: zod
+    .boolean()
+    .default(connectMyGoogleCalendarBodyAllowInvitationsDefault)
+    .describe("Request owned-event write permission; each send still requires review"),
+});
+
+export const ConnectMyGoogleCalendarResponse = zod.object({
+  authorizationUrl: zod.string().url(),
+  expiresAt: zod.date(),
+});
+
+/**
+ * @summary Remove own local Google credentials and invalidate pending authorization
+ */
+export const DisconnectMyGoogleCalendarBody = zod.object({
+  revision: zod.string().uuid(),
+  confirmDisconnect: zod.literal(true),
+});
+
+export const DisconnectMyGoogleCalendarResponse = zod.object({
+  configured: zod.boolean(),
+  state: zod.enum([
+    "setup_required",
+    "disconnected",
+    "authorization_pending",
+    "connected",
+    "reconnect_required",
+  ]),
+  revision: zod.string().nullable(),
+  accountEmail: zod.string().nullable(),
+  connectedAt: zod.date().nullable(),
+  canCheckAvailability: zod.boolean(),
+  canSendInvitations: zod
+    .boolean()
+    .describe("Optional verified OAuth permission; never automatic approval"),
+});
+
+/**
+ * @summary Check one bounded interval on the current staff member's own calendar
+ */
+export const checkMyGoogleCalendarAvailabilityBodyDurationMinutesMin = 15;
+export const checkMyGoogleCalendarAvailabilityBodyDurationMinutesMax = 480;
+
+export const CheckMyGoogleCalendarAvailabilityBody = zod.object({
+  revision: zod.string().uuid(),
+  startAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(checkMyGoogleCalendarAvailabilityBodyDurationMinutesMin)
+    .max(checkMyGoogleCalendarAvailabilityBodyDurationMinutesMax),
+});
+
+export const CheckMyGoogleCalendarAvailabilityResponse = zod.object({
+  revision: zod.string().uuid(),
+  startAt: zod.date(),
+  endAt: zod.date(),
+  checkedAt: zod.date(),
+  status: zod.enum(["free", "busy", "outside_working_hours"]),
+  reserved: zod.literal(false),
+  invitationsEnabled: zod.literal(false),
+});
+
+/**
+ * Checks primary calendar metadata and a bounded free-busy query. Returns no account identifiers, calendar contents or availability intervals. Does not bind the account to staff or enable invitations.
+ * @summary Platform-admin-only read-only project Google connection diagnostic
+ */
+export const CheckGoogleCalendarPilotBody = zod.object({
+  confirmReadOnlyCheck: zod.literal(true),
+});
+
+export const CheckGoogleCalendarPilotResponse = zod.object({
+  status: zod.enum(["verified", "not_connected", "selection_required"]),
+  checkedAt: zod.date(),
+  calendarReadVerified: zod.boolean(),
+  availabilityReadVerified: zod.boolean(),
+  meetSupported: zod.boolean().nullable(),
+  accountBinding: zod.enum(["not_configured"]),
+  invitationsEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Read your own optional weekly panel working hours
+ */
+export const getCalendarWorkingHoursResponseTimeZoneMax = 100;
+
+export const getCalendarWorkingHoursResponseWindowsItemDayMin = 0;
+export const getCalendarWorkingHoursResponseWindowsItemDayMax = 6;
+
+export const getCalendarWorkingHoursResponseWindowsItemStartRegExp = new RegExp(
+  "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+export const getCalendarWorkingHoursResponseWindowsItemEndRegExp = new RegExp(
+  "^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00)$",
+);
+export const getCalendarWorkingHoursResponseWindowsMax = 14;
+
+export const GetCalendarWorkingHoursResponse = zod.object({
+  version: zod.string().uuid().nullable(),
+  timeZone: zod.string().min(1).max(getCalendarWorkingHoursResponseTimeZoneMax).nullable(),
+  windows: zod
+    .array(
+      zod.object({
+        day: zod
+          .number()
+          .min(getCalendarWorkingHoursResponseWindowsItemDayMin)
+          .max(getCalendarWorkingHoursResponseWindowsItemDayMax)
+          .describe("Sunday is 0"),
+        start: zod.string().regex(getCalendarWorkingHoursResponseWindowsItemStartRegExp),
+        end: zod.string().regex(getCalendarWorkingHoursResponseWindowsItemEndRegExp),
+      }),
+    )
+    .max(getCalendarWorkingHoursResponseWindowsMax),
+});
+
+/**
+ * @summary Save or explicitly clear your own panel working hours
+ */
+export const saveCalendarWorkingHoursBodyTimeZoneMax = 100;
+
+export const saveCalendarWorkingHoursBodyWindowsItemDayMin = 0;
+export const saveCalendarWorkingHoursBodyWindowsItemDayMax = 6;
+
+export const saveCalendarWorkingHoursBodyWindowsItemStartRegExp = new RegExp(
+  "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+export const saveCalendarWorkingHoursBodyWindowsItemEndRegExp = new RegExp(
+  "^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00)$",
+);
+export const saveCalendarWorkingHoursBodyWindowsMax = 14;
+
+export const SaveCalendarWorkingHoursBody = zod.object({
+  expectedVersion: zod.string().uuid().nullable(),
+  timeZone: zod.string().min(1).max(saveCalendarWorkingHoursBodyTimeZoneMax).nullable(),
+  windows: zod
+    .array(
+      zod.object({
+        day: zod
+          .number()
+          .min(saveCalendarWorkingHoursBodyWindowsItemDayMin)
+          .max(saveCalendarWorkingHoursBodyWindowsItemDayMax)
+          .describe("Sunday is 0"),
+        start: zod.string().regex(saveCalendarWorkingHoursBodyWindowsItemStartRegExp),
+        end: zod.string().regex(saveCalendarWorkingHoursBodyWindowsItemEndRegExp),
+      }),
+    )
+    .max(saveCalendarWorkingHoursBodyWindowsMax),
+});
+
+export const saveCalendarWorkingHoursResponseTimeZoneMax = 100;
+
+export const saveCalendarWorkingHoursResponseWindowsItemDayMin = 0;
+export const saveCalendarWorkingHoursResponseWindowsItemDayMax = 6;
+
+export const saveCalendarWorkingHoursResponseWindowsItemStartRegExp = new RegExp(
+  "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+export const saveCalendarWorkingHoursResponseWindowsItemEndRegExp = new RegExp(
+  "^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00)$",
+);
+export const saveCalendarWorkingHoursResponseWindowsMax = 14;
+
+export const SaveCalendarWorkingHoursResponse = zod.object({
+  version: zod.string().uuid().nullable(),
+  timeZone: zod.string().min(1).max(saveCalendarWorkingHoursResponseTimeZoneMax).nullable(),
+  windows: zod
+    .array(
+      zod.object({
+        day: zod
+          .number()
+          .min(saveCalendarWorkingHoursResponseWindowsItemDayMin)
+          .max(saveCalendarWorkingHoursResponseWindowsItemDayMax)
+          .describe("Sunday is 0"),
+        start: zod.string().regex(saveCalendarWorkingHoursResponseWindowsItemStartRegExp),
+        end: zod.string().regex(saveCalendarWorkingHoursResponseWindowsItemEndRegExp),
+      }),
+    )
+    .max(saveCalendarWorkingHoursResponseWindowsMax),
+});
+
+/**
+ * @summary Read your own explicit panel-availability sharing consent
+ */
+export const GetPanelCalendarConsentResponse = zod.object({
+  enabled: zod.boolean(),
+  grantedAt: zod.date().nullable(),
+});
+
+/**
+ * @summary Explicitly opt your connected calendar in or out of staff panel searches
+ */
+export const SetPanelCalendarConsentBody = zod.object({
+  enabled: zod.boolean(),
+});
+
+export const SetPanelCalendarConsentResponse = zod.object({
+  enabled: zod.boolean(),
+  grantedAt: zod.date().nullable(),
+});
+
+export const GetSavedSchedulePanelParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetSavedSchedulePanelResponse = zod.object({
+  provider: zod.union([zod.literal("google"), zod.literal("outlook"), zod.literal(null)]).nullish(),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  bufferMinutes: zod.number(),
+  calendarReserved: zod.boolean(),
+  invitationSent: zod.boolean(),
+});
+
+export const SaveSchedulePanelParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const saveSchedulePanelBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+
+export const saveSchedulePanelBodyUserIdsMin = 0;
+export const saveSchedulePanelBodyUserIdsMax = 5;
+
+export const saveSchedulePanelBodyBufferMinutesMin = 0;
+export const saveSchedulePanelBodyBufferMinutesMax = 60;
+
+export const SaveSchedulePanelBody = zod.object({
+  expectedVersion: zod.string().regex(saveSchedulePanelBodyExpectedVersionRegExp),
+  userIds: zod
+    .array(zod.string().min(1))
+    .min(saveSchedulePanelBodyUserIdsMin)
+    .max(saveSchedulePanelBodyUserIdsMax),
+  scheduledAt: zod.date(),
+  bufferMinutes: zod
+    .number()
+    .min(saveSchedulePanelBodyBufferMinutesMin)
+    .max(saveSchedulePanelBodyBufferMinutesMax),
+});
+
+export const SaveSchedulePanelResponse = zod.object({
+  provider: zod.union([zod.literal("google"), zod.literal("outlook"), zod.literal(null)]).nullish(),
+  scheduleId: zod.string(),
+  version: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  bufferMinutes: zod.number(),
+  calendarReserved: zod.boolean(),
+  invitationSent: zod.boolean(),
+});
+
+/**
+ * @summary List opted-in staff in the authorised work-order scope
+ */
+export const GetSchedulePanelMembersParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const GetSchedulePanelMembersResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * Read-only provider operation. Returns bounded common suggestions, never individual calendars or busy periods. Does not save, offer slots, reserve or invite.
+ * @summary Staff-only common-time search across an explicitly selected consenting panel
+ */
+export const FindSchedulePanelTimesParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const findSchedulePanelTimesBodyExpectedVersionRegExp = new RegExp("^v1_[a-f0-9]{64}$");
+export const findSchedulePanelTimesBodyUserIdsItemMax = 100;
+
+export const findSchedulePanelTimesBodyUserIdsMax = 5;
+
+export const findSchedulePanelTimesBodyBufferMinutesMin = 0;
+export const findSchedulePanelTimesBodyBufferMinutesMax = 60;
+
+export const FindSchedulePanelTimesBody = zod.object({
+  expectedVersion: zod.string().regex(findSchedulePanelTimesBodyExpectedVersionRegExp),
+  userIds: zod
+    .array(zod.string().min(1).max(findSchedulePanelTimesBodyUserIdsItemMax))
+    .min(1)
+    .max(findSchedulePanelTimesBodyUserIdsMax),
+  start: zod.date(),
+  end: zod.date(),
+  bufferMinutes: zod
+    .number()
+    .min(findSchedulePanelTimesBodyBufferMinutesMin)
+    .max(findSchedulePanelTimesBodyBufferMinutesMax),
+});
+
+export const FindSchedulePanelTimesResponse = zod.object({
+  scheduleId: zod.string(),
+  version: zod.string(),
+  checkedAt: zod.date(),
+  panelSize: zod.number(),
+  durationMinutes: zod.number(),
+  slots: zod.array(
+    zod.object({
+      start: zod.date(),
+      end: zod.date(),
+    }),
+  ),
+});
+
+/**
+ * Returns the existing array response. Use X-Next-Cursor to request the next older page. The cursor is bound to the caller.
+ * @summary Read the caller's notification history
+ */
+export const getStaffNotificationsQueryLimitDefault = 50;
+export const getStaffNotificationsQueryLimitMax = 100;
+
+export const getStaffNotificationsQueryCursorMax = 1024;
+
+export const GetStaffNotificationsQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getStaffNotificationsQueryLimitMax)
+    .default(getStaffNotificationsQueryLimitDefault),
+  cursor: zod.coerce.string().min(1).max(getStaffNotificationsQueryCursorMax).optional(),
+});
+
+export const GetStaffNotificationsResponseItem = zod.object({
+  id: zod.string(),
+  tenantId: zod.string(),
+  userId: zod.string(),
+  type: zod.string(),
+  title: zod.string(),
+  message: zod.string(),
+  actionUrl: zod.string().nullable(),
+  isRead: zod.boolean(),
+  createdAt: zod.date(),
+});
+export const GetStaffNotificationsResponse = zod.array(GetStaffNotificationsResponseItem);
+
+/**
+ * @summary List offers explicitly assigned to the current employer staff member
+ */
+export const getEmployerOfferInboxQueryCursorMax = 600;
+
+export const getEmployerOfferInboxQueryLimitDefault = 30;
+export const getEmployerOfferInboxQueryLimitMax = 50;
+
+export const GetEmployerOfferInboxQueryParams = zod.object({
+  cursor: zod.coerce.string().max(getEmployerOfferInboxQueryCursorMax).optional(),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getEmployerOfferInboxQueryLimitMax)
+    .default(getEmployerOfferInboxQueryLimitDefault),
+});
+
+export const GetEmployerOfferInboxResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      workflowId: zod.string(),
+      jobId: zod.string(),
+      candidateId: zod.string(),
+      candidateName: zod.string(),
+      jobTitle: zod.string(),
+      employerName: zod.string(),
+      updatedAt: zod.string(),
+      mode: zod.enum(["native", "external"]),
+      roles: zod.array(zod.enum(["owner", "approver", "sender", "contact"])),
+      status: zod.string(),
+      nextAction: zod.enum(["prepare", "review", "send", "monitor", "external_handoff", "blocked"]),
+      testOnly: zod.boolean(),
+      workflowRevision: zod.number(),
+      warnings: zod.array(zod.string()),
+    }),
+  ),
+  nextCursor: zod.string().nullable(),
+});
+
+/**
+ * @summary Read one currently assigned offer and its original decision evidence
+ */
+export const GetEmployerOfferInboxItemParams = zod.object({
+  workflowId: zod.coerce.string(),
+});
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsEmployerNameMax = 200;
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsRoleTitleMax = 200;
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsAmountExclusiveMin = 0;
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLocationMax = 300;
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLetterMin = 10;
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLetterMax = 12000;
+
+export const getEmployerOfferInboxItemResponseOfferOneOfferOneProviderDeliveryEventsMax = 16;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsEmployerNameMax = 200;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsRoleTitleMax = 200;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsAmountExclusiveMin = 0;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLocationMax = 300;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLetterMin = 10;
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLetterMax = 12000;
+
+export const getEmployerOfferInboxItemResponseOfferOneHistoryItemProviderDeliveryEventsMax = 16;
+
+export const GetEmployerOfferInboxItemResponse = zod.object({
+  entry: zod.object({
+    workflowId: zod.string(),
+    jobId: zod.string(),
+    candidateId: zod.string(),
+    candidateName: zod.string(),
+    jobTitle: zod.string(),
+    employerName: zod.string(),
+    updatedAt: zod.string(),
+    mode: zod.enum(["native", "external"]),
+    roles: zod.array(zod.enum(["owner", "approver", "sender", "contact"])),
+    status: zod.string(),
+    nextAction: zod.enum(["prepare", "review", "send", "monitor", "external_handoff", "blocked"]),
+    testOnly: zod.boolean(),
+    workflowRevision: zod.number(),
+    warnings: zod.array(zod.string()),
+  }),
+  routing: zod.object({
+    recovery: zod.union([
+      zod.object({
+        canRecover: zod.boolean(),
+        unavailableRoles: zod.array(zod.enum(["owner", "approver", "sender"])),
+        blockers: zod.array(zod.string()),
+        resetsApproval: zod.boolean(),
+      }),
+      zod.null(),
+    ]),
+    configuration: zod.union([
+      zod.object({
+        mode: zod.enum(["native", "external"]),
+        ownerUserId: zod.string().nullable(),
+        approverUserId: zod.string().nullable(),
+        senderUserId: zod.string().nullable(),
+        externalSystem: zod.string().nullable(),
+        externalApplicationUrl: zod.string().nullable(),
+        configuredBy: zod.string(),
+        configuredAt: zod.string(),
+      }),
+      zod.null(),
+    ]),
+    workflowRevision: zod.number(),
+    canConfigure: zod.boolean(),
+    canManageTerms: zod.boolean(),
+    canApprove: zod.boolean(),
+    canSend: zod.boolean(),
+    canWithdraw: zod.boolean(),
+    ownerName: zod.string().nullable(),
+    approverName: zod.string().nullable(),
+    senderName: zod.string().nullable(),
+    handoffStatus: zod.enum([
+      "unconfigured",
+      "native",
+      "awaiting_hiring_decision",
+      "awaiting_employer",
+      "paused",
+    ]),
+    people: zod.array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+      }),
+    ),
+    packet: zod.union([
+      zod.object({
+        candidateName: zod.string(),
+        decision: zod.enum(["hire", "hold", "decline"]),
+        decisionBy: zod.string(),
+        decisionAt: zod.string(),
+        decisionReason: zod.string(),
+        testOnly: zod.boolean(),
+        evidence: zod.array(
+          zod.object({
+            label: zod.string(),
+            status: zod.string(),
+            evidence: zod.string().nullable(),
+          }),
+        ),
+      }),
+      zod.null(),
+    ]),
+  }),
+  offer: zod.union([
+    zod.object({
+      offer: zod.union([
+        zod.object({
+          id: zod.string(),
+          version: zod.number(),
+          status: zod.enum([
+            "draft",
+            "review_required",
+            "approved",
+            "sending",
+            "sent",
+            "accepted",
+            "declined",
+            "expired",
+            "withdrawn",
+            "send_uncertain",
+          ]),
+          terms: zod.object({
+            employerName: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsEmployerNameMax),
+            roleTitle: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsRoleTitleMax),
+            amount: zod
+              .number()
+              .gt(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsAmountExclusiveMin),
+            currency: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsCurrencyRegExp),
+            frequency: zod.enum(["hourly", "monthly", "annual"]),
+            location: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLocationMax),
+            startDate: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsStartDateRegExp),
+            expiresAt: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsExpiresAtRegExp),
+            letter: zod
+              .string()
+              .min(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLetterMin)
+              .max(getEmployerOfferInboxItemResponseOfferOneOfferOneTermsLetterMax),
+          }),
+          recipientEmail: zod.string(),
+          testOnly: zod.boolean(),
+          createdBy: zod.string(),
+          createdAt: zod.string(),
+          approvedBy: zod.string().optional(),
+          approvedAt: zod.string().optional(),
+          sentAt: zod.string().optional(),
+          deliveryStartedAt: zod.string().optional(),
+          deliveryReceiptId: zod.string().optional(),
+          deliveryAttemptId: zod.string().optional(),
+          providerDelivery: zod
+            .object({
+              provider: zod.enum(["ses"]),
+              messageId: zod.string(),
+              deliveryAttemptId: zod.string(),
+              status: zod.enum([
+                "accepted",
+                "delivered",
+                "delayed",
+                "bounced",
+                "rejected",
+                "complained",
+              ]),
+              occurredAt: zod.string(),
+              receivedAt: zod.string(),
+              events: zod
+                .array(
+                  zod.object({
+                    id: zod.string(),
+                    status: zod.enum([
+                      "accepted",
+                      "delivered",
+                      "delayed",
+                      "bounced",
+                      "rejected",
+                      "complained",
+                    ]),
+                    occurredAt: zod.string(),
+                  }),
+                )
+                .max(getEmployerOfferInboxItemResponseOfferOneOfferOneProviderDeliveryEventsMax),
+            })
+            .optional(),
+          deliveryReconciliation: zod
+            .object({
+              outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+              checkedAt: zod.string(),
+              checkedBy: zod.string(),
+              reason: zod.string(),
+              evidenceReference: zod.string().optional(),
+            })
+            .optional(),
+          respondedAt: zod.string().optional(),
+          responseReason: zod.string().optional(),
+        }),
+        zod.null(),
+      ]),
+      history: zod.array(
+        zod.object({
+          id: zod.string(),
+          version: zod.number(),
+          status: zod.enum([
+            "draft",
+            "review_required",
+            "approved",
+            "sending",
+            "sent",
+            "accepted",
+            "declined",
+            "expired",
+            "withdrawn",
+            "send_uncertain",
+          ]),
+          terms: zod.object({
+            employerName: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsEmployerNameMax),
+            roleTitle: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsRoleTitleMax),
+            amount: zod
+              .number()
+              .gt(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsAmountExclusiveMin),
+            currency: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsCurrencyRegExp),
+            frequency: zod.enum(["hourly", "monthly", "annual"]),
+            location: zod
+              .string()
+              .min(1)
+              .max(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLocationMax),
+            startDate: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsStartDateRegExp),
+            expiresAt: zod
+              .string()
+              .regex(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsExpiresAtRegExp),
+            letter: zod
+              .string()
+              .min(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLetterMin)
+              .max(getEmployerOfferInboxItemResponseOfferOneHistoryItemTermsLetterMax),
+          }),
+          recipientEmail: zod.string(),
+          testOnly: zod.boolean(),
+          createdBy: zod.string(),
+          createdAt: zod.string(),
+          approvedBy: zod.string().optional(),
+          approvedAt: zod.string().optional(),
+          sentAt: zod.string().optional(),
+          deliveryStartedAt: zod.string().optional(),
+          deliveryReceiptId: zod.string().optional(),
+          deliveryAttemptId: zod.string().optional(),
+          providerDelivery: zod
+            .object({
+              provider: zod.enum(["ses"]),
+              messageId: zod.string(),
+              deliveryAttemptId: zod.string(),
+              status: zod.enum([
+                "accepted",
+                "delivered",
+                "delayed",
+                "bounced",
+                "rejected",
+                "complained",
+              ]),
+              occurredAt: zod.string(),
+              receivedAt: zod.string(),
+              events: zod
+                .array(
+                  zod.object({
+                    id: zod.string(),
+                    status: zod.enum([
+                      "accepted",
+                      "delivered",
+                      "delayed",
+                      "bounced",
+                      "rejected",
+                      "complained",
+                    ]),
+                    occurredAt: zod.string(),
+                  }),
+                )
+                .max(getEmployerOfferInboxItemResponseOfferOneHistoryItemProviderDeliveryEventsMax),
+            })
+            .optional(),
+          deliveryReconciliation: zod
+            .object({
+              outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+              checkedAt: zod.string(),
+              checkedBy: zod.string(),
+              reason: zod.string(),
+              evidenceReference: zod.string().optional(),
+            })
+            .optional(),
+          respondedAt: zod.string().optional(),
+          responseReason: zod.string().optional(),
+        }),
+      ),
+      canEdit: zod.boolean(),
+      canApprove: zod.boolean(),
+      canSend: zod.boolean(),
+      canWithdraw: zod.boolean(),
+      canReconcile: zod.boolean().optional(),
+      eligible: zod.boolean(),
+      reason: zod.string().nullable(),
+      workflowRevision: zod.number(),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const GetCandidateOfferRoutingParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateOfferRoutingResponse = zod.object({
+  recovery: zod.union([
+    zod.object({
+      canRecover: zod.boolean(),
+      unavailableRoles: zod.array(zod.enum(["owner", "approver", "sender"])),
+      blockers: zod.array(zod.string()),
+      resetsApproval: zod.boolean(),
+    }),
+    zod.null(),
+  ]),
+  configuration: zod.union([
+    zod.object({
+      mode: zod.enum(["native", "external"]),
+      ownerUserId: zod.string().nullable(),
+      approverUserId: zod.string().nullable(),
+      senderUserId: zod.string().nullable(),
+      externalSystem: zod.string().nullable(),
+      externalApplicationUrl: zod.string().nullable(),
+      configuredBy: zod.string(),
+      configuredAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  workflowRevision: zod.number(),
+  canConfigure: zod.boolean(),
+  canManageTerms: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSend: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  ownerName: zod.string().nullable(),
+  approverName: zod.string().nullable(),
+  senderName: zod.string().nullable(),
+  handoffStatus: zod.enum([
+    "unconfigured",
+    "native",
+    "awaiting_hiring_decision",
+    "awaiting_employer",
+    "paused",
+  ]),
+  people: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  packet: zod.union([
+    zod.object({
+      candidateName: zod.string(),
+      decision: zod.enum(["hire", "hold", "decline"]),
+      decisionBy: zod.string(),
+      decisionAt: zod.string(),
+      decisionReason: zod.string(),
+      testOnly: zod.boolean(),
+      evidence: zod.array(
+        zod.object({
+          label: zod.string(),
+          status: zod.string(),
+          evidence: zod.string().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const ConfigureCandidateOfferRoutingParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const configureCandidateOfferRoutingBodyIdempotencyKeyMax = 128;
+
+export const configureCandidateOfferRoutingBodyExpectedRevisionMin = 0;
+
+export const configureCandidateOfferRoutingBodyReasonMin = 10;
+export const configureCandidateOfferRoutingBodyReasonMax = 4000;
+
+export const configureCandidateOfferRoutingBodyExternalSystemMax = 160;
+
+export const configureCandidateOfferRoutingBodyExternalApplicationUrlMax = 2000;
+
+export const ConfigureCandidateOfferRoutingBody = zod.object({
+  idempotencyKey: zod.string().min(1).max(configureCandidateOfferRoutingBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(configureCandidateOfferRoutingBodyExpectedRevisionMin),
+  reason: zod
+    .string()
+    .min(configureCandidateOfferRoutingBodyReasonMin)
+    .max(configureCandidateOfferRoutingBodyReasonMax),
+  mode: zod.enum(["native", "external"]),
+  ownerUserId: zod.string().nullish(),
+  approverUserId: zod.string().nullish(),
+  senderUserId: zod.string().nullish(),
+  externalSystem: zod.string().max(configureCandidateOfferRoutingBodyExternalSystemMax).nullish(),
+  externalApplicationUrl: zod
+    .string()
+    .max(configureCandidateOfferRoutingBodyExternalApplicationUrlMax)
+    .nullish(),
+  acknowledgeExistingOffer: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Explicitly adopt a legacy native offer without changing delivered terms; any unsent approval is reset for fresh review.",
+    ),
+  acknowledgeOwnershipRecovery: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Explicit employer-admin recovery of unavailable native assignees only. Unsent review\/approval is reset; delivered terms and responses stay unchanged. Never permits in-flight or uncertain delivery recovery.",
+    ),
+});
+
+export const ConfigureCandidateOfferRoutingResponse = zod.object({
+  recovery: zod.union([
+    zod.object({
+      canRecover: zod.boolean(),
+      unavailableRoles: zod.array(zod.enum(["owner", "approver", "sender"])),
+      blockers: zod.array(zod.string()),
+      resetsApproval: zod.boolean(),
+    }),
+    zod.null(),
+  ]),
+  configuration: zod.union([
+    zod.object({
+      mode: zod.enum(["native", "external"]),
+      ownerUserId: zod.string().nullable(),
+      approverUserId: zod.string().nullable(),
+      senderUserId: zod.string().nullable(),
+      externalSystem: zod.string().nullable(),
+      externalApplicationUrl: zod.string().nullable(),
+      configuredBy: zod.string(),
+      configuredAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  workflowRevision: zod.number(),
+  canConfigure: zod.boolean(),
+  canManageTerms: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSend: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  ownerName: zod.string().nullable(),
+  approverName: zod.string().nullable(),
+  senderName: zod.string().nullable(),
+  handoffStatus: zod.enum([
+    "unconfigured",
+    "native",
+    "awaiting_hiring_decision",
+    "awaiting_employer",
+    "paused",
+  ]),
+  people: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  packet: zod.union([
+    zod.object({
+      candidateName: zod.string(),
+      decision: zod.enum(["hire", "hold", "decline"]),
+      decisionBy: zod.string(),
+      decisionAt: zod.string(),
+      decisionReason: zod.string(),
+      testOnly: zod.boolean(),
+      evidence: zod.array(
+        zod.object({
+          label: zod.string(),
+          status: zod.string(),
+          evidence: zod.string().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const GetCandidateAtsHandoffParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsHandoffResponse = zod.object({
+  connectionState: zod.enum(["not_connected"]),
+  workflowRevision: zod.number(),
+  canManage: zod.boolean(),
+  ready: zod.boolean(),
+  blockers: zod.array(zod.string()),
+  mapping: zod.union([
+    zod.object({
+      system: zod.string(),
+      accountRef: zod.string(),
+      externalJobId: zod.string(),
+      externalCandidateId: zod.string(),
+      externalApplicationId: zod.string(),
+      mappedBy: zod.string(),
+      mappedAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  packet: zod.union([
+    zod.object({
+      id: zod.string(),
+      snapshotHash: zod.string(),
+      content: zod.object({
+        schemaVersion: zod.literal(1),
+        connectionState: zod.enum(["not_connected"]),
+        offerOwner: zod.enum(["external_employer"]),
+        workflowId: zod.string(),
+        journeyVersion: zod.number(),
+        briefHash: zod.string(),
+        job: zod.object({
+          id: zod.string(),
+          title: zod.string(),
+        }),
+        candidate: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+        }),
+        mapping: zod.object({
+          system: zod.string(),
+          accountRef: zod.string(),
+          externalJobId: zod.string(),
+          externalCandidateId: zod.string(),
+          externalApplicationId: zod.string(),
+          mappedBy: zod.string(),
+          mappedAt: zod.string(),
+        }),
+        decision: zod.object({
+          outcome: zod.enum(["hire", "hold", "decline"]),
+          actorId: zod.string(),
+          actorName: zod.string(),
+          decidedAt: zod.string(),
+          reason: zod.string(),
+          testOnly: zod.boolean(),
+          correctionReason: zod.string().optional(),
+          supersedesDecidedAt: zod.string().optional(),
+          offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+        }),
+        steps: zod.array(
+          zod.object({
+            key: zod.string(),
+            label: zod.string(),
+            status: zod.string(),
+          }),
+        ),
+        assessments: zod.array(
+          zod.object({
+            stepKey: zod.string(),
+            sourceType: zod.string(),
+            sourceId: zod.string(),
+            occurredAt: zod.string(),
+            summary: zod.string(),
+            attentionRequired: zod.boolean(),
+            scope: zod.string(),
+          }),
+        ),
+        cautions: zod.array(zod.string()),
+      }),
+      preparedBy: zod.string(),
+      preparedAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      exportedBy: zod.string().optional(),
+      exportedAt: zod.string().optional(),
+      handoffReceipt: zod
+        .object({
+          recordedBy: zod.string(),
+          recordedAt: zod.string(),
+          evidenceReference: zod.string(),
+          verification: zod.enum(["human_reported_only"]),
+        })
+        .optional(),
+    }),
+    zod.null(),
+  ]),
+  stale: zod.boolean(),
+  exportPacket: zod
+    .object({
+      id: zod.string(),
+      snapshotHash: zod.string(),
+      content: zod.object({
+        schemaVersion: zod.literal(1),
+        connectionState: zod.enum(["not_connected"]),
+        offerOwner: zod.enum(["external_employer"]),
+        workflowId: zod.string(),
+        journeyVersion: zod.number(),
+        briefHash: zod.string(),
+        job: zod.object({
+          id: zod.string(),
+          title: zod.string(),
+        }),
+        candidate: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+        }),
+        mapping: zod.object({
+          system: zod.string(),
+          accountRef: zod.string(),
+          externalJobId: zod.string(),
+          externalCandidateId: zod.string(),
+          externalApplicationId: zod.string(),
+          mappedBy: zod.string(),
+          mappedAt: zod.string(),
+        }),
+        decision: zod.object({
+          outcome: zod.enum(["hire", "hold", "decline"]),
+          actorId: zod.string(),
+          actorName: zod.string(),
+          decidedAt: zod.string(),
+          reason: zod.string(),
+          testOnly: zod.boolean(),
+          correctionReason: zod.string().optional(),
+          supersedesDecidedAt: zod.string().optional(),
+          offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+        }),
+        steps: zod.array(
+          zod.object({
+            key: zod.string(),
+            label: zod.string(),
+            status: zod.string(),
+          }),
+        ),
+        assessments: zod.array(
+          zod.object({
+            stepKey: zod.string(),
+            sourceType: zod.string(),
+            sourceId: zod.string(),
+            occurredAt: zod.string(),
+            summary: zod.string(),
+            attentionRequired: zod.boolean(),
+            scope: zod.string(),
+          }),
+        ),
+        cautions: zod.array(zod.string()),
+      }),
+      preparedBy: zod.string(),
+      preparedAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      exportedBy: zod.string().optional(),
+      exportedAt: zod.string().optional(),
+      handoffReceipt: zod
+        .object({
+          recordedBy: zod.string(),
+          recordedAt: zod.string(),
+          evidenceReference: zod.string(),
+          verification: zod.enum(["human_reported_only"]),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+export const ControlCandidateAtsHandoffParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsHandoffBodyEvidenceReferenceMin = 3;
+export const controlCandidateAtsHandoffBodyEvidenceReferenceMax = 120;
+
+export const controlCandidateAtsHandoffBodyEvidenceReferenceRegExp = new RegExp(
+  "^[A-Za-z0-9_.:-]+$",
+);
+export const controlCandidateAtsHandoffBodyIdempotencyKeyMax = 128;
+
+export const controlCandidateAtsHandoffBodyExpectedRevisionMin = 0;
+
+export const controlCandidateAtsHandoffBodyPacketIdMax = 128;
+
+export const controlCandidateAtsHandoffBodySnapshotHashMax = 128;
+
+export const controlCandidateAtsHandoffBodyMappingAccountRefMax = 128;
+
+export const controlCandidateAtsHandoffBodyMappingExternalJobIdMax = 128;
+
+export const controlCandidateAtsHandoffBodyMappingExternalCandidateIdMax = 128;
+
+export const controlCandidateAtsHandoffBodyMappingExternalApplicationIdMax = 128;
+
+export const ControlCandidateAtsHandoffBody = zod.object({
+  action: zod.enum([
+    "save_mapping",
+    "clear_mapping",
+    "prepare",
+    "approve",
+    "export",
+    "record_handoff",
+  ]),
+  evidenceReference: zod
+    .string()
+    .min(controlCandidateAtsHandoffBodyEvidenceReferenceMin)
+    .max(controlCandidateAtsHandoffBodyEvidenceReferenceMax)
+    .regex(controlCandidateAtsHandoffBodyEvidenceReferenceRegExp)
+    .optional(),
+  idempotencyKey: zod.string().min(1).max(controlCandidateAtsHandoffBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(controlCandidateAtsHandoffBodyExpectedRevisionMin),
+  packetId: zod.string().max(controlCandidateAtsHandoffBodyPacketIdMax).optional(),
+  snapshotHash: zod.string().max(controlCandidateAtsHandoffBodySnapshotHashMax).optional(),
+  acknowledgeReview: zod.boolean().optional(),
+  mapping: zod
+    .object({
+      accountRef: zod.string().min(1).max(controlCandidateAtsHandoffBodyMappingAccountRefMax),
+      externalJobId: zod.string().min(1).max(controlCandidateAtsHandoffBodyMappingExternalJobIdMax),
+      externalCandidateId: zod
+        .string()
+        .min(1)
+        .max(controlCandidateAtsHandoffBodyMappingExternalCandidateIdMax),
+      externalApplicationId: zod
+        .string()
+        .min(1)
+        .max(controlCandidateAtsHandoffBodyMappingExternalApplicationIdMax),
+    })
+    .optional(),
+});
+
+export const ControlCandidateAtsHandoffResponse = zod.object({
+  connectionState: zod.enum(["not_connected"]),
+  workflowRevision: zod.number(),
+  canManage: zod.boolean(),
+  ready: zod.boolean(),
+  blockers: zod.array(zod.string()),
+  mapping: zod.union([
+    zod.object({
+      system: zod.string(),
+      accountRef: zod.string(),
+      externalJobId: zod.string(),
+      externalCandidateId: zod.string(),
+      externalApplicationId: zod.string(),
+      mappedBy: zod.string(),
+      mappedAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  packet: zod.union([
+    zod.object({
+      id: zod.string(),
+      snapshotHash: zod.string(),
+      content: zod.object({
+        schemaVersion: zod.literal(1),
+        connectionState: zod.enum(["not_connected"]),
+        offerOwner: zod.enum(["external_employer"]),
+        workflowId: zod.string(),
+        journeyVersion: zod.number(),
+        briefHash: zod.string(),
+        job: zod.object({
+          id: zod.string(),
+          title: zod.string(),
+        }),
+        candidate: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+        }),
+        mapping: zod.object({
+          system: zod.string(),
+          accountRef: zod.string(),
+          externalJobId: zod.string(),
+          externalCandidateId: zod.string(),
+          externalApplicationId: zod.string(),
+          mappedBy: zod.string(),
+          mappedAt: zod.string(),
+        }),
+        decision: zod.object({
+          outcome: zod.enum(["hire", "hold", "decline"]),
+          actorId: zod.string(),
+          actorName: zod.string(),
+          decidedAt: zod.string(),
+          reason: zod.string(),
+          testOnly: zod.boolean(),
+          correctionReason: zod.string().optional(),
+          supersedesDecidedAt: zod.string().optional(),
+          offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+        }),
+        steps: zod.array(
+          zod.object({
+            key: zod.string(),
+            label: zod.string(),
+            status: zod.string(),
+          }),
+        ),
+        assessments: zod.array(
+          zod.object({
+            stepKey: zod.string(),
+            sourceType: zod.string(),
+            sourceId: zod.string(),
+            occurredAt: zod.string(),
+            summary: zod.string(),
+            attentionRequired: zod.boolean(),
+            scope: zod.string(),
+          }),
+        ),
+        cautions: zod.array(zod.string()),
+      }),
+      preparedBy: zod.string(),
+      preparedAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      exportedBy: zod.string().optional(),
+      exportedAt: zod.string().optional(),
+      handoffReceipt: zod
+        .object({
+          recordedBy: zod.string(),
+          recordedAt: zod.string(),
+          evidenceReference: zod.string(),
+          verification: zod.enum(["human_reported_only"]),
+        })
+        .optional(),
+    }),
+    zod.null(),
+  ]),
+  stale: zod.boolean(),
+  exportPacket: zod
+    .object({
+      id: zod.string(),
+      snapshotHash: zod.string(),
+      content: zod.object({
+        schemaVersion: zod.literal(1),
+        connectionState: zod.enum(["not_connected"]),
+        offerOwner: zod.enum(["external_employer"]),
+        workflowId: zod.string(),
+        journeyVersion: zod.number(),
+        briefHash: zod.string(),
+        job: zod.object({
+          id: zod.string(),
+          title: zod.string(),
+        }),
+        candidate: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+        }),
+        mapping: zod.object({
+          system: zod.string(),
+          accountRef: zod.string(),
+          externalJobId: zod.string(),
+          externalCandidateId: zod.string(),
+          externalApplicationId: zod.string(),
+          mappedBy: zod.string(),
+          mappedAt: zod.string(),
+        }),
+        decision: zod.object({
+          outcome: zod.enum(["hire", "hold", "decline"]),
+          actorId: zod.string(),
+          actorName: zod.string(),
+          decidedAt: zod.string(),
+          reason: zod.string(),
+          testOnly: zod.boolean(),
+          correctionReason: zod.string().optional(),
+          supersedesDecidedAt: zod.string().optional(),
+          offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+        }),
+        steps: zod.array(
+          zod.object({
+            key: zod.string(),
+            label: zod.string(),
+            status: zod.string(),
+          }),
+        ),
+        assessments: zod.array(
+          zod.object({
+            stepKey: zod.string(),
+            sourceType: zod.string(),
+            sourceId: zod.string(),
+            occurredAt: zod.string(),
+            summary: zod.string(),
+            attentionRequired: zod.boolean(),
+            scope: zod.string(),
+          }),
+        ),
+        cautions: zod.array(zod.string()),
+      }),
+      preparedBy: zod.string(),
+      preparedAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      exportedBy: zod.string().optional(),
+      exportedAt: zod.string().optional(),
+      handoffReceipt: zod
+        .object({
+          recordedBy: zod.string(),
+          recordedAt: zod.string(),
+          evidenceReference: zod.string(),
+          verification: zod.enum(["human_reported_only"]),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+export const RefreshCandidateAtsImportParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const refreshCandidateAtsImportBodyExpectedWorkflowRevisionMin = 0;
+
+export const refreshCandidateAtsImportBodyExpectedRecordRevisionMin = 0;
+
+export const refreshCandidateAtsImportBodyIdempotencyKeyMax = 128;
+
+export const RefreshCandidateAtsImportBody = zod.object({
+  expectedBindingRevision: zod.number().min(1),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(refreshCandidateAtsImportBodyExpectedWorkflowRevisionMin),
+  expectedRecordRevision: zod.number().min(refreshCandidateAtsImportBodyExpectedRecordRevisionMin),
+  idempotencyKey: zod.string().min(1).max(refreshCandidateAtsImportBodyIdempotencyKeyMax),
+});
+
+export const RefreshCandidateAtsImportResponse = zod.object({
+  record: zod.object({
+    id: zod.string(),
+    job: zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      status: zod.string(),
+    }),
+    application: zod.object({
+      id: zod.string(),
+      candidateId: zod.string(),
+      status: zod.string(),
+      stageName: zod.string().nullable(),
+    }),
+    importedAt: zod.string(),
+    observedAt: zod.string(),
+    refreshRevision: zod.number(),
+    lastCheckedAt: zod.string().nullable(),
+    availability: zod.enum(["unchecked", "available", "unavailable"]),
+  }),
+  history: zod.array(
+    zod.object({
+      revision: zod.number(),
+      checkedAt: zod.string(),
+      availability: zod.enum(["unchecked", "available", "unavailable"]),
+      job: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        status: zod.string(),
+      }),
+      application: zod.union([
+        zod.object({
+          id: zod.string(),
+          candidateId: zod.string(),
+          status: zod.string(),
+          stageName: zod.string().nullable(),
+        }),
+        zod.null(),
+      ]),
+    }),
+  ),
+  truncated: zod.boolean(),
+});
+
+export const GetCandidateAtsImportHistoryParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsImportHistoryResponse = zod.object({
+  record: zod.object({
+    id: zod.string(),
+    job: zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      status: zod.string(),
+    }),
+    application: zod.object({
+      id: zod.string(),
+      candidateId: zod.string(),
+      status: zod.string(),
+      stageName: zod.string().nullable(),
+    }),
+    importedAt: zod.string(),
+    observedAt: zod.string(),
+    refreshRevision: zod.number(),
+    lastCheckedAt: zod.string().nullable(),
+    availability: zod.enum(["unchecked", "available", "unavailable"]),
+  }),
+  history: zod.array(
+    zod.object({
+      revision: zod.number(),
+      checkedAt: zod.string(),
+      availability: zod.enum(["unchecked", "available", "unavailable"]),
+      job: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        status: zod.string(),
+      }),
+      application: zod.union([
+        zod.object({
+          id: zod.string(),
+          candidateId: zod.string(),
+          status: zod.string(),
+          stageName: zod.string().nullable(),
+        }),
+        zod.null(),
+      ]),
+    }),
+  ),
+  truncated: zod.boolean(),
+});
+
+export const GetCandidateAtsStageOwnershipParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsStageOwnershipResponse = zod.object({
+  status: zod.enum(["native", "external"]),
+  ownershipRevision: zod.number(),
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number().nullable(),
+  ownerWorkflowId: zod.string().nullable(),
+  declaredAt: zod.string().nullable(),
+  canClaim: zod.boolean(),
+  canRelease: zod.boolean(),
+});
+
+export const ControlCandidateAtsStageOwnershipParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsStageOwnershipBodyExpectedWorkflowRevisionMin = 0;
+
+export const controlCandidateAtsStageOwnershipBodyExpectedOwnershipRevisionMin = 0;
+
+export const controlCandidateAtsStageOwnershipBodyExpectedBindingRevisionMin = 0;
+
+export const controlCandidateAtsStageOwnershipBodyIdempotencyKeyMax = 128;
+
+export const controlCandidateAtsStageOwnershipBodyReasonMin = 10;
+export const controlCandidateAtsStageOwnershipBodyReasonMax = 500;
+
+export const ControlCandidateAtsStageOwnershipBody = zod.object({
+  action: zod.enum(["claim", "release"]),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(controlCandidateAtsStageOwnershipBodyExpectedWorkflowRevisionMin),
+  expectedOwnershipRevision: zod
+    .number()
+    .min(controlCandidateAtsStageOwnershipBodyExpectedOwnershipRevisionMin),
+  expectedBindingRevision: zod
+    .number()
+    .min(controlCandidateAtsStageOwnershipBodyExpectedBindingRevisionMin),
+  idempotencyKey: zod.string().min(1).max(controlCandidateAtsStageOwnershipBodyIdempotencyKeyMax),
+  acknowledge: zod.boolean(),
+  reason: zod
+    .string()
+    .min(controlCandidateAtsStageOwnershipBodyReasonMin)
+    .max(controlCandidateAtsStageOwnershipBodyReasonMax),
+});
+
+export const ControlCandidateAtsStageOwnershipResponse = zod.object({
+  status: zod.enum(["native", "external"]),
+  ownershipRevision: zod.number(),
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number().nullable(),
+  ownerWorkflowId: zod.string().nullable(),
+  declaredAt: zod.string().nullable(),
+  canClaim: zod.boolean(),
+  canRelease: zod.boolean(),
+});
+
+export const GetCandidateAtsRefreshScheduleParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsRefreshScheduleResponse = zod.object({
+  schedule: zod.union([
+    zod.object({
+      revision: zod.number(),
+      status: zod.enum(["enabled", "paused"]),
+      recordIds: zod.array(zod.string()),
+      intervalMinutes: zod.number(),
+      nextRunAt: zod.string().nullable(),
+      updatedAt: zod.string(),
+      blockedReason: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  runs: zod.array(
+    zod.object({
+      id: zod.string(),
+      status: zod.enum(["running", "completed", "stopped", "interrupted"]),
+      startedAt: zod.string(),
+      finishedAt: zod.string().nullable(),
+      message: zod.string().nullable(),
+      items: zod.array(
+        zod.object({
+          recordId: zod.string(),
+          expectedRevision: zod.number(),
+          status: zod.enum([
+            "pending",
+            "checking",
+            "available",
+            "unavailable",
+            "unconfirmed",
+            "not_started",
+          ]),
+          checkedAt: zod.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const ControlCandidateAtsRefreshScheduleParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsRefreshScheduleBodyExpectedScheduleRevisionMin = 0;
+
+export const controlCandidateAtsRefreshScheduleBodyExpectedWorkflowRevisionMin = 0;
+
+export const controlCandidateAtsRefreshScheduleBodyExpectedBindingRevisionMin = 0;
+
+export const controlCandidateAtsRefreshScheduleBodyRecordIdsMax = 10;
+
+export const ControlCandidateAtsRefreshScheduleBody = zod.object({
+  action: zod.enum(["enable", "pause"]),
+  expectedScheduleRevision: zod
+    .number()
+    .min(controlCandidateAtsRefreshScheduleBodyExpectedScheduleRevisionMin),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(controlCandidateAtsRefreshScheduleBodyExpectedWorkflowRevisionMin),
+  expectedBindingRevision: zod
+    .number()
+    .min(controlCandidateAtsRefreshScheduleBodyExpectedBindingRevisionMin),
+  recordIds: zod
+    .array(zod.string().min(1))
+    .min(1)
+    .max(controlCandidateAtsRefreshScheduleBodyRecordIdsMax)
+    .optional(),
+  intervalMinutes: zod.union([zod.literal(60), zod.literal(360), zod.literal(1440)]).optional(),
+  acknowledgeReadOnly: zod.boolean().optional(),
+});
+
+export const ControlCandidateAtsRefreshScheduleResponse = zod.object({
+  schedule: zod.union([
+    zod.object({
+      revision: zod.number(),
+      status: zod.enum(["enabled", "paused"]),
+      recordIds: zod.array(zod.string()),
+      intervalMinutes: zod.number(),
+      nextRunAt: zod.string().nullable(),
+      updatedAt: zod.string(),
+      blockedReason: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  runs: zod.array(
+    zod.object({
+      id: zod.string(),
+      status: zod.enum(["running", "completed", "stopped", "interrupted"]),
+      startedAt: zod.string(),
+      finishedAt: zod.string().nullable(),
+      message: zod.string().nullable(),
+      items: zod.array(
+        zod.object({
+          recordId: zod.string(),
+          expectedRevision: zod.number(),
+          status: zod.enum([
+            "pending",
+            "checking",
+            "available",
+            "unavailable",
+            "unconfirmed",
+            "not_started",
+          ]),
+          checkedAt: zod.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const GetCandidateAtsImportsParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsImportsResponse = zod.object({
+  records: zod.array(
+    zod.object({
+      id: zod.string(),
+      job: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        status: zod.string(),
+      }),
+      application: zod.object({
+        id: zod.string(),
+        candidateId: zod.string(),
+        status: zod.string(),
+        stageName: zod.string().nullable(),
+      }),
+      importedAt: zod.string(),
+      observedAt: zod.string(),
+      refreshRevision: zod.number(),
+      lastCheckedAt: zod.string().nullable(),
+      availability: zod.enum(["unchecked", "available", "unavailable"]),
+    }),
+  ),
+  truncated: zod.boolean(),
+  importedCount: zod.number(),
+  existingCount: zod.number(),
+});
+
+export const ImportCandidateAtsRecordsParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const importCandidateAtsRecordsBodyExpectedWorkflowRevisionMin = 0;
+
+export const importCandidateAtsRecordsBodyPreviewTokenMax = 16000;
+
+export const importCandidateAtsRecordsBodyApplicationIdsItemMax = 16;
+
+export const importCandidateAtsRecordsBodyApplicationIdsItemRegExp = new RegExp("^[1-9][0-9]\*$");
+export const importCandidateAtsRecordsBodyApplicationIdsMax = 10;
+
+export const ImportCandidateAtsRecordsBody = zod.object({
+  expectedBindingRevision: zod.number().min(1),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(importCandidateAtsRecordsBodyExpectedWorkflowRevisionMin),
+  previewToken: zod.string().min(1).max(importCandidateAtsRecordsBodyPreviewTokenMax),
+  applicationIds: zod
+    .array(
+      zod
+        .string()
+        .max(importCandidateAtsRecordsBodyApplicationIdsItemMax)
+        .regex(importCandidateAtsRecordsBodyApplicationIdsItemRegExp),
+    )
+    .min(1)
+    .max(importCandidateAtsRecordsBodyApplicationIdsMax),
+  acknowledgeMetadataOnly: zod.boolean(),
+});
+
+export const ImportCandidateAtsRecordsResponse = zod.object({
+  records: zod.array(
+    zod.object({
+      id: zod.string(),
+      job: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        status: zod.string(),
+      }),
+      application: zod.object({
+        id: zod.string(),
+        candidateId: zod.string(),
+        status: zod.string(),
+        stageName: zod.string().nullable(),
+      }),
+      importedAt: zod.string(),
+      observedAt: zod.string(),
+      refreshRevision: zod.number(),
+      lastCheckedAt: zod.string().nullable(),
+      availability: zod.enum(["unchecked", "available", "unavailable"]),
+    }),
+  ),
+  truncated: zod.boolean(),
+  importedCount: zod.number(),
+  existingCount: zod.number(),
+});
+
+export const GetCandidateAtsProfileParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsProfileResponse = zod.object({
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number(),
+  importRevision: zod.number(),
+  canImport: zod.boolean(),
+  candidateId: zod.string().nullable(),
+  importedAt: zod.date().nullable(),
+});
+
+export const ControlCandidateAtsProfileParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsProfileBodyExpectedWorkflowRevisionMin = 0;
+
+export const controlCandidateAtsProfileBodyExpectedBindingRevisionMin = 0;
+
+export const controlCandidateAtsProfileBodyExpectedImportRevisionMin = 0;
+
+export const controlCandidateAtsProfileBodyIdempotencyKeyMax = 128;
+
+export const controlCandidateAtsProfileBodyPreviewTokenMax = 24000;
+
+export const controlCandidateAtsProfileBodyEmailMax = 320;
+
+export const controlCandidateAtsProfileBodyExistingCandidateIdMax = 128;
+
+export const ControlCandidateAtsProfileBody = zod.object({
+  action: zod.enum(["preview", "import"]),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(controlCandidateAtsProfileBodyExpectedWorkflowRevisionMin),
+  expectedBindingRevision: zod
+    .number()
+    .min(controlCandidateAtsProfileBodyExpectedBindingRevisionMin),
+  expectedImportRevision: zod.number().min(controlCandidateAtsProfileBodyExpectedImportRevisionMin),
+  idempotencyKey: zod.string().min(1).max(controlCandidateAtsProfileBodyIdempotencyKeyMax),
+  acknowledge: zod.boolean(),
+  includeProfessional: zod.boolean(),
+  previewToken: zod.string().min(1).max(controlCandidateAtsProfileBodyPreviewTokenMax).optional(),
+  email: zod.string().email().max(controlCandidateAtsProfileBodyEmailMax).optional(),
+  existingCandidateId: zod
+    .string()
+    .min(1)
+    .max(controlCandidateAtsProfileBodyExistingCandidateIdMax)
+    .optional(),
+});
+
+export const ControlCandidateAtsProfileResponse = zod.object({
+  state: zod.object({
+    workflowRevision: zod.number(),
+    bindingRevision: zod.number(),
+    importRevision: zod.number(),
+    canImport: zod.boolean(),
+    candidateId: zod.string().nullable(),
+    importedAt: zod.date().nullable(),
+  }),
+  preview: zod
+    .object({
+      token: zod.string(),
+      expiresAt: zod.date(),
+      firstName: zod.string(),
+      lastName: zod.string(),
+      emails: zod.array(zod.string()),
+      currentTitle: zod.string().nullable(),
+      currentCompany: zod.string().nullable(),
+      includeProfessional: zod.boolean(),
+      matches: zod.array(
+        zod.object({
+          email: zod.string(),
+          candidateId: zod.string(),
+          firstName: zod.string(),
+          lastName: zod.string(),
+        }),
+      ),
+    })
+    .optional(),
+  outcome: zod.enum(["created", "linked", "already_imported"]).optional(),
+});
+
+export const GetCandidateAtsInterviewParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsInterviewResponse = zod.object({
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number(),
+  importRevision: zod.number(),
+  canPrepare: zod.boolean(),
+  plans: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      language: zod.string(),
+      questionCount: zod.number().min(1),
+      approvalHash: zod.string(),
+    }),
+  ),
+  session: zod.union([
+    zod.object({
+      id: zod.string(),
+      status: zod.string(),
+      roomUrl: zod.string(),
+      preparedFromThisImport: zod.boolean(),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const PrepareCandidateAtsInterviewParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const prepareCandidateAtsInterviewBodyPlanIdMax = 128;
+
+export const prepareCandidateAtsInterviewBodyExpectedPlanHashRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareCandidateAtsInterviewBodyExpectedWorkflowRevisionMin = 0;
+
+export const prepareCandidateAtsInterviewBodyExpectedBindingRevisionMin = 0;
+
+export const prepareCandidateAtsInterviewBodyExpectedImportRevisionMin = 0;
+
+export const PrepareCandidateAtsInterviewBody = zod.object({
+  planId: zod.string().min(1).max(prepareCandidateAtsInterviewBodyPlanIdMax),
+  expectedPlanHash: zod.string().regex(prepareCandidateAtsInterviewBodyExpectedPlanHashRegExp),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(prepareCandidateAtsInterviewBodyExpectedWorkflowRevisionMin),
+  expectedBindingRevision: zod
+    .number()
+    .min(prepareCandidateAtsInterviewBodyExpectedBindingRevisionMin),
+  expectedImportRevision: zod
+    .number()
+    .min(prepareCandidateAtsInterviewBodyExpectedImportRevisionMin),
+  acknowledge: zod.boolean(),
+});
+
+export const PrepareCandidateAtsInterviewResponse = zod.object({
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number(),
+  importRevision: zod.number(),
+  canPrepare: zod.boolean(),
+  plans: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      language: zod.string(),
+      questionCount: zod.number().min(1),
+      approvalHash: zod.string(),
+    }),
+  ),
+  session: zod.union([
+    zod.object({
+      id: zod.string(),
+      status: zod.string(),
+      roomUrl: zod.string(),
+      preparedFromThisImport: zod.boolean(),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const GetCandidateAtsInterviewInvitationParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsInterviewInvitationResponse = zod.object({
+  sessionId: zod.string(),
+  recipient: zod.string(),
+  subject: zod.string(),
+  text: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum([
+    "not_sent",
+    "provider_accepted",
+    "review_required",
+    "simulated",
+    "previously_sent",
+  ]),
+  canSend: zod.boolean(),
+});
+
+export const SendCandidateAtsInterviewInvitationParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const sendCandidateAtsInterviewInvitationBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const SendCandidateAtsInterviewInvitationBody = zod.object({
+  reviewHash: zod.string().regex(sendCandidateAtsInterviewInvitationBodyReviewHashRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const SendCandidateAtsInterviewInvitationResponse = zod.object({
+  sessionId: zod.string(),
+  recipient: zod.string(),
+  subject: zod.string(),
+  text: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum([
+    "not_sent",
+    "provider_accepted",
+    "review_required",
+    "simulated",
+    "previously_sent",
+  ]),
+  canSend: zod.boolean(),
+});
+
+export const GetCandidateAtsInterviewNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+  mode: zod.enum(["progress", "assessment"]),
+});
+
+export const GetCandidateAtsInterviewNoteResponse = zod.object({
+  mode: zod.enum(["progress", "assessment"]),
+  title: zod.string(),
+  content: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["not_published", "published", "review_required"]),
+  canPublish: zod.boolean(),
+  reason: zod.string().nullable(),
+  noteId: zod.string().nullable(),
+});
+
+export const PublishCandidateAtsInterviewNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const publishCandidateAtsInterviewNoteBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const PublishCandidateAtsInterviewNoteBody = zod.object({
+  mode: zod.enum(["progress", "assessment"]),
+  reviewHash: zod.string().regex(publishCandidateAtsInterviewNoteBodyReviewHashRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const PublishCandidateAtsInterviewNoteResponse = zod.object({
+  mode: zod.enum(["progress", "assessment"]),
+  title: zod.string(),
+  content: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["not_published", "published", "review_required"]),
+  canPublish: zod.boolean(),
+  reason: zod.string().nullable(),
+  noteId: zod.string().nullable(),
+});
+
+export const GetCandidateAtsNoteRecoveryParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsNoteRecoveryResponseItem = zod.object({
+  receiptId: zod.string(),
+  reviewHash: zod.string(),
+  mode: zod.enum(["progress", "assessment", "unknown"]),
+  claimedAt: zod.string(),
+  status: zod.enum(["held", "published", "verified_existing"]),
+  noteId: zod.string().nullable(),
+  canVerify: zod.boolean(),
+  reason: zod.string().nullable(),
+});
+export const GetCandidateAtsNoteRecoveryResponse = zod.array(
+  GetCandidateAtsNoteRecoveryResponseItem,
+);
+
+export const ReconcileCandidateAtsNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const reconcileCandidateAtsNoteBodyReceiptIdMax = 128;
+
+export const reconcileCandidateAtsNoteBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+export const reconcileCandidateAtsNoteBodyNoteIdRegExp = new RegExp("^[1-9][0-9]{0,15}$");
+
+export const ReconcileCandidateAtsNoteBody = zod.object({
+  receiptId: zod.string().min(1).max(reconcileCandidateAtsNoteBodyReceiptIdMax),
+  reviewHash: zod.string().regex(reconcileCandidateAtsNoteBodyReviewHashRegExp),
+  noteId: zod.string().regex(reconcileCandidateAtsNoteBodyNoteIdRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const ReconcileCandidateAtsNoteResponseItem = zod.object({
+  receiptId: zod.string(),
+  reviewHash: zod.string(),
+  mode: zod.enum(["progress", "assessment", "unknown"]),
+  claimedAt: zod.string(),
+  status: zod.enum(["held", "published", "verified_existing"]),
+  noteId: zod.string().nullable(),
+  canVerify: zod.boolean(),
+  reason: zod.string().nullable(),
+});
+export const ReconcileCandidateAtsNoteResponse = zod.array(ReconcileCandidateAtsNoteResponseItem);
+
+export const GetCandidateAtsInvitationEvidenceParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsInvitationEvidenceResponse = zod.object({
+  sessionId: zod.string(),
+  attemptId: zod.string().nullable(),
+  sendStatus: zod.enum([
+    "not_sent",
+    "provider_accepted",
+    "review_required",
+    "simulated",
+    "previously_sent",
+  ]),
+  providerStatus: zod.enum([
+    "unobserved",
+    "accepted",
+    "delayed",
+    "delivered",
+    "bounced",
+    "rejected",
+    "complained",
+  ]),
+  messageId: zod.string().nullable(),
+  occurredAt: zod.string().nullable(),
+  receivedAt: zod.string().nullable(),
+  observations: zod.array(
+    zod.object({
+      status: zod.enum(["accepted", "delayed", "delivered", "bounced", "rejected", "complained"]),
+      occurredAt: zod.string(),
+    }),
+  ),
+  reviewHash: zod.string(),
+  canReconcile: zod.boolean(),
+  explanation: zod.string(),
+});
+
+export const ReconcileCandidateAtsInvitationParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  recordId: zod.coerce.string(),
+});
+
+export const reconcileCandidateAtsInvitationBodyAttemptIdMax = 128;
+
+export const reconcileCandidateAtsInvitationBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const ReconcileCandidateAtsInvitationBody = zod.object({
+  attemptId: zod.string().min(1).max(reconcileCandidateAtsInvitationBodyAttemptIdMax),
+  reviewHash: zod.string().regex(reconcileCandidateAtsInvitationBodyReviewHashRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const ReconcileCandidateAtsInvitationResponse = zod.object({
+  sessionId: zod.string(),
+  attemptId: zod.string().nullable(),
+  sendStatus: zod.enum([
+    "not_sent",
+    "provider_accepted",
+    "review_required",
+    "simulated",
+    "previously_sent",
+  ]),
+  providerStatus: zod.enum([
+    "unobserved",
+    "accepted",
+    "delayed",
+    "delivered",
+    "bounced",
+    "rejected",
+    "complained",
+  ]),
+  messageId: zod.string().nullable(),
+  occurredAt: zod.string().nullable(),
+  receivedAt: zod.string().nullable(),
+  observations: zod.array(
+    zod.object({
+      status: zod.enum(["accepted", "delayed", "delivered", "bounced", "rejected", "complained"]),
+      occurredAt: zod.string(),
+    }),
+  ),
+  reviewHash: zod.string(),
+  canReconcile: zod.boolean(),
+  explanation: zod.string(),
+});
+
+export const GetCandidateAtsCampaignsParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsCampaignsResponse = zod.object({
+  sourceHash: zod.string(),
+  plans: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      language: zod.string(),
+      questionCount: zod.number().min(1),
+      approvalHash: zod.string(),
+    }),
+  ),
+  campaigns: zod.array(
+    zod.object({
+      id: zod.string(),
+      createdAt: zod.string(),
+      recipientCount: zod.number(),
+      planId: zod.string(),
+      approved: zod.boolean(),
+      cancelled: zod.boolean(),
+    }),
+  ),
+  truncated: zod.boolean(),
+});
+
+export const PrepareCandidateAtsCampaignParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const prepareCandidateAtsCampaignBodyRecordIdsItemMax = 128;
+
+export const prepareCandidateAtsCampaignBodyRecordIdsMax = 10;
+
+export const prepareCandidateAtsCampaignBodyPlanIdMax = 128;
+
+export const prepareCandidateAtsCampaignBodyPlanHashRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareCandidateAtsCampaignBodySourceHashRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareCandidateAtsCampaignBodyIdempotencyKeyMin = 8;
+export const prepareCandidateAtsCampaignBodyIdempotencyKeyMax = 128;
+
+export const PrepareCandidateAtsCampaignBody = zod.object({
+  recordIds: zod
+    .array(zod.string().min(1).max(prepareCandidateAtsCampaignBodyRecordIdsItemMax))
+    .min(1)
+    .max(prepareCandidateAtsCampaignBodyRecordIdsMax),
+  planId: zod.string().min(1).max(prepareCandidateAtsCampaignBodyPlanIdMax),
+  planHash: zod.string().regex(prepareCandidateAtsCampaignBodyPlanHashRegExp),
+  sourceHash: zod.string().regex(prepareCandidateAtsCampaignBodySourceHashRegExp),
+  idempotencyKey: zod
+    .string()
+    .min(prepareCandidateAtsCampaignBodyIdempotencyKeyMin)
+    .max(prepareCandidateAtsCampaignBodyIdempotencyKeyMax),
+  acknowledge: zod.boolean(),
+});
+
+export const PrepareCandidateAtsCampaignResponse = zod.object({
+  id: zod.string(),
+  planId: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["review", "approved", "cancelled", "needs_review", "complete"]),
+  canApprove: zod.boolean(),
+  canCancel: zod.boolean(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      recordId: zod.string().nullable(),
+      recipient: zod.string().nullable(),
+      subject: zod.string().nullable(),
+      text: zod.string().nullable(),
+      invitationStatus: zod.enum([
+        "ready",
+        "blocked",
+        "unavailable",
+        "provider_accepted",
+        "previously_sent",
+        "review_required",
+        "simulated",
+      ]),
+      interviewStatus: zod.string().nullable(),
+      canDispatch: zod.boolean(),
+      reason: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const GetCandidateAtsCampaignParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  campaignId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsCampaignResponse = zod.object({
+  id: zod.string(),
+  planId: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["review", "approved", "cancelled", "needs_review", "complete"]),
+  canApprove: zod.boolean(),
+  canCancel: zod.boolean(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      recordId: zod.string().nullable(),
+      recipient: zod.string().nullable(),
+      subject: zod.string().nullable(),
+      text: zod.string().nullable(),
+      invitationStatus: zod.enum([
+        "ready",
+        "blocked",
+        "unavailable",
+        "provider_accepted",
+        "previously_sent",
+        "review_required",
+        "simulated",
+      ]),
+      interviewStatus: zod.string().nullable(),
+      canDispatch: zod.boolean(),
+      reason: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const ControlCandidateAtsCampaignParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  campaignId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsCampaignBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const ControlCandidateAtsCampaignBody = zod.object({
+  action: zod.enum(["approve", "cancel"]),
+  reviewHash: zod.string().regex(controlCandidateAtsCampaignBodyReviewHashRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const ControlCandidateAtsCampaignResponse = zod.object({
+  id: zod.string(),
+  planId: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["review", "approved", "cancelled", "needs_review", "complete"]),
+  canApprove: zod.boolean(),
+  canCancel: zod.boolean(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      recordId: zod.string().nullable(),
+      recipient: zod.string().nullable(),
+      subject: zod.string().nullable(),
+      text: zod.string().nullable(),
+      invitationStatus: zod.enum([
+        "ready",
+        "blocked",
+        "unavailable",
+        "provider_accepted",
+        "previously_sent",
+        "review_required",
+        "simulated",
+      ]),
+      interviewStatus: zod.string().nullable(),
+      canDispatch: zod.boolean(),
+      reason: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const DispatchCandidateAtsCampaignMemberParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+  campaignId: zod.coerce.string(),
+  memberId: zod.coerce.string(),
+});
+
+export const dispatchCandidateAtsCampaignMemberBodyReviewHashRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const DispatchCandidateAtsCampaignMemberBody = zod.object({
+  reviewHash: zod.string().regex(dispatchCandidateAtsCampaignMemberBodyReviewHashRegExp),
+  acknowledge: zod.boolean(),
+});
+
+export const DispatchCandidateAtsCampaignMemberResponse = zod.object({
+  id: zod.string(),
+  planId: zod.string(),
+  reviewHash: zod.string(),
+  status: zod.enum(["review", "approved", "cancelled", "needs_review", "complete"]),
+  canApprove: zod.boolean(),
+  canCancel: zod.boolean(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      recordId: zod.string().nullable(),
+      recipient: zod.string().nullable(),
+      subject: zod.string().nullable(),
+      text: zod.string().nullable(),
+      invitationStatus: zod.enum([
+        "ready",
+        "blocked",
+        "unavailable",
+        "provider_accepted",
+        "previously_sent",
+        "review_required",
+        "simulated",
+      ]),
+      interviewStatus: zod.string().nullable(),
+      canDispatch: zod.boolean(),
+      reason: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const PreviewCandidateAtsRecordsParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const previewCandidateAtsRecordsBodyExpectedWorkflowRevisionMin = 0;
+
+export const previewCandidateAtsRecordsBodyCursorMax = 16000;
+
+export const PreviewCandidateAtsRecordsBody = zod.object({
+  expectedBindingRevision: zod.number().min(1),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(previewCandidateAtsRecordsBodyExpectedWorkflowRevisionMin),
+  cursor: zod.string().min(1).max(previewCandidateAtsRecordsBodyCursorMax).optional(),
+});
+
+export const PreviewCandidateAtsRecordsResponse = zod.object({
+  job: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    status: zod.string(),
+  }),
+  applications: zod.array(
+    zod.object({
+      id: zod.string(),
+      candidateId: zod.string(),
+      status: zod.string(),
+      stageName: zod.string().nullable(),
+    }),
+  ),
+  nextCursor: zod.string().nullable(),
+  checkedAt: zod.string(),
+  previewToken: zod.string(),
+});
+
+export const GetCandidateAtsVerificationParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetCandidateAtsVerificationResponse = zod.object({
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number(),
+  binding: zod.union([
+    zod.object({
+      accountRef: zod.string(),
+      revision: zod.number(),
+      status: zod.enum(["pending_employer", "active", "disconnected"]),
+      updatedAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  canAllocate: zod.boolean(),
+  canConfirm: zod.boolean(),
+  canDisconnect: zod.boolean(),
+  canVerify: zod.boolean(),
+  connectorStatus: zod.enum(["not_connected", "available", "unavailable", "allocated"]),
+  choices: zod.array(
+    zod.object({
+      id: zod.string(),
+    }),
+  ),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      status: zod.enum(["checking", "verified", "failed", "discarded"]),
+      checkedAt: zod.string(),
+      bindingRevision: zod.number(),
+      currentMapping: zod.boolean(),
+      accountRef: zod.string(),
+      externalJobId: zod.string(),
+      externalCandidateId: zod.string(),
+      externalApplicationId: zod.string(),
+    }),
+  ),
+});
+
+export const ControlCandidateAtsVerificationParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateAtsVerificationBodyExpectedBindingRevisionMin = 0;
+
+export const controlCandidateAtsVerificationBodyExpectedWorkflowRevisionMin = 0;
+
+export const controlCandidateAtsVerificationBodyConnectionIdMax = 256;
+
+export const controlCandidateAtsVerificationBodyAccountRefMax = 128;
+
+export const controlCandidateAtsVerificationBodyIdempotencyKeyMax = 128;
+
+export const ControlCandidateAtsVerificationBody = zod.object({
+  action: zod.enum(["allocate", "confirm", "disconnect", "verify"]),
+  expectedBindingRevision: zod
+    .number()
+    .min(controlCandidateAtsVerificationBodyExpectedBindingRevisionMin),
+  expectedWorkflowRevision: zod
+    .number()
+    .min(controlCandidateAtsVerificationBodyExpectedWorkflowRevisionMin),
+  connectionId: zod
+    .string()
+    .min(1)
+    .max(controlCandidateAtsVerificationBodyConnectionIdMax)
+    .optional(),
+  accountRef: zod.string().min(1).max(controlCandidateAtsVerificationBodyAccountRefMax).optional(),
+  acknowledgeEmployerOwnership: zod.boolean().optional(),
+  idempotencyKey: zod
+    .string()
+    .min(1)
+    .max(controlCandidateAtsVerificationBodyIdempotencyKeyMax)
+    .optional(),
+});
+
+export const ControlCandidateAtsVerificationResponse = zod.object({
+  workflowRevision: zod.number(),
+  bindingRevision: zod.number(),
+  binding: zod.union([
+    zod.object({
+      accountRef: zod.string(),
+      revision: zod.number(),
+      status: zod.enum(["pending_employer", "active", "disconnected"]),
+      updatedAt: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  canAllocate: zod.boolean(),
+  canConfirm: zod.boolean(),
+  canDisconnect: zod.boolean(),
+  canVerify: zod.boolean(),
+  connectorStatus: zod.enum(["not_connected", "available", "unavailable", "allocated"]),
+  choices: zod.array(
+    zod.object({
+      id: zod.string(),
+    }),
+  ),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      status: zod.enum(["checking", "verified", "failed", "discarded"]),
+      checkedAt: zod.string(),
+      bindingRevision: zod.number(),
+      currentMapping: zod.boolean(),
+      accountRef: zod.string(),
+      externalJobId: zod.string(),
+      externalCandidateId: zod.string(),
+      externalApplicationId: zod.string(),
+    }),
+  ),
+});
+
+export const GetCandidateWorkflowOfferParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const getCandidateWorkflowOfferResponseOfferOneTermsEmployerNameMax = 200;
+
+export const getCandidateWorkflowOfferResponseOfferOneTermsRoleTitleMax = 200;
+
+export const getCandidateWorkflowOfferResponseOfferOneTermsAmountExclusiveMin = 0;
+
+export const getCandidateWorkflowOfferResponseOfferOneTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const getCandidateWorkflowOfferResponseOfferOneTermsLocationMax = 300;
+
+export const getCandidateWorkflowOfferResponseOfferOneTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getCandidateWorkflowOfferResponseOfferOneTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const getCandidateWorkflowOfferResponseOfferOneTermsLetterMin = 10;
+export const getCandidateWorkflowOfferResponseOfferOneTermsLetterMax = 12000;
+
+export const getCandidateWorkflowOfferResponseOfferOneProviderDeliveryEventsMax = 16;
+
+export const getCandidateWorkflowOfferResponseHistoryItemTermsEmployerNameMax = 200;
+
+export const getCandidateWorkflowOfferResponseHistoryItemTermsRoleTitleMax = 200;
+
+export const getCandidateWorkflowOfferResponseHistoryItemTermsAmountExclusiveMin = 0;
+
+export const getCandidateWorkflowOfferResponseHistoryItemTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const getCandidateWorkflowOfferResponseHistoryItemTermsLocationMax = 300;
+
+export const getCandidateWorkflowOfferResponseHistoryItemTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getCandidateWorkflowOfferResponseHistoryItemTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const getCandidateWorkflowOfferResponseHistoryItemTermsLetterMin = 10;
+export const getCandidateWorkflowOfferResponseHistoryItemTermsLetterMax = 12000;
+
+export const getCandidateWorkflowOfferResponseHistoryItemProviderDeliveryEventsMax = 16;
+
+export const GetCandidateWorkflowOfferResponse = zod.object({
+  offer: zod.union([
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      status: zod.enum([
+        "draft",
+        "review_required",
+        "approved",
+        "sending",
+        "sent",
+        "accepted",
+        "declined",
+        "expired",
+        "withdrawn",
+        "send_uncertain",
+      ]),
+      terms: zod.object({
+        employerName: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseOfferOneTermsEmployerNameMax),
+        roleTitle: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseOfferOneTermsRoleTitleMax),
+        amount: zod.number().gt(getCandidateWorkflowOfferResponseOfferOneTermsAmountExclusiveMin),
+        currency: zod.string().regex(getCandidateWorkflowOfferResponseOfferOneTermsCurrencyRegExp),
+        frequency: zod.enum(["hourly", "monthly", "annual"]),
+        location: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseOfferOneTermsLocationMax),
+        startDate: zod
+          .string()
+          .regex(getCandidateWorkflowOfferResponseOfferOneTermsStartDateRegExp),
+        expiresAt: zod
+          .string()
+          .regex(getCandidateWorkflowOfferResponseOfferOneTermsExpiresAtRegExp),
+        letter: zod
+          .string()
+          .min(getCandidateWorkflowOfferResponseOfferOneTermsLetterMin)
+          .max(getCandidateWorkflowOfferResponseOfferOneTermsLetterMax),
+      }),
+      recipientEmail: zod.string(),
+      testOnly: zod.boolean(),
+      createdBy: zod.string(),
+      createdAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      sentAt: zod.string().optional(),
+      deliveryStartedAt: zod.string().optional(),
+      deliveryReceiptId: zod.string().optional(),
+      deliveryAttemptId: zod.string().optional(),
+      providerDelivery: zod
+        .object({
+          provider: zod.enum(["ses"]),
+          messageId: zod.string(),
+          deliveryAttemptId: zod.string(),
+          status: zod.enum([
+            "accepted",
+            "delivered",
+            "delayed",
+            "bounced",
+            "rejected",
+            "complained",
+          ]),
+          occurredAt: zod.string(),
+          receivedAt: zod.string(),
+          events: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                status: zod.enum([
+                  "accepted",
+                  "delivered",
+                  "delayed",
+                  "bounced",
+                  "rejected",
+                  "complained",
+                ]),
+                occurredAt: zod.string(),
+              }),
+            )
+            .max(getCandidateWorkflowOfferResponseOfferOneProviderDeliveryEventsMax),
+        })
+        .optional(),
+      deliveryReconciliation: zod
+        .object({
+          outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+          checkedAt: zod.string(),
+          checkedBy: zod.string(),
+          reason: zod.string(),
+          evidenceReference: zod.string().optional(),
+        })
+        .optional(),
+      respondedAt: zod.string().optional(),
+      responseReason: zod.string().optional(),
+    }),
+    zod.null(),
+  ]),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      status: zod.enum([
+        "draft",
+        "review_required",
+        "approved",
+        "sending",
+        "sent",
+        "accepted",
+        "declined",
+        "expired",
+        "withdrawn",
+        "send_uncertain",
+      ]),
+      terms: zod.object({
+        employerName: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseHistoryItemTermsEmployerNameMax),
+        roleTitle: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseHistoryItemTermsRoleTitleMax),
+        amount: zod
+          .number()
+          .gt(getCandidateWorkflowOfferResponseHistoryItemTermsAmountExclusiveMin),
+        currency: zod
+          .string()
+          .regex(getCandidateWorkflowOfferResponseHistoryItemTermsCurrencyRegExp),
+        frequency: zod.enum(["hourly", "monthly", "annual"]),
+        location: zod
+          .string()
+          .min(1)
+          .max(getCandidateWorkflowOfferResponseHistoryItemTermsLocationMax),
+        startDate: zod
+          .string()
+          .regex(getCandidateWorkflowOfferResponseHistoryItemTermsStartDateRegExp),
+        expiresAt: zod
+          .string()
+          .regex(getCandidateWorkflowOfferResponseHistoryItemTermsExpiresAtRegExp),
+        letter: zod
+          .string()
+          .min(getCandidateWorkflowOfferResponseHistoryItemTermsLetterMin)
+          .max(getCandidateWorkflowOfferResponseHistoryItemTermsLetterMax),
+      }),
+      recipientEmail: zod.string(),
+      testOnly: zod.boolean(),
+      createdBy: zod.string(),
+      createdAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      sentAt: zod.string().optional(),
+      deliveryStartedAt: zod.string().optional(),
+      deliveryReceiptId: zod.string().optional(),
+      deliveryAttemptId: zod.string().optional(),
+      providerDelivery: zod
+        .object({
+          provider: zod.enum(["ses"]),
+          messageId: zod.string(),
+          deliveryAttemptId: zod.string(),
+          status: zod.enum([
+            "accepted",
+            "delivered",
+            "delayed",
+            "bounced",
+            "rejected",
+            "complained",
+          ]),
+          occurredAt: zod.string(),
+          receivedAt: zod.string(),
+          events: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                status: zod.enum([
+                  "accepted",
+                  "delivered",
+                  "delayed",
+                  "bounced",
+                  "rejected",
+                  "complained",
+                ]),
+                occurredAt: zod.string(),
+              }),
+            )
+            .max(getCandidateWorkflowOfferResponseHistoryItemProviderDeliveryEventsMax),
+        })
+        .optional(),
+      deliveryReconciliation: zod
+        .object({
+          outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+          checkedAt: zod.string(),
+          checkedBy: zod.string(),
+          reason: zod.string(),
+          evidenceReference: zod.string().optional(),
+        })
+        .optional(),
+      respondedAt: zod.string().optional(),
+      responseReason: zod.string().optional(),
+    }),
+  ),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSend: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  canReconcile: zod.boolean().optional(),
+  eligible: zod.boolean(),
+  reason: zod.string().nullable(),
+  workflowRevision: zod.number(),
+});
+
+export const ControlCandidateWorkflowOfferParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateWorkflowOfferBodyIdempotencyKeyMax = 128;
+
+export const controlCandidateWorkflowOfferBodyExpectedRevisionMin = 0;
+
+export const controlCandidateWorkflowOfferBodyTermsEmployerNameMax = 200;
+
+export const controlCandidateWorkflowOfferBodyTermsRoleTitleMax = 200;
+
+export const controlCandidateWorkflowOfferBodyTermsAmountExclusiveMin = 0;
+
+export const controlCandidateWorkflowOfferBodyTermsCurrencyRegExp = new RegExp("^[A-Z]{3}$");
+export const controlCandidateWorkflowOfferBodyTermsLocationMax = 300;
+
+export const controlCandidateWorkflowOfferBodyTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const controlCandidateWorkflowOfferBodyTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const controlCandidateWorkflowOfferBodyTermsLetterMin = 10;
+export const controlCandidateWorkflowOfferBodyTermsLetterMax = 12000;
+
+export const controlCandidateWorkflowOfferBodyReasonMax = 4000;
+
+export const controlCandidateWorkflowOfferBodyDeliveryAttemptIdMax = 128;
+
+export const controlCandidateWorkflowOfferBodyEvidenceReferenceMin = 10;
+export const controlCandidateWorkflowOfferBodyEvidenceReferenceMax = 1000;
+
+export const ControlCandidateWorkflowOfferBody = zod.object({
+  action: zod.enum([
+    "save_draft",
+    "submit_review",
+    "approve",
+    "send",
+    "withdraw",
+    "reconcile_delivery",
+  ]),
+  idempotencyKey: zod.string().min(1).max(controlCandidateWorkflowOfferBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(controlCandidateWorkflowOfferBodyExpectedRevisionMin),
+  terms: zod
+    .object({
+      employerName: zod.string().min(1).max(controlCandidateWorkflowOfferBodyTermsEmployerNameMax),
+      roleTitle: zod.string().min(1).max(controlCandidateWorkflowOfferBodyTermsRoleTitleMax),
+      amount: zod.number().gt(controlCandidateWorkflowOfferBodyTermsAmountExclusiveMin),
+      currency: zod.string().regex(controlCandidateWorkflowOfferBodyTermsCurrencyRegExp),
+      frequency: zod.enum(["hourly", "monthly", "annual"]),
+      location: zod.string().min(1).max(controlCandidateWorkflowOfferBodyTermsLocationMax),
+      startDate: zod.string().regex(controlCandidateWorkflowOfferBodyTermsStartDateRegExp),
+      expiresAt: zod.string().regex(controlCandidateWorkflowOfferBodyTermsExpiresAtRegExp),
+      letter: zod
+        .string()
+        .min(controlCandidateWorkflowOfferBodyTermsLetterMin)
+        .max(controlCandidateWorkflowOfferBodyTermsLetterMax),
+    })
+    .optional(),
+  reason: zod.string().max(controlCandidateWorkflowOfferBodyReasonMax).optional(),
+  deliveryResolution: zod.enum(["check_provider", "confirmed_not_sent"]).optional(),
+  deliveryAttemptId: zod
+    .string()
+    .min(1)
+    .max(controlCandidateWorkflowOfferBodyDeliveryAttemptIdMax)
+    .optional(),
+  evidenceReference: zod
+    .string()
+    .min(controlCandidateWorkflowOfferBodyEvidenceReferenceMin)
+    .max(controlCandidateWorkflowOfferBodyEvidenceReferenceMax)
+    .optional(),
+  acknowledgeNoDelivery: zod.boolean().optional(),
+});
+
+export const controlCandidateWorkflowOfferResponseOfferOneTermsEmployerNameMax = 200;
+
+export const controlCandidateWorkflowOfferResponseOfferOneTermsRoleTitleMax = 200;
+
+export const controlCandidateWorkflowOfferResponseOfferOneTermsAmountExclusiveMin = 0;
+
+export const controlCandidateWorkflowOfferResponseOfferOneTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const controlCandidateWorkflowOfferResponseOfferOneTermsLocationMax = 300;
+
+export const controlCandidateWorkflowOfferResponseOfferOneTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const controlCandidateWorkflowOfferResponseOfferOneTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const controlCandidateWorkflowOfferResponseOfferOneTermsLetterMin = 10;
+export const controlCandidateWorkflowOfferResponseOfferOneTermsLetterMax = 12000;
+
+export const controlCandidateWorkflowOfferResponseOfferOneProviderDeliveryEventsMax = 16;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsEmployerNameMax = 200;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsRoleTitleMax = 200;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsAmountExclusiveMin = 0;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsLocationMax = 300;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsLetterMin = 10;
+export const controlCandidateWorkflowOfferResponseHistoryItemTermsLetterMax = 12000;
+
+export const controlCandidateWorkflowOfferResponseHistoryItemProviderDeliveryEventsMax = 16;
+
+export const ControlCandidateWorkflowOfferResponse = zod.object({
+  offer: zod.union([
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      status: zod.enum([
+        "draft",
+        "review_required",
+        "approved",
+        "sending",
+        "sent",
+        "accepted",
+        "declined",
+        "expired",
+        "withdrawn",
+        "send_uncertain",
+      ]),
+      terms: zod.object({
+        employerName: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseOfferOneTermsEmployerNameMax),
+        roleTitle: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseOfferOneTermsRoleTitleMax),
+        amount: zod
+          .number()
+          .gt(controlCandidateWorkflowOfferResponseOfferOneTermsAmountExclusiveMin),
+        currency: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseOfferOneTermsCurrencyRegExp),
+        frequency: zod.enum(["hourly", "monthly", "annual"]),
+        location: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseOfferOneTermsLocationMax),
+        startDate: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseOfferOneTermsStartDateRegExp),
+        expiresAt: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseOfferOneTermsExpiresAtRegExp),
+        letter: zod
+          .string()
+          .min(controlCandidateWorkflowOfferResponseOfferOneTermsLetterMin)
+          .max(controlCandidateWorkflowOfferResponseOfferOneTermsLetterMax),
+      }),
+      recipientEmail: zod.string(),
+      testOnly: zod.boolean(),
+      createdBy: zod.string(),
+      createdAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      sentAt: zod.string().optional(),
+      deliveryStartedAt: zod.string().optional(),
+      deliveryReceiptId: zod.string().optional(),
+      deliveryAttemptId: zod.string().optional(),
+      providerDelivery: zod
+        .object({
+          provider: zod.enum(["ses"]),
+          messageId: zod.string(),
+          deliveryAttemptId: zod.string(),
+          status: zod.enum([
+            "accepted",
+            "delivered",
+            "delayed",
+            "bounced",
+            "rejected",
+            "complained",
+          ]),
+          occurredAt: zod.string(),
+          receivedAt: zod.string(),
+          events: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                status: zod.enum([
+                  "accepted",
+                  "delivered",
+                  "delayed",
+                  "bounced",
+                  "rejected",
+                  "complained",
+                ]),
+                occurredAt: zod.string(),
+              }),
+            )
+            .max(controlCandidateWorkflowOfferResponseOfferOneProviderDeliveryEventsMax),
+        })
+        .optional(),
+      deliveryReconciliation: zod
+        .object({
+          outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+          checkedAt: zod.string(),
+          checkedBy: zod.string(),
+          reason: zod.string(),
+          evidenceReference: zod.string().optional(),
+        })
+        .optional(),
+      respondedAt: zod.string().optional(),
+      responseReason: zod.string().optional(),
+    }),
+    zod.null(),
+  ]),
+  history: zod.array(
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      status: zod.enum([
+        "draft",
+        "review_required",
+        "approved",
+        "sending",
+        "sent",
+        "accepted",
+        "declined",
+        "expired",
+        "withdrawn",
+        "send_uncertain",
+      ]),
+      terms: zod.object({
+        employerName: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseHistoryItemTermsEmployerNameMax),
+        roleTitle: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseHistoryItemTermsRoleTitleMax),
+        amount: zod
+          .number()
+          .gt(controlCandidateWorkflowOfferResponseHistoryItemTermsAmountExclusiveMin),
+        currency: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseHistoryItemTermsCurrencyRegExp),
+        frequency: zod.enum(["hourly", "monthly", "annual"]),
+        location: zod
+          .string()
+          .min(1)
+          .max(controlCandidateWorkflowOfferResponseHistoryItemTermsLocationMax),
+        startDate: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseHistoryItemTermsStartDateRegExp),
+        expiresAt: zod
+          .string()
+          .regex(controlCandidateWorkflowOfferResponseHistoryItemTermsExpiresAtRegExp),
+        letter: zod
+          .string()
+          .min(controlCandidateWorkflowOfferResponseHistoryItemTermsLetterMin)
+          .max(controlCandidateWorkflowOfferResponseHistoryItemTermsLetterMax),
+      }),
+      recipientEmail: zod.string(),
+      testOnly: zod.boolean(),
+      createdBy: zod.string(),
+      createdAt: zod.string(),
+      approvedBy: zod.string().optional(),
+      approvedAt: zod.string().optional(),
+      sentAt: zod.string().optional(),
+      deliveryStartedAt: zod.string().optional(),
+      deliveryReceiptId: zod.string().optional(),
+      deliveryAttemptId: zod.string().optional(),
+      providerDelivery: zod
+        .object({
+          provider: zod.enum(["ses"]),
+          messageId: zod.string(),
+          deliveryAttemptId: zod.string(),
+          status: zod.enum([
+            "accepted",
+            "delivered",
+            "delayed",
+            "bounced",
+            "rejected",
+            "complained",
+          ]),
+          occurredAt: zod.string(),
+          receivedAt: zod.string(),
+          events: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                status: zod.enum([
+                  "accepted",
+                  "delivered",
+                  "delayed",
+                  "bounced",
+                  "rejected",
+                  "complained",
+                ]),
+                occurredAt: zod.string(),
+              }),
+            )
+            .max(controlCandidateWorkflowOfferResponseHistoryItemProviderDeliveryEventsMax),
+        })
+        .optional(),
+      deliveryReconciliation: zod
+        .object({
+          outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+          checkedAt: zod.string(),
+          checkedBy: zod.string(),
+          reason: zod.string(),
+          evidenceReference: zod.string().optional(),
+        })
+        .optional(),
+      respondedAt: zod.string().optional(),
+      responseReason: zod.string().optional(),
+    }),
+  ),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSend: zod.boolean(),
+  canWithdraw: zod.boolean(),
+  canReconcile: zod.boolean().optional(),
+  eligible: zod.boolean(),
+  reason: zod.string().nullable(),
+  workflowRevision: zod.number(),
+});
+
+export const GetPublicControlledOfferParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+export const getPublicControlledOfferResponseTermsEmployerNameMax = 200;
+
+export const getPublicControlledOfferResponseTermsRoleTitleMax = 200;
+
+export const getPublicControlledOfferResponseTermsAmountExclusiveMin = 0;
+
+export const getPublicControlledOfferResponseTermsCurrencyRegExp = new RegExp("^[A-Z]{3}$");
+export const getPublicControlledOfferResponseTermsLocationMax = 300;
+
+export const getPublicControlledOfferResponseTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getPublicControlledOfferResponseTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const getPublicControlledOfferResponseTermsLetterMin = 10;
+export const getPublicControlledOfferResponseTermsLetterMax = 12000;
+
+export const GetPublicControlledOfferResponse = zod.object({
+  version: zod.number(),
+  status: zod.enum(["sent", "accepted", "declined", "expired"]),
+  terms: zod.object({
+    employerName: zod.string().min(1).max(getPublicControlledOfferResponseTermsEmployerNameMax),
+    roleTitle: zod.string().min(1).max(getPublicControlledOfferResponseTermsRoleTitleMax),
+    amount: zod.number().gt(getPublicControlledOfferResponseTermsAmountExclusiveMin),
+    currency: zod.string().regex(getPublicControlledOfferResponseTermsCurrencyRegExp),
+    frequency: zod.enum(["hourly", "monthly", "annual"]),
+    location: zod.string().min(1).max(getPublicControlledOfferResponseTermsLocationMax),
+    startDate: zod.string().regex(getPublicControlledOfferResponseTermsStartDateRegExp),
+    expiresAt: zod.string().regex(getPublicControlledOfferResponseTermsExpiresAtRegExp),
+    letter: zod
+      .string()
+      .min(getPublicControlledOfferResponseTermsLetterMin)
+      .max(getPublicControlledOfferResponseTermsLetterMax),
+  }),
+  testOnly: zod.boolean(),
+  canRespond: zod.boolean(),
+  respondedAt: zod.string().optional(),
+  responseReason: zod.string().optional(),
+});
+
+export const RespondToControlledOfferParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+export const respondToControlledOfferBodyReasonMax = 2000;
+
+export const RespondToControlledOfferBody = zod.object({
+  decision: zod.enum(["accept", "decline"]),
+  reason: zod.string().max(respondToControlledOfferBodyReasonMax).optional(),
+});
+
+export const respondToControlledOfferResponseTermsEmployerNameMax = 200;
+
+export const respondToControlledOfferResponseTermsRoleTitleMax = 200;
+
+export const respondToControlledOfferResponseTermsAmountExclusiveMin = 0;
+
+export const respondToControlledOfferResponseTermsCurrencyRegExp = new RegExp("^[A-Z]{3}$");
+export const respondToControlledOfferResponseTermsLocationMax = 300;
+
+export const respondToControlledOfferResponseTermsStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const respondToControlledOfferResponseTermsExpiresAtRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$",
+);
+export const respondToControlledOfferResponseTermsLetterMin = 10;
+export const respondToControlledOfferResponseTermsLetterMax = 12000;
+
+export const RespondToControlledOfferResponse = zod.object({
+  version: zod.number(),
+  status: zod.enum(["sent", "accepted", "declined", "expired"]),
+  terms: zod.object({
+    employerName: zod.string().min(1).max(respondToControlledOfferResponseTermsEmployerNameMax),
+    roleTitle: zod.string().min(1).max(respondToControlledOfferResponseTermsRoleTitleMax),
+    amount: zod.number().gt(respondToControlledOfferResponseTermsAmountExclusiveMin),
+    currency: zod.string().regex(respondToControlledOfferResponseTermsCurrencyRegExp),
+    frequency: zod.enum(["hourly", "monthly", "annual"]),
+    location: zod.string().min(1).max(respondToControlledOfferResponseTermsLocationMax),
+    startDate: zod.string().regex(respondToControlledOfferResponseTermsStartDateRegExp),
+    expiresAt: zod.string().regex(respondToControlledOfferResponseTermsExpiresAtRegExp),
+    letter: zod
+      .string()
+      .min(respondToControlledOfferResponseTermsLetterMin)
+      .max(respondToControlledOfferResponseTermsLetterMax),
+  }),
+  testOnly: zod.boolean(),
+  canRespond: zod.boolean(),
+  respondedAt: zod.string().optional(),
+  responseReason: zod.string().optional(),
+});
+
+/**
+ * Requires current, unrevoked AI-interview consent. Uses the same language-aware speech provider chain as job interviews.
+ * @summary Transcribe the signed-in candidate's career-interview audio
+ */
+export const transcribeCareerInterviewHeaderXLanguageDefault = `en-US`;
+
+export const TranscribeCareerInterviewHeader = zod.object({
+  "X-Language": zod.string().default(transcribeCareerInterviewHeaderXLanguageDefault),
+});
+
+export const TranscribeCareerInterviewResponse = zod.object({
+  transcript: zod.string(),
+});
+
+export const GetPilotStatusResponse = zod.object({
+  pilot: zod.union([
+    zod.object({
+      id: zod.string(),
+      tenantId: zod.string(),
+      tenantName: zod.string().optional(),
+      code: zod.string(),
+      label: zod.string(),
+      createdAt: zod.date(),
+      endedAt: zod.date().nullable(),
+    }),
+    zod.null(),
+  ]),
+  complimentary: zod.boolean().optional(),
+});
+
+export const redeemPilotCodeBodyCodeMin = 3;
+export const redeemPilotCodeBodyCodeMax = 64;
+
+export const RedeemPilotCodeBody = zod.object({
+  code: zod.string().min(redeemPilotCodeBodyCodeMin).max(redeemPilotCodeBodyCodeMax),
+  tenantId: zod
+    .string()
+    .optional()
+    .describe("Platform admins only; other callers redeem for their own root account"),
+});
+
+export const RedeemPilotCodeResponse = zod.object({
+  pilot: zod.union([
+    zod.object({
+      id: zod.string(),
+      tenantId: zod.string(),
+      tenantName: zod.string().optional(),
+      code: zod.string(),
+      label: zod.string(),
+      createdAt: zod.date(),
+      endedAt: zod.date().nullable(),
+    }),
+    zod.null(),
+  ]),
+  complimentary: zod.boolean().optional(),
+});
+
+export const listPilotCodesResponseCodesItemOneCodeMin = 3;
+export const listPilotCodesResponseCodesItemOneCodeMax = 64;
+
+export const listPilotCodesResponseCodesItemOneCodeRegExp = new RegExp("^[a-zA-Z0-9-]+$");
+export const listPilotCodesResponseCodesItemOneLabelMax = 120;
+
+export const listPilotCodesResponseCodesItemOneMaxRedemptionsMax = 10000;
+
+export const ListPilotCodesResponse = zod.object({
+  codes: zod.array(
+    zod
+      .object({
+        code: zod
+          .string()
+          .min(listPilotCodesResponseCodesItemOneCodeMin)
+          .max(listPilotCodesResponseCodesItemOneCodeMax)
+          .regex(listPilotCodesResponseCodesItemOneCodeRegExp),
+        label: zod.string().min(1).max(listPilotCodesResponseCodesItemOneLabelMax),
+        maxRedemptions: zod
+          .number()
+          .min(1)
+          .max(listPilotCodesResponseCodesItemOneMaxRedemptionsMax),
+      })
+      .and(
+        zod.object({
+          id: zod.string(),
+          redemptionCount: zod.number(),
+          disabled: zod.boolean(),
+          createdAt: zod.date(),
+        }),
+      ),
+  ),
+  grants: zod.array(
+    zod.object({
+      id: zod.string(),
+      tenantId: zod.string(),
+      tenantName: zod.string().optional(),
+      code: zod.string(),
+      label: zod.string(),
+      createdAt: zod.date(),
+      endedAt: zod.date().nullable(),
+    }),
+  ),
+});
+
+export const createPilotCodeBodyCodeMin = 3;
+export const createPilotCodeBodyCodeMax = 64;
+
+export const createPilotCodeBodyCodeRegExp = new RegExp("^[a-zA-Z0-9-]+$");
+export const createPilotCodeBodyLabelMax = 120;
+
+export const createPilotCodeBodyMaxRedemptionsMax = 10000;
+
+export const CreatePilotCodeBody = zod.object({
+  code: zod
+    .string()
+    .min(createPilotCodeBodyCodeMin)
+    .max(createPilotCodeBodyCodeMax)
+    .regex(createPilotCodeBodyCodeRegExp),
+  label: zod.string().min(1).max(createPilotCodeBodyLabelMax),
+  maxRedemptions: zod.number().min(1).max(createPilotCodeBodyMaxRedemptionsMax),
+});
+
+export const DisablePilotCodeParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const EndPilotGrantParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const EndPilotGrantBody = zod.object({
+  confirm: zod.literal(true),
+});
+
 /**
  * @summary Health check
  */
@@ -91,6 +6003,21 @@ export const GetMeResponse = zod.object({
   ]),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
+});
+
+/**
+ * @summary Confirm password and invalidate every session for the signed-in account
+ */
+export const logoutAllSessionsBodyPasswordMax = 1024;
+
+export const LogoutAllSessionsBody = zod.object({
+  password: zod.string().min(1).max(logoutAllSessionsBodyPasswordMax),
+  acknowledge: zod.boolean(),
+});
+
+export const LogoutAllSessionsResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
 });
 
 /**
@@ -274,6 +6201,23 @@ export const ListJobsResponse = zod.object({
       workOrderNumber: zod.string().nullish(),
       clientWorkOrderNumber: zod.string().nullish(),
       isConfidential: zod.boolean().optional(),
+      internalMobility: zod
+        .boolean()
+        .describe(
+          "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+        ),
+      recruitingMode: zod
+        .enum(["human_assisted", "lexy_autonomous"])
+        .describe("Planned recruiting mode only; never grants execution authority."),
+      interviewPath: zod
+        .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+        .describe("Planned interview sequence, separate from interview assessment type."),
+      autonomyExecutionEnabled: zod
+        .literal(false)
+        .describe("Server-owned capability; always false during configuration-only rollout."),
+      progressionAuthority: zod
+        .enum(["human_review"])
+        .describe("Selecting a recruiting mode does not grant automatic progression authority."),
       createdById: zod.string().nullish(),
       createdByRole: zod.string().nullish(),
       assignedRecruiterId: zod.string().nullish(),
@@ -303,6 +6247,20 @@ export const CreateJobBody = zod.object({
   salaryMin: zod.number().optional(),
   salaryMax: zod.number().optional(),
   description: zod.string(),
+  internalMobility: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Restrict sourcing to employees of this job's exact client tenant; defaults to false.",
+    ),
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .optional()
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  interviewPath: zod
+    .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+    .optional()
+    .describe("Planned interview sequence, separate from interview assessment type."),
 });
 
 /**
@@ -336,6 +6294,23 @@ export const GetJobResponse = zod.object({
   workOrderNumber: zod.string().nullish(),
   clientWorkOrderNumber: zod.string().nullish(),
   isConfidential: zod.boolean().optional(),
+  internalMobility: zod
+    .boolean()
+    .describe(
+      "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+    ),
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  interviewPath: zod
+    .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+    .describe("Planned interview sequence, separate from interview assessment type."),
+  autonomyExecutionEnabled: zod
+    .literal(false)
+    .describe("Server-owned capability; always false during configuration-only rollout."),
+  progressionAuthority: zod
+    .enum(["human_review"])
+    .describe("Selecting a recruiting mode does not grant automatic progression authority."),
   createdById: zod.string().nullish(),
   createdByRole: zod.string().nullish(),
   assignedRecruiterId: zod.string().nullish(),
@@ -365,6 +6340,12 @@ export const UpdateJobBody = zod.object({
   salaryMax: zod.number().optional(),
   description: zod.string().optional(),
   status: zod.string().optional(),
+  internalMobility: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Restrict sourcing to employees of this job's exact client tenant when true; otherwise allow known nonemployees and external candidates.",
+    ),
 });
 
 export const UpdateJobResponse = zod.object({
@@ -391,6 +6372,23 @@ export const UpdateJobResponse = zod.object({
   workOrderNumber: zod.string().nullish(),
   clientWorkOrderNumber: zod.string().nullish(),
   isConfidential: zod.boolean().optional(),
+  internalMobility: zod
+    .boolean()
+    .describe(
+      "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+    ),
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  interviewPath: zod
+    .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+    .describe("Planned interview sequence, separate from interview assessment type."),
+  autonomyExecutionEnabled: zod
+    .literal(false)
+    .describe("Server-owned capability; always false during configuration-only rollout."),
+  progressionAuthority: zod
+    .enum(["human_review"])
+    .describe("Selecting a recruiting mode does not grant automatic progression authority."),
   createdById: zod.string().nullish(),
   createdByRole: zod.string().nullish(),
   assignedRecruiterId: zod.string().nullish(),
@@ -413,6 +6411,1847 @@ export const DeleteJobParams = zod.object({
 export const DeleteJobResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
+});
+
+/**
+ * @summary Save planned recruiting configuration without executing agents
+ */
+export const UpdateRecruitingConfigurationParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const UpdateRecruitingConfigurationBody = zod.object({
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .optional()
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  interviewPath: zod
+    .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+    .optional()
+    .describe("Planned interview sequence, separate from interview assessment type."),
+});
+
+export const UpdateRecruitingConfigurationResponse = zod.object({
+  id: zod.string(),
+  tenantId: zod.string(),
+  title: zod.string(),
+  department: zod.string().nullish(),
+  location: zod.string().nullish(),
+  workType: zod.enum(["remote", "hybrid", "onsite"]).nullish(),
+  employmentType: zod.enum(["full_time", "part_time", "contract", "internship"]).nullish(),
+  salaryMin: zod.number().nullish(),
+  salaryMax: zod.number().nullish(),
+  description: zod.string(),
+  status: zod.enum([
+    "draft",
+    "active",
+    "paused",
+    "closed",
+    "pending_approval",
+    "rejected",
+    "published",
+  ]),
+  applicationCount: zod.number(),
+  workOrderNumber: zod.string().nullish(),
+  clientWorkOrderNumber: zod.string().nullish(),
+  isConfidential: zod.boolean().optional(),
+  internalMobility: zod
+    .boolean()
+    .describe(
+      "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+    ),
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  interviewPath: zod
+    .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+    .describe("Planned interview sequence, separate from interview assessment type."),
+  autonomyExecutionEnabled: zod
+    .literal(false)
+    .describe("Server-owned capability; always false during configuration-only rollout."),
+  progressionAuthority: zod
+    .enum(["human_review"])
+    .describe("Selecting a recruiting mode does not grant automatic progression authority."),
+  createdById: zod.string().nullish(),
+  createdByRole: zod.string().nullish(),
+  assignedRecruiterId: zod.string().nullish(),
+  assignedRecruiterName: zod.string().nullish(),
+  assignedHiringManagerId: zod.string().nullish(),
+  assignedHiringManagerName: zod.string().nullish(),
+  approvedById: zod.string().nullish(),
+  rejectionNote: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Read prepared sourcing limits and USD allocation holds; execution locked
+ */
+export const GetJobSourcingControlsParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const getJobSourcingControlsResponseSpentMicrosMin = 0;
+
+export const getJobSourcingControlsResponseUncertainMicrosMin = 0;
+
+export const getJobSourcingControlsResponsePendingMicrosMin = 0;
+
+export const getJobSourcingControlsResponseCostOperationsItemActualMicrosMin = 0;
+
+export const getJobSourcingControlsResponseCostOperationsItemReportedMicrosMin = 0;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsMaxCandidatesMax = 25;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsMaxDurationSecondsMin = 30;
+export const getJobSourcingControlsResponsePolicyOneLimitsMaxDurationSecondsMax = 900;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsMaxRunsMax = 20;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsRunBudgetCentsMax = 1000000;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsTotalBudgetCentsMax = 10000000;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlSourceMin = 3;
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlSourceMax = 160;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpSourceMin = 3;
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpSourceMax = 160;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerSourceMin = 3;
+export const getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerSourceMax = 160;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsMaxCandidatesMax = 25;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsMaxDurationSecondsMin = 30;
+export const getJobSourcingControlsResponseReservationsItemLimitsMaxDurationSecondsMax = 900;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsMaxRunsMax = 20;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsRunBudgetCentsMax = 1000000;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsTotalBudgetCentsMax = 10000000;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlSourceMin = 3;
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlSourceMax = 160;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpSourceMin = 3;
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpSourceMax = 160;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerMicrosPerCreditMax = 100000000;
+
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerSourceMin = 3;
+export const getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerSourceMax = 160;
+
+export const GetJobSourcingControlsResponse = zod.object({
+  externalDispatch: zod
+    .object({
+      adapter: zod.string(),
+      ready: zod.boolean(),
+      blockers: zod.array(zod.string()),
+      upperMicros: zod.number().nullable(),
+      note: zod.string(),
+      providers: zod
+        .array(
+          zod.object({
+            provider: zod.enum(["pdl", "serp", "enrichlayer"]),
+            selected: zod.boolean(),
+            available: zod.boolean(),
+            kind: zod.enum(["discovery", "enrichment"]),
+            note: zod.string(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  externalRuns: zod
+    .array(
+      zod.object({
+        status: zod.enum(["claimed", "succeeded", "uncertain", "skipped"]).optional(),
+        provider: zod.enum(["pdl", "serp", "enrichlayer"]).optional(),
+        reason: zod.string().optional(),
+        reservationId: zod.string(),
+        operationId: zod.string(),
+        profiles: zod.array(
+          zod.object({
+            title: zod.string(),
+            url: zod.string(),
+            snippet: zod.string(),
+            imported: zod.boolean().optional(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
+  internalDiscoveryEnabled: zod.boolean().optional(),
+  internalRuns: zod
+    .array(
+      zod.object({
+        reservationId: zod.string(),
+        status: zod.enum(["ready", "running", "interrupted", "completed", "paused", "cancelled"]),
+        startedAt: zod.date().nullable(),
+        deadline: zod.date().nullable(),
+        completedAt: zod.date().nullable(),
+        candidates: zod.array(
+          zod.object({
+            id: zod.string(),
+            name: zod.string(),
+            title: zod.string().nullable(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
+  briefHash: zod.string(),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  currency: zod.enum(["USD"]),
+  sourcingScope: zod.enum(["client_current_employees", "known_nonemployees"]),
+  executionEnabled: zod.boolean(),
+  outreachEnabled: zod.boolean(),
+  trustedPricingAvailable: zod.boolean(),
+  costAnalysis: zod.object({
+    researchDate: zod.string(),
+    planningOnly: zod.boolean(),
+    complete: zod.boolean(),
+    exceedsRunCap: zod.boolean(),
+    knownAllowanceMicros: zod.number(),
+    missingProviders: zod.array(zod.string()),
+    warning: zod.string(),
+    rows: zod.array(
+      zod.object({
+        id: zod.string(),
+        label: zod.string(),
+        selected: zod.boolean(),
+        credits: zod.number().nullable(),
+        rule: zod.string(),
+        reference: zod.string(),
+        url: zod.string(),
+        rateStatus: zod.enum(["configured", "expired", "missing"]),
+        allowanceMicros: zod.number().nullable(),
+        basis: zod.string().nullable(),
+      }),
+    ),
+  }),
+  monthlyPackages: zod
+    .object({
+      country: zod.string().nullable(),
+      currentPlan: zod.string(),
+      billingTerm: zod.string(),
+      displayTerm: zod.enum(["monthly"]),
+      sourcingAllowanceConfigured: zod.boolean(),
+      note: zod.string(),
+      tiers: zod.array(
+        zod.object({
+          code: zod.enum(["starter", "growth", "enterprise"]),
+          name: zod.string(),
+          amount: zod.number(),
+          currency: zod.string(),
+          symbol: zod.string(),
+          taxNote: zod.string(),
+          priceSource: zod.string(),
+          maxOpenJobs: zod.number(),
+          maxStaffSeats: zod.number(),
+          candidateDbSearchesPerMonth: zod.number(),
+          aiGenerationsPerMonth: zod.number(),
+        }),
+      ),
+    })
+    .nullish(),
+  spentMicros: zod.number().min(getJobSourcingControlsResponseSpentMicrosMin),
+  uncertainMicros: zod.number().min(getJobSourcingControlsResponseUncertainMicrosMin),
+  pendingMicros: zod.number().min(getJobSourcingControlsResponsePendingMicrosMin),
+  costOperations: zod.array(
+    zod.object({
+      id: zod.string(),
+      reservationId: zod.string(),
+      operationKey: zod.string(),
+      provider: zod.string(),
+      pricingVersion: zod.string(),
+      status: zod.enum(["prepared", "dispatching", "uncertain", "settled", "void"]),
+      upperMicros: zod.number().min(1),
+      actualMicros: zod
+        .number()
+        .min(getJobSourcingControlsResponseCostOperationsItemActualMicrosMin)
+        .nullable(),
+      reportedMicros: zod
+        .number()
+        .min(getJobSourcingControlsResponseCostOperationsItemReportedMicrosMin)
+        .nullable(),
+      createdAt: zod.date(),
+    }),
+  ),
+  policy: zod
+    .object({
+      jobId: zod.string(),
+      tenantId: zod.string(),
+      revision: zod.number(),
+      limits: zod.object({
+        allowExternal: zod.boolean(),
+        providers: zod.array(zod.enum(["github", "pdl", "serp", "enrichlayer"])),
+        maxCandidates: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponsePolicyOneLimitsMaxCandidatesMax),
+        maxDurationSeconds: zod
+          .number()
+          .min(getJobSourcingControlsResponsePolicyOneLimitsMaxDurationSecondsMin)
+          .max(getJobSourcingControlsResponsePolicyOneLimitsMaxDurationSecondsMax),
+        maxRuns: zod.number().min(1).max(getJobSourcingControlsResponsePolicyOneLimitsMaxRunsMax),
+        runBudgetCents: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponsePolicyOneLimitsRunBudgetCentsMax),
+        totalBudgetCents: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponsePolicyOneLimitsTotalBudgetCentsMax),
+        accountRates: zod
+          .object({
+            pdl: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlSourceMin)
+                  .max(getJobSourcingControlsResponsePolicyOneLimitsAccountRatesPdlSourceMax),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+            serp: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpSourceMin)
+                  .max(getJobSourcingControlsResponsePolicyOneLimitsAccountRatesSerpSourceMax),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+            enrichlayer: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(
+                    getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerSourceMin,
+                  )
+                  .max(
+                    getJobSourcingControlsResponsePolicyOneLimitsAccountRatesEnrichlayerSourceMax,
+                  ),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+          })
+          .optional(),
+      }),
+      status: zod.enum(["draft", "approved", "paused"]),
+      briefHash: zod.string(),
+      journeyId: zod.string().nullable(),
+      approvedById: zod.string().nullable(),
+      approvedAt: zod.date().nullable(),
+      updatedAt: zod.date(),
+      stale: zod.boolean(),
+    })
+    .nullable(),
+  reservations: zod.array(
+    zod.object({
+      id: zod.string(),
+      jobId: zod.string(),
+      tenantId: zod.string(),
+      policyRevision: zod.number(),
+      policyHash: zod.string(),
+      briefHash: zod.string(),
+      journeyId: zod.string(),
+      limits: zod.object({
+        allowExternal: zod.boolean(),
+        providers: zod.array(zod.enum(["github", "pdl", "serp", "enrichlayer"])),
+        maxCandidates: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponseReservationsItemLimitsMaxCandidatesMax),
+        maxDurationSeconds: zod
+          .number()
+          .min(getJobSourcingControlsResponseReservationsItemLimitsMaxDurationSecondsMin)
+          .max(getJobSourcingControlsResponseReservationsItemLimitsMaxDurationSecondsMax),
+        maxRuns: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponseReservationsItemLimitsMaxRunsMax),
+        runBudgetCents: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponseReservationsItemLimitsRunBudgetCentsMax),
+        totalBudgetCents: zod
+          .number()
+          .min(1)
+          .max(getJobSourcingControlsResponseReservationsItemLimitsTotalBudgetCentsMax),
+        accountRates: zod
+          .object({
+            pdl: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlSourceMin)
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesPdlSourceMax,
+                  ),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+            serp: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpSourceMin,
+                  )
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesSerpSourceMax,
+                  ),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+            enrichlayer: zod
+              .object({
+                microsPerCredit: zod
+                  .number()
+                  .min(1)
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerMicrosPerCreditMax,
+                  ),
+                basis: zod.enum(["prepaid_allocation", "payg"]),
+                source: zod
+                  .string()
+                  .min(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerSourceMin,
+                  )
+                  .max(
+                    getJobSourcingControlsResponseReservationsItemLimitsAccountRatesEnrichlayerSourceMax,
+                  ),
+                expiresAt: zod.date(),
+              })
+              .optional(),
+          })
+          .optional(),
+      }),
+      reservedCents: zod.number(),
+      status: zod.enum(["reserved", "paused", "cancelled"]),
+      revision: zod.number(),
+      createdById: zod.string(),
+      createdAt: zod.date(),
+      updatedAt: zod.date(),
+      stale: zod.boolean(),
+    }),
+  ),
+  allocatedCents: zod.number(),
+  availableCents: zod.number(),
+  blockers: zod.array(zod.string()),
+});
+
+/**
+ * @summary Manage approved sourcing holds or start local-only internal talent discovery
+ */
+export const CommandJobSourcingControlsParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const commandJobSourcingControlsBodyIdempotencyKeyMin = 8;
+export const commandJobSourcingControlsBodyIdempotencyKeyMax = 128;
+
+export const commandJobSourcingControlsBodyExpectedRevisionMin = 0;
+
+export const commandJobSourcingControlsBodyLimitsMaxCandidatesMax = 25;
+
+export const commandJobSourcingControlsBodyLimitsMaxDurationSecondsMin = 30;
+export const commandJobSourcingControlsBodyLimitsMaxDurationSecondsMax = 900;
+
+export const commandJobSourcingControlsBodyLimitsMaxRunsMax = 20;
+
+export const commandJobSourcingControlsBodyLimitsRunBudgetCentsMax = 1000000;
+
+export const commandJobSourcingControlsBodyLimitsTotalBudgetCentsMax = 10000000;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesPdlMicrosPerCreditMax = 100000000;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesPdlSourceMin = 3;
+export const commandJobSourcingControlsBodyLimitsAccountRatesPdlSourceMax = 160;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesSerpMicrosPerCreditMax = 100000000;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesSerpSourceMin = 3;
+export const commandJobSourcingControlsBodyLimitsAccountRatesSerpSourceMax = 160;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerMicrosPerCreditMax = 100000000;
+
+export const commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerSourceMin = 3;
+export const commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerSourceMax = 160;
+
+export const commandJobSourcingControlsBodyProfileUrlMax = 500;
+
+export const commandJobSourcingControlsBodyFullNameMin = 2;
+export const commandJobSourcingControlsBodyFullNameMax = 160;
+
+export const CommandJobSourcingControlsBody = zod.object({
+  action: zod.enum([
+    "save",
+    "approve",
+    "reserve",
+    "pause",
+    "resume",
+    "cancel",
+    "start_internal",
+    "start_external",
+    "import_profile",
+  ]),
+  idempotencyKey: zod
+    .string()
+    .min(commandJobSourcingControlsBodyIdempotencyKeyMin)
+    .max(commandJobSourcingControlsBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(commandJobSourcingControlsBodyExpectedRevisionMin),
+  expectedBriefHash: zod.string().optional(),
+  limits: zod
+    .object({
+      allowExternal: zod.boolean(),
+      providers: zod.array(zod.enum(["github", "pdl", "serp", "enrichlayer"])),
+      maxCandidates: zod.number().min(1).max(commandJobSourcingControlsBodyLimitsMaxCandidatesMax),
+      maxDurationSeconds: zod
+        .number()
+        .min(commandJobSourcingControlsBodyLimitsMaxDurationSecondsMin)
+        .max(commandJobSourcingControlsBodyLimitsMaxDurationSecondsMax),
+      maxRuns: zod.number().min(1).max(commandJobSourcingControlsBodyLimitsMaxRunsMax),
+      runBudgetCents: zod
+        .number()
+        .min(1)
+        .max(commandJobSourcingControlsBodyLimitsRunBudgetCentsMax),
+      totalBudgetCents: zod
+        .number()
+        .min(1)
+        .max(commandJobSourcingControlsBodyLimitsTotalBudgetCentsMax),
+      accountRates: zod
+        .object({
+          pdl: zod
+            .object({
+              microsPerCredit: zod
+                .number()
+                .min(1)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesPdlMicrosPerCreditMax),
+              basis: zod.enum(["prepaid_allocation", "payg"]),
+              source: zod
+                .string()
+                .min(commandJobSourcingControlsBodyLimitsAccountRatesPdlSourceMin)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesPdlSourceMax),
+              expiresAt: zod.date(),
+            })
+            .optional(),
+          serp: zod
+            .object({
+              microsPerCredit: zod
+                .number()
+                .min(1)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesSerpMicrosPerCreditMax),
+              basis: zod.enum(["prepaid_allocation", "payg"]),
+              source: zod
+                .string()
+                .min(commandJobSourcingControlsBodyLimitsAccountRatesSerpSourceMin)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesSerpSourceMax),
+              expiresAt: zod.date(),
+            })
+            .optional(),
+          enrichlayer: zod
+            .object({
+              microsPerCredit: zod
+                .number()
+                .min(1)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerMicrosPerCreditMax),
+              basis: zod.enum(["prepaid_allocation", "payg"]),
+              source: zod
+                .string()
+                .min(commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerSourceMin)
+                .max(commandJobSourcingControlsBodyLimitsAccountRatesEnrichlayerSourceMax),
+              expiresAt: zod.date(),
+            })
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  journeyId: zod.string().optional(),
+  reservationId: zod.string().optional(),
+  operationId: zod.string().optional(),
+  profileUrl: zod.string().max(commandJobSourcingControlsBodyProfileUrlMax).optional(),
+  fullName: zod
+    .string()
+    .min(commandJobSourcingControlsBodyFullNameMin)
+    .max(commandJobSourcingControlsBodyFullNameMax)
+    .optional(),
+});
+
+export const CommandJobSourcingControlsResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Explain proposed work with read-only deterministic shadow rules
+ */
+export const GetJobWorkflowShadowParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const getJobWorkflowShadowResponseProposalsItemCompletedStepsMin = 0;
+
+export const GetJobWorkflowShadowResponse = zod.object({
+  generatedAt: zod.date(),
+  briefHash: zod.string(),
+  methodology: zod.enum(["deterministic_workflow_rules"]),
+  recruitingMode: zod
+    .enum(["human_assisted", "lexy_autonomous"])
+    .describe("Planned recruiting mode only; never grants execution authority."),
+  sourcingScope: zod.enum([
+    "client_current_employees",
+    "known_nonemployees_then_permitted_external",
+  ]),
+  autonomyExecutionEnabled: zod.literal(false),
+  executionAllowed: zod.literal(false),
+  modelCalls: zod.literal(0),
+  estimatedExecutionCost: zod.number().nullable(),
+  costExplanation: zod.string(),
+  proposals: zod.array(
+    zod.object({
+      id: zod.string(),
+      scope: zod.enum(["requisition", "candidate"]),
+      workflowId: zod.string().nullable(),
+      candidateId: zod.string().nullable(),
+      candidateName: zod.string().nullable(),
+      journeyVersion: zod.number().nullable(),
+      workflowRevision: zod.number().nullable(),
+      nextStepKey: zod.string().nullable(),
+      title: zod.string(),
+      disposition: zod.enum(["proposed", "blocked", "review_required", "terminal"]),
+      explanation: zod.string(),
+      reasons: zod.array(zod.string()),
+      requiredChecks: zod.array(zod.string()),
+      completedSteps: zod.number().min(getJobWorkflowShadowResponseProposalsItemCompletedStepsMin),
+      evidenceSource: zod.enum(["manual_workflow_notes"]),
+      executionAllowed: zod.literal(false),
+    }),
+  ),
+});
+
+/**
+ * @summary Read planned journeys and candidate-specific workflow evidence
+ */
+export const GetJobWorkflowStateParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsEmployerNameMax = 200;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsRoleTitleMax = 200;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsAmountExclusiveMin = 0;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsCurrencyRegExp =
+  new RegExp("^[A-Z]{3}$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLocationMax = 300;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsStartDateRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsExpiresAtRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLetterMin = 10;
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLetterMax = 12000;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferProviderDeliveryEventsMax = 16;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsEmployerNameMax = 200;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsRoleTitleMax = 200;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsAmountExclusiveMin = 0;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsCurrencyRegExp =
+  new RegExp("^[A-Z]{3}$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLocationMax = 300;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsStartDateRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsExpiresAtRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$");
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLetterMin = 10;
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLetterMax = 12000;
+
+export const getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemProviderDeliveryEventsMax = 16;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsEmployerNameMax = 200;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsRoleTitleMax = 200;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsAmountExclusiveMin = 0;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsCurrencyRegExp =
+  new RegExp("^[A-Z]{3}$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLocationMax = 300;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsStartDateRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsExpiresAtRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLetterMin = 10;
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLetterMax = 12000;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferProviderDeliveryEventsMax = 16;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsEmployerNameMax = 200;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsRoleTitleMax = 200;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsAmountExclusiveMin = 0;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsCurrencyRegExp =
+  new RegExp("^[A-Z]{3}$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLocationMax = 300;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsStartDateRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsExpiresAtRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$");
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLetterMin = 10;
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLetterMax = 12000;
+
+export const getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemProviderDeliveryEventsMax = 16;
+
+export const GetJobWorkflowStateResponse = zod.object({
+  canControlLivePilot: zod.boolean().optional(),
+  briefHash: zod.string(),
+  autonomyExecutionEnabled: zod.literal(false),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  jobApproved: zod.boolean(),
+  journeys: zod.array(
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      status: zod.enum(["draft", "approved"]),
+      briefHash: zod.string(),
+      stale: zod.boolean(),
+      interviewPath: zod
+        .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+        .describe("Planned interview sequence, separate from interview assessment type."),
+      createdById: zod.string(),
+      approvedById: zod.string().nullable(),
+      steps: zod.array(
+        zod.object({
+          key: zod.string(),
+          label: zod.string(),
+          authority: zod.enum(["human_review"]),
+          status: zod.enum(["pending", "completed", "review_required", "failed", "cancelled"]),
+          evidence: zod.string().nullable(),
+          humanDecision: zod
+            .object({
+              outcome: zod.enum(["hire", "hold", "decline"]),
+              actorId: zod.string(),
+              actorName: zod.string(),
+              decidedAt: zod.string(),
+              reason: zod.string(),
+              testOnly: zod.boolean(),
+              correctionReason: zod.string().optional(),
+              supersedesDecidedAt: zod.string().optional(),
+              offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+            })
+            .optional(),
+          humanDecisionHistory: zod
+            .array(
+              zod.object({
+                outcome: zod.enum(["hire", "hold", "decline"]),
+                actorId: zod.string(),
+                actorName: zod.string(),
+                decidedAt: zod.string(),
+                reason: zod.string(),
+                testOnly: zod.boolean(),
+                correctionReason: zod.string().optional(),
+                supersedesDecidedAt: zod.string().optional(),
+                offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+              }),
+            )
+            .optional(),
+          controlledOffer: zod
+            .object({
+              id: zod.string(),
+              version: zod.number(),
+              status: zod.enum([
+                "draft",
+                "review_required",
+                "approved",
+                "sending",
+                "sent",
+                "accepted",
+                "declined",
+                "expired",
+                "withdrawn",
+                "send_uncertain",
+              ]),
+              terms: zod.object({
+                employerName: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsEmployerNameMax,
+                  ),
+                roleTitle: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsRoleTitleMax,
+                  ),
+                amount: zod
+                  .number()
+                  .gt(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsAmountExclusiveMin,
+                  ),
+                currency: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsCurrencyRegExp,
+                  ),
+                frequency: zod.enum(["hourly", "monthly", "annual"]),
+                location: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLocationMax,
+                  ),
+                startDate: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsStartDateRegExp,
+                  ),
+                expiresAt: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsExpiresAtRegExp,
+                  ),
+                letter: zod
+                  .string()
+                  .min(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLetterMin,
+                  )
+                  .max(
+                    getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferTermsLetterMax,
+                  ),
+              }),
+              recipientEmail: zod.string(),
+              testOnly: zod.boolean(),
+              createdBy: zod.string(),
+              createdAt: zod.string(),
+              approvedBy: zod.string().optional(),
+              approvedAt: zod.string().optional(),
+              sentAt: zod.string().optional(),
+              deliveryStartedAt: zod.string().optional(),
+              deliveryReceiptId: zod.string().optional(),
+              deliveryAttemptId: zod.string().optional(),
+              providerDelivery: zod
+                .object({
+                  provider: zod.enum(["ses"]),
+                  messageId: zod.string(),
+                  deliveryAttemptId: zod.string(),
+                  status: zod.enum([
+                    "accepted",
+                    "delivered",
+                    "delayed",
+                    "bounced",
+                    "rejected",
+                    "complained",
+                  ]),
+                  occurredAt: zod.string(),
+                  receivedAt: zod.string(),
+                  events: zod
+                    .array(
+                      zod.object({
+                        id: zod.string(),
+                        status: zod.enum([
+                          "accepted",
+                          "delivered",
+                          "delayed",
+                          "bounced",
+                          "rejected",
+                          "complained",
+                        ]),
+                        occurredAt: zod.string(),
+                      }),
+                    )
+                    .max(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferProviderDeliveryEventsMax,
+                    ),
+                })
+                .optional(),
+              deliveryReconciliation: zod
+                .object({
+                  outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+                  checkedAt: zod.string(),
+                  checkedBy: zod.string(),
+                  reason: zod.string(),
+                  evidenceReference: zod.string().optional(),
+                })
+                .optional(),
+              respondedAt: zod.string().optional(),
+              responseReason: zod.string().optional(),
+            })
+            .optional(),
+          controlledOfferHistory: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                version: zod.number(),
+                status: zod.enum([
+                  "draft",
+                  "review_required",
+                  "approved",
+                  "sending",
+                  "sent",
+                  "accepted",
+                  "declined",
+                  "expired",
+                  "withdrawn",
+                  "send_uncertain",
+                ]),
+                terms: zod.object({
+                  employerName: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsEmployerNameMax,
+                    ),
+                  roleTitle: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsRoleTitleMax,
+                    ),
+                  amount: zod
+                    .number()
+                    .gt(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsAmountExclusiveMin,
+                    ),
+                  currency: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsCurrencyRegExp,
+                    ),
+                  frequency: zod.enum(["hourly", "monthly", "annual"]),
+                  location: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLocationMax,
+                    ),
+                  startDate: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsStartDateRegExp,
+                    ),
+                  expiresAt: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsExpiresAtRegExp,
+                    ),
+                  letter: zod
+                    .string()
+                    .min(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLetterMin,
+                    )
+                    .max(
+                      getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemTermsLetterMax,
+                    ),
+                }),
+                recipientEmail: zod.string(),
+                testOnly: zod.boolean(),
+                createdBy: zod.string(),
+                createdAt: zod.string(),
+                approvedBy: zod.string().optional(),
+                approvedAt: zod.string().optional(),
+                sentAt: zod.string().optional(),
+                deliveryStartedAt: zod.string().optional(),
+                deliveryReceiptId: zod.string().optional(),
+                deliveryAttemptId: zod.string().optional(),
+                providerDelivery: zod
+                  .object({
+                    provider: zod.enum(["ses"]),
+                    messageId: zod.string(),
+                    deliveryAttemptId: zod.string(),
+                    status: zod.enum([
+                      "accepted",
+                      "delivered",
+                      "delayed",
+                      "bounced",
+                      "rejected",
+                      "complained",
+                    ]),
+                    occurredAt: zod.string(),
+                    receivedAt: zod.string(),
+                    events: zod
+                      .array(
+                        zod.object({
+                          id: zod.string(),
+                          status: zod.enum([
+                            "accepted",
+                            "delivered",
+                            "delayed",
+                            "bounced",
+                            "rejected",
+                            "complained",
+                          ]),
+                          occurredAt: zod.string(),
+                        }),
+                      )
+                      .max(
+                        getJobWorkflowStateResponseJourneysItemStepsItemControlledOfferHistoryItemProviderDeliveryEventsMax,
+                      ),
+                  })
+                  .optional(),
+                deliveryReconciliation: zod
+                  .object({
+                    outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+                    checkedAt: zod.string(),
+                    checkedBy: zod.string(),
+                    reason: zod.string(),
+                    evidenceReference: zod.string().optional(),
+                  })
+                  .optional(),
+                respondedAt: zod.string().optional(),
+                responseReason: zod.string().optional(),
+              }),
+            )
+            .optional(),
+        }),
+      ),
+    }),
+  ),
+  workflows: zod.array(
+    zod.object({
+      identityResolutionAllowed: zod
+        .boolean()
+        .optional()
+        .describe(
+          "Human approval role and canonical candidate owner scope are both required; platform discovery alone never authorises global identity writes.",
+        ),
+      livePilot: zod
+        .object({
+          stepKey: zod
+            .union([
+              zod.literal("screening"),
+              zod.literal("verification"),
+              zod.literal("engagement"),
+              zod.literal("ai_interview"),
+              zod.literal(null),
+            ])
+            .nullish(),
+          eligible: zod.boolean(),
+          active: zod.boolean(),
+          attempted: zod.boolean(),
+          sendAttempted: zod
+            .boolean()
+            .optional()
+            .describe("Engagement first-touch send already claimed; never automatically retry."),
+          expiresAt: zod.date().nullable(),
+          testRecipient: zod
+            .object({
+              active: zod.boolean(),
+              expiresAt: zod.date().nullable(),
+              controlledEmail: zod.string().nullable(),
+            })
+            .optional(),
+        })
+        .optional(),
+      recovery: zod
+        .object({
+          available: zod.boolean(),
+          authorized: zod.boolean(),
+          attemptId: zod.string().nullable(),
+          reason: zod.string().nullable(),
+          blockedReason: zod.string().nullable(),
+        })
+        .optional(),
+      id: zod.string(),
+      candidateId: zod.string(),
+      candidateName: zod.string(),
+      screeningReadiness: zod
+        .object({
+          ready: zod.boolean(),
+          reason: zod.string().nullable(),
+        })
+        .optional(),
+      journeyId: zod.string(),
+      journeyVersion: zod.number(),
+      interviewPath: zod.string(),
+      status: zod.enum(["ready", "paused", "cancelled", "completed"]),
+      revision: zod.number(),
+      stale: zod.boolean(),
+      runtimeEvidenceBlockedReason: zod.string().nullish(),
+      runtimeEvidence: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            stepKey: zod.string(),
+            sourceType: zod.string(),
+            sourceId: zod.string(),
+            occurredAt: zod.date(),
+            scope: zod.enum(["job", "candidate_identity"]),
+            summary: zod.string(),
+            attentionRequired: zod.boolean(),
+            readyForReview: zod.boolean(),
+            reason: zod.string().nullable(),
+          }),
+        )
+        .optional(),
+      steps: zod.array(
+        zod.object({
+          key: zod.string(),
+          label: zod.string(),
+          authority: zod.enum(["human_review"]),
+          status: zod.enum(["pending", "completed", "review_required", "failed", "cancelled"]),
+          evidence: zod.string().nullable(),
+          humanDecision: zod
+            .object({
+              outcome: zod.enum(["hire", "hold", "decline"]),
+              actorId: zod.string(),
+              actorName: zod.string(),
+              decidedAt: zod.string(),
+              reason: zod.string(),
+              testOnly: zod.boolean(),
+              correctionReason: zod.string().optional(),
+              supersedesDecidedAt: zod.string().optional(),
+              offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+            })
+            .optional(),
+          humanDecisionHistory: zod
+            .array(
+              zod.object({
+                outcome: zod.enum(["hire", "hold", "decline"]),
+                actorId: zod.string(),
+                actorName: zod.string(),
+                decidedAt: zod.string(),
+                reason: zod.string(),
+                testOnly: zod.boolean(),
+                correctionReason: zod.string().optional(),
+                supersedesDecidedAt: zod.string().optional(),
+                offerEffect: zod.enum(["none", "approval_reset", "sent_retained"]).optional(),
+              }),
+            )
+            .optional(),
+          controlledOffer: zod
+            .object({
+              id: zod.string(),
+              version: zod.number(),
+              status: zod.enum([
+                "draft",
+                "review_required",
+                "approved",
+                "sending",
+                "sent",
+                "accepted",
+                "declined",
+                "expired",
+                "withdrawn",
+                "send_uncertain",
+              ]),
+              terms: zod.object({
+                employerName: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsEmployerNameMax,
+                  ),
+                roleTitle: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsRoleTitleMax,
+                  ),
+                amount: zod
+                  .number()
+                  .gt(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsAmountExclusiveMin,
+                  ),
+                currency: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsCurrencyRegExp,
+                  ),
+                frequency: zod.enum(["hourly", "monthly", "annual"]),
+                location: zod
+                  .string()
+                  .min(1)
+                  .max(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLocationMax,
+                  ),
+                startDate: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsStartDateRegExp,
+                  ),
+                expiresAt: zod
+                  .string()
+                  .regex(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsExpiresAtRegExp,
+                  ),
+                letter: zod
+                  .string()
+                  .min(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLetterMin,
+                  )
+                  .max(
+                    getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferTermsLetterMax,
+                  ),
+              }),
+              recipientEmail: zod.string(),
+              testOnly: zod.boolean(),
+              createdBy: zod.string(),
+              createdAt: zod.string(),
+              approvedBy: zod.string().optional(),
+              approvedAt: zod.string().optional(),
+              sentAt: zod.string().optional(),
+              deliveryStartedAt: zod.string().optional(),
+              deliveryReceiptId: zod.string().optional(),
+              deliveryAttemptId: zod.string().optional(),
+              providerDelivery: zod
+                .object({
+                  provider: zod.enum(["ses"]),
+                  messageId: zod.string(),
+                  deliveryAttemptId: zod.string(),
+                  status: zod.enum([
+                    "accepted",
+                    "delivered",
+                    "delayed",
+                    "bounced",
+                    "rejected",
+                    "complained",
+                  ]),
+                  occurredAt: zod.string(),
+                  receivedAt: zod.string(),
+                  events: zod
+                    .array(
+                      zod.object({
+                        id: zod.string(),
+                        status: zod.enum([
+                          "accepted",
+                          "delivered",
+                          "delayed",
+                          "bounced",
+                          "rejected",
+                          "complained",
+                        ]),
+                        occurredAt: zod.string(),
+                      }),
+                    )
+                    .max(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferProviderDeliveryEventsMax,
+                    ),
+                })
+                .optional(),
+              deliveryReconciliation: zod
+                .object({
+                  outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+                  checkedAt: zod.string(),
+                  checkedBy: zod.string(),
+                  reason: zod.string(),
+                  evidenceReference: zod.string().optional(),
+                })
+                .optional(),
+              respondedAt: zod.string().optional(),
+              responseReason: zod.string().optional(),
+            })
+            .optional(),
+          controlledOfferHistory: zod
+            .array(
+              zod.object({
+                id: zod.string(),
+                version: zod.number(),
+                status: zod.enum([
+                  "draft",
+                  "review_required",
+                  "approved",
+                  "sending",
+                  "sent",
+                  "accepted",
+                  "declined",
+                  "expired",
+                  "withdrawn",
+                  "send_uncertain",
+                ]),
+                terms: zod.object({
+                  employerName: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsEmployerNameMax,
+                    ),
+                  roleTitle: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsRoleTitleMax,
+                    ),
+                  amount: zod
+                    .number()
+                    .gt(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsAmountExclusiveMin,
+                    ),
+                  currency: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsCurrencyRegExp,
+                    ),
+                  frequency: zod.enum(["hourly", "monthly", "annual"]),
+                  location: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLocationMax,
+                    ),
+                  startDate: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsStartDateRegExp,
+                    ),
+                  expiresAt: zod
+                    .string()
+                    .regex(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsExpiresAtRegExp,
+                    ),
+                  letter: zod
+                    .string()
+                    .min(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLetterMin,
+                    )
+                    .max(
+                      getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemTermsLetterMax,
+                    ),
+                }),
+                recipientEmail: zod.string(),
+                testOnly: zod.boolean(),
+                createdBy: zod.string(),
+                createdAt: zod.string(),
+                approvedBy: zod.string().optional(),
+                approvedAt: zod.string().optional(),
+                sentAt: zod.string().optional(),
+                deliveryStartedAt: zod.string().optional(),
+                deliveryReceiptId: zod.string().optional(),
+                deliveryAttemptId: zod.string().optional(),
+                providerDelivery: zod
+                  .object({
+                    provider: zod.enum(["ses"]),
+                    messageId: zod.string(),
+                    deliveryAttemptId: zod.string(),
+                    status: zod.enum([
+                      "accepted",
+                      "delivered",
+                      "delayed",
+                      "bounced",
+                      "rejected",
+                      "complained",
+                    ]),
+                    occurredAt: zod.string(),
+                    receivedAt: zod.string(),
+                    events: zod
+                      .array(
+                        zod.object({
+                          id: zod.string(),
+                          status: zod.enum([
+                            "accepted",
+                            "delivered",
+                            "delayed",
+                            "bounced",
+                            "rejected",
+                            "complained",
+                          ]),
+                          occurredAt: zod.string(),
+                        }),
+                      )
+                      .max(
+                        getJobWorkflowStateResponseWorkflowsItemStepsItemControlledOfferHistoryItemProviderDeliveryEventsMax,
+                      ),
+                  })
+                  .optional(),
+                deliveryReconciliation: zod
+                  .object({
+                    outcome: zod.enum(["provider_accepted", "confirmed_not_sent", "uncertain"]),
+                    checkedAt: zod.string(),
+                    checkedBy: zod.string(),
+                    reason: zod.string(),
+                    evidenceReference: zod.string().optional(),
+                  })
+                  .optional(),
+                respondedAt: zod.string().optional(),
+                responseReason: zod.string().optional(),
+              }),
+            )
+            .optional(),
+        }),
+      ),
+    }),
+  ),
+  candidates: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      screeningReadiness: zod
+        .object({
+          ready: zod.boolean(),
+          reason: zod.string().nullable(),
+        })
+        .optional(),
+    }),
+  ),
+  events: zod.array(
+    zod.object({
+      id: zod.string(),
+      workflowId: zod.string().nullable(),
+      journeyId: zod.string().nullable(),
+      action: zod.string(),
+      actorId: zod.string(),
+      note: zod.string().nullable(),
+      createdAt: zod.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Capture an immutable journey draft from the current requisition brief
+ */
+export const DraftJobWorkflowJourneyParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const draftJobWorkflowJourneyBodyIdempotencyKeyMin = 8;
+export const draftJobWorkflowJourneyBodyIdempotencyKeyMax = 120;
+
+export const draftJobWorkflowJourneyBodyExpectedBriefHashMin = 64;
+export const draftJobWorkflowJourneyBodyExpectedBriefHashMax = 64;
+
+export const DraftJobWorkflowJourneyBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(draftJobWorkflowJourneyBodyIdempotencyKeyMin)
+    .max(draftJobWorkflowJourneyBodyIdempotencyKeyMax),
+  expectedBriefHash: zod
+    .string()
+    .min(draftJobWorkflowJourneyBodyExpectedBriefHashMin)
+    .max(draftJobWorkflowJourneyBodyExpectedBriefHashMax),
+});
+
+export const DraftJobWorkflowJourneyResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Human approval of one exact journey and brief version
+ */
+export const ApproveJobWorkflowJourneyParams = zod.object({
+  jobId: zod.coerce.string(),
+  journeyId: zod.coerce.string(),
+});
+
+export const approveJobWorkflowJourneyBodyIdempotencyKeyMin = 8;
+export const approveJobWorkflowJourneyBodyIdempotencyKeyMax = 120;
+
+export const approveJobWorkflowJourneyBodyExpectedBriefHashMin = 64;
+export const approveJobWorkflowJourneyBodyExpectedBriefHashMax = 64;
+
+export const ApproveJobWorkflowJourneyBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(approveJobWorkflowJourneyBodyIdempotencyKeyMin)
+    .max(approveJobWorkflowJourneyBodyIdempotencyKeyMax),
+  expectedBriefHash: zod
+    .string()
+    .min(approveJobWorkflowJourneyBodyExpectedBriefHashMin)
+    .max(approveJobWorkflowJourneyBodyExpectedBriefHashMax),
+});
+
+export const ApproveJobWorkflowJourneyResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Explicitly bind a linked candidate to an approved journey version
+ */
+export const EnrollCandidateWorkflowParams = zod.object({
+  jobId: zod.coerce.string(),
+});
+
+export const enrollCandidateWorkflowBodyIdempotencyKeyMin = 8;
+export const enrollCandidateWorkflowBodyIdempotencyKeyMax = 120;
+
+export const enrollCandidateWorkflowBodyExpectedBriefHashMin = 64;
+export const enrollCandidateWorkflowBodyExpectedBriefHashMax = 64;
+
+export const EnrollCandidateWorkflowBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(enrollCandidateWorkflowBodyIdempotencyKeyMin)
+    .max(enrollCandidateWorkflowBodyIdempotencyKeyMax),
+  expectedBriefHash: zod
+    .string()
+    .min(enrollCandidateWorkflowBodyExpectedBriefHashMin)
+    .max(enrollCandidateWorkflowBodyExpectedBriefHashMax),
+  journeyId: zod.string(),
+  candidateId: zod.string(),
+  interviewPath: zod.enum(["ai", "human", "ai_then_human", "human_then_ai"]).optional(),
+});
+
+export const EnrollCandidateWorkflowResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Pause, resume or cancel only this planned candidate workflow
+ */
+export const ControlCandidateWorkflowParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlCandidateWorkflowBodyIdempotencyKeyMin = 8;
+export const controlCandidateWorkflowBodyIdempotencyKeyMax = 120;
+
+export const ControlCandidateWorkflowBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(controlCandidateWorkflowBodyIdempotencyKeyMin)
+    .max(controlCandidateWorkflowBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+  action: zod.enum(["pause", "resume", "cancel"]),
+});
+
+export const ControlCandidateWorkflowResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Request the next guarded action for one approved candidate workflow
+ */
+export const LaunchCandidateWorkflowActionParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const launchCandidateWorkflowActionBodyIdempotencyKeyMin = 8;
+export const launchCandidateWorkflowActionBodyIdempotencyKeyMax = 120;
+
+export const LaunchCandidateWorkflowActionBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(launchCandidateWorkflowActionBodyIdempotencyKeyMin)
+    .max(launchCandidateWorkflowActionBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+});
+
+export const LaunchCandidateWorkflowActionResponse = zod.object({
+  runId: zod.string(),
+  status: zod.string(),
+});
+
+export const GetWorkflowFollowUpsParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const GetWorkflowFollowUpsResponse = zod.object({
+  followUps: zod.array(
+    zod.object({
+      id: zod.string(),
+      version: zod.number(),
+      recipient: zod.string(),
+      subject: zod.string(),
+      body: zod.string(),
+      scheduledAt: zod.date(),
+      status: zod.enum(["draft", "approved", "claimed", "sent", "unknown", "cancelled"]),
+      blockedReason: zod.string().nullable(),
+    }),
+  ),
+  held: zod.array(
+    zod.object({
+      id: zod.string(),
+      subject: zod.string().nullable(),
+      body: zod.string().nullable(),
+      reason: zod.string(),
+    }),
+  ),
+  recipient: zod.string(),
+  blockedReason: zod.string().nullable(),
+});
+
+export const ControlWorkflowFollowUpParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlWorkflowFollowUpBodyIdempotencyKeyMax = 200;
+
+export const controlWorkflowFollowUpBodySubjectMax = 160;
+
+export const controlWorkflowFollowUpBodyBodyMax = 4000;
+
+export const ControlWorkflowFollowUpBody = zod.object({
+  action: zod.enum(["draft", "approve", "cancel", "send"]),
+  expectedRevision: zod.number().min(1),
+  idempotencyKey: zod.string().min(1).max(controlWorkflowFollowUpBodyIdempotencyKeyMax),
+  id: zod.string().optional(),
+  expectedVersion: zod.number().min(1).optional(),
+  subject: zod.string().min(1).max(controlWorkflowFollowUpBodySubjectMax).optional(),
+  body: zod.string().min(1).max(controlWorkflowFollowUpBodyBodyMax).optional(),
+  scheduledAt: zod.date().optional(),
+  acknowledgeUnknownCost: zod.boolean().optional(),
+});
+
+export const ControlWorkflowFollowUpResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Authorize one recovery after trusted pre-effect proof, retaining prior claims
+ */
+export const RecoverCandidateWorkflowActionParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const recoverCandidateWorkflowActionBodyIdempotencyKeyMin = 8;
+export const recoverCandidateWorkflowActionBodyIdempotencyKeyMax = 120;
+
+export const RecoverCandidateWorkflowActionBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(recoverCandidateWorkflowActionBodyIdempotencyKeyMin)
+    .max(recoverCandidateWorkflowActionBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+  attemptId: zod.string().min(1),
+  acknowledge: zod.boolean(),
+});
+
+export const RecoverCandidateWorkflowActionResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+export const ControlWorkflowLivePilotParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlWorkflowLivePilotBodyIdempotencyKeyMin = 8;
+export const controlWorkflowLivePilotBodyIdempotencyKeyMax = 120;
+
+export const ControlWorkflowLivePilotBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(controlWorkflowLivePilotBodyIdempotencyKeyMin)
+    .max(controlWorkflowLivePilotBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+  action: zod.enum(["activate", "revoke", "approve_recipient", "revoke_recipient"]),
+  controlledEmail: zod.string().email().optional(),
+  acknowledgeUnknownCosts: zod.boolean().optional(),
+  acknowledgeTestRecipient: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Attest that this is a fictional profile and an owner-controlled internal test inbox",
+    ),
+  stepKey: zod.enum(["screening", "verification", "engagement", "ai_interview"]).optional(),
+});
+
+export const ControlWorkflowLivePilotResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Save an audited human identity decision without executing agents or sending contact
+ */
+export const ResolveWorkflowIdentityParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const resolveWorkflowIdentityBodyIdempotencyKeyMin = 8;
+export const resolveWorkflowIdentityBodyIdempotencyKeyMax = 120;
+
+export const resolveWorkflowIdentityBodyEvidenceMin = 30;
+export const resolveWorkflowIdentityBodyEvidenceMax = 2000;
+
+export const ResolveWorkflowIdentityBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(resolveWorkflowIdentityBodyIdempotencyKeyMin)
+    .max(resolveWorkflowIdentityBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+  recordId: zod.string().min(1),
+  recordUpdatedAt: zod.date(),
+  decision: zod.enum(["corroborated", "internal_test", "unresolved"]),
+  evidence: zod
+    .string()
+    .min(resolveWorkflowIdentityBodyEvidenceMin)
+    .max(resolveWorkflowIdentityBodyEvidenceMax),
+  acknowledge: zod.boolean(),
+});
+
+export const ResolveWorkflowIdentityResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Record human-provided evidence without changing the assisted pipeline
+ */
+export const RecordCandidateWorkflowEvidenceParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const recordCandidateWorkflowEvidenceBodyIdempotencyKeyMin = 8;
+export const recordCandidateWorkflowEvidenceBodyIdempotencyKeyMax = 120;
+
+export const recordCandidateWorkflowEvidenceBodyEvidenceMax = 4000;
+
+export const RecordCandidateWorkflowEvidenceBody = zod.object({
+  runtimeEvidenceId: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional server-issued observation identifier; revalidated against the current workflow and source before human review is saved.",
+    ),
+  idempotencyKey: zod
+    .string()
+    .min(recordCandidateWorkflowEvidenceBodyIdempotencyKeyMin)
+    .max(recordCandidateWorkflowEvidenceBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(1),
+  stepKey: zod.string(),
+  status: zod.enum(["completed", "review_required", "failed"]),
+  evidence: zod.string().min(1).max(recordCandidateWorkflowEvidenceBodyEvidenceMax),
+  decision: zod
+    .enum(["hire", "hold", "decline"])
+    .optional()
+    .describe(
+      "Human outcome on the final step only. Hire\/decline require completed; hold requires review_required. Reviewer, timestamp and test classification are server-owned.",
+    ),
+});
+
+export const RecordCandidateWorkflowEvidenceResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
+});
+
+/**
+ * @summary Append an authorised correction without rewriting hiring history or employment
+ */
+export const CorrectCandidateWorkflowDecisionParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const correctCandidateWorkflowDecisionBodyIdempotencyKeyMin = 8;
+export const correctCandidateWorkflowDecisionBodyIdempotencyKeyMax = 120;
+
+export const correctCandidateWorkflowDecisionBodyExpectedRevisionMin = 0;
+
+export const correctCandidateWorkflowDecisionBodyDecisionReasonMin = 10;
+export const correctCandidateWorkflowDecisionBodyDecisionReasonMax = 4000;
+
+export const correctCandidateWorkflowDecisionBodyCorrectionReasonMin = 10;
+export const correctCandidateWorkflowDecisionBodyCorrectionReasonMax = 2000;
+
+export const CorrectCandidateWorkflowDecisionBody = zod.object({
+  idempotencyKey: zod
+    .string()
+    .min(correctCandidateWorkflowDecisionBodyIdempotencyKeyMin)
+    .max(correctCandidateWorkflowDecisionBodyIdempotencyKeyMax),
+  expectedRevision: zod.number().min(correctCandidateWorkflowDecisionBodyExpectedRevisionMin),
+  outcome: zod.enum(["hire", "hold", "decline"]),
+  decisionReason: zod
+    .string()
+    .min(correctCandidateWorkflowDecisionBodyDecisionReasonMin)
+    .max(correctCandidateWorkflowDecisionBodyDecisionReasonMax),
+  correctionReason: zod
+    .string()
+    .min(correctCandidateWorkflowDecisionBodyCorrectionReasonMin)
+    .max(correctCandidateWorkflowDecisionBodyCorrectionReasonMax),
+  acknowledgeDeliveredOffer: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Explicit acknowledgement that a previously sent, responded-to or uncertain-delivery offer remains unchanged and requires a separate offer action.",
+    ),
+  acknowledgeLegacyCompletion: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Explicitly record a first structured decision on a completed legacy workflow while preserving its original note and earlier evidence; never infer a hiring intent from that note.",
+    ),
+});
+
+export const CorrectCandidateWorkflowDecisionResponse = zod.object({
+  id: zod.string(),
+  replayed: zod.boolean(),
+  autonomyExecutionEnabled: zod.literal(false),
 });
 
 /**
@@ -905,6 +8744,23 @@ export const ListApplicationsResponseItem = zod.object({
       workOrderNumber: zod.string().nullish(),
       clientWorkOrderNumber: zod.string().nullish(),
       isConfidential: zod.boolean().optional(),
+      internalMobility: zod
+        .boolean()
+        .describe(
+          "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+        ),
+      recruitingMode: zod
+        .enum(["human_assisted", "lexy_autonomous"])
+        .describe("Planned recruiting mode only; never grants execution authority."),
+      interviewPath: zod
+        .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+        .describe("Planned interview sequence, separate from interview assessment type."),
+      autonomyExecutionEnabled: zod
+        .literal(false)
+        .describe("Server-owned capability; always false during configuration-only rollout."),
+      progressionAuthority: zod
+        .enum(["human_review"])
+        .describe("Selecting a recruiting mode does not grant automatic progression authority."),
       createdById: zod.string().nullish(),
       createdByRole: zod.string().nullish(),
       assignedRecruiterId: zod.string().nullish(),
@@ -1007,6 +8863,23 @@ export const GetApplicationResponse = zod.object({
       workOrderNumber: zod.string().nullish(),
       clientWorkOrderNumber: zod.string().nullish(),
       isConfidential: zod.boolean().optional(),
+      internalMobility: zod
+        .boolean()
+        .describe(
+          "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+        ),
+      recruitingMode: zod
+        .enum(["human_assisted", "lexy_autonomous"])
+        .describe("Planned recruiting mode only; never grants execution authority."),
+      interviewPath: zod
+        .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+        .describe("Planned interview sequence, separate from interview assessment type."),
+      autonomyExecutionEnabled: zod
+        .literal(false)
+        .describe("Server-owned capability; always false during configuration-only rollout."),
+      progressionAuthority: zod
+        .enum(["human_review"])
+        .describe("Selecting a recruiting mode does not grant automatic progression authority."),
       createdById: zod.string().nullish(),
       createdByRole: zod.string().nullish(),
       assignedRecruiterId: zod.string().nullish(),
@@ -1103,6 +8976,23 @@ export const UpdateApplicationResponse = zod.object({
       workOrderNumber: zod.string().nullish(),
       clientWorkOrderNumber: zod.string().nullish(),
       isConfidential: zod.boolean().optional(),
+      internalMobility: zod
+        .boolean()
+        .describe(
+          "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+        ),
+      recruitingMode: zod
+        .enum(["human_assisted", "lexy_autonomous"])
+        .describe("Planned recruiting mode only; never grants execution authority."),
+      interviewPath: zod
+        .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+        .describe("Planned interview sequence, separate from interview assessment type."),
+      autonomyExecutionEnabled: zod
+        .literal(false)
+        .describe("Server-owned capability; always false during configuration-only rollout."),
+      progressionAuthority: zod
+        .enum(["human_review"])
+        .describe("Selecting a recruiting mode does not grant automatic progression authority."),
       createdById: zod.string().nullish(),
       createdByRole: zod.string().nullish(),
       assignedRecruiterId: zod.string().nullish(),
@@ -1173,10 +9063,16 @@ export const ListInterviewsResponse = zod.array(ListInterviewsResponseItem);
 /**
  * @summary Create interview plan from JD + ICP
  */
+
+export const createInterviewPlanBodyQuestionCountMax = 9007199254740991;
+
 export const CreateInterviewPlanBody = zod.object({
-  jobId: zod.string(),
-  interviewType: zod.string().optional(),
-  questionCount: zod.number().optional(),
+  jobId: zod.string().min(1),
+  interviewType: zod
+    .enum(["technical", "behavioral", "cultural", "competency", "general", "programming"])
+    .optional(),
+  questionCount: zod.number().min(1).max(createInterviewPlanBodyQuestionCountMax).optional(),
+  language: zod.string().min(1).optional(),
 });
 
 /**
@@ -1207,6 +9103,27 @@ export const GetInterviewResponse = zod.object({
   completedAt: zod.string().nullish(),
   recordingUrl: zod.string().nullish(),
   createdAt: zod.string(),
+});
+
+/**
+ * Requires the interview session cookie. The plan is resolved from that session; no plan identifier is accepted.
+ * @summary Get candidate-visible configuration for a verified interview session
+ */
+export const GetCandidateInterviewConfigurationParams = zod.object({
+  interviewId: zod.coerce.string(),
+});
+
+export const GetCandidateInterviewConfigurationResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  interviewType: zod.string(),
+  language: zod.string().nullable(),
+  estimatedDurationMinutes: zod.number().nullable(),
+  questions: zod
+    .array(zod.record(zod.string(), zod.unknown()))
+    .describe(
+      "Public coding challenges only. Spoken questions and grading material stay server-side.",
+    ),
 });
 
 /**
@@ -1243,23 +9160,8 @@ export const EndInterviewParams = zod.object({
 });
 
 export const EndInterviewResponse = zod.object({
-  id: zod.string(),
-  interviewSessionId: zod.string(),
-  overallScore: zod.number(),
-  strengths: zod.array(zod.string()),
-  weaknesses: zod.array(zod.string()),
-  redFlags: zod.array(zod.string()),
-  recommendation: zod.enum(["strong_yes", "yes", "maybe", "no", "strong_no"]),
-  recruiterSummary: zod.string(),
-  transcript: zod.array(
-    zod.object({
-      questionId: zod.string(),
-      question: zod.string(),
-      answer: zod.string(),
-      score: zod.number().nullish(),
-    }),
-  ),
-  createdAt: zod.string(),
+  status: zod.enum(["processing", "completed"]),
+  sessionId: zod.string(),
 });
 
 /**
@@ -1367,14 +9269,30 @@ export const ListSchedulesQueryParams = zod.object({
   applicationId: zod.coerce.string().optional(),
 });
 
+export const listSchedulesResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const listSchedulesResponseFeedbackRatingMax = 5;
+
 export const ListSchedulesResponseItem = zod.object({
+  version: zod
+    .string()
+    .regex(listSchedulesResponseVersionRegExp)
+    .describe(
+      "Content revision for conditional native schedule edits; not an authorization token.",
+    ),
   id: zod.string(),
   applicationId: zod.string(),
   interviewerId: zod.string().nullish(),
+  interviewerName: zod.string().nullish(),
+  location: zod.string().nullish(),
+  feedbackRating: zod.number().min(1).max(listSchedulesResponseFeedbackRatingMax).nullish(),
+  feedbackNotes: zod.string().nullish(),
+  candidateName: zod.string().optional(),
+  candidateEmail: zod.string().nullish(),
+  jobTitle: zod.string().optional(),
   scheduledAt: zod.string(),
   durationMinutes: zod.number(),
   type: zod.string(),
-  status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
+  status: zod.enum(["pending", "scheduled", "confirmed", "rescheduled", "cancelled", "completed"]),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -1383,14 +9301,128 @@ export const ListSchedulesResponse = zod.array(ListSchedulesResponseItem);
 /**
  * @summary Create schedule
  */
+export const createScheduleBodyInterviewerNameMax = 200;
+
+export const createScheduleBodyLocationMax = 2000;
+
+export const createScheduleBodyDurationMinutesMin = 5;
+export const createScheduleBodyDurationMinutesMax = 480;
+
+export const createScheduleBodyNotesMax = 10000;
+
 export const CreateScheduleBody = zod.object({
+  requestId: zod
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      "Stable UUID for one opened draft. Reuse on retries; changed saved details return 409. Omit only for legacy clients without retry protection.",
+    ),
   applicationId: zod.string(),
-  interviewerId: zod.string().optional(),
-  scheduledAt: zod.string(),
-  durationMinutes: zod.number(),
-  type: zod.string(),
-  notes: zod.string().optional(),
+  interviewerId: zod.string().nullish(),
+  interviewerName: zod.string().max(createScheduleBodyInterviewerNameMax).nullish(),
+  location: zod.string().max(createScheduleBodyLocationMax).nullish(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod
+    .number()
+    .min(createScheduleBodyDurationMinutesMin)
+    .max(createScheduleBodyDurationMinutesMax),
+  type: zod.enum(["technical", "behavioral", "culture_fit", "portfolio", "ai_interview", "final"]),
+  notes: zod.string().max(createScheduleBodyNotesMax).nullish(),
 });
+
+export const createScheduleResponseOneVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const createScheduleResponseOneFeedbackRatingMax = 5;
+
+export const CreateScheduleResponse = zod
+  .object({
+    version: zod
+      .string()
+      .regex(createScheduleResponseOneVersionRegExp)
+      .describe(
+        "Content revision for conditional native schedule edits; not an authorization token.",
+      ),
+    id: zod.string(),
+    applicationId: zod.string(),
+    interviewerId: zod.string().nullish(),
+    interviewerName: zod.string().nullish(),
+    location: zod.string().nullish(),
+    feedbackRating: zod.number().min(1).max(createScheduleResponseOneFeedbackRatingMax).nullish(),
+    feedbackNotes: zod.string().nullish(),
+    candidateName: zod.string().optional(),
+    candidateEmail: zod.string().nullish(),
+    jobTitle: zod.string().optional(),
+    scheduledAt: zod.string(),
+    durationMinutes: zod.number(),
+    type: zod.string(),
+    status: zod.enum([
+      "pending",
+      "scheduled",
+      "confirmed",
+      "rescheduled",
+      "cancelled",
+      "completed",
+    ]),
+    notes: zod.string().nullish(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      replayed: zod.boolean(),
+    }),
+  );
+
+/**
+ * @summary Recover the current caller's saved schedule after an uncertain response
+ */
+export const GetScheduleSaveRequestParams = zod.object({
+  requestId: zod.coerce.string().uuid(),
+});
+
+export const getScheduleSaveRequestResponseOneVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const getScheduleSaveRequestResponseOneFeedbackRatingMax = 5;
+
+export const GetScheduleSaveRequestResponse = zod
+  .object({
+    version: zod
+      .string()
+      .regex(getScheduleSaveRequestResponseOneVersionRegExp)
+      .describe(
+        "Content revision for conditional native schedule edits; not an authorization token.",
+      ),
+    id: zod.string(),
+    applicationId: zod.string(),
+    interviewerId: zod.string().nullish(),
+    interviewerName: zod.string().nullish(),
+    location: zod.string().nullish(),
+    feedbackRating: zod
+      .number()
+      .min(1)
+      .max(getScheduleSaveRequestResponseOneFeedbackRatingMax)
+      .nullish(),
+    feedbackNotes: zod.string().nullish(),
+    candidateName: zod.string().optional(),
+    candidateEmail: zod.string().nullish(),
+    jobTitle: zod.string().optional(),
+    scheduledAt: zod.string(),
+    durationMinutes: zod.number(),
+    type: zod.string(),
+    status: zod.enum([
+      "pending",
+      "scheduled",
+      "confirmed",
+      "rescheduled",
+      "cancelled",
+      "completed",
+    ]),
+    notes: zod.string().nullish(),
+    createdAt: zod.string(),
+  })
+  .and(
+    zod.object({
+      replayed: zod.boolean(),
+    }),
+  );
 
 /**
  * @summary Update/reschedule
@@ -1399,20 +9431,119 @@ export const UpdateScheduleParams = zod.object({
   scheduleId: zod.coerce.string(),
 });
 
+export const updateScheduleBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const updateScheduleBodyDurationMinutesMin = 5;
+export const updateScheduleBodyDurationMinutesMax = 480;
+
+export const updateScheduleBodyInterviewerNameMax = 200;
+
+export const updateScheduleBodyLocationMax = 2000;
+
+export const updateScheduleBodyNotesMax = 10000;
+
+export const updateScheduleBodyFeedbackRatingMax = 5;
+
+export const updateScheduleBodyFeedbackNotesMax = 10000;
+
 export const UpdateScheduleBody = zod.object({
-  scheduledAt: zod.string().optional(),
-  status: zod.string().optional(),
-  notes: zod.string().optional(),
+  expectedVersion: zod
+    .string()
+    .regex(updateScheduleBodyExpectedVersionRegExp)
+    .optional()
+    .describe(
+      "Revision from the saved schedule being edited. Legacy callers may omit it; new clients must send it to detect stale drafts.",
+    ),
+  scheduledAt: zod.date().optional(),
+  durationMinutes: zod
+    .number()
+    .min(updateScheduleBodyDurationMinutesMin)
+    .max(updateScheduleBodyDurationMinutesMax)
+    .optional(),
+  interviewerId: zod.string().nullish(),
+  interviewerName: zod.string().max(updateScheduleBodyInterviewerNameMax).nullish(),
+  location: zod.string().max(updateScheduleBodyLocationMax).nullish(),
+  type: zod
+    .enum(["technical", "behavioral", "culture_fit", "portfolio", "ai_interview", "final"])
+    .optional(),
+  status: zod
+    .enum(["pending", "scheduled", "confirmed", "rescheduled", "cancelled", "completed"])
+    .optional(),
+  notes: zod.string().max(updateScheduleBodyNotesMax).nullish(),
+  feedbackRating: zod.number().min(1).max(updateScheduleBodyFeedbackRatingMax).nullish(),
+  feedbackNotes: zod.string().max(updateScheduleBodyFeedbackNotesMax).nullish(),
 });
 
+export const updateScheduleResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const updateScheduleResponseFeedbackRatingMax = 5;
+
 export const UpdateScheduleResponse = zod.object({
+  version: zod
+    .string()
+    .regex(updateScheduleResponseVersionRegExp)
+    .describe(
+      "Content revision for conditional native schedule edits; not an authorization token.",
+    ),
   id: zod.string(),
   applicationId: zod.string(),
   interviewerId: zod.string().nullish(),
+  interviewerName: zod.string().nullish(),
+  location: zod.string().nullish(),
+  feedbackRating: zod.number().min(1).max(updateScheduleResponseFeedbackRatingMax).nullish(),
+  feedbackNotes: zod.string().nullish(),
+  candidateName: zod.string().optional(),
+  candidateEmail: zod.string().nullish(),
+  jobTitle: zod.string().optional(),
   scheduledAt: zod.string(),
   durationMinutes: zod.number(),
   type: zod.string(),
-  status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
+  status: zod.enum(["pending", "scheduled", "confirmed", "rescheduled", "cancelled", "completed"]),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Save human interview feedback under current staff and requisition scope
+ */
+export const SaveScheduleFeedbackParams = zod.object({
+  scheduleId: zod.coerce.string(),
+});
+
+export const saveScheduleFeedbackBodyRatingMax = 5;
+
+export const saveScheduleFeedbackBodyNotesMax = 10000;
+
+export const saveScheduleFeedbackBodyExpectedVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+
+export const SaveScheduleFeedbackBody = zod.object({
+  rating: zod.number().min(1).max(saveScheduleFeedbackBodyRatingMax),
+  notes: zod.string().max(saveScheduleFeedbackBodyNotesMax).nullish(),
+  expectedVersion: zod.string().regex(saveScheduleFeedbackBodyExpectedVersionRegExp).optional(),
+});
+
+export const saveScheduleFeedbackResponseVersionRegExp = new RegExp("^v1_[0-9a-f]{64}$");
+export const saveScheduleFeedbackResponseFeedbackRatingMax = 5;
+
+export const SaveScheduleFeedbackResponse = zod.object({
+  version: zod
+    .string()
+    .regex(saveScheduleFeedbackResponseVersionRegExp)
+    .describe(
+      "Content revision for conditional native schedule edits; not an authorization token.",
+    ),
+  id: zod.string(),
+  applicationId: zod.string(),
+  interviewerId: zod.string().nullish(),
+  interviewerName: zod.string().nullish(),
+  location: zod.string().nullish(),
+  feedbackRating: zod.number().min(1).max(saveScheduleFeedbackResponseFeedbackRatingMax).nullish(),
+  feedbackNotes: zod.string().nullish(),
+  candidateName: zod.string().optional(),
+  candidateEmail: zod.string().nullish(),
+  jobTitle: zod.string().optional(),
+  scheduledAt: zod.string(),
+  durationMinutes: zod.number(),
+  type: zod.string(),
+  status: zod.enum(["pending", "scheduled", "confirmed", "rescheduled", "cancelled", "completed"]),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -3442,6 +11573,11 @@ export const GetLearningVoiceProgressReportResponse = zod.object({
 /**
  * @summary Get candidate portal dashboard
  */
+export const getCandidateDashboardResponseUpcomingInterviewsItemVersionRegExp = new RegExp(
+  "^v1_[0-9a-f]{64}$",
+);
+export const getCandidateDashboardResponseUpcomingInterviewsItemFeedbackRatingMax = 5;
+
 export const GetCandidateDashboardResponse = zod.object({
   candidate: zod.object({
     id: zod.string(),
@@ -3469,13 +11605,37 @@ export const GetCandidateDashboardResponse = zod.object({
   }),
   upcomingInterviews: zod.array(
     zod.object({
+      version: zod
+        .string()
+        .regex(getCandidateDashboardResponseUpcomingInterviewsItemVersionRegExp)
+        .describe(
+          "Content revision for conditional native schedule edits; not an authorization token.",
+        ),
       id: zod.string(),
       applicationId: zod.string(),
       interviewerId: zod.string().nullish(),
+      interviewerName: zod.string().nullish(),
+      location: zod.string().nullish(),
+      feedbackRating: zod
+        .number()
+        .min(1)
+        .max(getCandidateDashboardResponseUpcomingInterviewsItemFeedbackRatingMax)
+        .nullish(),
+      feedbackNotes: zod.string().nullish(),
+      candidateName: zod.string().optional(),
+      candidateEmail: zod.string().nullish(),
+      jobTitle: zod.string().optional(),
       scheduledAt: zod.string(),
       durationMinutes: zod.number(),
       type: zod.string(),
-      status: zod.enum(["pending", "confirmed", "rescheduled", "cancelled", "completed"]),
+      status: zod.enum([
+        "pending",
+        "scheduled",
+        "confirmed",
+        "rescheduled",
+        "cancelled",
+        "completed",
+      ]),
       notes: zod.string().nullish(),
       createdAt: zod.string(),
     }),
@@ -3539,6 +11699,25 @@ export const GetCandidateDashboardResponse = zod.object({
           workOrderNumber: zod.string().nullish(),
           clientWorkOrderNumber: zod.string().nullish(),
           isConfidential: zod.boolean().optional(),
+          internalMobility: zod
+            .boolean()
+            .describe(
+              "When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates.",
+            ),
+          recruitingMode: zod
+            .enum(["human_assisted", "lexy_autonomous"])
+            .describe("Planned recruiting mode only; never grants execution authority."),
+          interviewPath: zod
+            .enum(["ai", "human", "ai_then_human", "human_then_ai", "recruiter_choice"])
+            .describe("Planned interview sequence, separate from interview assessment type."),
+          autonomyExecutionEnabled: zod
+            .literal(false)
+            .describe("Server-owned capability; always false during configuration-only rollout."),
+          progressionAuthority: zod
+            .enum(["human_review"])
+            .describe(
+              "Selecting a recruiting mode does not grant automatic progression authority.",
+            ),
           createdById: zod.string().nullish(),
           createdByRole: zod.string().nullish(),
           assignedRecruiterId: zod.string().nullish(),
@@ -3675,4 +11854,1338 @@ export const RequestUploadUrlResponse = zod.object({
  */
 export const GetStorageObjectParams = zod.object({
   objectPath: zod.coerce.string(),
+});
+
+/**
+ * Requires the active interview cookie, same-origin request, current consent and approved work order. Never contributes to assessment or proctoring scores.
+ * @summary Record content-free, client-reported capture diagnostics
+ */
+export const RecordInterviewCaptureDiagnosticParams = zod.object({
+  interviewId: zod.coerce.string(),
+});
+
+export const recordInterviewCaptureDiagnosticBodyTurnNumberMax = 100;
+
+export const recordInterviewCaptureDiagnosticBodyLongestRunMsMin = 0;
+export const recordInterviewCaptureDiagnosticBodyLongestRunMsMax = 3600000;
+
+export const recordInterviewCaptureDiagnosticBodySampleCountMin = 0;
+export const recordInterviewCaptureDiagnosticBodySampleCountMax = 1000000;
+
+export const recordInterviewCaptureDiagnosticBodyAboveThresholdSamplesMin = 0;
+export const recordInterviewCaptureDiagnosticBodyAboveThresholdSamplesMax = 1000000;
+
+export const RecordInterviewCaptureDiagnosticBody = zod.object({
+  eventId: zod.string().uuid(),
+  attemptId: zod.string().uuid(),
+  turnNumber: zod.number().min(1).max(recordInterviewCaptureDiagnosticBodyTurnNumberMax),
+  event: zod.enum([
+    "capture_decision",
+    "review_shown",
+    "review_confirmed",
+    "review_retry",
+    "submission_requested",
+    "submission_saved",
+    "submission_failed",
+    "empty_capture",
+  ]),
+  reason: zod.enum([
+    "sustained_signal",
+    "weak_signal",
+    "capture_failed",
+    "no_text",
+    "typed",
+    "confirmed_review",
+  ]),
+  source: zod.enum(["manual", "silence"]).optional(),
+  textPresent: zod.boolean().optional(),
+  edited: zod.boolean().optional(),
+  inViewport: zod.boolean().optional(),
+  longestRunMs: zod
+    .number()
+    .min(recordInterviewCaptureDiagnosticBodyLongestRunMsMin)
+    .max(recordInterviewCaptureDiagnosticBodyLongestRunMsMax)
+    .optional(),
+  thresholdMs: zod.literal(200).optional(),
+  sampleCount: zod
+    .number()
+    .min(recordInterviewCaptureDiagnosticBodySampleCountMin)
+    .max(recordInterviewCaptureDiagnosticBodySampleCountMax)
+    .optional(),
+  aboveThresholdSamples: zod
+    .number()
+    .min(recordInterviewCaptureDiagnosticBodyAboveThresholdSamplesMin)
+    .max(recordInterviewCaptureDiagnosticBodyAboveThresholdSamplesMax)
+    .optional(),
+});
+
+/**
+ * @summary Read capture diagnostics with staff interview ownership checks
+ */
+export const GetInterviewCaptureDiagnosticsParams = zod.object({
+  interviewId: zod.coerce.string(),
+});
+
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneTurnNumberMax = 100;
+
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneLongestRunMsMin = 0;
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneLongestRunMsMax = 3600000;
+
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneSampleCountMin = 0;
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneSampleCountMax = 1000000;
+
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneAboveThresholdSamplesMin = 0;
+export const getInterviewCaptureDiagnosticsResponseEventsItemOneAboveThresholdSamplesMax = 1000000;
+
+export const GetInterviewCaptureDiagnosticsResponse = zod.object({
+  clientReported: zod.boolean(),
+  events: zod.array(
+    zod
+      .object({
+        eventId: zod.string().uuid(),
+        attemptId: zod.string().uuid(),
+        turnNumber: zod
+          .number()
+          .min(1)
+          .max(getInterviewCaptureDiagnosticsResponseEventsItemOneTurnNumberMax),
+        event: zod.enum([
+          "capture_decision",
+          "review_shown",
+          "review_confirmed",
+          "review_retry",
+          "submission_requested",
+          "submission_saved",
+          "submission_failed",
+          "empty_capture",
+        ]),
+        reason: zod.enum([
+          "sustained_signal",
+          "weak_signal",
+          "capture_failed",
+          "no_text",
+          "typed",
+          "confirmed_review",
+        ]),
+        source: zod.enum(["manual", "silence"]).optional(),
+        textPresent: zod.boolean().optional(),
+        edited: zod.boolean().optional(),
+        inViewport: zod.boolean().optional(),
+        longestRunMs: zod
+          .number()
+          .min(getInterviewCaptureDiagnosticsResponseEventsItemOneLongestRunMsMin)
+          .max(getInterviewCaptureDiagnosticsResponseEventsItemOneLongestRunMsMax)
+          .optional(),
+        thresholdMs: zod.literal(200).optional(),
+        sampleCount: zod
+          .number()
+          .min(getInterviewCaptureDiagnosticsResponseEventsItemOneSampleCountMin)
+          .max(getInterviewCaptureDiagnosticsResponseEventsItemOneSampleCountMax)
+          .optional(),
+        aboveThresholdSamples: zod
+          .number()
+          .min(getInterviewCaptureDiagnosticsResponseEventsItemOneAboveThresholdSamplesMin)
+          .max(getInterviewCaptureDiagnosticsResponseEventsItemOneAboveThresholdSamplesMax)
+          .optional(),
+      })
+      .and(
+        zod.object({
+          recordedAt: zod.date(),
+        }),
+      ),
+  ),
+});
+
+/**
+ * @summary List privately retained recording attempts
+ */
+export const GetInterviewRecordingSegmentsParams = zod.object({
+  interviewId: zod.coerce.string().uuid(),
+});
+
+export const GetInterviewRecordingSegmentsResponse = zod.object({
+  recordings: zod.array(
+    zod.object({
+      attemptId: zod.string().uuid(),
+      partCount: zod.number(),
+      bytes: zod.number(),
+      startedAt: zod.date(),
+      contiguous: zod.boolean(),
+    }),
+  ),
+});
+
+/**
+ * @summary Checkpoint an active consented interview recording
+ */
+export const UploadInterviewRecordingSegmentParams = zod.object({
+  interviewId: zod.coerce.string().uuid(),
+});
+
+export const uploadInterviewRecordingSegmentBodyIndexRegExp = new RegExp("^\\d+$");
+
+export const UploadInterviewRecordingSegmentBody = zod.object({
+  file: zod.instanceof(File),
+  attemptId: zod.string().uuid(),
+  index: zod.string().regex(uploadInterviewRecordingSegmentBodyIndexRegExp),
+});
+
+export const UploadInterviewRecordingSegmentResponse = zod.object({
+  saved: zod.boolean(),
+  attemptId: zod.string().uuid(),
+  index: zod.number(),
+});
+
+/**
+ * @summary Stream one privately retained recording attempt
+ */
+export const DownloadInterviewRecordingSegmentParams = zod.object({
+  interviewId: zod.coerce.string().uuid(),
+  attemptId: zod.coerce.string().uuid(),
+});
+
+/**
+ * @summary List private imported human-interview notes for an authorized job applicant.
+ */
+export const ListMeetingNotesParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemSpeakerMin = 0;
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemSpeakerMax = 99;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemStartMin = 0;
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemStartMax = 3600;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemEndMin = 0;
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemEndMax = 3600;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemTextMax = 4000;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneSegmentsMax = 6000;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin = 0;
+export const listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax = 99;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemLabelMax = 80;
+
+export const listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsMax = 100;
+
+export const ListMeetingNotesResponseItem = zod.object({
+  id: zod.string(),
+  jobId: zod.string(),
+  candidateId: zod.string(),
+  title: zod.string(),
+  language: zod.string(),
+  status: zod.enum(["uploaded", "processing", "completed", "failed"]),
+  consentAt: zod.date(),
+  consentStatement: zod.string(),
+  plannedQuestions: zod.string(),
+  originalName: zod.string(),
+  mimeType: zod.string(),
+  byteSize: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+  processingStartedAt: zod.date().nullable(),
+  canRetry: zod.boolean(),
+  transcript: zod.string().nullable(),
+  summary: zod.string().nullable(),
+  error: zod.string().nullable(),
+  transcriptHash: zod.string().nullable(),
+  nativeSource: zod
+    .object({
+      provider: zod.enum(["zoom", "google_meet", "recall"]),
+      scheduleId: zod.string(),
+      meetingId: zod.string(),
+      meetingUuid: zod.string(),
+      fileId: zod.string(),
+      hostUserId: zod.string(),
+      recordingStart: zod.date(),
+      recordingEnd: zod.date(),
+    })
+    .nullish(),
+  speakerEvidence: zod
+    .union([
+      zod.object({
+        revision: zod.string().uuid(),
+        generatedAt: zod.date(),
+        provider: zod.enum(["deepgram"]),
+        model: zod.string(),
+        diarizerModel: zod.enum(["v1"]),
+        diarizerBuild: zod.string().uuid(),
+        segments: zod
+          .array(
+            zod.object({
+              speaker: zod
+                .number()
+                .min(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemSpeakerMin)
+                .max(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemSpeakerMax),
+              start: zod
+                .number()
+                .min(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemStartMin)
+                .max(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemStartMax),
+              end: zod
+                .number()
+                .min(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemEndMin)
+                .max(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemEndMax),
+              text: zod.string().max(listMeetingNotesResponseSpeakerEvidenceOneSegmentsItemTextMax),
+            }),
+          )
+          .min(1)
+          .max(listMeetingNotesResponseSpeakerEvidenceOneSegmentsMax),
+        review: zod
+          .object({
+            revision: zod.string().uuid(),
+            reviewedBy: zod.string(),
+            reviewedAt: zod.date(),
+            labels: zod
+              .array(
+                zod.object({
+                  speaker: zod
+                    .number()
+                    .min(listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin)
+                    .max(listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax),
+                  label: zod
+                    .string()
+                    .min(1)
+                    .max(listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsItemLabelMax),
+                  role: zod.enum(["candidate", "interviewer", "other", "unknown"]),
+                }),
+              )
+              .max(listMeetingNotesResponseSpeakerEvidenceOneReviewLabelsMax),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  questionReview: zod.union([
+    zod.object({
+      revision: zod.string().uuid(),
+      sourceHash: zod.string(),
+      reviewedBy: zod.string(),
+      reviewedAt: zod.date(),
+      entries: zod.array(
+        zod.object({
+          questionIndex: zod.number(),
+          status: zod.enum(["covered", "partial", "not_covered"]),
+          excerpt: zod.string(),
+          note: zod.string(),
+          evidenceStart: zod.number().nullable(),
+          evidenceEnd: zod.number().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+export const ListMeetingNotesResponse = zod.array(ListMeetingNotesResponseItem);
+
+/**
+ * @summary Import a consented recording, up to 100 MB and 60 minutes.
+ */
+export const UploadMeetingNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const uploadMeetingNoteBodyTitleMax = 160;
+
+export const uploadMeetingNoteBodyConsentStatementMin = 20;
+export const uploadMeetingNoteBodyConsentStatementMax = 1500;
+
+export const uploadMeetingNoteBodyPlannedQuestionsMax = 6000;
+
+export const UploadMeetingNoteBody = zod.object({
+  file: zod.instanceof(File),
+  title: zod.string().min(1).max(uploadMeetingNoteBodyTitleMax),
+  language: zod.string(),
+  consent: zod.enum(["true"]),
+  consentStatement: zod
+    .string()
+    .min(uploadMeetingNoteBodyConsentStatementMin)
+    .max(uploadMeetingNoteBodyConsentStatementMax),
+  plannedQuestions: zod.string().max(uploadMeetingNoteBodyPlannedQuestionsMax).optional(),
+});
+
+export const ListNativeMeetRecordingAppointmentsParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const ListNativeMeetRecordingAppointmentsResponseItem = zod.object({
+  scheduleId: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+});
+export const ListNativeMeetRecordingAppointmentsResponse = zod.array(
+  ListNativeMeetRecordingAppointmentsResponseItem,
+);
+
+export const ListNativeMeetRecordingConferencesParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const listNativeMeetRecordingConferencesBodyScheduleIdMax = 160;
+
+export const ListNativeMeetRecordingConferencesBody = zod.object({
+  scheduleId: zod.string().min(1).max(listNativeMeetRecordingConferencesBodyScheduleIdMax),
+});
+
+export const ListNativeMeetRecordingConferencesResponseItem = zod.object({
+  name: zod.string(),
+  start: zod.date(),
+  end: zod.date(),
+});
+export const ListNativeMeetRecordingConferencesResponse = zod.array(
+  ListNativeMeetRecordingConferencesResponseItem,
+);
+
+export const PreviewNativeMeetRecordingParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const previewNativeMeetRecordingBodyScheduleIdMax = 160;
+
+export const previewNativeMeetRecordingBodyConferenceNameRegExp = new RegExp(
+  "^conferenceRecords\/[A-Za-z0-9_-]{1,160}$",
+);
+
+export const PreviewNativeMeetRecordingBody = zod.object({
+  scheduleId: zod.string().min(1).max(previewNativeMeetRecordingBodyScheduleIdMax),
+  conferenceName: zod.string().regex(previewNativeMeetRecordingBodyConferenceNameRegExp),
+});
+
+export const PreviewNativeMeetRecordingResponse = zod.object({
+  scheduleId: zod.string(),
+  recordedAt: zod.date(),
+  files: zod.array(
+    zod.object({
+      id: zod.string(),
+      format: zod.enum(["MP4", "M4A"]),
+      kind: zod.string(),
+      bytes: zod.number(),
+      start: zod.date(),
+      end: zod.date(),
+      eligible: zod.boolean(),
+      unavailableReason: zod.string().nullable(),
+      reviewToken: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const ImportNativeMeetRecordingParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const importNativeMeetRecordingBodyReviewTokenMax = 8000;
+
+export const importNativeMeetRecordingBodyTitleMax = 160;
+
+export const importNativeMeetRecordingBodyLanguageDefault = `en`;
+export const importNativeMeetRecordingBodyLanguageRegExp = new RegExp(
+  "^[a-z]{2,3}(-[A-Za-z]{2,4})?$",
+);
+export const importNativeMeetRecordingBodyConsentStatementMin = 20;
+export const importNativeMeetRecordingBodyConsentStatementMax = 1500;
+
+export const importNativeMeetRecordingBodyPlannedQuestionsDefault = ``;
+export const importNativeMeetRecordingBodyPlannedQuestionsMax = 6000;
+
+export const ImportNativeMeetRecordingBody = zod.object({
+  reviewToken: zod.string().min(1).max(importNativeMeetRecordingBodyReviewTokenMax),
+  title: zod.string().min(1).max(importNativeMeetRecordingBodyTitleMax),
+  language: zod
+    .string()
+    .regex(importNativeMeetRecordingBodyLanguageRegExp)
+    .default(importNativeMeetRecordingBodyLanguageDefault),
+  consent: zod
+    .boolean()
+    .describe(
+      "Confirms required participant consent and staff review that this recording instance belongs to the scoped candidate and job.",
+    ),
+  consentStatement: zod
+    .string()
+    .min(importNativeMeetRecordingBodyConsentStatementMin)
+    .max(importNativeMeetRecordingBodyConsentStatementMax),
+  plannedQuestions: zod
+    .string()
+    .max(importNativeMeetRecordingBodyPlannedQuestionsMax)
+    .default(importNativeMeetRecordingBodyPlannedQuestionsDefault),
+});
+
+/**
+ * @summary List only this staff host's confirmed Lexy Zoom appointments for this applicant.
+ */
+export const ListNativeZoomRecordingAppointmentsParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const ListNativeZoomRecordingAppointmentsResponseItem = zod.object({
+  scheduleId: zod.string(),
+  scheduledAt: zod.date(),
+  durationMinutes: zod.number(),
+});
+export const ListNativeZoomRecordingAppointmentsResponse = zod.array(
+  ListNativeZoomRecordingAppointmentsResponseItem,
+);
+
+export const PreviewNativeZoomRecordingParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const previewNativeZoomRecordingBodyScheduleIdMax = 160;
+
+export const PreviewNativeZoomRecordingBody = zod.object({
+  scheduleId: zod.string().min(1).max(previewNativeZoomRecordingBodyScheduleIdMax),
+});
+
+export const PreviewNativeZoomRecordingResponse = zod.object({
+  scheduleId: zod.string(),
+  recordedAt: zod.date(),
+  files: zod.array(
+    zod.object({
+      id: zod.string(),
+      format: zod.enum(["MP4", "M4A"]),
+      kind: zod.string(),
+      bytes: zod.number(),
+      start: zod.date(),
+      end: zod.date(),
+      eligible: zod.boolean(),
+      unavailableReason: zod.string().nullable(),
+      reviewToken: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const ImportNativeZoomRecordingParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const importNativeZoomRecordingBodyReviewTokenMax = 8000;
+
+export const importNativeZoomRecordingBodyTitleMax = 160;
+
+export const importNativeZoomRecordingBodyLanguageDefault = `en`;
+export const importNativeZoomRecordingBodyLanguageRegExp = new RegExp(
+  "^[a-z]{2,3}(-[A-Za-z]{2,4})?$",
+);
+export const importNativeZoomRecordingBodyConsentStatementMin = 20;
+export const importNativeZoomRecordingBodyConsentStatementMax = 1500;
+
+export const importNativeZoomRecordingBodyPlannedQuestionsDefault = ``;
+export const importNativeZoomRecordingBodyPlannedQuestionsMax = 6000;
+
+export const ImportNativeZoomRecordingBody = zod.object({
+  reviewToken: zod.string().min(1).max(importNativeZoomRecordingBodyReviewTokenMax),
+  title: zod.string().min(1).max(importNativeZoomRecordingBodyTitleMax),
+  language: zod
+    .string()
+    .regex(importNativeZoomRecordingBodyLanguageRegExp)
+    .default(importNativeZoomRecordingBodyLanguageDefault),
+  consent: zod
+    .boolean()
+    .describe(
+      "Confirms required participant consent and staff review that this recording instance belongs to the scoped candidate and job.",
+    ),
+  consentStatement: zod
+    .string()
+    .min(importNativeZoomRecordingBodyConsentStatementMin)
+    .max(importNativeZoomRecordingBodyConsentStatementMax),
+  plannedQuestions: zod
+    .string()
+    .max(importNativeZoomRecordingBodyPlannedQuestionsMax)
+    .default(importNativeZoomRecordingBodyPlannedQuestionsDefault),
+});
+
+export const GetMeetingNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemSpeakerMin = 0;
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemSpeakerMax = 99;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemStartMin = 0;
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemStartMax = 3600;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemEndMin = 0;
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemEndMax = 3600;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemTextMax = 4000;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneSegmentsMax = 6000;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin = 0;
+export const getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax = 99;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemLabelMax = 80;
+
+export const getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsMax = 100;
+
+export const GetMeetingNoteResponse = zod.object({
+  id: zod.string(),
+  jobId: zod.string(),
+  candidateId: zod.string(),
+  title: zod.string(),
+  language: zod.string(),
+  status: zod.enum(["uploaded", "processing", "completed", "failed"]),
+  consentAt: zod.date(),
+  consentStatement: zod.string(),
+  plannedQuestions: zod.string(),
+  originalName: zod.string(),
+  mimeType: zod.string(),
+  byteSize: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+  processingStartedAt: zod.date().nullable(),
+  canRetry: zod.boolean(),
+  transcript: zod.string().nullable(),
+  summary: zod.string().nullable(),
+  error: zod.string().nullable(),
+  transcriptHash: zod.string().nullable(),
+  nativeSource: zod
+    .object({
+      provider: zod.enum(["zoom", "google_meet", "recall"]),
+      scheduleId: zod.string(),
+      meetingId: zod.string(),
+      meetingUuid: zod.string(),
+      fileId: zod.string(),
+      hostUserId: zod.string(),
+      recordingStart: zod.date(),
+      recordingEnd: zod.date(),
+    })
+    .nullish(),
+  speakerEvidence: zod
+    .union([
+      zod.object({
+        revision: zod.string().uuid(),
+        generatedAt: zod.date(),
+        provider: zod.enum(["deepgram"]),
+        model: zod.string(),
+        diarizerModel: zod.enum(["v1"]),
+        diarizerBuild: zod.string().uuid(),
+        segments: zod
+          .array(
+            zod.object({
+              speaker: zod
+                .number()
+                .min(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemSpeakerMin)
+                .max(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemSpeakerMax),
+              start: zod
+                .number()
+                .min(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemStartMin)
+                .max(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemStartMax),
+              end: zod
+                .number()
+                .min(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemEndMin)
+                .max(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemEndMax),
+              text: zod.string().max(getMeetingNoteResponseSpeakerEvidenceOneSegmentsItemTextMax),
+            }),
+          )
+          .min(1)
+          .max(getMeetingNoteResponseSpeakerEvidenceOneSegmentsMax),
+        review: zod
+          .object({
+            revision: zod.string().uuid(),
+            reviewedBy: zod.string(),
+            reviewedAt: zod.date(),
+            labels: zod
+              .array(
+                zod.object({
+                  speaker: zod
+                    .number()
+                    .min(getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin)
+                    .max(getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax),
+                  label: zod
+                    .string()
+                    .min(1)
+                    .max(getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsItemLabelMax),
+                  role: zod.enum(["candidate", "interviewer", "other", "unknown"]),
+                }),
+              )
+              .max(getMeetingNoteResponseSpeakerEvidenceOneReviewLabelsMax),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  questionReview: zod.union([
+    zod.object({
+      revision: zod.string().uuid(),
+      sourceHash: zod.string(),
+      reviewedBy: zod.string(),
+      reviewedAt: zod.date(),
+      entries: zod.array(
+        zod.object({
+          questionIndex: zod.number(),
+          status: zod.enum(["covered", "partial", "not_covered"]),
+          excerpt: zod.string(),
+          note: zod.string(),
+          evidenceStart: zod.number().nullable(),
+          evidenceEnd: zod.number().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const DeleteMeetingNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const ProcessMeetingNoteParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const processMeetingNoteBodySeparateSpeakersDefault = false;
+
+export const ProcessMeetingNoteBody = zod.object({
+  separateSpeakers: zod
+    .boolean()
+    .default(processMeetingNoteBodySeparateSpeakersDefault)
+    .describe(
+      "Explicitly opt into anonymous Deepgram speaker separation for this recording only. Does not verify participant identities or affect scores.",
+    ),
+});
+
+export const SaveMeetingSpeakerReviewParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const saveMeetingSpeakerReviewBodyLabelsItemSpeakerMin = 0;
+export const saveMeetingSpeakerReviewBodyLabelsItemSpeakerMax = 99;
+
+export const saveMeetingSpeakerReviewBodyLabelsItemLabelMax = 80;
+
+export const saveMeetingSpeakerReviewBodyLabelsMax = 100;
+
+export const SaveMeetingSpeakerReviewBody = zod.object({
+  sourceRevision: zod.string().uuid(),
+  previousRevision: zod.string().uuid().nullable(),
+  confirm: zod.boolean(),
+  labels: zod
+    .array(
+      zod.object({
+        speaker: zod
+          .number()
+          .min(saveMeetingSpeakerReviewBodyLabelsItemSpeakerMin)
+          .max(saveMeetingSpeakerReviewBodyLabelsItemSpeakerMax),
+        label: zod.string().min(1).max(saveMeetingSpeakerReviewBodyLabelsItemLabelMax),
+        role: zod.enum(["candidate", "interviewer", "other", "unknown"]),
+      }),
+    )
+    .max(saveMeetingSpeakerReviewBodyLabelsMax),
+});
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMin = 0;
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMax = 99;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemStartMin = 0;
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemStartMax = 3600;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemEndMin = 0;
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemEndMax = 3600;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemTextMax = 4000;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsMax = 6000;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin = 0;
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax = 99;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemLabelMax = 80;
+
+export const saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsMax = 100;
+
+export const SaveMeetingSpeakerReviewResponse = zod.object({
+  id: zod.string(),
+  jobId: zod.string(),
+  candidateId: zod.string(),
+  title: zod.string(),
+  language: zod.string(),
+  status: zod.enum(["uploaded", "processing", "completed", "failed"]),
+  consentAt: zod.date(),
+  consentStatement: zod.string(),
+  plannedQuestions: zod.string(),
+  originalName: zod.string(),
+  mimeType: zod.string(),
+  byteSize: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+  processingStartedAt: zod.date().nullable(),
+  canRetry: zod.boolean(),
+  transcript: zod.string().nullable(),
+  summary: zod.string().nullable(),
+  error: zod.string().nullable(),
+  transcriptHash: zod.string().nullable(),
+  nativeSource: zod
+    .object({
+      provider: zod.enum(["zoom", "google_meet", "recall"]),
+      scheduleId: zod.string(),
+      meetingId: zod.string(),
+      meetingUuid: zod.string(),
+      fileId: zod.string(),
+      hostUserId: zod.string(),
+      recordingStart: zod.date(),
+      recordingEnd: zod.date(),
+    })
+    .nullish(),
+  speakerEvidence: zod
+    .union([
+      zod.object({
+        revision: zod.string().uuid(),
+        generatedAt: zod.date(),
+        provider: zod.enum(["deepgram"]),
+        model: zod.string(),
+        diarizerModel: zod.enum(["v1"]),
+        diarizerBuild: zod.string().uuid(),
+        segments: zod
+          .array(
+            zod.object({
+              speaker: zod
+                .number()
+                .min(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMin)
+                .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMax),
+              start: zod
+                .number()
+                .min(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemStartMin)
+                .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemStartMax),
+              end: zod
+                .number()
+                .min(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemEndMin)
+                .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemEndMax),
+              text: zod
+                .string()
+                .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsItemTextMax),
+            }),
+          )
+          .min(1)
+          .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneSegmentsMax),
+        review: zod
+          .object({
+            revision: zod.string().uuid(),
+            reviewedBy: zod.string(),
+            reviewedAt: zod.date(),
+            labels: zod
+              .array(
+                zod.object({
+                  speaker: zod
+                    .number()
+                    .min(
+                      saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin,
+                    )
+                    .max(
+                      saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax,
+                    ),
+                  label: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsItemLabelMax,
+                    ),
+                  role: zod.enum(["candidate", "interviewer", "other", "unknown"]),
+                }),
+              )
+              .max(saveMeetingSpeakerReviewResponseSpeakerEvidenceOneReviewLabelsMax),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  questionReview: zod.union([
+    zod.object({
+      revision: zod.string().uuid(),
+      sourceHash: zod.string(),
+      reviewedBy: zod.string(),
+      reviewedAt: zod.date(),
+      entries: zod.array(
+        zod.object({
+          questionIndex: zod.number(),
+          status: zod.enum(["covered", "partial", "not_covered"]),
+          excerpt: zod.string(),
+          note: zod.string(),
+          evidenceStart: zod.number().nullable(),
+          evidenceEnd: zod.number().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const SaveMeetingQuestionReviewParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const saveMeetingQuestionReviewBodySourceHashRegExp = new RegExp("^[a-f0-9]{64}$");
+export const saveMeetingQuestionReviewBodyEntriesItemQuestionIndexMin = 0;
+export const saveMeetingQuestionReviewBodyEntriesItemQuestionIndexMax = 99;
+
+export const saveMeetingQuestionReviewBodyEntriesItemExcerptMax = 2000;
+
+export const saveMeetingQuestionReviewBodyEntriesItemNoteMax = 1000;
+
+export const saveMeetingQuestionReviewBodyEntriesMax = 100;
+
+export const SaveMeetingQuestionReviewBody = zod.object({
+  sourceHash: zod.string().regex(saveMeetingQuestionReviewBodySourceHashRegExp),
+  previousRevision: zod.string().uuid().nullable(),
+  entries: zod
+    .array(
+      zod.object({
+        questionIndex: zod
+          .number()
+          .min(saveMeetingQuestionReviewBodyEntriesItemQuestionIndexMin)
+          .max(saveMeetingQuestionReviewBodyEntriesItemQuestionIndexMax),
+        status: zod.enum(["covered", "partial", "not_covered"]),
+        excerpt: zod.string().max(saveMeetingQuestionReviewBodyEntriesItemExcerptMax),
+        note: zod.string().max(saveMeetingQuestionReviewBodyEntriesItemNoteMax),
+      }),
+    )
+    .max(saveMeetingQuestionReviewBodyEntriesMax),
+});
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMin = 0;
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMax = 99;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemStartMin = 0;
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemStartMax = 3600;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemEndMin = 0;
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemEndMax = 3600;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemTextMax = 4000;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsMax = 6000;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin = 0;
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax = 99;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemLabelMax = 80;
+
+export const saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsMax = 100;
+
+export const SaveMeetingQuestionReviewResponse = zod.object({
+  id: zod.string(),
+  jobId: zod.string(),
+  candidateId: zod.string(),
+  title: zod.string(),
+  language: zod.string(),
+  status: zod.enum(["uploaded", "processing", "completed", "failed"]),
+  consentAt: zod.date(),
+  consentStatement: zod.string(),
+  plannedQuestions: zod.string(),
+  originalName: zod.string(),
+  mimeType: zod.string(),
+  byteSize: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+  processingStartedAt: zod.date().nullable(),
+  canRetry: zod.boolean(),
+  transcript: zod.string().nullable(),
+  summary: zod.string().nullable(),
+  error: zod.string().nullable(),
+  transcriptHash: zod.string().nullable(),
+  nativeSource: zod
+    .object({
+      provider: zod.enum(["zoom", "google_meet", "recall"]),
+      scheduleId: zod.string(),
+      meetingId: zod.string(),
+      meetingUuid: zod.string(),
+      fileId: zod.string(),
+      hostUserId: zod.string(),
+      recordingStart: zod.date(),
+      recordingEnd: zod.date(),
+    })
+    .nullish(),
+  speakerEvidence: zod
+    .union([
+      zod.object({
+        revision: zod.string().uuid(),
+        generatedAt: zod.date(),
+        provider: zod.enum(["deepgram"]),
+        model: zod.string(),
+        diarizerModel: zod.enum(["v1"]),
+        diarizerBuild: zod.string().uuid(),
+        segments: zod
+          .array(
+            zod.object({
+              speaker: zod
+                .number()
+                .min(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMin)
+                .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemSpeakerMax),
+              start: zod
+                .number()
+                .min(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemStartMin)
+                .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemStartMax),
+              end: zod
+                .number()
+                .min(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemEndMin)
+                .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemEndMax),
+              text: zod
+                .string()
+                .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsItemTextMax),
+            }),
+          )
+          .min(1)
+          .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneSegmentsMax),
+        review: zod
+          .object({
+            revision: zod.string().uuid(),
+            reviewedBy: zod.string(),
+            reviewedAt: zod.date(),
+            labels: zod
+              .array(
+                zod.object({
+                  speaker: zod
+                    .number()
+                    .min(
+                      saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMin,
+                    )
+                    .max(
+                      saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemSpeakerMax,
+                    ),
+                  label: zod
+                    .string()
+                    .min(1)
+                    .max(
+                      saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsItemLabelMax,
+                    ),
+                  role: zod.enum(["candidate", "interviewer", "other", "unknown"]),
+                }),
+              )
+              .max(saveMeetingQuestionReviewResponseSpeakerEvidenceOneReviewLabelsMax),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  questionReview: zod.union([
+    zod.object({
+      revision: zod.string().uuid(),
+      sourceHash: zod.string(),
+      reviewedBy: zod.string(),
+      reviewedAt: zod.date(),
+      entries: zod.array(
+        zod.object({
+          questionIndex: zod.number(),
+          status: zod.enum(["covered", "partial", "not_covered"]),
+          excerpt: zod.string(),
+          note: zod.string(),
+          evidenceStart: zod.number().nullable(),
+          evidenceEnd: zod.number().nullable(),
+        }),
+      ),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * Private snapshot of saved source notes; no AI work or hiring assessment approval.
+ */
+export const DownloadMeetingSavedNotesParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const DownloadMeetingRecordingParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  noteId: zod.coerce.string(),
+});
+
+export const GetMeetingAttendanceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const GetMeetingAttendanceResponse = zod.object({
+  workspaceAuthorized: zod.boolean(),
+  webhookConfigured: zod.boolean(),
+  canAuthorizeWorkspace: zod.boolean(),
+  connections: zod.array(
+    zod.object({
+      id: zod.string(),
+    }),
+  ),
+  appointments: zod.array(
+    zod.object({
+      scheduleId: zod.string(),
+      scheduledAt: zod.date(),
+      durationMinutes: zod.number(),
+    }),
+  ),
+  attempts: zod.array(
+    zod.object({
+      id: zod.string(),
+      scheduleId: zod.string(),
+      state: zod.enum([
+        "approved",
+        "dispatching",
+        "unknown",
+        "scheduled",
+        "joining",
+        "waiting",
+        "recording",
+        "processing",
+        "done",
+        "failed",
+        "stopping",
+        "stopped",
+        "deleted",
+      ]),
+      providerState: zod.string().nullable(),
+      approvedAt: zod.date(),
+      stopRequested: zod.boolean(),
+      mediaDeleted: zod.boolean(),
+      importedNoteId: zod.string().nullable(),
+      updatedAt: zod.date(),
+    }),
+  ),
+});
+
+export const ApproveMeetingAttendanceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const approveMeetingAttendanceBodyConsentStatementMin = 20;
+export const approveMeetingAttendanceBodyConsentStatementMax = 1500;
+
+export const ApproveMeetingAttendanceBody = zod.object({
+  scheduleId: zod.string().uuid(),
+  consent: zod.boolean(),
+  consentStatement: zod
+    .string()
+    .min(approveMeetingAttendanceBodyConsentStatementMin)
+    .max(approveMeetingAttendanceBodyConsentStatementMax),
+});
+
+export const AuthorizeMeetingWorkspaceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const authorizeMeetingWorkspaceBodyConnectionIdMax = 255;
+
+export const AuthorizeMeetingWorkspaceBody = zod.object({
+  connectionId: zod.string().min(1).max(authorizeMeetingWorkspaceBodyConnectionIdMax),
+  authorized: zod.boolean(),
+});
+
+export const AuthorizeMeetingWorkspaceResponse = zod.object({
+  workspaceAuthorized: zod.boolean(),
+  webhookConfigured: zod.boolean(),
+  canAuthorizeWorkspace: zod.boolean(),
+  connections: zod.array(
+    zod.object({
+      id: zod.string(),
+    }),
+  ),
+  appointments: zod.array(
+    zod.object({
+      scheduleId: zod.string(),
+      scheduledAt: zod.date(),
+      durationMinutes: zod.number(),
+    }),
+  ),
+  attempts: zod.array(
+    zod.object({
+      id: zod.string(),
+      scheduleId: zod.string(),
+      state: zod.enum([
+        "approved",
+        "dispatching",
+        "unknown",
+        "scheduled",
+        "joining",
+        "waiting",
+        "recording",
+        "processing",
+        "done",
+        "failed",
+        "stopping",
+        "stopped",
+        "deleted",
+      ]),
+      providerState: zod.string().nullable(),
+      approvedAt: zod.date(),
+      stopRequested: zod.boolean(),
+      mediaDeleted: zod.boolean(),
+      importedNoteId: zod.string().nullable(),
+      updatedAt: zod.date(),
+    }),
+  ),
+});
+
+export const RevokeMeetingWorkspaceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+});
+
+export const RevokeMeetingWorkspaceResponse = zod.object({
+  workspaceAuthorized: zod.boolean(),
+  webhookConfigured: zod.boolean(),
+  canAuthorizeWorkspace: zod.boolean(),
+  connections: zod.array(
+    zod.object({
+      id: zod.string(),
+    }),
+  ),
+  appointments: zod.array(
+    zod.object({
+      scheduleId: zod.string(),
+      scheduledAt: zod.date(),
+      durationMinutes: zod.number(),
+    }),
+  ),
+  attempts: zod.array(
+    zod.object({
+      id: zod.string(),
+      scheduleId: zod.string(),
+      state: zod.enum([
+        "approved",
+        "dispatching",
+        "unknown",
+        "scheduled",
+        "joining",
+        "waiting",
+        "recording",
+        "processing",
+        "done",
+        "failed",
+        "stopping",
+        "stopped",
+        "deleted",
+      ]),
+      providerState: zod.string().nullable(),
+      approvedAt: zod.date(),
+      stopRequested: zod.boolean(),
+      mediaDeleted: zod.boolean(),
+      importedNoteId: zod.string().nullable(),
+      updatedAt: zod.date(),
+    }),
+  ),
+});
+
+export const ActOnMeetingAttendanceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  attendanceId: zod.coerce.string().uuid(),
+  action: zod.enum(["dispatch", "stop", "recover"]),
+});
+
+export const ActOnMeetingAttendanceResponse = zod.object({
+  id: zod.string(),
+  scheduleId: zod.string(),
+  state: zod.enum([
+    "approved",
+    "dispatching",
+    "unknown",
+    "scheduled",
+    "joining",
+    "waiting",
+    "recording",
+    "processing",
+    "done",
+    "failed",
+    "stopping",
+    "stopped",
+    "deleted",
+  ]),
+  providerState: zod.string().nullable(),
+  approvedAt: zod.date(),
+  stopRequested: zod.boolean(),
+  mediaDeleted: zod.boolean(),
+  importedNoteId: zod.string().nullable(),
+  updatedAt: zod.date(),
+});
+
+export const ImportMeetingAttendanceParams = zod.object({
+  jobId: zod.coerce.string(),
+  candidateId: zod.coerce.string(),
+  attendanceId: zod.coerce.string().uuid(),
+});
+
+export const importMeetingAttendanceBodyTitleMax = 160;
+
+export const importMeetingAttendanceBodyLanguageRegExp = new RegExp(
+  "^[a-z]{2,3}(-[A-Za-z]{2,4})?$",
+);
+export const importMeetingAttendanceBodyConsentStatementMin = 20;
+export const importMeetingAttendanceBodyConsentStatementMax = 1500;
+
+export const importMeetingAttendanceBodyPlannedQuestionsDefault = ``;
+export const importMeetingAttendanceBodyPlannedQuestionsMax = 6000;
+
+export const ImportMeetingAttendanceBody = zod.object({
+  title: zod.string().min(1).max(importMeetingAttendanceBodyTitleMax),
+  language: zod.string().regex(importMeetingAttendanceBodyLanguageRegExp),
+  consent: zod.boolean(),
+  consentStatement: zod
+    .string()
+    .min(importMeetingAttendanceBodyConsentStatementMin)
+    .max(importMeetingAttendanceBodyConsentStatementMax),
+  plannedQuestions: zod
+    .string()
+    .max(importMeetingAttendanceBodyPlannedQuestionsMax)
+    .default(importMeetingAttendanceBodyPlannedQuestionsDefault),
+});
+
+export const ImportMeetingAttendanceResponse = zod.object({
+  id: zod.string(),
+  scheduleId: zod.string(),
+  state: zod.enum([
+    "approved",
+    "dispatching",
+    "unknown",
+    "scheduled",
+    "joining",
+    "waiting",
+    "recording",
+    "processing",
+    "done",
+    "failed",
+    "stopping",
+    "stopped",
+    "deleted",
+  ]),
+  providerState: zod.string().nullable(),
+  approvedAt: zod.date(),
+  stopRequested: zod.boolean(),
+  mediaDeleted: zod.boolean(),
+  importedNoteId: zod.string().nullable(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Platform-admin read-only Recall connection diagnostic
+ */
+export const RecallAssistantReadinessResponse = zod.object({
+  state: zod.enum(["connected", "unavailable", "authorization_required", "selection_required"]),
+  checkedAt: zod.date(),
+  attendanceEnabled: zod.literal(false),
+  message: zod.string(),
 });

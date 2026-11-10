@@ -1,0 +1,67 @@
+{
+  "status": "passed",
+  "scope": "Established assisted/autonomous regression gate; not every UI journey or live-provider certification",
+  "repairs": [
+    {
+      "kind": "test_fixture",
+      "detail": "Resolved fictional identity evidence now also satisfies the canonical candidate identity prerequisite; production identity rules are unchanged."
+    },
+    {
+      "kind": "test_runner",
+      "detail": "The large journey file is partitioned into disjoint sequential groups of registered parents with descendant coverage, independent private fixtures and the unchanged 240-second process budget."
+    },
+    {
+      "kind": "test_fixture",
+      "detail": "Isolated outreach fixtures include context and document relations so non-fatal database fallbacks cannot hide attempted provider work."
+    },
+    {
+      "kind": "production_authority",
+      "detail": "Rejecting a workflow-owned outreach draft records rejection but cannot reuse its prior authority for automatic regeneration. A fresh workflow draft needs separate authorisation. Unbound assisted regeneration remains unchanged."
+    },
+    {
+      "kind": "test_coverage",
+      "detail": "The interview clarification/recommendation policy regressions are included in the recurring gate."
+    },
+    {
+      "kind": "formatting",
+      "detail": "Two prior QA JSON reports were formatted without changing their evidence."
+    }
+  ],
+  "focusedRepairedBatch": {
+    "testsPassed": 20,
+    "testsFailed": 0,
+    "providerAttempts": 0
+  },
+  "finalChecks": {
+    "completeGatePassed": true,
+    "apiTestsPassed": 497,
+    "frontendLogicTestsPassed": 50,
+    "runnerAndEgressTestsPassed": 12,
+    "totalTestsPassed": 559,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "journeyRegisteredParentsExecutedExactlyOnce": 52,
+    "frontendTypecheck": "passed",
+    "apiBuildAndSecurityGuards": "passed",
+    "lint": "passed; zero errors",
+    "format": "passed; zero unformatted files",
+    "apiRestart": "serving with the production authority fix",
+    "preview": "sign-in page loads",
+    "protectedPilotFingerprints": {
+      "job": "unchanged",
+      "candidate": "unchanged",
+      "applications": "unchanged",
+      "assessment": "unchanged",
+      "contact": "unchanged",
+      "workflow": "unchanged",
+      "audit": "unchanged"
+    }
+  },
+  "constraints": {
+    "modelsPromptsAndProviderRoutingChanged": false,
+    "commercialOrExternalSourcingRestrictionsAdded": false,
+    "completedPilotRepeated": false,
+    "liveProviderRequestsAllowedInTests": false,
+    "historicalLinxWorkOrdersIntentionallyChanged": false
+  }
+}

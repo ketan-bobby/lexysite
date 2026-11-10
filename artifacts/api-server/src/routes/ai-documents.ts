@@ -137,12 +137,12 @@ router.post(
   resolveUser,
   requireRole("platform_admin", "tenant_admin"),
   uploadSingle,
-  async (req, res) => {
+  async (req: Request<{ tenantId: string }>, res: Response): Promise<void> => {
     const user = req.resolvedUser!;
     const { tenantId } = req.params;
-    if (!(await tenantAllowed(user, tenantId))) return res.status(403).json({ error: "Forbidden" });
+    if (!(await tenantAllowed(user, tenantId))) { res.status(403).json({ error: "Forbidden" }); return; }
     const file = req.file as Express.Multer.File | undefined;
-    if (!file) return res.status(400).json({ error: "No file attached (field name must be 'file')" });
+    if (!file) { res.status(400).json({ error: "No file attached (field name must be 'file')" }); return; }
     const parsed = MetaBody.safeParse(req.body ?? {});
     const docType = parsed.success && parsed.data.docType ? parsed.data.docType : "other";
 
@@ -174,7 +174,7 @@ router.post(
       title: `Tenant document uploaded: ${file.originalname}`,
       metadata: { docId: saved.id, docType, distilled: !!brief },
     });
-    return res.json({ document: saved });
+    res.json({ document: saved });
   },
 );
 
@@ -231,12 +231,12 @@ router.post(
   resolveUser,
   requireRole("platform_admin", "tenant_admin", "recruiter", "hiring_manager"),
   uploadSingle,
-  async (req, res) => {
+  async (req: Request<{ jobId: string }>, res: Response): Promise<void> => {
     const user = req.resolvedUser!;
     const job = await loadJobIfAllowed(user, req.params.jobId);
-    if (!job) return res.status(404).json({ error: "Job not found" });
+    if (!job) { res.status(404).json({ error: "Job not found" }); return; }
     const file = req.file as Express.Multer.File | undefined;
-    if (!file) return res.status(400).json({ error: "No file attached (field name must be 'file')" });
+    if (!file) { res.status(400).json({ error: "No file attached (field name must be 'file')" }); return; }
     const parsed = MetaBody.safeParse(req.body ?? {});
     const docType = parsed.success && parsed.data.docType ? parsed.data.docType : "workorder_doc";
 
@@ -269,7 +269,7 @@ router.post(
       title: `Role document uploaded: ${file.originalname}`,
       metadata: { docId: saved.id, jobId: job.id, distilled: !!brief },
     });
-    return res.json({ document: saved });
+    res.json({ document: saved });
   },
 );
 

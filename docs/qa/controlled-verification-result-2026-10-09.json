@@ -1,0 +1,108 @@
+{
+  "execution": {
+    "runId": "bd1464be-6c19-4a29-91d0-f755b0731535",
+    "status": "completed"
+  },
+  "candidateStatus": "pending",
+  "recordStatus": "pending",
+  "identityVerified": false,
+  "displayedOverallScore": null,
+  "modelAdviceVerdict": "review",
+  "screeningPrerequisite": "synthetic setup only; no screening provider call",
+  "runtimeEvidence": {
+    "id": "5be4d2e5e2f266b14e55ab8b74e79dfea8aa6444b857ec8ed00b491cec03fb8f",
+    "stepKey": "verification",
+    "sourceType": "identity_verification",
+    "sourceId": "27b03832-8fc0-4233-bd94-7ac26de6193c",
+    "occurredAt": "2026-10-09T14:11:21.236Z",
+    "scope": "candidate_identity",
+    "summary": "Candidate identity verification is pending or awaiting human resolution; it is not completed verification evidence.",
+    "attentionRequired": true,
+    "readyForReview": false,
+    "reason": "Identity verification is still pending. Completed verification evidence or a human resolution is required."
+  },
+  "negativeChecks": [
+    {
+      "name": "Manual note cannot complete pending verification",
+      "status": 409
+    },
+    {
+      "name": "Pending AI source cannot complete verification",
+      "status": 409
+    },
+    {
+      "name": "Unacknowledged corroboration cannot verify identity",
+      "status": 400
+    },
+    {
+      "name": "Outreach activation cannot skip unresolved verification",
+      "status": 409
+    }
+  ],
+  "steps": [
+    {
+      "key": "screening",
+      "label": "Screening evidence",
+      "status": "completed",
+      "evidence": "[SYNTHETIC FIXTURE SETUP ONLY] Predecessor workflow clearance for an isolated verification test. No native screening call, real qualification approval or hiring evidence is claimed.",
+      "authority": "human_review"
+    },
+    {
+      "key": "verification",
+      "label": "Verification evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "engagement",
+      "label": "Engagement evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "ai_interview",
+      "label": "AI interview evidence",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "evaluation_review",
+      "label": "Human evaluation review",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    },
+    {
+      "key": "hiring_decision",
+      "label": "Human hiring decision",
+      "status": "pending",
+      "evidence": null,
+      "authority": "human_review"
+    }
+  ],
+  "providerUsage": [
+    {
+      "provider": "openai_proxy",
+      "model": "gpt-4o",
+      "status": "succeeded",
+      "costStatus": "unknown",
+      "units": {
+        "audio_bytes": null,
+        "input_tokens": 300,
+        "audio_seconds": null,
+        "output_tokens": 140,
+        "input_characters": null,
+        "reasoning_tokens": 0,
+        "cached_input_tokens": 0,
+        "provider_request_id": "93737676-b185-46b7-af41-729dd4c7e561",
+        "observed_api_requests": 1
+      }
+    }
+  ],
+  "downstreamContactRecords": 0,
+  "pilotRevoked": true,
+  "note": "AI profile-consistency advice only; independent identity verification is not established."
+}

@@ -41,6 +41,7 @@ import {
   type AdapterResult,
 } from "./external-sourcing.js";
 import { logger } from "./logger.js";
+export { NATIVE_SOURCING_ADAPTERS } from "./sourcing-live-adapters";
 
 export type ProviderId = "github" | "pdl" | "serp" | "enrichlayer";
 export type ProviderKind = "discovery" | "enrichment";

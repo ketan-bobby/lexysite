@@ -34,7 +34,7 @@ import {
   talentPoolSubmissionsTable,
 } from "@workspace/db";
 import { eq, and, inArray, sql, isNull } from "drizzle-orm";
-import { sendEmail } from "./email.js";
+import { sendCadencedCommunication } from "./cadenced-communication";
 import { logger } from "./logger.js";
 import { PLATFORM_READ_EXEMPTION, platformReadExemption } from "./platform-pool-read.js";
 
@@ -214,36 +214,26 @@ export async function runCandidateReengagement(): Promise<{ sent: number; skippe
       ? buildInactiveEmail(firstName)
       : buildPassiveEmail(firstName);
 
-    const result = await sendEmail({
+    const result = await sendCadencedCommunication({
+      kind:"platform_inactivity",intervalDays,ownerTenantId:candidate.tenantId,
+      expectedUpdatedAt:new Date(candidate.updatedAt),
+      tenantId:"platform",candidateId:candidate.id,
       to: candidate.email,
       subject,
-      html,
-      audit: {
-        tenantId: "platform",
+      html,htmlOnly:true,
+      body:`Re-engagement (${status}, ${daysSince}d inactive)`,
         actorLabel: "Re-engagement Scheduler",
-        subjectType: "candidate",
-        subjectId: candidate.id,
         subjectLabel: `${firstName} ${candidate.lastName ?? ""}`.trim(),
         action: "reengagement.send",
         metadata: { activityStatus: status, daysSince },
-      },
     });
 
-    if (result.ok) {
-      await db.insert(communicationEventsTable).values({
-        tenantId:    "platform",
-        candidateId: candidate.id,
-        type:        "re_engagement",
-        channel:     "email",
-        status:      "sent",
-        subject,
-        body:        `Re-engagement (${status}, ${daysSince}d inactive)`,
-        sentAt:      new Date(),
-      } as any);
+    if (result.ok&&!result.simulated&&!result.suppressed) {
       sent++;
       logger.info({ candidateId: candidate.id, status, daysSince }, "[reengagement] Sent email");
     } else {
-      logger.warn({ candidateId: candidate.id, error: result.error }, "[reengagement] Send failed");
+      skipped++;
+      logger.info({ candidateId: candidate.id, reason: result.reason }, "[reengagement] Email not counted as accepted");
     }
   }
 

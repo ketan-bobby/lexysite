@@ -5,6 +5,4085 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * @nullable
+ */
+export type MailHoldLastReview =
+  | (typeof MailHoldLastReview)[keyof typeof MailHoldLastReview]
+  | null;
+
+export const MailHoldLastReview = {
+  keep_held: "keep_held",
+  closed_no_resend: "closed_no_resend",
+} as const;
+
+export interface MailHold {
+  operationId: string;
+  tenantId: string;
+  candidateId: string;
+  kind: string;
+  reservedAt: string;
+  version: string;
+  /** @nullable */
+  lastReview: MailHoldLastReview;
+  /** @nullable */
+  lastReviewedAt: string | null;
+}
+
+export interface MailHoldPage {
+  data: MailHold[];
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type MailHoldReviewInputDisposition =
+  (typeof MailHoldReviewInputDisposition)[keyof typeof MailHoldReviewInputDisposition];
+
+export const MailHoldReviewInputDisposition = {
+  keep_held: "keep_held",
+  closed_no_resend: "closed_no_resend",
+} as const;
+
+export interface MailHoldReviewInput {
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  operationId: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  version: string;
+  disposition: MailHoldReviewInputDisposition;
+  /**
+   * @minLength 3
+   * @maxLength 120
+   * @pattern ^[A-Za-z0-9_.:-]+$
+   */
+  evidenceReference: string;
+  acknowledgeNoResend: boolean;
+}
+
+export type MailHoldReviewResultDisposition =
+  (typeof MailHoldReviewResultDisposition)[keyof typeof MailHoldReviewResultDisposition];
+
+export const MailHoldReviewResultDisposition = {
+  keep_held: "keep_held",
+  closed_no_resend: "closed_no_resend",
+} as const;
+
+export interface MailHoldReviewResult {
+  reviewId: string;
+  disposition: MailHoldReviewResultDisposition;
+  holdRetained: boolean;
+}
+
+export interface MeetingWorkspaceAuthorization {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  connectionId: string;
+  authorized: true;
+}
+
+export interface MeetingAttendanceApproval {
+  scheduleId: string;
+  consent: true;
+  /**
+   * @minLength 20
+   * @maxLength 1500
+   */
+  consentStatement: string;
+}
+
+export interface MeetingAttendanceImport {
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  title: string;
+  /** @pattern ^[a-z]{2,3}(-[A-Za-z]{2,4})?$ */
+  language: string;
+  consent: true;
+  /**
+   * @minLength 20
+   * @maxLength 1500
+   */
+  consentStatement: string;
+  /** @maxLength 6000 */
+  plannedQuestions?: string;
+}
+
+export type MeetingAttendanceAttemptState =
+  (typeof MeetingAttendanceAttemptState)[keyof typeof MeetingAttendanceAttemptState];
+
+export const MeetingAttendanceAttemptState = {
+  approved: "approved",
+  dispatching: "dispatching",
+  unknown: "unknown",
+  scheduled: "scheduled",
+  joining: "joining",
+  waiting: "waiting",
+  recording: "recording",
+  processing: "processing",
+  done: "done",
+  failed: "failed",
+  stopping: "stopping",
+  stopped: "stopped",
+  deleted: "deleted",
+} as const;
+
+export interface MeetingAttendanceAttempt {
+  id: string;
+  scheduleId: string;
+  state: MeetingAttendanceAttemptState;
+  /** @nullable */
+  providerState: string | null;
+  approvedAt: string;
+  stopRequested: boolean;
+  mediaDeleted: boolean;
+  /** @nullable */
+  importedNoteId: string | null;
+  updatedAt: string;
+}
+
+export interface MeetingAttendanceAppointment {
+  scheduleId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+}
+
+export interface MeetingRecallConnection {
+  id: string;
+}
+
+export interface MeetingAttendanceView {
+  workspaceAuthorized: boolean;
+  webhookConfigured: boolean;
+  canAuthorizeWorkspace: boolean;
+  connections: MeetingRecallConnection[];
+  appointments: MeetingAttendanceAppointment[];
+  attempts: MeetingAttendanceAttempt[];
+}
+
+export type RecallReadinessState = (typeof RecallReadinessState)[keyof typeof RecallReadinessState];
+
+export const RecallReadinessState = {
+  connected: "connected",
+  unavailable: "unavailable",
+  authorization_required: "authorization_required",
+  selection_required: "selection_required",
+} as const;
+
+export interface RecallReadiness {
+  state: RecallReadinessState;
+  checkedAt: string;
+  attendanceEnabled: boolean;
+  message: string;
+}
+
+export interface MeetingProcessingInput {
+  /** Explicitly opt into anonymous Deepgram speaker separation for this recording only. Does not verify participant identities or affect scores. */
+  separateSpeakers?: boolean;
+}
+
+export interface MeetingSpeakerSegment {
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  speaker: number;
+  /**
+   * @minimum 0
+   * @maximum 3600
+   */
+  start: number;
+  /**
+   * @minimum 0
+   * @maximum 3600
+   */
+  end: number;
+  /** @maxLength 4000 */
+  text: string;
+}
+
+export type MeetingSpeakerEvidenceProvider =
+  (typeof MeetingSpeakerEvidenceProvider)[keyof typeof MeetingSpeakerEvidenceProvider];
+
+export const MeetingSpeakerEvidenceProvider = {
+  deepgram: "deepgram",
+} as const;
+
+export type MeetingSpeakerEvidenceDiarizerModel =
+  (typeof MeetingSpeakerEvidenceDiarizerModel)[keyof typeof MeetingSpeakerEvidenceDiarizerModel];
+
+export const MeetingSpeakerEvidenceDiarizerModel = {
+  v1: "v1",
+} as const;
+
+export type MeetingSpeakerLabelRole =
+  (typeof MeetingSpeakerLabelRole)[keyof typeof MeetingSpeakerLabelRole];
+
+export const MeetingSpeakerLabelRole = {
+  candidate: "candidate",
+  interviewer: "interviewer",
+  other: "other",
+  unknown: "unknown",
+} as const;
+
+export interface MeetingSpeakerLabel {
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  speaker: number;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  label: string;
+  role: MeetingSpeakerLabelRole;
+}
+
+export interface MeetingSpeakerReview {
+  revision: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  /** @maxItems 100 */
+  labels: MeetingSpeakerLabel[];
+}
+
+export interface MeetingSpeakerEvidence {
+  revision: string;
+  generatedAt: string;
+  provider: MeetingSpeakerEvidenceProvider;
+  model: string;
+  diarizerModel: MeetingSpeakerEvidenceDiarizerModel;
+  diarizerBuild: string;
+  /**
+   * @minItems 1
+   * @maxItems 6000
+   */
+  segments: MeetingSpeakerSegment[];
+  review?: MeetingSpeakerReview;
+}
+
+export interface MeetingSpeakerReviewInput {
+  sourceRevision: string;
+  /** @nullable */
+  previousRevision: string | null;
+  confirm: true;
+  /** @maxItems 100 */
+  labels: MeetingSpeakerLabel[];
+}
+
+export type MeetingRecordingInputConsent =
+  (typeof MeetingRecordingInputConsent)[keyof typeof MeetingRecordingInputConsent];
+
+export const MeetingRecordingInputConsent = {
+  true: "true",
+} as const;
+
+export interface MeetingRecordingInput {
+  file: Blob;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  title: string;
+  language: string;
+  consent: MeetingRecordingInputConsent;
+  /**
+   * @minLength 20
+   * @maxLength 1500
+   */
+  consentStatement: string;
+  /** @maxLength 6000 */
+  plannedQuestions?: string;
+}
+
+export type MeetingQuestionReviewEntryInputStatus =
+  (typeof MeetingQuestionReviewEntryInputStatus)[keyof typeof MeetingQuestionReviewEntryInputStatus];
+
+export const MeetingQuestionReviewEntryInputStatus = {
+  covered: "covered",
+  partial: "partial",
+  not_covered: "not_covered",
+} as const;
+
+export interface MeetingQuestionReviewEntryInput {
+  /**
+   * @minimum 0
+   * @maximum 99
+   */
+  questionIndex: number;
+  status: MeetingQuestionReviewEntryInputStatus;
+  /** @maxLength 2000 */
+  excerpt: string;
+  /** @maxLength 1000 */
+  note: string;
+}
+
+export interface MeetingQuestionReviewInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  sourceHash: string;
+  /** @nullable */
+  previousRevision: string | null;
+  /** @maxItems 100 */
+  entries: MeetingQuestionReviewEntryInput[];
+}
+
+export type MeetingQuestionReviewEntryStatus =
+  (typeof MeetingQuestionReviewEntryStatus)[keyof typeof MeetingQuestionReviewEntryStatus];
+
+export const MeetingQuestionReviewEntryStatus = {
+  covered: "covered",
+  partial: "partial",
+  not_covered: "not_covered",
+} as const;
+
+export interface MeetingQuestionReviewEntry {
+  questionIndex: number;
+  status: MeetingQuestionReviewEntryStatus;
+  excerpt: string;
+  note: string;
+  /** @nullable */
+  evidenceStart: number | null;
+  /** @nullable */
+  evidenceEnd: number | null;
+}
+
+export interface MeetingQuestionReview {
+  revision: string;
+  sourceHash: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  entries: MeetingQuestionReviewEntry[];
+}
+
+export interface NativeMeetConference {
+  name: string;
+  start: string;
+  end: string;
+}
+
+export interface NativeMeetPreviewInput {
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  scheduleId: string;
+  /** @pattern ^conferenceRecords/[A-Za-z0-9_-]{1,160}$ */
+  conferenceName: string;
+}
+
+export type NativeZoomRecordingFileFormat =
+  (typeof NativeZoomRecordingFileFormat)[keyof typeof NativeZoomRecordingFileFormat];
+
+export const NativeZoomRecordingFileFormat = {
+  MP4: "MP4",
+  M4A: "M4A",
+} as const;
+
+export interface NativeZoomRecordingFile {
+  id: string;
+  format: NativeZoomRecordingFileFormat;
+  kind: string;
+  bytes: number;
+  start: string;
+  end: string;
+  eligible: boolean;
+  unavailableReason: string | null;
+  reviewToken: string | null;
+}
+
+export interface NativeMeetRecordingPreview {
+  scheduleId: string;
+  recordedAt: string;
+  files: NativeZoomRecordingFile[];
+}
+
+export interface NativeZoomAppointment {
+  scheduleId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+}
+
+export interface NativeZoomPreviewInput {
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  scheduleId: string;
+}
+
+export interface NativeZoomRecordingPreview {
+  scheduleId: string;
+  recordedAt: string;
+  files: NativeZoomRecordingFile[];
+}
+
+export interface NativeZoomRecordingInput {
+  /**
+   * @minLength 1
+   * @maxLength 8000
+   */
+  reviewToken: string;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  title: string;
+  /** @pattern ^[a-z]{2,3}(-[A-Za-z]{2,4})?$ */
+  language?: string;
+  /** Confirms required participant consent and staff review that this recording instance belongs to the scoped candidate and job. */
+  consent: true;
+  /**
+   * @minLength 20
+   * @maxLength 1500
+   */
+  consentStatement: string;
+  /** @maxLength 6000 */
+  plannedQuestions?: string;
+}
+
+export type NativeMeetingRecordingSourceProvider =
+  (typeof NativeMeetingRecordingSourceProvider)[keyof typeof NativeMeetingRecordingSourceProvider];
+
+export const NativeMeetingRecordingSourceProvider = {
+  zoom: "zoom",
+  google_meet: "google_meet",
+  recall: "recall",
+} as const;
+
+export interface NativeMeetingRecordingSource {
+  provider: NativeMeetingRecordingSourceProvider;
+  scheduleId: string;
+  meetingId: string;
+  meetingUuid: string;
+  fileId: string;
+  hostUserId: string;
+  recordingStart: string;
+  recordingEnd: string;
+}
+
+export type MeetingNoteStatus = (typeof MeetingNoteStatus)[keyof typeof MeetingNoteStatus];
+
+export const MeetingNoteStatus = {
+  uploaded: "uploaded",
+  processing: "processing",
+  completed: "completed",
+  failed: "failed",
+} as const;
+
+export interface MeetingNote {
+  id: string;
+  jobId: string;
+  candidateId: string;
+  title: string;
+  language: string;
+  status: MeetingNoteStatus;
+  consentAt: string;
+  consentStatement: string;
+  plannedQuestions: string;
+  originalName: string;
+  mimeType: string;
+  byteSize: number;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  processingStartedAt: string | null;
+  canRetry: boolean;
+  /** @nullable */
+  transcript: string | null;
+  /** @nullable */
+  summary: string | null;
+  /** @nullable */
+  error: string | null;
+  /** @nullable */
+  transcriptHash: string | null;
+  nativeSource?: NativeMeetingRecordingSource | null;
+  speakerEvidence?: MeetingSpeakerEvidence | null;
+  questionReview: MeetingQuestionReview | null;
+}
+
+export type ZohoRecruitModuleObservationModule =
+  (typeof ZohoRecruitModuleObservationModule)[keyof typeof ZohoRecruitModuleObservationModule];
+
+export const ZohoRecruitModuleObservationModule = {
+  Job_Openings: "Job_Openings",
+  Candidates: "Candidates",
+  Applications: "Applications",
+} as const;
+
+export type ZohoRecruitModuleObservationStatus =
+  (typeof ZohoRecruitModuleObservationStatus)[keyof typeof ZohoRecruitModuleObservationStatus];
+
+export const ZohoRecruitModuleObservationStatus = {
+  readable: "readable",
+  empty: "empty",
+  unavailable: "unavailable",
+} as const;
+
+/**
+ * @nullable
+ */
+export type ZohoRecruitModuleObservationReason =
+  | (typeof ZohoRecruitModuleObservationReason)[keyof typeof ZohoRecruitModuleObservationReason]
+  | null;
+
+export const ZohoRecruitModuleObservationReason = {
+  scope_missing: "scope_missing",
+  access_denied: "access_denied",
+  unsupported: "unsupported",
+  request_failed: "request_failed",
+} as const;
+
+export interface ZohoRecruitModuleObservation {
+  module: ZohoRecruitModuleObservationModule;
+  status: ZohoRecruitModuleObservationStatus;
+  /** @nullable */
+  reason: ZohoRecruitModuleObservationReason;
+}
+
+export interface ZohoRecruitAccessCheck {
+  revision: string;
+  checkedAt: string;
+  importsEnabled: false;
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  modules: ZohoRecruitModuleObservation[];
+}
+
+export type ZohoRecruitImportSelectionKind =
+  (typeof ZohoRecruitImportSelectionKind)[keyof typeof ZohoRecruitImportSelectionKind];
+
+export const ZohoRecruitImportSelectionKind = {
+  job: "job",
+  candidate: "candidate",
+} as const;
+
+export interface ZohoRecruitImportSelection {
+  revision: string;
+  kind: ZohoRecruitImportSelectionKind;
+  /** @pattern ^[1-9][0-9]{0,39}$ */
+  recordId: string;
+  confirm: true;
+}
+
+export interface ZohoJobApplicantSelection {
+  revision: string;
+  /** @pattern ^[1-9][0-9]{0,39}$ */
+  jobId: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page: number;
+  confirm: true;
+}
+
+export type ZohoCampaignReviewInputDecision =
+  (typeof ZohoCampaignReviewInputDecision)[keyof typeof ZohoCampaignReviewInputDecision];
+
+export const ZohoCampaignReviewInputDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoCampaignReviewInput {
+  decision: ZohoCampaignReviewInputDecision;
+  /**
+   * @minLength 10
+   * @maxLength 2000
+   */
+  reason: string;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   */
+  expectedRevision: string;
+  requestId: string;
+  confirm: true;
+}
+
+export type ZohoCampaignReviewEventDecision =
+  (typeof ZohoCampaignReviewEventDecision)[keyof typeof ZohoCampaignReviewEventDecision];
+
+export const ZohoCampaignReviewEventDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoCampaignReviewEvent {
+  id: string;
+  decision: ZohoCampaignReviewEventDecision;
+  reason: string;
+  reviewedBy: string;
+  createdAt: string;
+  evidenceCurrent: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type ZohoCampaignReviewRowDecision =
+  | (typeof ZohoCampaignReviewRowDecision)[keyof typeof ZohoCampaignReviewRowDecision]
+  | null;
+
+export const ZohoCampaignReviewRowDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoCampaignReviewRow {
+  recipientId: string;
+  applicationId: string;
+  externalCandidateId: string;
+  /** @nullable */
+  candidateName: string | null;
+  /** @nullable */
+  sessionStatus: string | null;
+  /** @nullable */
+  score: number | null;
+  reviewable: boolean;
+  /** @nullable */
+  decision: ZohoCampaignReviewRowDecision;
+  decisionStale: boolean;
+}
+
+export interface ZohoCampaignReviewQueue {
+  campaignId: string;
+  rows: ZohoCampaignReviewRow[];
+}
+
+export interface ZohoCampaignAssessment {
+  /** @nullable */
+  score: number | null;
+  /** @nullable */
+  summary: string | null;
+  /** @nullable */
+  recommendation: string | null;
+  strengths: string[];
+  developmentAreas: string[];
+  concerns: string[];
+}
+
+export interface ZohoCampaignAnswer {
+  question: string;
+  answer: string;
+  /** @nullable */
+  score: number | null;
+}
+
+export interface ZohoStageMapping {
+  revision: string;
+  advance: string | null;
+  hold: string | null;
+  decline: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface ZohoStageMappingInput {
+  expectedRevision: string;
+  /** @maxLength 100 */
+  advance: string | null;
+  /** @maxLength 100 */
+  hold: string | null;
+  /** @maxLength 100 */
+  decline: string | null;
+  confirm: boolean;
+}
+
+export interface ZohoReviewExportInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedHandoffRevision: string;
+  confirm: boolean;
+}
+
+export type ZohoReviewExportReceiptState =
+  (typeof ZohoReviewExportReceiptState)[keyof typeof ZohoReviewExportReceiptState];
+
+export const ZohoReviewExportReceiptState = {
+  prepared: "prepared",
+} as const;
+
+export type ZohoReviewExportReceiptDelivery =
+  (typeof ZohoReviewExportReceiptDelivery)[keyof typeof ZohoReviewExportReceiptDelivery];
+
+export const ZohoReviewExportReceiptDelivery = {
+  unverified: "unverified",
+} as const;
+
+export interface ZohoReviewExportReceipt {
+  id: string;
+  campaignId: string;
+  recipientId: string;
+  reviewId: string;
+  reviewRevision: string;
+  handoffRevision: string;
+  preparedAt: string;
+  state: ZohoReviewExportReceiptState;
+  delivery: ZohoReviewExportReceiptDelivery;
+}
+
+export interface ZohoStageRequestInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  requestId: string;
+  confirm: true;
+}
+
+export type ZohoStageRequestActionAction =
+  (typeof ZohoStageRequestActionAction)[keyof typeof ZohoStageRequestActionAction];
+
+export const ZohoStageRequestActionAction = {
+  approve: "approve",
+  withdraw: "withdraw",
+  recover: "recover",
+} as const;
+
+export interface ZohoStageRequestAction {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  action: ZohoStageRequestActionAction;
+  confirm: true;
+}
+
+export type ZohoStageRequestState =
+  (typeof ZohoStageRequestState)[keyof typeof ZohoStageRequestState];
+
+export const ZohoStageRequestState = {
+  prepared: "prepared",
+  approved: "approved",
+  withdrawn: "withdrawn",
+  claimed: "claimed",
+  provider_accepted: "provider_accepted",
+  verified: "verified",
+  not_sent: "not_sent",
+  review_required: "review_required",
+  observed_target: "observed_target",
+  observed_other: "observed_other",
+} as const;
+
+export type ZohoStageRequestDecision =
+  (typeof ZohoStageRequestDecision)[keyof typeof ZohoStageRequestDecision];
+
+export const ZohoStageRequestDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoStageRequest {
+  id: string;
+  revision: string;
+  state: ZohoStageRequestState;
+  currentStatus: string;
+  targetStatus: string;
+  decision: ZohoStageRequestDecision;
+  preparedBy: string;
+  /** @nullable */
+  approvedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  stale: boolean;
+  canApprove: boolean;
+  canWithdraw: boolean;
+  canRecover: boolean;
+}
+
+export type ZohoStageRequestWorkspaceBlocker =
+  (typeof ZohoStageRequestWorkspaceBlocker)[keyof typeof ZohoStageRequestWorkspaceBlocker];
+
+export const ZohoStageRequestWorkspaceBlocker = {
+  employer_connection_required: "employer_connection_required",
+  current_decision_and_mapping_required: "current_decision_and_mapping_required",
+  employer_write_consent_required: "employer_write_consent_required",
+  application_transition_contract_required: "application_transition_contract_required",
+} as const;
+
+export interface ZohoStageRequestWorkspace {
+  campaignId: string;
+  recipientId: string;
+  handoffRevision: string;
+  writeConsentSaved: boolean;
+  transitionVerified: false;
+  liveEnabled: false;
+  canPrepare: boolean;
+  blocker: ZohoStageRequestWorkspaceBlocker;
+  reason: string;
+  requests: ZohoStageRequest[];
+}
+
+export type ZohoStageHandoffInputMode =
+  (typeof ZohoStageHandoffInputMode)[keyof typeof ZohoStageHandoffInputMode];
+
+export const ZohoStageHandoffInputMode = {
+  simulation: "simulation",
+} as const;
+
+export interface ZohoStageHandoffInput {
+  expectedRevision: string;
+  requestId: string;
+  confirm: boolean;
+  mode: ZohoStageHandoffInputMode;
+}
+
+export type ZohoStageHandoffEventState =
+  (typeof ZohoStageHandoffEventState)[keyof typeof ZohoStageHandoffEventState];
+
+export const ZohoStageHandoffEventState = {
+  simulated: "simulated",
+} as const;
+
+export type ZohoStageHandoffEventDecision =
+  (typeof ZohoStageHandoffEventDecision)[keyof typeof ZohoStageHandoffEventDecision];
+
+export const ZohoStageHandoffEventDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoStageHandoffEvent {
+  id: string;
+  state: ZohoStageHandoffEventState;
+  targetStatus: string;
+  decision: ZohoStageHandoffEventDecision;
+  approvedBy: string;
+  createdAt: string;
+}
+
+export interface ZohoStageMetadataInput {
+  expectedRevision: string;
+  confirm: boolean;
+}
+
+export type ZohoStageMetadataMatchDecision =
+  (typeof ZohoStageMetadataMatchDecision)[keyof typeof ZohoStageMetadataMatchDecision];
+
+export const ZohoStageMetadataMatchDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export type ZohoStageMetadataMatchResult =
+  (typeof ZohoStageMetadataMatchResult)[keyof typeof ZohoStageMetadataMatchResult];
+
+export const ZohoStageMetadataMatchResult = {
+  unset: "unset",
+  matched: "matched",
+  missing: "missing",
+  ambiguous: "ambiguous",
+  restricted: "restricted",
+} as const;
+
+export type ZohoStageMetadataMatchNextAction =
+  (typeof ZohoStageMetadataMatchNextAction)[keyof typeof ZohoStageMetadataMatchNextAction];
+
+export const ZohoStageMetadataMatchNextAction = {
+  mapping_required: "mapping_required",
+  mapping_review_required: "mapping_review_required",
+  separate_human_process: "separate_human_process",
+  no_update_needed: "no_update_needed",
+  transition_verification_required: "transition_verification_required",
+} as const;
+
+export interface ZohoStageMetadataMatch {
+  decision: ZohoStageMetadataMatchDecision;
+  targetStatus: string | null;
+  result: ZohoStageMetadataMatchResult;
+  statusId: string | null;
+  stageId: string | null;
+  nextAction: ZohoStageMetadataMatchNextAction;
+  explanation: string;
+  canWrite: false;
+}
+
+export type ZohoStageMetadataCheckCatalogScope =
+  (typeof ZohoStageMetadataCheckCatalogScope)[keyof typeof ZohoStageMetadataCheckCatalogScope];
+
+export const ZohoStageMetadataCheckCatalogScope = {
+  organization_default: "organization_default",
+} as const;
+
+export interface ZohoStageMetadataCheck {
+  handoffRevision: string;
+  mappingRevision: string;
+  connectionRevision: string;
+  checkedAt: string;
+  applicationId: string;
+  externalJobId: string;
+  externalCandidateId: string;
+  currentApplicationStatus: string;
+  identityVerified: boolean;
+  catalogScope: ZohoStageMetadataCheckCatalogScope;
+  transitionEligibilityVerified: boolean;
+  liveEnabled: boolean;
+  catalogRevision: string;
+  mappings: ZohoStageMetadataMatch[];
+  reason: string;
+}
+
+export interface ZohoStageHandoff {
+  campaignId: string;
+  recipientId: string;
+  applicationId: string;
+  externalJobId: string;
+  externalCandidateId: string;
+  revision: string;
+  mapping: ZohoStageMapping;
+  decision: string | null;
+  targetStatus: string | null;
+  ready: boolean;
+  liveEnabled: boolean;
+  reason: string;
+  history: ZohoStageHandoffEvent[];
+}
+
+export interface ZohoCampaignApplicantReview {
+  campaignId: string;
+  recipientId: string;
+  candidateName: string;
+  sessionId: string;
+  sessionStatus: string;
+  /** @nullable */
+  completedAt: string | null;
+  revision: string;
+  assessment: ZohoCampaignAssessment;
+  answers: ZohoCampaignAnswer[];
+  answersTruncated: boolean;
+  reviewable: boolean;
+  decisionStale: boolean;
+  history: ZohoCampaignReviewEvent[];
+}
+
+export interface ZohoCampaignSelection {
+  revision: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  jobId: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  planId: string;
+  requestId: string;
+  confirm: true;
+}
+
+export type ZohoCampaignActionAction =
+  (typeof ZohoCampaignActionAction)[keyof typeof ZohoCampaignActionAction];
+
+export const ZohoCampaignActionAction = {
+  approve: "approve",
+  cancel: "cancel",
+} as const;
+
+export interface ZohoCampaignAction {
+  action: ZohoCampaignActionAction;
+  snapshotHash: string;
+  confirm: true;
+}
+
+export interface ZohoCampaignPlan {
+  id: string;
+  title: string;
+  language: string;
+  questionCount: number;
+}
+
+export interface ZohoCampaignJob {
+  id: string;
+  title: string;
+  externalJobId: string;
+  plans: ZohoCampaignPlan[];
+}
+
+export type ZohoCampaignSummaryState =
+  (typeof ZohoCampaignSummaryState)[keyof typeof ZohoCampaignSummaryState];
+
+export const ZohoCampaignSummaryState = {
+  draft: "draft",
+  approved: "approved",
+  cancelled: "cancelled",
+} as const;
+
+export interface ZohoCampaignCount {
+  state: string;
+  count: number;
+}
+
+export interface ZohoCampaignSummary {
+  id: string;
+  jobId: string;
+  externalJobId: string;
+  planId: string;
+  state: ZohoCampaignSummaryState;
+  snapshotHash: string;
+  applicationCount: number;
+  recipientCount: number;
+  createdAt: string;
+  counts: ZohoCampaignCount[];
+}
+
+export type ZohoCampaignDeliveryEvidenceAcceptance =
+  (typeof ZohoCampaignDeliveryEvidenceAcceptance)[keyof typeof ZohoCampaignDeliveryEvidenceAcceptance];
+
+export const ZohoCampaignDeliveryEvidenceAcceptance = {
+  recorded: "recorded",
+  unknown: "unknown",
+  simulated: "simulated",
+} as const;
+
+export type ZohoCampaignDeliveryEvidenceDelivery =
+  (typeof ZohoCampaignDeliveryEvidenceDelivery)[keyof typeof ZohoCampaignDeliveryEvidenceDelivery];
+
+export const ZohoCampaignDeliveryEvidenceDelivery = {
+  unverified: "unverified",
+} as const;
+
+export interface ZohoCampaignDeliveryEvidence {
+  acceptance: ZohoCampaignDeliveryEvidenceAcceptance;
+  /** @nullable */
+  providerMessageId: string | null;
+  lastStateChangeAt: string;
+  needsReview: boolean;
+  delivery: ZohoCampaignDeliveryEvidenceDelivery;
+}
+
+export interface ZohoCampaignRecipient {
+  id: string;
+  applicationId: string;
+  candidateId: string;
+  state: string;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  sessionId: string | null;
+  /** @nullable */
+  interviewStatus: string | null;
+  deliveryEvidence?: ZohoCampaignDeliveryEvidence;
+}
+
+export interface ZohoCampaignDetail {
+  campaign: ZohoCampaignSummary;
+  recipients: ZohoCampaignRecipient[];
+}
+
+export interface ZohoCampaignWorkspace {
+  jobs: ZohoCampaignJob[];
+  campaigns: ZohoCampaignSummary[];
+}
+
+export interface ZohoJobApplicant {
+  applicationId: string;
+  candidateId: string;
+}
+
+export interface ZohoJobApplicantPage {
+  jobId: string;
+  jobTitle: string;
+  page: number;
+  moreRecords: boolean;
+  applications: ZohoJobApplicant[];
+}
+
+export type ZohoRecruitImportConfirmationKind =
+  (typeof ZohoRecruitImportConfirmationKind)[keyof typeof ZohoRecruitImportConfirmationKind];
+
+export const ZohoRecruitImportConfirmationKind = {
+  job: "job",
+  candidate: "candidate",
+} as const;
+
+export interface ZohoRecruitImportConfirmation {
+  revision: string;
+  kind: ZohoRecruitImportConfirmationKind;
+  /** @pattern ^[1-9][0-9]{0,39}$ */
+  recordId: string;
+  confirm: true;
+  /**
+   * @minLength 1
+   * @maxLength 8000
+   */
+  previewToken: string;
+  /** @nullable */
+  existingId: string | null;
+}
+
+export type ZohoRecruitImportPreviewKind =
+  (typeof ZohoRecruitImportPreviewKind)[keyof typeof ZohoRecruitImportPreviewKind];
+
+export const ZohoRecruitImportPreviewKind = {
+  job: "job",
+  candidate: "candidate",
+} as const;
+
+export type ZohoRecruitImportPreviewDisposition =
+  (typeof ZohoRecruitImportPreviewDisposition)[keyof typeof ZohoRecruitImportPreviewDisposition];
+
+export const ZohoRecruitImportPreviewDisposition = {
+  create: "create",
+  link: "link",
+  already_imported: "already_imported",
+} as const;
+
+export interface ZohoRecruitImportFields {
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  location: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  email: string | null;
+}
+
+export interface ZohoRecruitImportPreview {
+  revision: string;
+  kind: ZohoRecruitImportPreviewKind;
+  recordId: string;
+  previewToken: string;
+  expiresAt: string;
+  fields: ZohoRecruitImportFields;
+  /** @nullable */
+  existingId: string | null;
+  disposition: ZohoRecruitImportPreviewDisposition;
+}
+
+export type ZohoRecruitImportResultKind =
+  (typeof ZohoRecruitImportResultKind)[keyof typeof ZohoRecruitImportResultKind];
+
+export const ZohoRecruitImportResultKind = {
+  job: "job",
+  candidate: "candidate",
+} as const;
+
+export type ZohoRecruitImportResultOutcome =
+  (typeof ZohoRecruitImportResultOutcome)[keyof typeof ZohoRecruitImportResultOutcome];
+
+export const ZohoRecruitImportResultOutcome = {
+  created: "created",
+  linked: "linked",
+  already_imported: "already_imported",
+} as const;
+
+export interface ZohoRecruitImportResult {
+  kind: ZohoRecruitImportResultKind;
+  localId: string;
+  outcome: ZohoRecruitImportResultOutcome;
+}
+
+export interface ZohoRecruitConsent {
+  confirmEmployerAuthority: true;
+  includeStageMetadata?: boolean;
+  includeInterviewNotes?: boolean;
+  includeStageWrites?: boolean;
+}
+
+export interface ZohoRecruitAccountConfirmation {
+  revision: string;
+  confirm: true;
+}
+
+export interface ZohoInterviewNoteSelection {
+  includeAssessment: boolean;
+}
+
+export interface ZohoInterviewNoteApproval {
+  includeAssessment: boolean;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  confirm: boolean;
+}
+
+export type ZohoInterviewNoteReceiptState =
+  (typeof ZohoInterviewNoteReceiptState)[keyof typeof ZohoInterviewNoteReceiptState];
+
+export const ZohoInterviewNoteReceiptState = {
+  published: "published",
+  review_required: "review_required",
+} as const;
+
+export interface ZohoInterviewNoteReceipt {
+  id: string;
+  revision: string;
+  state: ZohoInterviewNoteReceiptState;
+  /** @nullable */
+  providerNoteId: string | null;
+  at: string;
+}
+
+export type ZohoInterviewNotePreviewDestination =
+  (typeof ZohoInterviewNotePreviewDestination)[keyof typeof ZohoInterviewNotePreviewDestination];
+
+export const ZohoInterviewNotePreviewDestination = {
+  Candidates: "Candidates",
+} as const;
+
+export interface ZohoInterviewNotePreview {
+  revision: string;
+  title: string;
+  content: string;
+  destination: ZohoInterviewNotePreviewDestination;
+  externalCandidateId: string;
+  applicationId: string;
+  externalJobId: string;
+  includeAssessment: boolean;
+  writeAuthorized: boolean;
+  canPublish: boolean;
+  history: ZohoInterviewNoteReceipt[];
+}
+
+export type ZohoRecruitAccountViewRegion =
+  | (typeof ZohoRecruitAccountViewRegion)[keyof typeof ZohoRecruitAccountViewRegion]
+  | null;
+
+export const ZohoRecruitAccountViewRegion = {
+  India: "India",
+  United_States: "United States",
+} as const;
+
+export type ZohoRecruitAccountViewState =
+  (typeof ZohoRecruitAccountViewState)[keyof typeof ZohoRecruitAccountViewState];
+
+export const ZohoRecruitAccountViewState = {
+  disconnected: "disconnected",
+  review_required: "review_required",
+  connected: "connected",
+  reconnect_required: "reconnect_required",
+} as const;
+
+export interface ZohoRecruitAccountView {
+  configured: boolean;
+  /** @nullable */
+  redirectUri: string | null;
+  region: ZohoRecruitAccountViewRegion;
+  /** @nullable */
+  revision: string | null;
+  state: ZohoRecruitAccountViewState;
+  /** @nullable */
+  companyName: string | null;
+  canApprove: boolean;
+  /** @nullable */
+  connectedAt: string | null;
+  importsEnabled: boolean;
+}
+
+export interface ZoomLinkDraft {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedPublicationId: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  joinUrl: string;
+}
+
+export interface ZoomLinkApproval {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedPublicationId: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  joinUrl: string;
+  /** @pattern ^zl_[a-f0-9]{64}$ */
+  approvalToken: string;
+  reviewExpiresAt: string;
+  confirm: boolean;
+}
+
+export interface ZoomLinkRemoval {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  expectedPublicationId: string;
+  confirm: boolean;
+}
+
+export interface ZoomStaffAccountView {
+  configured: boolean;
+  connected: boolean;
+  /** @nullable */
+  revision: string | null;
+  /** @nullable */
+  email: string | null;
+  needsReconnect: boolean;
+}
+
+export interface ZoomStaffConsent {
+  confirmOwnZoom: boolean;
+}
+
+export interface ZoomStaffAuthorization {
+  authorizationUrl: string;
+  expiresAt: string;
+}
+
+export interface ZoomStaffDisconnect {
+  revision: string;
+  confirmDisconnect: boolean;
+}
+
+export interface ZoomRecoveryReview {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  accountRevision: string;
+  expectedOperationId: string;
+  /** @pattern ^\d{9,15}$ */
+  meetingId?: string;
+}
+
+export type ZoomRecoveryApprovalReason =
+  (typeof ZoomRecoveryApprovalReason)[keyof typeof ZoomRecoveryApprovalReason];
+
+export const ZoomRecoveryApprovalReason = {
+  provider_evidence_checked: "provider_evidence_checked",
+} as const;
+
+export interface ZoomRecoveryApproval {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  accountRevision: string;
+  expectedOperationId: string;
+  /** @pattern ^\d{9,15}$ */
+  meetingId?: string;
+  confirm: boolean;
+  reason: ZoomRecoveryApprovalReason;
+  expiresAt: string;
+  /** @pattern ^zm_[a-f0-9]{64}$ */
+  approvalToken: string;
+}
+
+export type ZoomRecoveryViewStatus =
+  (typeof ZoomRecoveryViewStatus)[keyof typeof ZoomRecoveryViewStatus];
+
+export const ZoomRecoveryViewStatus = {
+  pending: "pending",
+  uncertain: "uncertain",
+} as const;
+
+export type ZoomRecoveryViewAction =
+  (typeof ZoomRecoveryViewAction)[keyof typeof ZoomRecoveryViewAction];
+
+export const ZoomRecoveryViewAction = {
+  create: "create",
+  update: "update",
+  cancel: "cancel",
+} as const;
+
+export type ZoomRecoveryViewResolution =
+  (typeof ZoomRecoveryViewResolution)[keyof typeof ZoomRecoveryViewResolution];
+
+export const ZoomRecoveryViewResolution = {
+  confirmed: "confirmed",
+  cancelled: "cancelled",
+} as const;
+
+export interface ZoomRecoveryView {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  jobTitle: string;
+  /** @nullable */
+  operationId: string | null;
+  status: ZoomRecoveryViewStatus;
+  /** @nullable */
+  joinUrl: string | null;
+  providerVerified: boolean;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+  /** @nullable */
+  hostUserId: string | null;
+  accountRevision: string;
+  action: ZoomRecoveryViewAction;
+  resolution: ZoomRecoveryViewResolution;
+  meetingId: string;
+  hostZoomId: string;
+  /** @nullable */
+  providerStartAt: string | null;
+  /** @nullable */
+  providerDurationMinutes: number | null;
+  expiresAt: string;
+  approvalToken: string;
+}
+
+export type ZoomMeetingReviewAction =
+  (typeof ZoomMeetingReviewAction)[keyof typeof ZoomMeetingReviewAction];
+
+export const ZoomMeetingReviewAction = {
+  create: "create",
+  update: "update",
+  cancel: "cancel",
+} as const;
+
+export interface ZoomMeetingReview {
+  action: ZoomMeetingReviewAction;
+  expectedVersion: string;
+  accountRevision: string;
+  /** @nullable */
+  expectedOperationId: string | null;
+}
+
+export type ZoomMeetingApprovalAction =
+  (typeof ZoomMeetingApprovalAction)[keyof typeof ZoomMeetingApprovalAction];
+
+export const ZoomMeetingApprovalAction = {
+  create: "create",
+  update: "update",
+  cancel: "cancel",
+} as const;
+
+export interface ZoomMeetingApproval {
+  action: ZoomMeetingApprovalAction;
+  expectedVersion: string;
+  accountRevision: string;
+  /** @nullable */
+  expectedOperationId: string | null;
+  confirm: boolean;
+  expiresAt: string;
+  approvalToken: string;
+}
+
+export type ZoomMeetingViewStatus =
+  (typeof ZoomMeetingViewStatus)[keyof typeof ZoomMeetingViewStatus];
+
+export const ZoomMeetingViewStatus = {
+  none: "none",
+  pending: "pending",
+  confirmed: "confirmed",
+  uncertain: "uncertain",
+  cancelled: "cancelled",
+} as const;
+
+export interface ZoomMeetingView {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  jobTitle: string;
+  /** @nullable */
+  operationId: string | null;
+  status: ZoomMeetingViewStatus;
+  /** @nullable */
+  joinUrl: string | null;
+  providerVerified: boolean;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+  /** @nullable */
+  hostUserId: string | null;
+}
+
+export type ZoomMeetingReviewViewAction =
+  (typeof ZoomMeetingReviewViewAction)[keyof typeof ZoomMeetingReviewViewAction];
+
+export const ZoomMeetingReviewViewAction = {
+  create: "create",
+  update: "update",
+  cancel: "cancel",
+} as const;
+
+export type ZoomMeetingReviewView = ZoomMeetingView & {
+  action: ZoomMeetingReviewViewAction;
+  accountRevision: string;
+  expiresAt: string;
+  approvalToken: string;
+};
+
+export type StaffZoomLinkViewState =
+  (typeof StaffZoomLinkViewState)[keyof typeof StaffZoomLinkViewState];
+
+export const StaffZoomLinkViewState = {
+  none: "none",
+  published: "published",
+  stale: "stale",
+} as const;
+
+/**
+ * @nullable
+ */
+export type StaffZoomLinkViewReason =
+  | (typeof StaffZoomLinkViewReason)[keyof typeof StaffZoomLinkViewReason]
+  | null;
+
+export const StaffZoomLinkViewReason = {
+  schedule_ineligible: "schedule_ineligible",
+  calendar_invitation_exists: "calendar_invitation_exists",
+} as const;
+
+export interface StaffZoomLinkView {
+  scheduleId: string;
+  version: string;
+  /** @nullable */
+  publicationId: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  jobTitle: string;
+  state: StaffZoomLinkViewState;
+  canPublish: boolean;
+  /** @nullable */
+  reason: StaffZoomLinkViewReason;
+  /** @nullable */
+  joinUrl: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  approvalToken: string | null;
+  /** @nullable */
+  reviewExpiresAt: string | null;
+  providerVerified: boolean;
+}
+
+export type CandidateZoomLinkViewStatus =
+  (typeof CandidateZoomLinkViewStatus)[keyof typeof CandidateZoomLinkViewStatus];
+
+export const CandidateZoomLinkViewStatus = {
+  available: "available",
+  unavailable: "unavailable",
+} as const;
+
+export type CandidateZoomLinkViewSource =
+  (typeof CandidateZoomLinkViewSource)[keyof typeof CandidateZoomLinkViewSource];
+
+export const CandidateZoomLinkViewSource = {
+  staff_provided: "staff_provided",
+  zoom_api: "zoom_api",
+} as const;
+
+export interface CandidateZoomLinkView {
+  scheduleId: string;
+  status: CandidateZoomLinkViewStatus;
+  /** @nullable */
+  joinUrl: string | null;
+  providerVerified: boolean;
+  source: CandidateZoomLinkViewSource;
+}
+
+export interface GooglePanelConsentView {
+  enabled: boolean;
+  /** A healthy verified Google connection is required to grant sharing; withdrawal remains possible when unhealthy */
+  canEnable: boolean;
+  /** @nullable */
+  revision: string | null;
+  /** @nullable */
+  grantedAt: string | null;
+}
+
+export interface GooglePanelConsentInput {
+  enabled: boolean;
+  expectedRevision: string;
+  /** Must be true to enable; never inferred from OAuth or Outlook consent */
+  confirmShare?: boolean;
+}
+
+export type GooglePanelMembersViewMembersItem = {
+  id: string;
+  name: string;
+};
+
+export interface GooglePanelMembersView {
+  scheduleId: string;
+  version: string;
+  members: GooglePanelMembersViewMembersItem[];
+}
+
+export interface GooglePanelTimesInput {
+  expectedVersion: string;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  userIds: string[];
+  start: string;
+  end: string;
+  /**
+   * @minimum 0
+   * @maximum 60
+   */
+  bufferMinutes: number;
+}
+
+export type GooglePanelTimesViewSlotsItem = {
+  start: string;
+  end: string;
+};
+
+export interface GooglePanelTimesView {
+  scheduleId: string;
+  version: string;
+  checkedAt: string;
+  panelSize: number;
+  durationMinutes: number;
+  calendarReserved: boolean;
+  invitationSent: boolean;
+  slots: GooglePanelTimesViewSlotsItem[];
+}
+
+export type CandidateGoogleMeetViewStatus =
+  (typeof CandidateGoogleMeetViewStatus)[keyof typeof CandidateGoogleMeetViewStatus];
+
+export const CandidateGoogleMeetViewStatus = {
+  ready: "ready",
+  unavailable: "unavailable",
+} as const;
+
+export interface CandidateGoogleMeetView {
+  scheduleId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: CandidateGoogleMeetViewStatus;
+  /** @nullable */
+  meetUrl: string | null;
+}
+
+export type GoogleMeetRecordingAccountStatusState =
+  (typeof GoogleMeetRecordingAccountStatusState)[keyof typeof GoogleMeetRecordingAccountStatusState];
+
+export const GoogleMeetRecordingAccountStatusState = {
+  setup_required: "setup_required",
+  disconnected: "disconnected",
+  authorization_pending: "authorization_pending",
+  connected: "connected",
+  reconnect_required: "reconnect_required",
+} as const;
+
+export interface GoogleMeetRecordingAccountStatus {
+  configured: boolean;
+  state: GoogleMeetRecordingAccountStatusState;
+  /** @nullable */
+  revision: string | null;
+  /** @nullable */
+  accountEmail: string | null;
+  /** @nullable */
+  connectedAt: string | null;
+  /** Separate recording grant; never proof of appointment authority or permission to import */
+  canReadRecordings: boolean;
+  /**
+   * Exact additional callback URI the Google application owner must register
+   * @nullable
+   */
+  redirectUri: string | null;
+}
+
+export interface GoogleMeetRecordingAccountConsentInput {
+  confirmRecordingAccess: boolean;
+}
+
+export type GoogleStaffCalendarStatusState =
+  (typeof GoogleStaffCalendarStatusState)[keyof typeof GoogleStaffCalendarStatusState];
+
+export const GoogleStaffCalendarStatusState = {
+  setup_required: "setup_required",
+  disconnected: "disconnected",
+  authorization_pending: "authorization_pending",
+  connected: "connected",
+  reconnect_required: "reconnect_required",
+} as const;
+
+export interface GoogleStaffCalendarStatus {
+  configured: boolean;
+  state: GoogleStaffCalendarStatusState;
+  /** @nullable */
+  revision: string | null;
+  /** @nullable */
+  accountEmail: string | null;
+  /** @nullable */
+  connectedAt: string | null;
+  canCheckAvailability: boolean;
+  /** Optional verified OAuth permission; never automatic approval */
+  canSendInvitations: boolean;
+}
+
+export interface GoogleStaffCalendarConsentInput {
+  confirmOwnCalendar: boolean;
+  /** Request owned-event write permission; each send still requires review */
+  allowInvitations?: boolean;
+}
+
+export type GoogleInvitationOperationInputKind =
+  (typeof GoogleInvitationOperationInputKind)[keyof typeof GoogleInvitationOperationInputKind];
+
+export const GoogleInvitationOperationInputKind = {
+  reschedule: "reschedule",
+  cancel: "cancel",
+} as const;
+
+export interface GoogleInvitationOperationInput {
+  confirm: true;
+  kind: GoogleInvitationOperationInputKind;
+  expectedVersion: string;
+  expectedApprovalToken: string;
+  reviewExpiresAt: string;
+}
+
+export type GoogleInvitationOperationViewProvider =
+  (typeof GoogleInvitationOperationViewProvider)[keyof typeof GoogleInvitationOperationViewProvider];
+
+export const GoogleInvitationOperationViewProvider = {
+  google: "google",
+} as const;
+
+export type GoogleInvitationOperationViewKind =
+  (typeof GoogleInvitationOperationViewKind)[keyof typeof GoogleInvitationOperationViewKind];
+
+export const GoogleInvitationOperationViewKind = {
+  reschedule: "reschedule",
+  cancel: "cancel",
+} as const;
+
+export type GoogleInvitationOperationViewStatus =
+  (typeof GoogleInvitationOperationViewStatus)[keyof typeof GoogleInvitationOperationViewStatus];
+
+export const GoogleInvitationOperationViewStatus = {
+  unavailable: "unavailable",
+  ready: "ready",
+  current: "current",
+  accepted: "accepted",
+  needs_review: "needs_review",
+} as const;
+
+export interface GoogleInvitationOperationView {
+  provider: GoogleInvitationOperationViewProvider;
+  scheduleId: string;
+  version: string;
+  kind: GoogleInvitationOperationViewKind;
+  status: GoogleInvitationOperationViewStatus;
+  recipientEmail: string;
+  /** @maxItems 5 */
+  panelRecipientEmails?: string[];
+  organizerEmail: string | null;
+  previousStart: string | null;
+  previousEnd: string | null;
+  targetStart: string | null;
+  targetEnd: string | null;
+  sourceEtag: string | null;
+  approvalToken: string | null;
+  reviewExpiresAt: string | null;
+  operationId: string | null;
+  acceptedAt: string | null;
+  meetUrl: string | null;
+  deliveryConfirmed: false;
+}
+
+export interface GoogleInterviewInvitationInput {
+  confirm: boolean;
+  expectedVersion: string;
+  expectedApprovalToken: string;
+  reviewExpiresAt: string;
+}
+
+export type GoogleInterviewInvitationStatusProvider =
+  (typeof GoogleInterviewInvitationStatusProvider)[keyof typeof GoogleInterviewInvitationStatusProvider];
+
+export const GoogleInterviewInvitationStatusProvider = {
+  google: "google",
+} as const;
+
+export type GoogleInterviewInvitationStatusStatus =
+  (typeof GoogleInterviewInvitationStatusStatus)[keyof typeof GoogleInterviewInvitationStatusStatus];
+
+export const GoogleInterviewInvitationStatusStatus = {
+  unavailable: "unavailable",
+  ready: "ready",
+  needs_review: "needs_review",
+  accepted: "accepted",
+  blocked_other_provider: "blocked_other_provider",
+} as const;
+
+/**
+ * @nullable
+ */
+export type GoogleInterviewInvitationStatusReason =
+  | (typeof GoogleInterviewInvitationStatusReason)[keyof typeof GoogleInterviewInvitationStatusReason]
+  | null;
+
+export const GoogleInterviewInvitationStatusReason = {
+  setup_required: "setup_required",
+  connection_required: "connection_required",
+  write_consent_required: "write_consent_required",
+  ineligible: "ineligible",
+  panel_unsupported: "panel_unsupported",
+  another_provider: "another_provider",
+  changed: "changed",
+  unknown: "unknown",
+} as const;
+
+export type GoogleInterviewInvitationStatusConferenceStatus =
+  (typeof GoogleInterviewInvitationStatusConferenceStatus)[keyof typeof GoogleInterviewInvitationStatusConferenceStatus];
+
+export const GoogleInterviewInvitationStatusConferenceStatus = {
+  not_requested: "not_requested",
+  pending: "pending",
+  ready: "ready",
+  failed: "failed",
+} as const;
+
+export interface GoogleInterviewInvitationStatus {
+  provider: GoogleInterviewInvitationStatusProvider;
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  jobTitle: string;
+  recipientEmail: string;
+  /** @maxItems 5 */
+  panelRecipientEmails?: string[];
+  /** @nullable */
+  organizerEmail: string | null;
+  /** @nullable */
+  connectionRevision: string | null;
+  status: GoogleInterviewInvitationStatusStatus;
+  /** @nullable */
+  reason: GoogleInterviewInvitationStatusReason;
+  /** @nullable */
+  approvalToken: string | null;
+  /** @nullable */
+  reviewExpiresAt: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+  /** @nullable */
+  meetUrl: string | null;
+  conferenceStatus: GoogleInterviewInvitationStatusConferenceStatus;
+  deliveryConfirmed: boolean;
+}
+
+export interface GoogleStaffCalendarConsent {
+  authorizationUrl: string;
+  expiresAt: string;
+}
+
+export interface GoogleStaffCalendarDisconnectInput {
+  revision: string;
+  confirmDisconnect: boolean;
+}
+
+export interface GoogleStaffAvailabilityInput {
+  revision: string;
+  startAt: string;
+  /**
+   * @minimum 15
+   * @maximum 480
+   */
+  durationMinutes: number;
+}
+
+export type GoogleStaffAvailabilityReceiptStatus =
+  (typeof GoogleStaffAvailabilityReceiptStatus)[keyof typeof GoogleStaffAvailabilityReceiptStatus];
+
+export const GoogleStaffAvailabilityReceiptStatus = {
+  free: "free",
+  busy: "busy",
+  outside_working_hours: "outside_working_hours",
+} as const;
+
+export interface GoogleStaffAvailabilityReceipt {
+  revision: string;
+  startAt: string;
+  endAt: string;
+  checkedAt: string;
+  status: GoogleStaffAvailabilityReceiptStatus;
+  reserved: boolean;
+  invitationsEnabled: boolean;
+}
+
+export interface GoogleCalendarPilotReadRequest {
+  confirmReadOnlyCheck: boolean;
+}
+
+export type GoogleCalendarPilotCheckStatus =
+  (typeof GoogleCalendarPilotCheckStatus)[keyof typeof GoogleCalendarPilotCheckStatus];
+
+export const GoogleCalendarPilotCheckStatus = {
+  verified: "verified",
+  not_connected: "not_connected",
+  selection_required: "selection_required",
+} as const;
+
+export type GoogleCalendarPilotCheckAccountBinding =
+  (typeof GoogleCalendarPilotCheckAccountBinding)[keyof typeof GoogleCalendarPilotCheckAccountBinding];
+
+export const GoogleCalendarPilotCheckAccountBinding = {
+  not_configured: "not_configured",
+} as const;
+
+export interface GoogleCalendarPilotCheck {
+  status: GoogleCalendarPilotCheckStatus;
+  checkedAt: string;
+  calendarReadVerified: boolean;
+  availabilityReadVerified: boolean;
+  meetSupported: boolean | null;
+  accountBinding: GoogleCalendarPilotCheckAccountBinding;
+  invitationsEnabled: boolean;
+}
+
+export interface CalendarWorkingHoursWindow {
+  /**
+   * Sunday is 0
+   * @minimum 0
+   * @maximum 6
+   */
+  day: number;
+  /** @pattern ^(?:[01][0-9]|2[0-3]):[0-5][0-9]$ */
+  start: string;
+  /** @pattern ^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00)$ */
+  end: string;
+}
+
+export interface CalendarWorkingHours {
+  /** @nullable */
+  version: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   * @nullable
+   */
+  timeZone: string | null;
+  /** @maxItems 14 */
+  windows: CalendarWorkingHoursWindow[];
+}
+
+export interface CalendarWorkingHoursInput {
+  /** @nullable */
+  expectedVersion: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   * @nullable
+   */
+  timeZone: string | null;
+  /** @maxItems 14 */
+  windows: CalendarWorkingHoursWindow[];
+}
+
+export interface PanelCalendarConsentInput {
+  enabled: boolean;
+}
+
+export interface PanelCalendarConsent {
+  enabled: boolean;
+  /** @nullable */
+  grantedAt: string | null;
+}
+
+export interface PanelMember {
+  id: string;
+  name: string;
+}
+
+export interface SchedulePanelMembers {
+  scheduleId: string;
+  version: string;
+  members: PanelMember[];
+}
+
+export interface SchedulePanelInput {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /**
+   * @minItems 0
+   * @maxItems 5
+   */
+  userIds: string[];
+  scheduledAt: string;
+  /**
+   * @minimum 0
+   * @maximum 60
+   */
+  bufferMinutes: number;
+}
+
+/**
+ * @nullable
+ */
+export type SavedSchedulePanelProvider =
+  | (typeof SavedSchedulePanelProvider)[keyof typeof SavedSchedulePanelProvider]
+  | null;
+
+export const SavedSchedulePanelProvider = {
+  google: "google",
+  outlook: "outlook",
+} as const;
+
+export interface SavedSchedulePanel {
+  /** @nullable */
+  provider?: SavedSchedulePanelProvider;
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  members: PanelMember[];
+  bufferMinutes: number;
+  calendarReserved: boolean;
+  invitationSent: boolean;
+}
+
+export interface PanelTimeSearchInput {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  userIds: string[];
+  start: string;
+  end: string;
+  /**
+   * @minimum 0
+   * @maximum 60
+   */
+  bufferMinutes: number;
+}
+
+export interface PanelTimeSlot {
+  start: string;
+  end: string;
+}
+
+export interface PanelTimeSearchResult {
+  scheduleId: string;
+  version: string;
+  checkedAt: string;
+  panelSize: number;
+  durationMinutes: number;
+  slots: PanelTimeSlot[];
+}
+
+export interface OutlookInvitationChangeInput {
+  confirm: true;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /** @pattern ^change_[a-f0-9]{64}$ */
+  approvalVersion: string;
+}
+
+export type OutlookInvitationChangeViewStatus =
+  (typeof OutlookInvitationChangeViewStatus)[keyof typeof OutlookInvitationChangeViewStatus];
+
+export const OutlookInvitationChangeViewStatus = {
+  unavailable: "unavailable",
+  ready: "ready",
+  current: "current",
+  needs_review: "needs_review",
+} as const;
+
+export interface OutlookInvitationChangeView {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  recipientEmail: string;
+  status: OutlookInvitationChangeViewStatus;
+  /** @nullable */
+  approvalVersion: string | null;
+  /** @nullable */
+  organizerEmail: string | null;
+  /** @nullable */
+  previousScheduledAt: string | null;
+  /** @nullable */
+  previousEndAt: string | null;
+}
+
+export interface OutlookPanelInvitationInput {
+  confirm: true;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  expectedVersion: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  expectedApprovalToken: string;
+}
+
+export interface OutlookPanelInvitationRecipient {
+  userId: string;
+  name: string;
+  email: string;
+}
+
+export type OutlookPanelInvitationStatusStatus =
+  (typeof OutlookPanelInvitationStatusStatus)[keyof typeof OutlookPanelInvitationStatusStatus];
+
+export const OutlookPanelInvitationStatusStatus = {
+  unavailable: "unavailable",
+  not_sent: "not_sent",
+  needs_review: "needs_review",
+  accepted: "accepted",
+} as const;
+
+export interface OutlookPanelInvitationStatus {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  recipientEmail: string;
+  /** @nullable */
+  organizerEmail: string | null;
+  panelRecipients: OutlookPanelInvitationRecipient[];
+  /** @nullable */
+  approvalToken: string | null;
+  status: OutlookPanelInvitationStatusStatus;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+export interface OutlookCandidateInvitationInput {
+  confirm: true;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  expectedRecipientEmail: string;
+}
+
+export type OutlookCandidateInvitationStatusStatus =
+  (typeof OutlookCandidateInvitationStatusStatus)[keyof typeof OutlookCandidateInvitationStatusStatus];
+
+export const OutlookCandidateInvitationStatusStatus = {
+  not_sent: "not_sent",
+  needs_review: "needs_review",
+  accepted: "accepted",
+} as const;
+
+export interface OutlookCandidateInvitationStatus {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  recipientEmail: string;
+  status: OutlookCandidateInvitationStatusStatus;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+export interface InterviewBookingLinkStatus {
+  /** @nullable */
+  version: string | null;
+  active: boolean;
+  /** @nullable */
+  expiresAt: string | null;
+}
+
+export interface InterviewBookingLinkCreated {
+  version: string;
+  active: true;
+  expiresAt: string;
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+}
+
+export interface InterviewBookingLinkInput {
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedOfferVersion: string | null;
+  /** @nullable */
+  expectedLinkVersion: string | null;
+}
+
+export interface PublicInterviewBookingToken {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+}
+
+export interface PublicInterviewBookingChoice {
+  /** @pattern ^[A-Za-z0-9_-]{43}$ */
+  token: string;
+  confirm: true;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedOfferVersion: string | null;
+  scheduledAt: string;
+}
+
+export type PublicInterviewBookingViewState =
+  (typeof PublicInterviewBookingViewState)[keyof typeof PublicInterviewBookingViewState];
+
+export const PublicInterviewBookingViewState = {
+  offered: "offered",
+  confirmed: "confirmed",
+} as const;
+
+export interface CandidateOfferedTimes {
+  scheduleId: string;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  version: string;
+  /** @nullable */
+  offerVersion: string | null;
+  scheduledAt: string;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
+  durationMinutes: number;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  startsAt: string[];
+  /** @nullable */
+  expiresAt: string | null;
+}
+
+export type CandidateTimeConfirmationReceiptStatus =
+  (typeof CandidateTimeConfirmationReceiptStatus)[keyof typeof CandidateTimeConfirmationReceiptStatus];
+
+export const CandidateTimeConfirmationReceiptStatus = {
+  confirmed: "confirmed",
+} as const;
+
+export interface CandidateTimeConfirmationReceipt {
+  scheduleId: string;
+  status: CandidateTimeConfirmationReceiptStatus;
+  scheduledAt: string;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
+  durationMinutes: number;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  version: string;
+  calendarReserved: boolean;
+  invitationSent: boolean;
+}
+
+export interface PublicInterviewBookingView {
+  state: PublicInterviewBookingViewState;
+  expiresAt: string;
+  proposal: CandidateOfferedTimes | null;
+  receipt: CandidateTimeConfirmationReceipt | null;
+}
+
+export interface TimeChangeRequestInput {
+  confirm: boolean;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+}
+
+export interface TimeChangeReviewInput {
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  requestId: string;
+}
+
+export interface TimeChangeWithdrawalInput {
+  confirm: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  requestId: string;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+}
+
+export interface PublicTimeChangeWithdrawalInput {
+  token: string;
+  confirm: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  requestId: string;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+}
+
+export interface PublicTimeChangeRequestInput {
+  token: string;
+  confirm: boolean;
+  /** @pattern ^v1_[a-f0-9]{64}$ */
+  expectedVersion: string;
+}
+
+export interface TimeChangeTokenInput {
+  token: string;
+}
+
+/**
+ * @nullable
+ */
+export type InterviewTimeChangeViewRequest = {
+  id: string;
+  requestedAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+  /** @nullable */
+  withdrawnAt: string | null;
+  currentProposal: boolean;
+} | null;
+
+export interface InterviewTimeChangeView {
+  scheduleId: string;
+  version: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  canRequest: boolean;
+  canWithdraw: boolean;
+  appointmentChanged: boolean;
+  invitationSent: boolean;
+  /** @nullable */
+  request: InterviewTimeChangeViewRequest;
+}
+
+export interface StaffOfferedTimes {
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  version: string;
+  proposal: CandidateOfferedTimes;
+}
+
+export interface OfferedTimesInput {
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedOfferVersion: string | null;
+  /** @maxItems 4 */
+  alternatives: string[];
+}
+
+export interface OfferedTimeChoiceInput {
+  confirm: true;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  expectedVersion: string;
+  /** @nullable */
+  expectedOfferVersion: string | null;
+  scheduledAt: string;
+}
+
+export interface CandidateTimeConfirmationInput {
+  confirm: boolean;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  expectedVersion: string;
+}
+
+export interface CandidateRegistration {
+  candidateId: string;
+  name: string;
+  email: string;
+  registeredAt: string;
+  pool: string;
+}
+
+export interface CandidateRegistrationPage {
+  data: CandidateRegistration[];
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export type CareerCampaignEntryStatus =
+  (typeof CareerCampaignEntryStatus)[keyof typeof CareerCampaignEntryStatus];
+
+export const CareerCampaignEntryStatus = {
+  not_invited: "not_invited",
+  invited: "invited",
+  portal_created: "portal_created",
+  interview_completed: "interview_completed",
+  profile_complete: "profile_complete",
+} as const;
+
+export interface CareerCampaignEntry {
+  candidateId: string;
+  name: string;
+  email: string;
+  /** @nullable */
+  jobTitle: string | null;
+  /** @nullable */
+  company: string | null;
+  status: CareerCampaignEntryStatus;
+  /** @nullable */
+  invitedAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  profileCompleteness: number;
+}
+
+export interface CareerCampaignPage {
+  data: CareerCampaignEntry[];
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export interface OutlookBusyPeriod {
+  start: string;
+  end: string;
+}
+
+export interface OutlookAvailability {
+  start: string;
+  end: string;
+  busy: OutlookBusyPeriod[];
+}
+
+export interface OutlookCalendarEvent {
+  start: string;
+  end: string;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
+  durationMinutes: number;
+  cancelled: boolean;
+  /** @nullable */
+  webLink: string | null;
+}
+
+export interface OutlookScheduleReceipt {
+  /**
+   * Native schedule content revision returned by the read endpoint. Not an Outlook event revision or booking guarantee.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  scheduleVersion?: string;
+  event: OutlookCalendarEvent | null;
+  nativeChanged?: boolean;
+  remoteChanged?: boolean;
+}
+
+export type OutlookScheduleActionInputAction =
+  (typeof OutlookScheduleActionInputAction)[keyof typeof OutlookScheduleActionInputAction];
+
+export const OutlookScheduleActionInputAction = {
+  create: "create",
+  update: "update",
+  pull: "pull",
+  cancel: "cancel",
+} as const;
+
+export interface OutlookScheduleActionInput {
+  action: OutlookScheduleActionInputAction;
+  confirm: boolean;
+  expectedScheduledAt: string;
+  /**
+   * Native schedule revision displayed when the dialog opened. Updated Lexy controls always send this; legacy callers omitting it retain timestamp-only preflight checks.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  expectedVersion?: string;
+}
+
+export interface StaffNotificationRecord {
+  id: string;
+  tenantId: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  /** @nullable */
+  actionUrl: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export type ControlledOfferTermsFrequency =
+  (typeof ControlledOfferTermsFrequency)[keyof typeof ControlledOfferTermsFrequency];
+
+export const ControlledOfferTermsFrequency = {
+  hourly: "hourly",
+  monthly: "monthly",
+  annual: "annual",
+} as const;
+
+export interface ControlledOfferTerms {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  employerName: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  roleTitle: string;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  frequency: ControlledOfferTermsFrequency;
+  /**
+   * @minLength 1
+   * @maxLength 300
+   */
+  location: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  startDate: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$ */
+  expiresAt: string;
+  /**
+   * @minLength 10
+   * @maxLength 12000
+   */
+  letter: string;
+}
+
+export type ControlledOfferStatus =
+  (typeof ControlledOfferStatus)[keyof typeof ControlledOfferStatus];
+
+export const ControlledOfferStatus = {
+  draft: "draft",
+  review_required: "review_required",
+  approved: "approved",
+  sending: "sending",
+  sent: "sent",
+  accepted: "accepted",
+  declined: "declined",
+  expired: "expired",
+  withdrawn: "withdrawn",
+  send_uncertain: "send_uncertain",
+} as const;
+
+export type OfferProviderDeliveryProvider =
+  (typeof OfferProviderDeliveryProvider)[keyof typeof OfferProviderDeliveryProvider];
+
+export const OfferProviderDeliveryProvider = {
+  ses: "ses",
+} as const;
+
+export type OfferProviderDeliveryStatus =
+  (typeof OfferProviderDeliveryStatus)[keyof typeof OfferProviderDeliveryStatus];
+
+export const OfferProviderDeliveryStatus = {
+  accepted: "accepted",
+  delivered: "delivered",
+  delayed: "delayed",
+  bounced: "bounced",
+  rejected: "rejected",
+  complained: "complained",
+} as const;
+
+export type OfferProviderDeliveryEventsItemStatus =
+  (typeof OfferProviderDeliveryEventsItemStatus)[keyof typeof OfferProviderDeliveryEventsItemStatus];
+
+export const OfferProviderDeliveryEventsItemStatus = {
+  accepted: "accepted",
+  delivered: "delivered",
+  delayed: "delayed",
+  bounced: "bounced",
+  rejected: "rejected",
+  complained: "complained",
+} as const;
+
+export type OfferProviderDeliveryEventsItem = {
+  id: string;
+  status: OfferProviderDeliveryEventsItemStatus;
+  occurredAt: string;
+};
+
+export interface OfferProviderDelivery {
+  provider: OfferProviderDeliveryProvider;
+  messageId: string;
+  deliveryAttemptId: string;
+  status: OfferProviderDeliveryStatus;
+  occurredAt: string;
+  receivedAt: string;
+  /** @maxItems 16 */
+  events: OfferProviderDeliveryEventsItem[];
+}
+
+export type OfferDeliveryReconciliationOutcome =
+  (typeof OfferDeliveryReconciliationOutcome)[keyof typeof OfferDeliveryReconciliationOutcome];
+
+export const OfferDeliveryReconciliationOutcome = {
+  provider_accepted: "provider_accepted",
+  confirmed_not_sent: "confirmed_not_sent",
+  uncertain: "uncertain",
+} as const;
+
+export interface OfferDeliveryReconciliation {
+  outcome: OfferDeliveryReconciliationOutcome;
+  checkedAt: string;
+  checkedBy: string;
+  reason: string;
+  evidenceReference?: string;
+}
+
+export interface ControlledOffer {
+  id: string;
+  version: number;
+  status: ControlledOfferStatus;
+  terms: ControlledOfferTerms;
+  recipientEmail: string;
+  testOnly: boolean;
+  createdBy: string;
+  createdAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  sentAt?: string;
+  deliveryStartedAt?: string;
+  deliveryReceiptId?: string;
+  deliveryAttemptId?: string;
+  providerDelivery?: OfferProviderDelivery;
+  deliveryReconciliation?: OfferDeliveryReconciliation;
+  respondedAt?: string;
+  responseReason?: string;
+}
+
+export interface AtsRecordMapping {
+  system: string;
+  accountRef: string;
+  externalJobId: string;
+  externalCandidateId: string;
+  externalApplicationId: string;
+  mappedBy: string;
+  mappedAt: string;
+}
+
+export type AtsHandoffContentSchemaVersion =
+  (typeof AtsHandoffContentSchemaVersion)[keyof typeof AtsHandoffContentSchemaVersion];
+
+export const AtsHandoffContentSchemaVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export type AtsHandoffContentConnectionState =
+  (typeof AtsHandoffContentConnectionState)[keyof typeof AtsHandoffContentConnectionState];
+
+export const AtsHandoffContentConnectionState = {
+  not_connected: "not_connected",
+} as const;
+
+export type AtsHandoffContentOfferOwner =
+  (typeof AtsHandoffContentOfferOwner)[keyof typeof AtsHandoffContentOfferOwner];
+
+export const AtsHandoffContentOfferOwner = {
+  external_employer: "external_employer",
+} as const;
+
+export type AtsHandoffContentJob = {
+  id: string;
+  title: string;
+};
+
+export type AtsHandoffContentCandidate = {
+  id: string;
+  name: string;
+};
+
+export type AtsHandoffContentStepsItem = {
+  key: string;
+  label: string;
+  status: string;
+};
+
+export type AtsHandoffContentAssessmentsItem = {
+  stepKey: string;
+  sourceType: string;
+  sourceId: string;
+  occurredAt: string;
+  summary: string;
+  attentionRequired: boolean;
+  scope: string;
+};
+
+export type WorkflowHumanDecisionOutcome =
+  (typeof WorkflowHumanDecisionOutcome)[keyof typeof WorkflowHumanDecisionOutcome];
+
+export const WorkflowHumanDecisionOutcome = {
+  hire: "hire",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export type WorkflowHumanDecisionOfferEffect =
+  (typeof WorkflowHumanDecisionOfferEffect)[keyof typeof WorkflowHumanDecisionOfferEffect];
+
+export const WorkflowHumanDecisionOfferEffect = {
+  none: "none",
+  approval_reset: "approval_reset",
+  sent_retained: "sent_retained",
+} as const;
+
+export interface WorkflowHumanDecision {
+  outcome: WorkflowHumanDecisionOutcome;
+  actorId: string;
+  actorName: string;
+  decidedAt: string;
+  reason: string;
+  testOnly: boolean;
+  correctionReason?: string;
+  supersedesDecidedAt?: string;
+  offerEffect?: WorkflowHumanDecisionOfferEffect;
+}
+
+export interface AtsHandoffContent {
+  schemaVersion: AtsHandoffContentSchemaVersion;
+  connectionState: AtsHandoffContentConnectionState;
+  offerOwner: AtsHandoffContentOfferOwner;
+  workflowId: string;
+  journeyVersion: number;
+  briefHash: string;
+  job: AtsHandoffContentJob;
+  candidate: AtsHandoffContentCandidate;
+  mapping: AtsRecordMapping;
+  decision: WorkflowHumanDecision;
+  steps: AtsHandoffContentStepsItem[];
+  assessments: AtsHandoffContentAssessmentsItem[];
+  cautions: string[];
+}
+
+export type AtsHandoffPacketHandoffReceiptVerification =
+  (typeof AtsHandoffPacketHandoffReceiptVerification)[keyof typeof AtsHandoffPacketHandoffReceiptVerification];
+
+export const AtsHandoffPacketHandoffReceiptVerification = {
+  human_reported_only: "human_reported_only",
+} as const;
+
+export type AtsHandoffPacketHandoffReceipt = {
+  recordedBy: string;
+  recordedAt: string;
+  evidenceReference: string;
+  verification: AtsHandoffPacketHandoffReceiptVerification;
+};
+
+export interface AtsHandoffPacket {
+  id: string;
+  snapshotHash: string;
+  content: AtsHandoffContent;
+  preparedBy: string;
+  preparedAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  exportedBy?: string;
+  exportedAt?: string;
+  handoffReceipt?: AtsHandoffPacketHandoffReceipt;
+}
+
+export type AtsHandoffStateConnectionState =
+  (typeof AtsHandoffStateConnectionState)[keyof typeof AtsHandoffStateConnectionState];
+
+export const AtsHandoffStateConnectionState = {
+  not_connected: "not_connected",
+} as const;
+
+export interface AtsHandoffState {
+  connectionState: AtsHandoffStateConnectionState;
+  workflowRevision: number;
+  canManage: boolean;
+  ready: boolean;
+  blockers: string[];
+  mapping: AtsRecordMapping | null;
+  packet: AtsHandoffPacket | null;
+  stale: boolean;
+  exportPacket?: AtsHandoffPacket;
+}
+
+export interface AtsPreviewInput {
+  /** @minimum 1 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 16000
+   */
+  cursor?: string;
+}
+
+export interface AtsPreviewJob {
+  id: string;
+  name: string;
+  status: string;
+}
+
+export interface AtsPreviewApplication {
+  id: string;
+  candidateId: string;
+  status: string;
+  /** @nullable */
+  stageName: string | null;
+}
+
+export interface AtsPreviewPage {
+  job: AtsPreviewJob;
+  applications: AtsPreviewApplication[];
+  /** @nullable */
+  nextCursor: string | null;
+  checkedAt: string;
+  previewToken: string;
+}
+
+export interface AtsImportInput {
+  /** @minimum 1 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 16000
+   */
+  previewToken: string;
+  /**
+   * @minItems 1
+   * @maxItems 10
+   */
+  applicationIds: string[];
+  acknowledgeMetadataOnly: boolean;
+}
+
+export type AtsImportedRecordAvailability =
+  (typeof AtsImportedRecordAvailability)[keyof typeof AtsImportedRecordAvailability];
+
+export const AtsImportedRecordAvailability = {
+  unchecked: "unchecked",
+  available: "available",
+  unavailable: "unavailable",
+} as const;
+
+export interface AtsImportedRecord {
+  id: string;
+  job: AtsPreviewJob;
+  application: AtsPreviewApplication;
+  importedAt: string;
+  observedAt: string;
+  refreshRevision: number;
+  /** @nullable */
+  lastCheckedAt: string | null;
+  availability: AtsImportedRecordAvailability;
+}
+
+export interface AtsRefreshInput {
+  /** @minimum 1 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /** @minimum 0 */
+  expectedRecordRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+}
+
+export type AtsImportObservationAvailability =
+  (typeof AtsImportObservationAvailability)[keyof typeof AtsImportObservationAvailability];
+
+export const AtsImportObservationAvailability = {
+  unchecked: "unchecked",
+  available: "available",
+  unavailable: "unavailable",
+} as const;
+
+export interface AtsImportObservation {
+  revision: number;
+  checkedAt: string;
+  availability: AtsImportObservationAvailability;
+  job: AtsPreviewJob;
+  application: AtsPreviewApplication | null;
+}
+
+export interface AtsImportHistory {
+  record: AtsImportedRecord;
+  history: AtsImportObservation[];
+  truncated: boolean;
+}
+
+export type AtsStageOwnershipInputAction =
+  (typeof AtsStageOwnershipInputAction)[keyof typeof AtsStageOwnershipInputAction];
+
+export const AtsStageOwnershipInputAction = {
+  claim: "claim",
+  release: "release",
+} as const;
+
+export interface AtsStageOwnershipInput {
+  action: AtsStageOwnershipInputAction;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /** @minimum 0 */
+  expectedOwnershipRevision: number;
+  /** @minimum 0 */
+  expectedBindingRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  acknowledge: boolean;
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export type AtsStageOwnershipStateStatus =
+  (typeof AtsStageOwnershipStateStatus)[keyof typeof AtsStageOwnershipStateStatus];
+
+export const AtsStageOwnershipStateStatus = {
+  native: "native",
+  external: "external",
+} as const;
+
+export interface AtsStageOwnershipState {
+  status: AtsStageOwnershipStateStatus;
+  ownershipRevision: number;
+  workflowRevision: number;
+  /** @nullable */
+  bindingRevision: number | null;
+  /** @nullable */
+  ownerWorkflowId: string | null;
+  /** @nullable */
+  declaredAt: string | null;
+  canClaim: boolean;
+  canRelease: boolean;
+}
+
+export type AtsScheduleInputAction =
+  (typeof AtsScheduleInputAction)[keyof typeof AtsScheduleInputAction];
+
+export const AtsScheduleInputAction = {
+  enable: "enable",
+  pause: "pause",
+} as const;
+
+export type AtsScheduleInputIntervalMinutes =
+  (typeof AtsScheduleInputIntervalMinutes)[keyof typeof AtsScheduleInputIntervalMinutes];
+
+export const AtsScheduleInputIntervalMinutes = {
+  NUMBER_60: 60,
+  NUMBER_360: 360,
+  NUMBER_1440: 1440,
+} as const;
+
+export interface AtsScheduleInput {
+  action: AtsScheduleInputAction;
+  /** @minimum 0 */
+  expectedScheduleRevision: number;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /** @minimum 0 */
+  expectedBindingRevision: number;
+  /**
+   * @minItems 1
+   * @maxItems 10
+   */
+  recordIds?: string[];
+  intervalMinutes?: AtsScheduleInputIntervalMinutes;
+  acknowledgeReadOnly?: boolean;
+}
+
+export type AtsScheduleStatus = (typeof AtsScheduleStatus)[keyof typeof AtsScheduleStatus];
+
+export const AtsScheduleStatus = {
+  enabled: "enabled",
+  paused: "paused",
+} as const;
+
+export interface AtsSchedule {
+  revision: number;
+  status: AtsScheduleStatus;
+  recordIds: string[];
+  intervalMinutes: number;
+  /** @nullable */
+  nextRunAt: string | null;
+  updatedAt: string;
+  /** @nullable */
+  blockedReason: string | null;
+}
+
+export type AtsScheduledItemStatus =
+  (typeof AtsScheduledItemStatus)[keyof typeof AtsScheduledItemStatus];
+
+export const AtsScheduledItemStatus = {
+  pending: "pending",
+  checking: "checking",
+  available: "available",
+  unavailable: "unavailable",
+  unconfirmed: "unconfirmed",
+  not_started: "not_started",
+} as const;
+
+export interface AtsScheduledItem {
+  recordId: string;
+  expectedRevision: number;
+  status: AtsScheduledItemStatus;
+  /** @nullable */
+  checkedAt: string | null;
+}
+
+export type AtsScheduledRunStatus =
+  (typeof AtsScheduledRunStatus)[keyof typeof AtsScheduledRunStatus];
+
+export const AtsScheduledRunStatus = {
+  running: "running",
+  completed: "completed",
+  stopped: "stopped",
+  interrupted: "interrupted",
+} as const;
+
+export interface AtsScheduledRun {
+  id: string;
+  status: AtsScheduledRunStatus;
+  startedAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+  /** @nullable */
+  message: string | null;
+  items: AtsScheduledItem[];
+}
+
+export interface AtsScheduleState {
+  schedule: AtsSchedule | null;
+  runs: AtsScheduledRun[];
+}
+
+export interface AtsInvitationReconciliationInput {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  attemptId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  acknowledge: boolean;
+}
+
+export type AtsInvitationProviderObservationStatus =
+  (typeof AtsInvitationProviderObservationStatus)[keyof typeof AtsInvitationProviderObservationStatus];
+
+export const AtsInvitationProviderObservationStatus = {
+  accepted: "accepted",
+  delayed: "delayed",
+  delivered: "delivered",
+  bounced: "bounced",
+  rejected: "rejected",
+  complained: "complained",
+} as const;
+
+export interface AtsInvitationProviderObservation {
+  status: AtsInvitationProviderObservationStatus;
+  occurredAt: string;
+}
+
+export type AtsInvitationEvidenceSendStatus =
+  (typeof AtsInvitationEvidenceSendStatus)[keyof typeof AtsInvitationEvidenceSendStatus];
+
+export const AtsInvitationEvidenceSendStatus = {
+  not_sent: "not_sent",
+  provider_accepted: "provider_accepted",
+  review_required: "review_required",
+  simulated: "simulated",
+  previously_sent: "previously_sent",
+} as const;
+
+export type AtsInvitationEvidenceProviderStatus =
+  (typeof AtsInvitationEvidenceProviderStatus)[keyof typeof AtsInvitationEvidenceProviderStatus];
+
+export const AtsInvitationEvidenceProviderStatus = {
+  unobserved: "unobserved",
+  accepted: "accepted",
+  delayed: "delayed",
+  delivered: "delivered",
+  bounced: "bounced",
+  rejected: "rejected",
+  complained: "complained",
+} as const;
+
+export interface AtsInvitationEvidence {
+  sessionId: string;
+  /** @nullable */
+  attemptId: string | null;
+  sendStatus: AtsInvitationEvidenceSendStatus;
+  providerStatus: AtsInvitationEvidenceProviderStatus;
+  /** @nullable */
+  messageId: string | null;
+  /** @nullable */
+  occurredAt: string | null;
+  /** @nullable */
+  receivedAt: string | null;
+  observations: AtsInvitationProviderObservation[];
+  reviewHash: string;
+  canReconcile: boolean;
+  explanation: string;
+}
+
+export interface AtsCampaignPreparationInput {
+  /**
+   * @minItems 1
+   * @maxItems 10
+   */
+  recordIds: string[];
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  planId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  planHash: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  sourceHash: string;
+  /**
+   * @minLength 8
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  acknowledge: boolean;
+}
+
+export type AtsCampaignControlInputAction =
+  (typeof AtsCampaignControlInputAction)[keyof typeof AtsCampaignControlInputAction];
+
+export const AtsCampaignControlInputAction = {
+  approve: "approve",
+  cancel: "cancel",
+} as const;
+
+export interface AtsCampaignControlInput {
+  action: AtsCampaignControlInputAction;
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  acknowledge: boolean;
+}
+
+export interface AtsCampaignDispatchInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  acknowledge: boolean;
+}
+
+export interface AtsCampaignSummary {
+  id: string;
+  createdAt: string;
+  recipientCount: number;
+  planId: string;
+  approved: boolean;
+  cancelled: boolean;
+}
+
+export interface AtsApplicantInterviewPlan {
+  id: string;
+  title: string;
+  language: string;
+  /** @minimum 1 */
+  questionCount: number;
+  approvalHash: string;
+}
+
+export interface AtsCampaignIndex {
+  sourceHash: string;
+  plans: AtsApplicantInterviewPlan[];
+  campaigns: AtsCampaignSummary[];
+  truncated: boolean;
+}
+
+export type AtsCampaignMemberInvitationStatus =
+  (typeof AtsCampaignMemberInvitationStatus)[keyof typeof AtsCampaignMemberInvitationStatus];
+
+export const AtsCampaignMemberInvitationStatus = {
+  ready: "ready",
+  blocked: "blocked",
+  unavailable: "unavailable",
+  provider_accepted: "provider_accepted",
+  previously_sent: "previously_sent",
+  review_required: "review_required",
+  simulated: "simulated",
+} as const;
+
+export interface AtsCampaignMember {
+  id: string;
+  /** @nullable */
+  recordId: string | null;
+  /** @nullable */
+  recipient: string | null;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  text: string | null;
+  invitationStatus: AtsCampaignMemberInvitationStatus;
+  /** @nullable */
+  interviewStatus: string | null;
+  canDispatch: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
+export type AtsCampaignDetailStatus =
+  (typeof AtsCampaignDetailStatus)[keyof typeof AtsCampaignDetailStatus];
+
+export const AtsCampaignDetailStatus = {
+  review: "review",
+  approved: "approved",
+  cancelled: "cancelled",
+  needs_review: "needs_review",
+  complete: "complete",
+} as const;
+
+export interface AtsCampaignDetail {
+  id: string;
+  planId: string;
+  reviewHash: string;
+  status: AtsCampaignDetailStatus;
+  canApprove: boolean;
+  canCancel: boolean;
+  members: AtsCampaignMember[];
+}
+
+export interface AtsNoteRecoveryInput {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  receiptId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  /** @pattern ^[1-9][0-9]{0,15}$ */
+  noteId: string;
+  acknowledge: boolean;
+}
+
+export type AtsNoteRecoveryAttemptMode =
+  (typeof AtsNoteRecoveryAttemptMode)[keyof typeof AtsNoteRecoveryAttemptMode];
+
+export const AtsNoteRecoveryAttemptMode = {
+  progress: "progress",
+  assessment: "assessment",
+  unknown: "unknown",
+} as const;
+
+export type AtsNoteRecoveryAttemptStatus =
+  (typeof AtsNoteRecoveryAttemptStatus)[keyof typeof AtsNoteRecoveryAttemptStatus];
+
+export const AtsNoteRecoveryAttemptStatus = {
+  held: "held",
+  published: "published",
+  verified_existing: "verified_existing",
+} as const;
+
+export interface AtsNoteRecoveryAttempt {
+  receiptId: string;
+  reviewHash: string;
+  mode: AtsNoteRecoveryAttemptMode;
+  claimedAt: string;
+  status: AtsNoteRecoveryAttemptStatus;
+  /** @nullable */
+  noteId: string | null;
+  canVerify: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
+export type AtsInterviewNoteInputMode =
+  (typeof AtsInterviewNoteInputMode)[keyof typeof AtsInterviewNoteInputMode];
+
+export const AtsInterviewNoteInputMode = {
+  progress: "progress",
+  assessment: "assessment",
+} as const;
+
+export interface AtsInterviewNoteInput {
+  mode: AtsInterviewNoteInputMode;
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  acknowledge: boolean;
+}
+
+export type AtsInterviewNoteStateMode =
+  (typeof AtsInterviewNoteStateMode)[keyof typeof AtsInterviewNoteStateMode];
+
+export const AtsInterviewNoteStateMode = {
+  progress: "progress",
+  assessment: "assessment",
+} as const;
+
+export type AtsInterviewNoteStateStatus =
+  (typeof AtsInterviewNoteStateStatus)[keyof typeof AtsInterviewNoteStateStatus];
+
+export const AtsInterviewNoteStateStatus = {
+  not_published: "not_published",
+  published: "published",
+  review_required: "review_required",
+} as const;
+
+export interface AtsInterviewNoteState {
+  mode: AtsInterviewNoteStateMode;
+  title: string;
+  content: string;
+  reviewHash: string;
+  status: AtsInterviewNoteStateStatus;
+  canPublish: boolean;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  noteId: string | null;
+}
+
+export interface AtsInterviewInvitationInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  reviewHash: string;
+  acknowledge: boolean;
+}
+
+export type AtsInterviewInvitationStateStatus =
+  (typeof AtsInterviewInvitationStateStatus)[keyof typeof AtsInterviewInvitationStateStatus];
+
+export const AtsInterviewInvitationStateStatus = {
+  not_sent: "not_sent",
+  provider_accepted: "provider_accepted",
+  review_required: "review_required",
+  simulated: "simulated",
+  previously_sent: "previously_sent",
+} as const;
+
+export interface AtsInterviewInvitationState {
+  sessionId: string;
+  recipient: string;
+  subject: string;
+  text: string;
+  reviewHash: string;
+  status: AtsInterviewInvitationStateStatus;
+  canSend: boolean;
+}
+
+export interface AtsApplicantInterviewInput {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  planId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedPlanHash: string;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /** @minimum 0 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedImportRevision: number;
+  acknowledge: boolean;
+}
+
+export interface AtsApplicantInterviewSession {
+  id: string;
+  status: string;
+  roomUrl: string;
+  preparedFromThisImport: boolean;
+}
+
+export interface AtsApplicantInterviewState {
+  workflowRevision: number;
+  bindingRevision: number;
+  importRevision: number;
+  canPrepare: boolean;
+  plans: AtsApplicantInterviewPlan[];
+  session: AtsApplicantInterviewSession | null;
+}
+
+export type AtsCandidateProfileInputAction =
+  (typeof AtsCandidateProfileInputAction)[keyof typeof AtsCandidateProfileInputAction];
+
+export const AtsCandidateProfileInputAction = {
+  preview: "preview",
+  import: "import",
+} as const;
+
+export interface AtsCandidateProfileInput {
+  action: AtsCandidateProfileInputAction;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /** @minimum 0 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedImportRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  acknowledge: boolean;
+  includeProfessional: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 24000
+   */
+  previewToken?: string;
+  /** @maxLength 320 */
+  email?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  existingCandidateId?: string;
+}
+
+export interface AtsCandidateProfileState {
+  workflowRevision: number;
+  bindingRevision: number;
+  importRevision: number;
+  canImport: boolean;
+  /** @nullable */
+  candidateId: string | null;
+  /** @nullable */
+  importedAt: string | null;
+}
+
+export interface AtsCandidateProfileMatch {
+  email: string;
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface AtsCandidateProfilePreview {
+  token: string;
+  expiresAt: string;
+  firstName: string;
+  lastName: string;
+  emails: string[];
+  /** @nullable */
+  currentTitle: string | null;
+  /** @nullable */
+  currentCompany: string | null;
+  includeProfessional: boolean;
+  matches: AtsCandidateProfileMatch[];
+}
+
+export type AtsCandidateProfileResultOutcome =
+  (typeof AtsCandidateProfileResultOutcome)[keyof typeof AtsCandidateProfileResultOutcome];
+
+export const AtsCandidateProfileResultOutcome = {
+  created: "created",
+  linked: "linked",
+  already_imported: "already_imported",
+} as const;
+
+export interface AtsCandidateProfileResult {
+  state: AtsCandidateProfileState;
+  preview?: AtsCandidateProfilePreview;
+  outcome?: AtsCandidateProfileResultOutcome;
+}
+
+export interface AtsImportState {
+  records: AtsImportedRecord[];
+  truncated: boolean;
+  importedCount: number;
+  existingCount: number;
+}
+
+export type AtsVerificationInputAction =
+  (typeof AtsVerificationInputAction)[keyof typeof AtsVerificationInputAction];
+
+export const AtsVerificationInputAction = {
+  allocate: "allocate",
+  confirm: "confirm",
+  disconnect: "disconnect",
+  verify: "verify",
+} as const;
+
+export interface AtsVerificationInput {
+  action: AtsVerificationInputAction;
+  /** @minimum 0 */
+  expectedBindingRevision: number;
+  /** @minimum 0 */
+  expectedWorkflowRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  connectionId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  accountRef?: string;
+  acknowledgeEmployerOwnership?: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey?: string;
+}
+
+export type AtsVerificationBindingStatus =
+  (typeof AtsVerificationBindingStatus)[keyof typeof AtsVerificationBindingStatus];
+
+export const AtsVerificationBindingStatus = {
+  pending_employer: "pending_employer",
+  active: "active",
+  disconnected: "disconnected",
+} as const;
+
+export interface AtsVerificationBinding {
+  accountRef: string;
+  revision: number;
+  status: AtsVerificationBindingStatus;
+  updatedAt: string;
+}
+
+export type AtsVerificationReceiptStatus =
+  (typeof AtsVerificationReceiptStatus)[keyof typeof AtsVerificationReceiptStatus];
+
+export const AtsVerificationReceiptStatus = {
+  checking: "checking",
+  verified: "verified",
+  failed: "failed",
+  discarded: "discarded",
+} as const;
+
+export interface AtsVerificationReceipt {
+  id: string;
+  status: AtsVerificationReceiptStatus;
+  checkedAt: string;
+  bindingRevision: number;
+  currentMapping: boolean;
+  accountRef: string;
+  externalJobId: string;
+  externalCandidateId: string;
+  externalApplicationId: string;
+}
+
+export type AtsVerificationStateConnectorStatus =
+  (typeof AtsVerificationStateConnectorStatus)[keyof typeof AtsVerificationStateConnectorStatus];
+
+export const AtsVerificationStateConnectorStatus = {
+  not_connected: "not_connected",
+  available: "available",
+  unavailable: "unavailable",
+  allocated: "allocated",
+} as const;
+
+export type AtsVerificationStateChoicesItem = {
+  id: string;
+};
+
+export interface AtsVerificationState {
+  workflowRevision: number;
+  bindingRevision: number;
+  binding: AtsVerificationBinding | null;
+  canAllocate: boolean;
+  canConfirm: boolean;
+  canDisconnect: boolean;
+  canVerify: boolean;
+  connectorStatus: AtsVerificationStateConnectorStatus;
+  choices: AtsVerificationStateChoicesItem[];
+  history: AtsVerificationReceipt[];
+}
+
+export type AtsHandoffInputAction =
+  (typeof AtsHandoffInputAction)[keyof typeof AtsHandoffInputAction];
+
+export const AtsHandoffInputAction = {
+  save_mapping: "save_mapping",
+  clear_mapping: "clear_mapping",
+  prepare: "prepare",
+  approve: "approve",
+  export: "export",
+  record_handoff: "record_handoff",
+} as const;
+
+export type AtsHandoffInputMapping = {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  accountRef: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalJobId: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalCandidateId: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalApplicationId: string;
+};
+
+export interface AtsHandoffInput {
+  action: AtsHandoffInputAction;
+  /**
+   * @minLength 3
+   * @maxLength 120
+   * @pattern ^[A-Za-z0-9_.:-]+$
+   */
+  evidenceReference?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  /** @maxLength 128 */
+  packetId?: string;
+  /** @maxLength 128 */
+  snapshotHash?: string;
+  acknowledgeReview?: boolean;
+  mapping?: AtsHandoffInputMapping;
+}
+
+export type OfferRoutingConfigurationMode =
+  (typeof OfferRoutingConfigurationMode)[keyof typeof OfferRoutingConfigurationMode];
+
+export const OfferRoutingConfigurationMode = {
+  native: "native",
+  external: "external",
+} as const;
+
+export interface OfferRoutingConfiguration {
+  mode: OfferRoutingConfigurationMode;
+  /** @nullable */
+  ownerUserId: string | null;
+  /** @nullable */
+  approverUserId: string | null;
+  /** @nullable */
+  senderUserId: string | null;
+  /** @nullable */
+  externalSystem: string | null;
+  /** @nullable */
+  externalApplicationUrl: string | null;
+  configuredBy: string;
+  configuredAt: string;
+}
+
+export type OfferRoutingInputMode =
+  (typeof OfferRoutingInputMode)[keyof typeof OfferRoutingInputMode];
+
+export const OfferRoutingInputMode = {
+  native: "native",
+  external: "external",
+} as const;
+
+export interface OfferRoutingInput {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  /**
+   * @minLength 10
+   * @maxLength 4000
+   */
+  reason: string;
+  mode: OfferRoutingInputMode;
+  /** @nullable */
+  ownerUserId?: string | null;
+  /** @nullable */
+  approverUserId?: string | null;
+  /** @nullable */
+  senderUserId?: string | null;
+  /**
+   * @maxLength 160
+   * @nullable
+   */
+  externalSystem?: string | null;
+  /**
+   * @maxLength 2000
+   * @nullable
+   */
+  externalApplicationUrl?: string | null;
+  /** Explicitly adopt a legacy native offer without changing delivered terms; any unsent approval is reset for fresh review. */
+  acknowledgeExistingOffer?: boolean;
+  /** Explicit employer-admin recovery of unavailable native assignees only. Unsent review/approval is reset; delivered terms and responses stay unchanged. Never permits in-flight or uncertain delivery recovery. */
+  acknowledgeOwnershipRecovery?: boolean;
+}
+
+export type OfferOwnershipRecoveryUnavailableRolesItem =
+  (typeof OfferOwnershipRecoveryUnavailableRolesItem)[keyof typeof OfferOwnershipRecoveryUnavailableRolesItem];
+
+export const OfferOwnershipRecoveryUnavailableRolesItem = {
+  owner: "owner",
+  approver: "approver",
+  sender: "sender",
+} as const;
+
+export interface OfferOwnershipRecovery {
+  canRecover: boolean;
+  unavailableRoles: OfferOwnershipRecoveryUnavailableRolesItem[];
+  blockers: string[];
+  resetsApproval: boolean;
+}
+
+export type OfferRoutingStateHandoffStatus =
+  (typeof OfferRoutingStateHandoffStatus)[keyof typeof OfferRoutingStateHandoffStatus];
+
+export const OfferRoutingStateHandoffStatus = {
+  unconfigured: "unconfigured",
+  native: "native",
+  awaiting_hiring_decision: "awaiting_hiring_decision",
+  awaiting_employer: "awaiting_employer",
+  paused: "paused",
+} as const;
+
+export type OfferRoutingStatePeopleItem = {
+  id: string;
+  name: string;
+};
+
+export type OfferRoutingStatePacket = {
+  candidateName: string;
+  decision: "hire" | "hold" | "decline";
+  decisionBy: string;
+  decisionAt: string;
+  decisionReason: string;
+  testOnly: boolean;
+  evidence: {
+    label: string;
+    status: string;
+    /** @nullable */
+    evidence: string | null;
+  }[];
+} | null;
+
+export interface OfferRoutingState {
+  recovery: OfferOwnershipRecovery | null;
+  configuration: OfferRoutingConfiguration | null;
+  workflowRevision: number;
+  canConfigure: boolean;
+  canManageTerms: boolean;
+  canApprove: boolean;
+  canSend: boolean;
+  canWithdraw: boolean;
+  /** @nullable */
+  ownerName: string | null;
+  /** @nullable */
+  approverName: string | null;
+  /** @nullable */
+  senderName: string | null;
+  handoffStatus: OfferRoutingStateHandoffStatus;
+  people: OfferRoutingStatePeopleItem[];
+  packet: OfferRoutingStatePacket;
+}
+
+export type OfferInboxEntryMode = (typeof OfferInboxEntryMode)[keyof typeof OfferInboxEntryMode];
+
+export const OfferInboxEntryMode = {
+  native: "native",
+  external: "external",
+} as const;
+
+export type OfferInboxEntryRolesItem =
+  (typeof OfferInboxEntryRolesItem)[keyof typeof OfferInboxEntryRolesItem];
+
+export const OfferInboxEntryRolesItem = {
+  owner: "owner",
+  approver: "approver",
+  sender: "sender",
+  contact: "contact",
+} as const;
+
+export type OfferInboxEntryNextAction =
+  (typeof OfferInboxEntryNextAction)[keyof typeof OfferInboxEntryNextAction];
+
+export const OfferInboxEntryNextAction = {
+  prepare: "prepare",
+  review: "review",
+  send: "send",
+  monitor: "monitor",
+  external_handoff: "external_handoff",
+  blocked: "blocked",
+} as const;
+
+export interface OfferInboxEntry {
+  workflowId: string;
+  jobId: string;
+  candidateId: string;
+  candidateName: string;
+  jobTitle: string;
+  employerName: string;
+  updatedAt: string;
+  mode: OfferInboxEntryMode;
+  roles: OfferInboxEntryRolesItem[];
+  status: string;
+  nextAction: OfferInboxEntryNextAction;
+  testOnly: boolean;
+  workflowRevision: number;
+  warnings: string[];
+}
+
+export interface OfferInboxPage {
+  items: OfferInboxEntry[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+export interface ControlledOfferState {
+  offer: ControlledOffer | null;
+  history: ControlledOffer[];
+  canEdit: boolean;
+  canApprove: boolean;
+  canSend: boolean;
+  canWithdraw: boolean;
+  canReconcile?: boolean;
+  eligible: boolean;
+  /** @nullable */
+  reason: string | null;
+  workflowRevision: number;
+}
+
+export interface OfferInboxItem {
+  entry: OfferInboxEntry;
+  routing: OfferRoutingState;
+  offer: ControlledOfferState | null;
+}
+
+export type ControlledOfferInputAction =
+  (typeof ControlledOfferInputAction)[keyof typeof ControlledOfferInputAction];
+
+export const ControlledOfferInputAction = {
+  save_draft: "save_draft",
+  submit_review: "submit_review",
+  approve: "approve",
+  send: "send",
+  withdraw: "withdraw",
+  reconcile_delivery: "reconcile_delivery",
+} as const;
+
+export type ControlledOfferInputDeliveryResolution =
+  (typeof ControlledOfferInputDeliveryResolution)[keyof typeof ControlledOfferInputDeliveryResolution];
+
+export const ControlledOfferInputDeliveryResolution = {
+  check_provider: "check_provider",
+  confirmed_not_sent: "confirmed_not_sent",
+} as const;
+
+export interface ControlledOfferInput {
+  action: ControlledOfferInputAction;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  terms?: ControlledOfferTerms;
+  /** @maxLength 4000 */
+  reason?: string;
+  deliveryResolution?: ControlledOfferInputDeliveryResolution;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  deliveryAttemptId?: string;
+  /**
+   * @minLength 10
+   * @maxLength 1000
+   */
+  evidenceReference?: string;
+  acknowledgeNoDelivery?: boolean;
+}
+
+export type ControlledOfferResponseInputDecision =
+  (typeof ControlledOfferResponseInputDecision)[keyof typeof ControlledOfferResponseInputDecision];
+
+export const ControlledOfferResponseInputDecision = {
+  accept: "accept",
+  decline: "decline",
+} as const;
+
+export interface ControlledOfferResponseInput {
+  decision: ControlledOfferResponseInputDecision;
+  /** @maxLength 2000 */
+  reason?: string;
+}
+
+export type PublicControlledOfferStatus =
+  (typeof PublicControlledOfferStatus)[keyof typeof PublicControlledOfferStatus];
+
+export const PublicControlledOfferStatus = {
+  sent: "sent",
+  accepted: "accepted",
+  declined: "declined",
+  expired: "expired",
+} as const;
+
+export interface PublicControlledOffer {
+  version: number;
+  status: PublicControlledOfferStatus;
+  terms: ControlledOfferTerms;
+  testOnly: boolean;
+  canRespond: boolean;
+  respondedAt?: string;
+  responseReason?: string;
+}
+
+export type InterviewCaptureDiagnosticInputEvent =
+  (typeof InterviewCaptureDiagnosticInputEvent)[keyof typeof InterviewCaptureDiagnosticInputEvent];
+
+export const InterviewCaptureDiagnosticInputEvent = {
+  capture_decision: "capture_decision",
+  review_shown: "review_shown",
+  review_confirmed: "review_confirmed",
+  review_retry: "review_retry",
+  submission_requested: "submission_requested",
+  submission_saved: "submission_saved",
+  submission_failed: "submission_failed",
+  empty_capture: "empty_capture",
+} as const;
+
+export type InterviewCaptureDiagnosticInputReason =
+  (typeof InterviewCaptureDiagnosticInputReason)[keyof typeof InterviewCaptureDiagnosticInputReason];
+
+export const InterviewCaptureDiagnosticInputReason = {
+  sustained_signal: "sustained_signal",
+  weak_signal: "weak_signal",
+  capture_failed: "capture_failed",
+  no_text: "no_text",
+  typed: "typed",
+  confirmed_review: "confirmed_review",
+} as const;
+
+export type InterviewCaptureDiagnosticInputSource =
+  (typeof InterviewCaptureDiagnosticInputSource)[keyof typeof InterviewCaptureDiagnosticInputSource];
+
+export const InterviewCaptureDiagnosticInputSource = {
+  manual: "manual",
+  silence: "silence",
+} as const;
+
+export type InterviewCaptureDiagnosticInputThresholdMs =
+  (typeof InterviewCaptureDiagnosticInputThresholdMs)[keyof typeof InterviewCaptureDiagnosticInputThresholdMs];
+
+export const InterviewCaptureDiagnosticInputThresholdMs = {
+  NUMBER_200: 200,
+} as const;
+
+export interface InterviewCaptureDiagnosticInput {
+  eventId: string;
+  attemptId: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  turnNumber: number;
+  event: InterviewCaptureDiagnosticInputEvent;
+  reason: InterviewCaptureDiagnosticInputReason;
+  source?: InterviewCaptureDiagnosticInputSource;
+  textPresent?: boolean;
+  edited?: boolean;
+  inViewport?: boolean;
+  /**
+   * @minimum 0
+   * @maximum 3600000
+   */
+  longestRunMs?: number;
+  thresholdMs?: InterviewCaptureDiagnosticInputThresholdMs;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  sampleCount?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  aboveThresholdSamples?: number;
+}
+
+export interface InterviewCaptureDiagnosticReceipt {
+  recorded: boolean;
+}
+
+export type InterviewCaptureDiagnostic = InterviewCaptureDiagnosticInput & {
+  recordedAt: string;
+};
+
+export interface InterviewCaptureDiagnosticReport {
+  clientReported: boolean;
+  events: InterviewCaptureDiagnostic[];
+}
+
+export interface InterviewRecordingSegmentForm {
+  file: Blob;
+  attemptId: string;
+  /** @pattern ^\d+$ */
+  index: string;
+}
+
+export interface PilotCodeInput {
+  /**
+   * @minLength 3
+   * @maxLength 64
+   * @pattern ^[a-zA-Z0-9-]+$
+   */
+  code: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  label: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  maxRedemptions: number;
+}
+
+export interface PilotRedemptionInput {
+  /**
+   * @minLength 3
+   * @maxLength 64
+   */
+  code: string;
+  /** Platform admins only; other callers redeem for their own root account */
+  tenantId?: string;
+}
+
+export interface PilotEndInput {
+  confirm: boolean;
+}
+
+export interface PilotCodeCreated {
+  id: string;
+  code: string;
+}
+
+export type PilotCode = PilotCodeInput & {
+  id: string;
+  redemptionCount: number;
+  disabled: boolean;
+  createdAt: string;
+};
+
+export interface PilotGrant {
+  id: string;
+  tenantId: string;
+  tenantName?: string;
+  code: string;
+  label: string;
+  createdAt: string;
+  /** @nullable */
+  endedAt: string | null;
+}
+
+export interface PilotStatus {
+  pilot: PilotGrant | null;
+  complimentary?: boolean;
+}
+
+export interface PilotOverview {
+  codes: PilotCode[];
+  grants: PilotGrant[];
+}
+
 export type LearningGrowthInterestArea =
   (typeof LearningGrowthInterestArea)[keyof typeof LearningGrowthInterestArea];
 
@@ -371,6 +4450,20 @@ export interface SuccessResponse {
   message?: string;
 }
 
+export interface SessionRevocationInput {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  password: string;
+  acknowledge: true;
+}
+
+export interface SessionRevocationResult {
+  success: boolean;
+  message: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -463,6 +4556,1025 @@ export interface CreateUserRequest {
   password: string;
 }
 
+/**
+ * Planned recruiting mode only; never grants execution authority.
+ */
+export type RecruitingMode = (typeof RecruitingMode)[keyof typeof RecruitingMode];
+
+export const RecruitingMode = {
+  human_assisted: "human_assisted",
+  lexy_autonomous: "lexy_autonomous",
+} as const;
+
+/**
+ * Planned interview sequence, separate from interview assessment type.
+ */
+export type InterviewPath = (typeof InterviewPath)[keyof typeof InterviewPath];
+
+export const InterviewPath = {
+  ai: "ai",
+  human: "human",
+  ai_then_human: "ai_then_human",
+  human_then_ai: "human_then_ai",
+  recruiter_choice: "recruiter_choice",
+} as const;
+
+export type WorkflowShadowProposalScope =
+  (typeof WorkflowShadowProposalScope)[keyof typeof WorkflowShadowProposalScope];
+
+export const WorkflowShadowProposalScope = {
+  requisition: "requisition",
+  candidate: "candidate",
+} as const;
+
+export type WorkflowShadowProposalDisposition =
+  (typeof WorkflowShadowProposalDisposition)[keyof typeof WorkflowShadowProposalDisposition];
+
+export const WorkflowShadowProposalDisposition = {
+  proposed: "proposed",
+  blocked: "blocked",
+  review_required: "review_required",
+  terminal: "terminal",
+} as const;
+
+export type WorkflowShadowProposalEvidenceSource =
+  (typeof WorkflowShadowProposalEvidenceSource)[keyof typeof WorkflowShadowProposalEvidenceSource];
+
+export const WorkflowShadowProposalEvidenceSource = {
+  manual_workflow_notes: "manual_workflow_notes",
+} as const;
+
+export interface WorkflowShadowProposal {
+  id: string;
+  scope: WorkflowShadowProposalScope;
+  /** @nullable */
+  workflowId: string | null;
+  /** @nullable */
+  candidateId: string | null;
+  /** @nullable */
+  candidateName: string | null;
+  /** @nullable */
+  journeyVersion: number | null;
+  /** @nullable */
+  workflowRevision: number | null;
+  /** @nullable */
+  nextStepKey: string | null;
+  title: string;
+  disposition: WorkflowShadowProposalDisposition;
+  explanation: string;
+  reasons: string[];
+  requiredChecks: string[];
+  /** @minimum 0 */
+  completedSteps: number;
+  evidenceSource: WorkflowShadowProposalEvidenceSource;
+  executionAllowed: boolean;
+}
+
+export type WorkflowShadowViewMethodology =
+  (typeof WorkflowShadowViewMethodology)[keyof typeof WorkflowShadowViewMethodology];
+
+export const WorkflowShadowViewMethodology = {
+  deterministic_workflow_rules: "deterministic_workflow_rules",
+} as const;
+
+export type WorkflowShadowViewSourcingScope =
+  (typeof WorkflowShadowViewSourcingScope)[keyof typeof WorkflowShadowViewSourcingScope];
+
+export const WorkflowShadowViewSourcingScope = {
+  client_current_employees: "client_current_employees",
+  known_nonemployees_then_permitted_external: "known_nonemployees_then_permitted_external",
+} as const;
+
+export type WorkflowShadowViewModelCalls =
+  (typeof WorkflowShadowViewModelCalls)[keyof typeof WorkflowShadowViewModelCalls];
+
+export const WorkflowShadowViewModelCalls = {
+  NUMBER_0: 0,
+} as const;
+
+export interface WorkflowShadowView {
+  generatedAt: string;
+  briefHash: string;
+  methodology: WorkflowShadowViewMethodology;
+  recruitingMode: RecruitingMode;
+  sourcingScope: WorkflowShadowViewSourcingScope;
+  autonomyExecutionEnabled: boolean;
+  executionAllowed: boolean;
+  modelCalls: WorkflowShadowViewModelCalls;
+  /** @nullable */
+  estimatedExecutionCost: number | null;
+  costExplanation: string;
+  proposals: WorkflowShadowProposal[];
+}
+
+export interface WorkflowMutationInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   */
+  expectedBriefHash: string;
+}
+
+export type WorkflowEnrollmentInputInterviewPath =
+  (typeof WorkflowEnrollmentInputInterviewPath)[keyof typeof WorkflowEnrollmentInputInterviewPath];
+
+export const WorkflowEnrollmentInputInterviewPath = {
+  ai: "ai",
+  human: "human",
+  ai_then_human: "ai_then_human",
+  human_then_ai: "human_then_ai",
+} as const;
+
+export interface WorkflowEnrollmentInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   */
+  expectedBriefHash: string;
+  journeyId: string;
+  candidateId: string;
+  interviewPath?: WorkflowEnrollmentInputInterviewPath;
+}
+
+export interface WorkflowActionLaunchInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+}
+
+export interface WorkflowRecoveryInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+  /** @minLength 1 */
+  attemptId: string;
+  acknowledge: boolean;
+}
+
+export interface WorkflowRecoveryStatus {
+  available: boolean;
+  authorized: boolean;
+  /** @nullable */
+  attemptId: string | null;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  blockedReason: string | null;
+}
+
+export type WorkflowLivePilotInputAction =
+  (typeof WorkflowLivePilotInputAction)[keyof typeof WorkflowLivePilotInputAction];
+
+export const WorkflowLivePilotInputAction = {
+  activate: "activate",
+  revoke: "revoke",
+  approve_recipient: "approve_recipient",
+  revoke_recipient: "revoke_recipient",
+} as const;
+
+export type WorkflowLivePilotInputStepKey =
+  (typeof WorkflowLivePilotInputStepKey)[keyof typeof WorkflowLivePilotInputStepKey];
+
+export const WorkflowLivePilotInputStepKey = {
+  screening: "screening",
+  verification: "verification",
+  engagement: "engagement",
+  ai_interview: "ai_interview",
+} as const;
+
+export interface WorkflowLivePilotInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+  action: WorkflowLivePilotInputAction;
+  controlledEmail?: string;
+  acknowledgeUnknownCosts?: boolean;
+  /** Attest that this is a fictional profile and an owner-controlled internal test inbox */
+  acknowledgeTestRecipient?: boolean;
+  stepKey?: WorkflowLivePilotInputStepKey;
+}
+
+/**
+ * @nullable
+ */
+export type WorkflowLivePilotStatusStepKey =
+  | (typeof WorkflowLivePilotStatusStepKey)[keyof typeof WorkflowLivePilotStatusStepKey]
+  | null;
+
+export const WorkflowLivePilotStatusStepKey = {
+  screening: "screening",
+  verification: "verification",
+  engagement: "engagement",
+  ai_interview: "ai_interview",
+} as const;
+
+export type WorkflowLivePilotStatusTestRecipient = {
+  active: boolean;
+  /** @nullable */
+  expiresAt: string | null;
+  /** @nullable */
+  controlledEmail: string | null;
+};
+
+export interface WorkflowLivePilotStatus {
+  /** @nullable */
+  stepKey?: WorkflowLivePilotStatusStepKey;
+  eligible: boolean;
+  active: boolean;
+  attempted: boolean;
+  /** Engagement first-touch send already claimed; never automatically retry. */
+  sendAttempted?: boolean;
+  /** @nullable */
+  expiresAt: string | null;
+  testRecipient?: WorkflowLivePilotStatusTestRecipient;
+}
+
+export type WorkflowControlInputAction =
+  (typeof WorkflowControlInputAction)[keyof typeof WorkflowControlInputAction];
+
+export const WorkflowControlInputAction = {
+  pause: "pause",
+  resume: "resume",
+  cancel: "cancel",
+} as const;
+
+export interface WorkflowControlInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+  action: WorkflowControlInputAction;
+}
+
+export type WorkflowIdentityResolutionInputDecision =
+  (typeof WorkflowIdentityResolutionInputDecision)[keyof typeof WorkflowIdentityResolutionInputDecision];
+
+export const WorkflowIdentityResolutionInputDecision = {
+  corroborated: "corroborated",
+  internal_test: "internal_test",
+  unresolved: "unresolved",
+} as const;
+
+export interface WorkflowIdentityResolutionInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+  /** @minLength 1 */
+  recordId: string;
+  recordUpdatedAt: string;
+  decision: WorkflowIdentityResolutionInputDecision;
+  /**
+   * @minLength 30
+   * @maxLength 2000
+   */
+  evidence: string;
+  acknowledge: boolean;
+}
+
+export type WorkflowDecisionCorrectionInputOutcome =
+  (typeof WorkflowDecisionCorrectionInputOutcome)[keyof typeof WorkflowDecisionCorrectionInputOutcome];
+
+export const WorkflowDecisionCorrectionInputOutcome = {
+  hire: "hire",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface WorkflowDecisionCorrectionInput {
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  outcome: WorkflowDecisionCorrectionInputOutcome;
+  /**
+   * @minLength 10
+   * @maxLength 4000
+   */
+  decisionReason: string;
+  /**
+   * @minLength 10
+   * @maxLength 2000
+   */
+  correctionReason: string;
+  /** Explicit acknowledgement that a previously sent, responded-to or uncertain-delivery offer remains unchanged and requires a separate offer action. */
+  acknowledgeDeliveredOffer?: boolean;
+  /** Explicitly record a first structured decision on a completed legacy workflow while preserving its original note and earlier evidence; never infer a hiring intent from that note. */
+  acknowledgeLegacyCompletion?: boolean;
+}
+
+export type WorkflowEvidenceInputStatus =
+  (typeof WorkflowEvidenceInputStatus)[keyof typeof WorkflowEvidenceInputStatus];
+
+export const WorkflowEvidenceInputStatus = {
+  completed: "completed",
+  review_required: "review_required",
+  failed: "failed",
+} as const;
+
+/**
+ * Human outcome on the final step only. Hire/decline require completed; hold requires review_required. Reviewer, timestamp and test classification are server-owned.
+ */
+export type WorkflowEvidenceInputDecision =
+  (typeof WorkflowEvidenceInputDecision)[keyof typeof WorkflowEvidenceInputDecision];
+
+export const WorkflowEvidenceInputDecision = {
+  hire: "hire",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface WorkflowEvidenceInput {
+  /** Optional server-issued observation identifier; revalidated against the current workflow and source before human review is saved. */
+  runtimeEvidenceId?: string;
+  /**
+   * @minLength 8
+   * @maxLength 120
+   */
+  idempotencyKey: string;
+  /** @minimum 1 */
+  expectedRevision: number;
+  stepKey: string;
+  status: WorkflowEvidenceInputStatus;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  evidence: string;
+  /** Human outcome on the final step only. Hire/decline require completed; hold requires review_required. Reviewer, timestamp and test classification are server-owned. */
+  decision?: WorkflowEvidenceInputDecision;
+}
+
+export type WorkflowFollowUpInputAction =
+  (typeof WorkflowFollowUpInputAction)[keyof typeof WorkflowFollowUpInputAction];
+
+export const WorkflowFollowUpInputAction = {
+  draft: "draft",
+  approve: "approve",
+  cancel: "cancel",
+  send: "send",
+} as const;
+
+export interface WorkflowFollowUpInput {
+  action: WorkflowFollowUpInputAction;
+  /** @minimum 1 */
+  expectedRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotencyKey: string;
+  id?: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  subject?: string;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  body?: string;
+  scheduledAt?: string;
+  acknowledgeUnknownCost?: boolean;
+}
+
+export type WorkflowFollowUpStatus =
+  (typeof WorkflowFollowUpStatus)[keyof typeof WorkflowFollowUpStatus];
+
+export const WorkflowFollowUpStatus = {
+  draft: "draft",
+  approved: "approved",
+  claimed: "claimed",
+  sent: "sent",
+  unknown: "unknown",
+  cancelled: "cancelled",
+} as const;
+
+export interface WorkflowFollowUp {
+  id: string;
+  version: number;
+  recipient: string;
+  subject: string;
+  body: string;
+  scheduledAt: string;
+  status: WorkflowFollowUpStatus;
+  /** @nullable */
+  blockedReason: string | null;
+}
+
+export interface WorkflowHeldContact {
+  id: string;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  body: string | null;
+  reason: string;
+}
+
+export interface WorkflowFollowUpList {
+  followUps: WorkflowFollowUp[];
+  held: WorkflowHeldContact[];
+  recipient: string;
+  /** @nullable */
+  blockedReason: string | null;
+}
+
+export interface WorkflowMutationResult {
+  id: string;
+  replayed: boolean;
+  autonomyExecutionEnabled: boolean;
+}
+
+export type PlannedWorkflowStepAuthority =
+  (typeof PlannedWorkflowStepAuthority)[keyof typeof PlannedWorkflowStepAuthority];
+
+export const PlannedWorkflowStepAuthority = {
+  human_review: "human_review",
+} as const;
+
+export type PlannedWorkflowStepStatus =
+  (typeof PlannedWorkflowStepStatus)[keyof typeof PlannedWorkflowStepStatus];
+
+export const PlannedWorkflowStepStatus = {
+  pending: "pending",
+  completed: "completed",
+  review_required: "review_required",
+  failed: "failed",
+  cancelled: "cancelled",
+} as const;
+
+export interface PlannedWorkflowStep {
+  key: string;
+  label: string;
+  authority: PlannedWorkflowStepAuthority;
+  status: PlannedWorkflowStepStatus;
+  /** @nullable */
+  evidence: string | null;
+  humanDecision?: WorkflowHumanDecision;
+  humanDecisionHistory?: WorkflowHumanDecision[];
+  controlledOffer?: ControlledOffer;
+  controlledOfferHistory?: ControlledOffer[];
+}
+
+export type PlannedWorkflowJourneyStatus =
+  (typeof PlannedWorkflowJourneyStatus)[keyof typeof PlannedWorkflowJourneyStatus];
+
+export const PlannedWorkflowJourneyStatus = {
+  draft: "draft",
+  approved: "approved",
+} as const;
+
+export interface PlannedWorkflowJourney {
+  id: string;
+  version: number;
+  status: PlannedWorkflowJourneyStatus;
+  briefHash: string;
+  stale: boolean;
+  interviewPath: InterviewPath;
+  createdById: string;
+  /** @nullable */
+  approvedById: string | null;
+  steps: PlannedWorkflowStep[];
+}
+
+export type PlannedCandidateWorkflowStatus =
+  (typeof PlannedCandidateWorkflowStatus)[keyof typeof PlannedCandidateWorkflowStatus];
+
+export const PlannedCandidateWorkflowStatus = {
+  ready: "ready",
+  paused: "paused",
+  cancelled: "cancelled",
+  completed: "completed",
+} as const;
+
+export interface WorkflowScreeningReadiness {
+  ready: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
+export type WorkflowRuntimeEvidenceScope =
+  (typeof WorkflowRuntimeEvidenceScope)[keyof typeof WorkflowRuntimeEvidenceScope];
+
+export const WorkflowRuntimeEvidenceScope = {
+  job: "job",
+  candidate_identity: "candidate_identity",
+} as const;
+
+export interface WorkflowRuntimeEvidence {
+  id: string;
+  stepKey: string;
+  sourceType: string;
+  sourceId: string;
+  occurredAt: string;
+  scope: WorkflowRuntimeEvidenceScope;
+  summary: string;
+  attentionRequired: boolean;
+  readyForReview: boolean;
+  /** @nullable */
+  reason: string | null;
+}
+
+export interface PlannedCandidateWorkflow {
+  /** Human approval role and canonical candidate owner scope are both required; platform discovery alone never authorises global identity writes. */
+  identityResolutionAllowed?: boolean;
+  livePilot?: WorkflowLivePilotStatus;
+  recovery?: WorkflowRecoveryStatus;
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  screeningReadiness?: WorkflowScreeningReadiness;
+  journeyId: string;
+  journeyVersion: number;
+  interviewPath: string;
+  status: PlannedCandidateWorkflowStatus;
+  revision: number;
+  stale: boolean;
+  /** @nullable */
+  runtimeEvidenceBlockedReason?: string | null;
+  runtimeEvidence?: WorkflowRuntimeEvidence[];
+  steps: PlannedWorkflowStep[];
+}
+
+export interface WorkflowCandidateOption {
+  id: string;
+  name: string;
+  screeningReadiness?: WorkflowScreeningReadiness;
+}
+
+export interface PlannedWorkflowEvent {
+  id: string;
+  /** @nullable */
+  workflowId: string | null;
+  /** @nullable */
+  journeyId: string | null;
+  action: string;
+  actorId: string;
+  /** @nullable */
+  note: string | null;
+  createdAt: string;
+}
+
+export type SourcingLimitsProvidersItem =
+  (typeof SourcingLimitsProvidersItem)[keyof typeof SourcingLimitsProvidersItem];
+
+export const SourcingLimitsProvidersItem = {
+  github: "github",
+  pdl: "pdl",
+  serp: "serp",
+  enrichlayer: "enrichlayer",
+} as const;
+
+export type SourcingAccountRateBasis =
+  (typeof SourcingAccountRateBasis)[keyof typeof SourcingAccountRateBasis];
+
+export const SourcingAccountRateBasis = {
+  prepaid_allocation: "prepaid_allocation",
+  payg: "payg",
+} as const;
+
+export interface SourcingAccountRate {
+  /**
+   * @minimum 1
+   * @maximum 100000000
+   */
+  microsPerCredit: number;
+  basis: SourcingAccountRateBasis;
+  /**
+   * @minLength 3
+   * @maxLength 160
+   */
+  source: string;
+  expiresAt: string;
+}
+
+export type SourcingLimitsAccountRates = {
+  pdl?: SourcingAccountRate;
+  serp?: SourcingAccountRate;
+  enrichlayer?: SourcingAccountRate;
+};
+
+export interface SourcingLimits {
+  allowExternal: boolean;
+  providers: SourcingLimitsProvidersItem[];
+  /**
+   * @minimum 1
+   * @maximum 25
+   */
+  maxCandidates: number;
+  /**
+   * @minimum 30
+   * @maximum 900
+   */
+  maxDurationSeconds: number;
+  /**
+   * @minimum 1
+   * @maximum 20
+   */
+  maxRuns: number;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  runBudgetCents: number;
+  /**
+   * @minimum 1
+   * @maximum 10000000
+   */
+  totalBudgetCents: number;
+  accountRates?: SourcingLimitsAccountRates;
+}
+
+export type SourcingMonthlyPackagesDisplayTerm =
+  (typeof SourcingMonthlyPackagesDisplayTerm)[keyof typeof SourcingMonthlyPackagesDisplayTerm];
+
+export const SourcingMonthlyPackagesDisplayTerm = {
+  monthly: "monthly",
+} as const;
+
+export type SourcingMonthlyPackagesTiersItemCode =
+  (typeof SourcingMonthlyPackagesTiersItemCode)[keyof typeof SourcingMonthlyPackagesTiersItemCode];
+
+export const SourcingMonthlyPackagesTiersItemCode = {
+  starter: "starter",
+  growth: "growth",
+  enterprise: "enterprise",
+} as const;
+
+export type SourcingMonthlyPackagesTiersItem = {
+  code: SourcingMonthlyPackagesTiersItemCode;
+  name: string;
+  amount: number;
+  currency: string;
+  symbol: string;
+  taxNote: string;
+  priceSource: string;
+  maxOpenJobs: number;
+  maxStaffSeats: number;
+  candidateDbSearchesPerMonth: number;
+  aiGenerationsPerMonth: number;
+};
+
+export interface SourcingMonthlyPackages {
+  country: string | null;
+  currentPlan: string;
+  billingTerm: string;
+  displayTerm: SourcingMonthlyPackagesDisplayTerm;
+  sourcingAllowanceConfigured: boolean;
+  note: string;
+  tiers: SourcingMonthlyPackagesTiersItem[];
+}
+
+export type SourcingCostAnalysisRowsItemRateStatus =
+  (typeof SourcingCostAnalysisRowsItemRateStatus)[keyof typeof SourcingCostAnalysisRowsItemRateStatus];
+
+export const SourcingCostAnalysisRowsItemRateStatus = {
+  configured: "configured",
+  expired: "expired",
+  missing: "missing",
+} as const;
+
+export type SourcingCostAnalysisRowsItem = {
+  id: string;
+  label: string;
+  selected: boolean;
+  credits: number | null;
+  rule: string;
+  reference: string;
+  url: string;
+  rateStatus: SourcingCostAnalysisRowsItemRateStatus;
+  allowanceMicros: number | null;
+  basis: string | null;
+};
+
+export interface SourcingCostAnalysis {
+  researchDate: string;
+  planningOnly: boolean;
+  complete: boolean;
+  exceedsRunCap: boolean;
+  knownAllowanceMicros: number;
+  missingProviders: string[];
+  warning: string;
+  rows: SourcingCostAnalysisRowsItem[];
+}
+
+export type SourcingControlCommandAction =
+  (typeof SourcingControlCommandAction)[keyof typeof SourcingControlCommandAction];
+
+export const SourcingControlCommandAction = {
+  save: "save",
+  approve: "approve",
+  reserve: "reserve",
+  pause: "pause",
+  resume: "resume",
+  cancel: "cancel",
+  start_internal: "start_internal",
+  start_external: "start_external",
+  import_profile: "import_profile",
+} as const;
+
+export interface SourcingControlCommand {
+  action: SourcingControlCommandAction;
+  /**
+   * @minLength 8
+   * @maxLength 128
+   */
+  idempotencyKey: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  expectedBriefHash?: string;
+  limits?: SourcingLimits;
+  journeyId?: string;
+  reservationId?: string;
+  operationId?: string;
+  /** @maxLength 500 */
+  profileUrl?: string;
+  /**
+   * @minLength 2
+   * @maxLength 160
+   */
+  fullName?: string;
+}
+
+export type SourcingPolicyStatus = (typeof SourcingPolicyStatus)[keyof typeof SourcingPolicyStatus];
+
+export const SourcingPolicyStatus = {
+  draft: "draft",
+  approved: "approved",
+  paused: "paused",
+} as const;
+
+export interface SourcingPolicy {
+  jobId: string;
+  tenantId: string;
+  revision: number;
+  limits: SourcingLimits;
+  status: SourcingPolicyStatus;
+  briefHash: string;
+  journeyId: string | null;
+  approvedById: string | null;
+  approvedAt: string | null;
+  updatedAt: string;
+  stale: boolean;
+}
+
+export type SourcingReservationStatus =
+  (typeof SourcingReservationStatus)[keyof typeof SourcingReservationStatus];
+
+export const SourcingReservationStatus = {
+  reserved: "reserved",
+  paused: "paused",
+  cancelled: "cancelled",
+} as const;
+
+export interface SourcingReservation {
+  id: string;
+  jobId: string;
+  tenantId: string;
+  policyRevision: number;
+  policyHash: string;
+  briefHash: string;
+  journeyId: string;
+  limits: SourcingLimits;
+  reservedCents: number;
+  status: SourcingReservationStatus;
+  revision: number;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  stale: boolean;
+}
+
+export type SourcingCostOperationStatus =
+  (typeof SourcingCostOperationStatus)[keyof typeof SourcingCostOperationStatus];
+
+export const SourcingCostOperationStatus = {
+  prepared: "prepared",
+  dispatching: "dispatching",
+  uncertain: "uncertain",
+  settled: "settled",
+  void: "void",
+} as const;
+
+export interface SourcingCostOperation {
+  id: string;
+  reservationId: string;
+  operationKey: string;
+  provider: string;
+  pricingVersion: string;
+  status: SourcingCostOperationStatus;
+  /** @minimum 1 */
+  upperMicros: number;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  actualMicros: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  reportedMicros: number | null;
+  createdAt: string;
+}
+
+export type SourcingControlViewExternalDispatchProvidersItemProvider =
+  (typeof SourcingControlViewExternalDispatchProvidersItemProvider)[keyof typeof SourcingControlViewExternalDispatchProvidersItemProvider];
+
+export const SourcingControlViewExternalDispatchProvidersItemProvider = {
+  pdl: "pdl",
+  serp: "serp",
+  enrichlayer: "enrichlayer",
+} as const;
+
+export type SourcingControlViewExternalDispatchProvidersItemKind =
+  (typeof SourcingControlViewExternalDispatchProvidersItemKind)[keyof typeof SourcingControlViewExternalDispatchProvidersItemKind];
+
+export const SourcingControlViewExternalDispatchProvidersItemKind = {
+  discovery: "discovery",
+  enrichment: "enrichment",
+} as const;
+
+export type SourcingControlViewExternalDispatchProvidersItem = {
+  provider: SourcingControlViewExternalDispatchProvidersItemProvider;
+  selected: boolean;
+  available: boolean;
+  kind: SourcingControlViewExternalDispatchProvidersItemKind;
+  note: string;
+};
+
+export type SourcingControlViewExternalDispatch = {
+  adapter: string;
+  ready: boolean;
+  blockers: string[];
+  /** @nullable */
+  upperMicros: number | null;
+  note: string;
+  providers?: SourcingControlViewExternalDispatchProvidersItem[];
+};
+
+export type SourcingControlViewExternalRunsItemStatus =
+  (typeof SourcingControlViewExternalRunsItemStatus)[keyof typeof SourcingControlViewExternalRunsItemStatus];
+
+export const SourcingControlViewExternalRunsItemStatus = {
+  claimed: "claimed",
+  succeeded: "succeeded",
+  uncertain: "uncertain",
+  skipped: "skipped",
+} as const;
+
+export type SourcingControlViewExternalRunsItemProvider =
+  (typeof SourcingControlViewExternalRunsItemProvider)[keyof typeof SourcingControlViewExternalRunsItemProvider];
+
+export const SourcingControlViewExternalRunsItemProvider = {
+  pdl: "pdl",
+  serp: "serp",
+  enrichlayer: "enrichlayer",
+} as const;
+
+export type SourcingControlViewExternalRunsItemProfilesItem = {
+  title: string;
+  url: string;
+  snippet: string;
+  imported?: boolean;
+};
+
+export type SourcingControlViewExternalRunsItem = {
+  status?: SourcingControlViewExternalRunsItemStatus;
+  provider?: SourcingControlViewExternalRunsItemProvider;
+  reason?: string;
+  reservationId: string;
+  operationId: string;
+  profiles: SourcingControlViewExternalRunsItemProfilesItem[];
+};
+
+export type SourcingControlViewCurrency =
+  (typeof SourcingControlViewCurrency)[keyof typeof SourcingControlViewCurrency];
+
+export const SourcingControlViewCurrency = {
+  USD: "USD",
+} as const;
+
+export type SourcingControlViewSourcingScope =
+  (typeof SourcingControlViewSourcingScope)[keyof typeof SourcingControlViewSourcingScope];
+
+export const SourcingControlViewSourcingScope = {
+  client_current_employees: "client_current_employees",
+  known_nonemployees: "known_nonemployees",
+} as const;
+
+export type InternalSourcingRunStatus =
+  (typeof InternalSourcingRunStatus)[keyof typeof InternalSourcingRunStatus];
+
+export const InternalSourcingRunStatus = {
+  ready: "ready",
+  running: "running",
+  interrupted: "interrupted",
+  completed: "completed",
+  paused: "paused",
+  cancelled: "cancelled",
+} as const;
+
+export interface InternalSourcingCandidate {
+  id: string;
+  name: string;
+  /** @nullable */
+  title: string | null;
+}
+
+export interface InternalSourcingRun {
+  reservationId: string;
+  status: InternalSourcingRunStatus;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  deadline: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  candidates: InternalSourcingCandidate[];
+}
+
+export interface SourcingControlView {
+  externalDispatch?: SourcingControlViewExternalDispatch;
+  externalRuns?: SourcingControlViewExternalRunsItem[];
+  internalDiscoveryEnabled?: boolean;
+  internalRuns?: InternalSourcingRun[];
+  briefHash: string;
+  canEdit: boolean;
+  canApprove: boolean;
+  currency: SourcingControlViewCurrency;
+  sourcingScope: SourcingControlViewSourcingScope;
+  executionEnabled: boolean;
+  outreachEnabled: boolean;
+  trustedPricingAvailable: boolean;
+  costAnalysis: SourcingCostAnalysis;
+  monthlyPackages?: SourcingMonthlyPackages | null;
+  /** @minimum 0 */
+  spentMicros: number;
+  /** @minimum 0 */
+  uncertainMicros: number;
+  /** @minimum 0 */
+  pendingMicros: number;
+  costOperations: SourcingCostOperation[];
+  policy: SourcingPolicy | null;
+  reservations: SourcingReservation[];
+  allocatedCents: number;
+  availableCents: number;
+  blockers: string[];
+}
+
+export interface JobWorkflowState {
+  canControlLivePilot?: boolean;
+  briefHash: string;
+  autonomyExecutionEnabled: boolean;
+  canEdit: boolean;
+  canApprove: boolean;
+  jobApproved: boolean;
+  journeys: PlannedWorkflowJourney[];
+  workflows: PlannedCandidateWorkflow[];
+  candidates: WorkflowCandidateOption[];
+  events: PlannedWorkflowEvent[];
+}
+
+export interface RecruitingConfigurationUpdate {
+  recruitingMode?: RecruitingMode;
+  interviewPath?: InterviewPath;
+}
+
 export type JobWorkType = (typeof JobWorkType)[keyof typeof JobWorkType] | null;
 
 export const JobWorkType = {
@@ -492,6 +5604,16 @@ export const JobStatus = {
   published: "published",
 } as const;
 
+/**
+ * Selecting a recruiting mode does not grant automatic progression authority.
+ */
+export type JobProgressionAuthority =
+  (typeof JobProgressionAuthority)[keyof typeof JobProgressionAuthority];
+
+export const JobProgressionAuthority = {
+  human_review: "human_review",
+} as const;
+
 export interface Job {
   id: string;
   tenantId: string;
@@ -508,6 +5630,14 @@ export interface Job {
   workOrderNumber?: string | null;
   clientWorkOrderNumber?: string | null;
   isConfidential?: boolean;
+  /** When true, sourcing is restricted to employees of this job's exact client tenant. When false, sourcing can include known nonemployees and external candidates. */
+  internalMobility: boolean;
+  recruitingMode: RecruitingMode;
+  interviewPath: InterviewPath;
+  /** Server-owned capability; always false during configuration-only rollout. */
+  autonomyExecutionEnabled: boolean;
+  /** Selecting a recruiting mode does not grant automatic progression authority. */
+  progressionAuthority: JobProgressionAuthority;
   createdById?: string | null;
   createdByRole?: string | null;
   assignedRecruiterId?: string | null;
@@ -536,6 +5666,10 @@ export interface CreateJobRequest {
   salaryMin?: number;
   salaryMax?: number;
   description: string;
+  /** Restrict sourcing to employees of this job's exact client tenant; defaults to false. */
+  internalMobility?: boolean;
+  recruitingMode?: RecruitingMode;
+  interviewPath?: InterviewPath;
 }
 
 export interface UpdateJobRequest {
@@ -548,6 +5682,8 @@ export interface UpdateJobRequest {
   salaryMax?: number;
   description?: string;
   status?: string;
+  /** Restrict sourcing to employees of this job's exact client tenant when true; otherwise allow known nonemployees and external candidates. */
+  internalMobility?: boolean;
 }
 
 export type IdeaCandiateProfileExpandedSkillGraph = { [key: string]: string[] };
@@ -801,6 +5937,18 @@ export interface InterviewPlan {
   createdAt: string;
 }
 
+export type CandidateInterviewConfigurationQuestionsItem = { [key: string]: unknown };
+
+export interface CandidateInterviewConfiguration {
+  id: string;
+  title: string;
+  interviewType: string;
+  language: string | null;
+  estimatedDurationMinutes: number | null;
+  /** Public coding challenges only. Spoken questions and grading material stay server-side. */
+  questions: CandidateInterviewConfigurationQuestionsItem[];
+}
+
 export type InterviewSessionStatus =
   (typeof InterviewSessionStatus)[keyof typeof InterviewSessionStatus];
 
@@ -826,10 +5974,42 @@ export interface InterviewSession {
   createdAt: string;
 }
 
+export type CreateInterviewPlanRequestInterviewType =
+  (typeof CreateInterviewPlanRequestInterviewType)[keyof typeof CreateInterviewPlanRequestInterviewType];
+
+export const CreateInterviewPlanRequestInterviewType = {
+  technical: "technical",
+  behavioral: "behavioral",
+  cultural: "cultural",
+  competency: "competency",
+  general: "general",
+  programming: "programming",
+} as const;
+
 export interface CreateInterviewPlanRequest {
+  /** @minLength 1 */
   jobId: string;
-  interviewType?: string;
+  interviewType?: CreateInterviewPlanRequestInterviewType;
+  /**
+   * @minimum 1
+   * @maximum 9007199254740991
+   */
   questionCount?: number;
+  /** @minLength 1 */
+  language?: string;
+}
+
+export type InterviewPlanGenerationFailureCode =
+  (typeof InterviewPlanGenerationFailureCode)[keyof typeof InterviewPlanGenerationFailureCode];
+
+export const InterviewPlanGenerationFailureCode = {
+  interview_plan_generation_failed: "interview_plan_generation_failed",
+} as const;
+
+export interface InterviewPlanGenerationFailure {
+  error: string;
+  code: InterviewPlanGenerationFailureCode;
+  retryable: boolean;
 }
 
 export interface StartInterviewRequest {
@@ -846,6 +6026,19 @@ export interface AnswerResponse {
   nextQuestion?: InterviewQuestion | null;
   isComplete: boolean;
   followUpQuestion?: string | null;
+}
+
+export type InterviewCompletionReceiptStatus =
+  (typeof InterviewCompletionReceiptStatus)[keyof typeof InterviewCompletionReceiptStatus];
+
+export const InterviewCompletionReceiptStatus = {
+  processing: "processing",
+  completed: "completed",
+} as const;
+
+export interface InterviewCompletionReceipt {
+  status: InterviewCompletionReceiptStatus;
+  sessionId: string;
 }
 
 export type InterviewSummaryRecommendation =
@@ -959,6 +6152,7 @@ export type InterviewScheduleStatus =
 
 export const InterviewScheduleStatus = {
   pending: "pending",
+  scheduled: "scheduled",
   confirmed: "confirmed",
   rescheduled: "rescheduled",
   cancelled: "cancelled",
@@ -966,9 +6160,30 @@ export const InterviewScheduleStatus = {
 } as const;
 
 export interface InterviewSchedule {
+  /**
+   * Content revision for conditional native schedule edits; not an authorization token.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  version: string;
   id: string;
   applicationId: string;
   interviewerId?: string | null;
+  /** @nullable */
+  interviewerName?: string | null;
+  /** @nullable */
+  location?: string | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  feedbackRating?: number | null;
+  /** @nullable */
+  feedbackNotes?: string | null;
+  candidateName?: string;
+  /** @nullable */
+  candidateEmail?: string | null;
+  jobTitle?: string;
   scheduledAt: string;
   durationMinutes: number;
   type: string;
@@ -977,19 +6192,109 @@ export interface InterviewSchedule {
   createdAt: string;
 }
 
+export type ScheduleCreateResult = InterviewSchedule & {
+  replayed: boolean;
+};
+
+export type CreateScheduleRequestType =
+  (typeof CreateScheduleRequestType)[keyof typeof CreateScheduleRequestType];
+
+export const CreateScheduleRequestType = {
+  technical: "technical",
+  behavioral: "behavioral",
+  culture_fit: "culture_fit",
+  portfolio: "portfolio",
+  ai_interview: "ai_interview",
+  final: "final",
+} as const;
+
 export interface CreateScheduleRequest {
+  /** Stable UUID for one opened draft. Reuse on retries; changed saved details return 409. Omit only for legacy clients without retry protection. */
+  requestId?: string;
   applicationId: string;
-  interviewerId?: string;
+  interviewerId?: string | null;
+  /** @maxLength 200 */
+  interviewerName?: string | null;
+  /** @maxLength 2000 */
+  location?: string | null;
   scheduledAt: string;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
   durationMinutes: number;
-  type: string;
-  notes?: string;
+  type: CreateScheduleRequestType;
+  /** @maxLength 10000 */
+  notes?: string | null;
 }
 
+export type UpdateScheduleRequestType =
+  (typeof UpdateScheduleRequestType)[keyof typeof UpdateScheduleRequestType];
+
+export const UpdateScheduleRequestType = {
+  technical: "technical",
+  behavioral: "behavioral",
+  culture_fit: "culture_fit",
+  portfolio: "portfolio",
+  ai_interview: "ai_interview",
+  final: "final",
+} as const;
+
+export type UpdateScheduleRequestStatus =
+  (typeof UpdateScheduleRequestStatus)[keyof typeof UpdateScheduleRequestStatus];
+
+export const UpdateScheduleRequestStatus = {
+  pending: "pending",
+  scheduled: "scheduled",
+  confirmed: "confirmed",
+  rescheduled: "rescheduled",
+  cancelled: "cancelled",
+  completed: "completed",
+} as const;
+
 export interface UpdateScheduleRequest {
+  /**
+   * Revision from the saved schedule being edited. Legacy callers may omit it; new clients must send it to detect stale drafts.
+   * @pattern ^v1_[0-9a-f]{64}$
+   */
+  expectedVersion?: string;
   scheduledAt?: string;
-  status?: string;
-  notes?: string;
+  /**
+   * @minimum 5
+   * @maximum 480
+   */
+  durationMinutes?: number;
+  interviewerId?: string | null;
+  /** @maxLength 200 */
+  interviewerName?: string | null;
+  /** @maxLength 2000 */
+  location?: string | null;
+  type?: UpdateScheduleRequestType;
+  status?: UpdateScheduleRequestStatus;
+  /** @maxLength 10000 */
+  notes?: string | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  feedbackRating?: number | null;
+  /** @maxLength 10000 */
+  feedbackNotes?: string | null;
+}
+
+export interface ScheduleFeedbackRequest {
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  rating: number;
+  /**
+   * @maxLength 10000
+   * @nullable
+   */
+  notes?: string | null;
+  /** @pattern ^v1_[0-9a-f]{64}$ */
+  expectedVersion?: string;
 }
 
 export type VerificationStatusStatus =
@@ -1726,6 +7031,83 @@ export interface LearningAchievements {
   milestones: LearningAchievementsMilestonesItem[];
 }
 
+export type ConnectZohoRecruitAccount200 = {
+  authorizationUrl: string;
+};
+
+export type ListMailHoldsParams = {
+  /**
+   * @maxLength 300
+   */
+  cursor?: string;
+};
+
+export type GetCandidateRegistrationsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @pattern ^[A-Za-z0-9_-]+$
+   */
+  cursor?: string;
+  /**
+   * @maxLength 200
+   */
+  search?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+};
+
+export type GetCareerCampaignStatusParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @pattern ^[A-Za-z0-9_-]+$
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+};
+
+export type GetOutlookCalendarAvailabilityParams = {
+  start: string;
+  end: string;
+};
+
+export type GetStaffNotificationsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  cursor?: string;
+};
+
+export type GetEmployerOfferInboxParams = {
+  /**
+   * @maxLength 600
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+};
+
+export type TranscribeCareerInterview200 = {
+  transcript: string;
+};
+
 export type ListUsersParams = {
   role?: string;
 };
@@ -1734,6 +7116,11 @@ export type ListJobsParams = {
   status?: string;
   page?: number;
   limit?: number;
+};
+
+export type LaunchCandidateWorkflowAction200 = {
+  runId: string;
+  status: string;
 };
 
 export type ListCandidatesParams = {
@@ -1787,4 +7174,22 @@ export type GetAnalyticsOverviewParams = {
 
 export type GetHiringFunnelParams = {
   jobId?: string;
+};
+
+export type GetInterviewRecordingSegments200RecordingsItem = {
+  attemptId: string;
+  partCount: number;
+  bytes: number;
+  startedAt: string;
+  contiguous: boolean;
+};
+
+export type GetInterviewRecordingSegments200 = {
+  recordings: GetInterviewRecordingSegments200RecordingsItem[];
+};
+
+export type UploadInterviewRecordingSegment200 = {
+  saved: boolean;
+  attemptId: string;
+  index: number;
 };

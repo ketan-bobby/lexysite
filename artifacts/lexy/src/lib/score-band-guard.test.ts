@@ -61,6 +61,7 @@ const ALLOWLIST: { marker: string; why: string }[] = [
   { marker: ".length > 12", why: "goal-word-count truncation, not a score band" },
   { marker: ".length > 240", why: "job-description preview truncation, not a score band" },
   { marker: "elapsed < 60", why: "seconds→m:ss time format, not a score band" },
+  { marker: "immediateRoles.length", why: "selected-role count limit, not a score band" },
 ];
 
 const SKIP_FILES = new Set(["score-band.ts", "intelligence-bands.ts"]);

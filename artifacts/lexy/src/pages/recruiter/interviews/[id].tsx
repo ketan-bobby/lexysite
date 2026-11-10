@@ -24,7 +24,10 @@
  *   /recruiter/interviews/:id
  */
 import { useState, useEffect, useRef } from "react";
+import { InterviewSavedRecordings } from "@/components/interview-recording-segments";
+import { InterviewCaptureDiagnostics } from "@/components/interview-capture-diagnostics";
 import { authHeaders } from "@/lib/api";
+import { downloadRecording } from "@/lib/recording-download";
 import { useRoute, Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetInterview, useGetInterviewSummary } from "@workspace/api-client-react";
@@ -32,6 +35,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@workspace/react-hooks/use-toast";
 import { generateInterviewReportPdf } from "@/lib/interview-report-pdf";
+import { interviewEvaluationWarning, isValidInterviewScore, INTERVIEW_SCORE_STRONG, INTERVIEW_SCORE_MODERATE } from "@/lib/interview-turn-policy";
 import { downloadEvaluationReportPdf, type EvaluationReportPdfData } from "@/lib/evaluation-report-pdf";
 import type { Evaluation, EvaluationGetResponse, RecommendationBand } from "@/lib/evaluation-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,7 +193,7 @@ function ProctoringSection({ sessionId, isCompleted, isLive }: { sessionId: stri
 
 // Interview detail page: transcript, scores, and proctoring summary for one session.
 // Per-question interview-score band (0–100 answer score; own cutoffs, not the match/fit band).
-const Q_SCORE_STRONG = 85, Q_SCORE_MODERATE = 70;
+const Q_SCORE_STRONG = INTERVIEW_SCORE_STRONG, Q_SCORE_MODERATE = INTERVIEW_SCORE_MODERATE;
 export default function InterviewDetail() {
   const [, params] = useRoute("/interviews/:id");
   const interviewId = params?.id || "";
@@ -211,6 +215,7 @@ export default function InterviewDetail() {
   const [videoIsBlob, setVideoIsBlob] = useState(false);
   const [streamFailed, setStreamFailed] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [recordingDownloading, setRecordingDownloading] = useState(false);
   /* Guards the recording fetch against duplicate/self-cancelled runs. */
   const videoFetchRef = useRef<string | null>(null);
   const { toast } = useToast();
@@ -225,11 +230,11 @@ export default function InterviewDetail() {
   const canonicalOverallScore = (() => {
     const ans: any[] = (interview as any)?.answers || [];
     const perQ = ans
-      .map((a: any) => (typeof a.score === "number" ? a.score : null))
+      .map((a: any) => (isValidInterviewScore(a.score) && typeof a.answer === "string" && a.answer.trim() ? a.score : null))
       .filter((s: number | null): s is number => s != null);
     if (perQ.length) return Math.round(perQ.reduce((sum, s) => sum + s, 0) / perQ.length);
     const fallback = (summary as any)?.overallScore ?? (interview as any)?.score;
-    return typeof fallback === "number" ? Math.round(fallback) : null;
+    return isValidInterviewScore(fallback) ? Math.round(fallback) : null;
   })();
 
   // Lazily fetch the recording (authed) when the Recording tab opens.
@@ -441,6 +446,7 @@ export default function InterviewDetail() {
         return {
           questionText: q?.text || a.questionText || `Question ${i + 1}`,
           score: typeof a.score === "number" ? a.score : null,
+          answer: typeof a.answer === "string" ? a.answer : null,
           feedback: a.feedback ?? null,
         };
       }),
@@ -581,6 +587,7 @@ export default function InterviewDetail() {
         </div>
       )}
 
+      <InterviewCaptureDiagnostics sessionId={interviewId} />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-muted/50 mb-4">
           <TabsTrigger value="evaluation">AI Evaluation</TabsTrigger>
@@ -628,6 +635,7 @@ export default function InterviewDetail() {
             const redFlags: string[] = (summary as any)?.redFlags ?? [];
             const recommendation: string = (summary as any)?.recommendation ?? "maybe";
             const recruiterSummary: string = (summary as any)?.recruiterSummary ?? "";
+            const evaluationWarning = interviewEvaluationWarning(overallScore, recommendation, answers, interview.totalQuestions);
 
             const recLabel = recommendation === "yes" || recommendation === "advance"
               ? "Advance to Next Stage"
@@ -641,6 +649,15 @@ export default function InterviewDetail() {
             const focusDirective: string = (plan as any)?.focusDirective ?? "";
             return (
               <>
+                {evaluationWarning && (
+                  <Card role="alert" className="border-amber-500/40 bg-amber-500/10">
+                    <CardContent className="p-4">
+                      <p className="font-semibold text-foreground">Human evaluation review required</p>
+                      <p className="mt-1 text-sm text-foreground/90">{evaluationWarning}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">The saved assessment is unchanged. Job-fit scores are separate signals, not substitutes for the interview score.</p>
+                    </CardContent>
+                  </Card>
+                )}
                 {focusDirective.trim() && (
                   <Card className="border-primary/20 bg-primary/5">
                     <CardContent className="p-4 flex items-start gap-3">
@@ -892,6 +909,7 @@ export default function InterviewDetail() {
         </TabsContent>
 
         <TabsContent value="recording" className="space-y-4">
+          <InterviewSavedRecordings interviewId={interviewId} />
           {interview.recordingUrl && !videoError ? (
             <>
               <div className="flex items-center gap-2 p-3 bg-cyan-500/5 border border-cyan-500/20 rounded-xl">
@@ -925,15 +943,33 @@ export default function InterviewDetail() {
                 </CardContent>
               </Card>
               <div className="flex items-center justify-end gap-3">
-                <a
-                  href={videoBlobUrl ?? undefined}
-                  download={`interview-${interviewId}.webm`}
-                  aria-disabled={!videoBlobUrl}
+                <Button
+                  variant="outline"
+                  className="gap-2 text-sm"
+                  disabled={recordingDownloading}
+                  onClick={async () => {
+                    if (!interview.recordingUrl || recordingDownloading) return;
+                    setRecordingDownloading(true);
+                    try {
+                      await downloadRecording(
+                        `${BASE}/api/storage${interview.recordingUrl}`,
+                        interviewId,
+                        authHeaders(),
+                      );
+                    } catch {
+                      toast({
+                        title: "Could not download recording",
+                        description: "Please try again. If this continues, reload the page.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setRecordingDownloading(false);
+                    }
+                  }}
                 >
-                  <Button variant="outline" className="gap-2 text-sm" disabled={!videoBlobUrl}>
-                    <Download className="w-4 h-4" /> Download Recording
-                  </Button>
-                </a>
+                  {recordingDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {recordingDownloading ? "Downloading…" : "Download Recording"}
+                </Button>
               </div>
             </>
           ) : (

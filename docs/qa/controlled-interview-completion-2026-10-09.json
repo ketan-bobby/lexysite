@@ -1,0 +1,73 @@
+{
+  "sessionId": "5779a280-aa9e-4b94-a39c-5cc6c8f4c18d",
+  "status": "completed",
+  "completedAt": "2026-10-09T16:08:37.340Z",
+  "answerCount": 5,
+  "perAnswerScores": [30, 15, 65, 55, 65],
+  "recordingAttached": true,
+  "assessment": {
+    "id": "13ef93e0-fc84-4a75-bd61-da48135cadf9",
+    "overallScore": 46,
+    "recommendation": "yes"
+  },
+  "assessmentNeedsHumanReview": true,
+  "reviewConcern": "46/100 overall score accompanies a yes recommendation; preserve the saved assessment and obtain human judgment, not automatic hiring clearance.",
+  "chronologyRepaired": true,
+  "originalSentAt": "2026-10-09T15:29:10.872Z",
+  "interestedReplyAt": "2026-10-09T15:31:10.004Z",
+  "interviewEvidence": {
+    "id": "fe130b0104f2fee94e31cd233b41a83dbb4646ba4e21159e2c4b2e273642cadc",
+    "stepKey": "ai_interview",
+    "sourceType": "interview_assessment",
+    "sourceId": "13ef93e0-fc84-4a75-bd61-da48135cadf9",
+    "occurredAt": "2026-10-09T16:08:37.340Z",
+    "scope": "job",
+    "summary": "Job interview completed and assessed · score 46/100 · recommendation yes. Human review required.",
+    "attentionRequired": false,
+    "readyForReview": true,
+    "reason": null
+  },
+  "workflowSteps": [
+    {
+      "key": "screening",
+      "status": "completed"
+    },
+    {
+      "key": "verification",
+      "status": "completed"
+    },
+    {
+      "key": "engagement",
+      "status": "completed"
+    },
+    {
+      "key": "ai_interview",
+      "status": "pending"
+    },
+    {
+      "key": "evaluation_review",
+      "status": "pending"
+    },
+    {
+      "key": "hiring_decision",
+      "status": "pending"
+    }
+  ],
+  "noRepeatedAssessmentOrEmail": true,
+  "chronologyRepairAudited": true,
+  "stage5Review": {
+    "ownerAuthorized": true,
+    "interviewCompletionReviewRecorded": true,
+    "evaluationReviewRecorded": true,
+    "currentStep": "evaluation_review",
+    "evaluationStatus": "review_required",
+    "hiringDecisionStatus": "pending",
+    "assessmentApproved": false,
+    "findings": [
+      "Saved overall score 46/100 accompanies a yes recommendation; explicit human adjudication remains outstanding.",
+      "An audio clarification was counted among five graded turns and scored 15/100; substantive-question accounting needs review."
+    ],
+    "originalAssessmentPreserved": true,
+    "noProviderRequestOrEmailRepeated": true
+  }
+}

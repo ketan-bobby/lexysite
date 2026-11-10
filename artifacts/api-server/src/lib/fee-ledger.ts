@@ -19,6 +19,7 @@ import { db, feeLineItemsTable, tenantsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getCountryPrice, type PlanCode } from "./plans";
 import { logger } from "./logger";
+import { activePilot } from "./pilot-codes";
 
 const FEE_CHANNELS = new Set(["ai_sourcing", "linx"]);
 
@@ -49,6 +50,8 @@ export async function createFeeLineItemIfEligible(app: {
     const evidence = app.originEvidence as Record<string, unknown>;
     const channel = String((evidence as any).channel ?? "");
     if (!app.tenantId || !app.jobId) return null;
+    // Keep the hire/outcome records, but never accrue a new Lexy fee in a pilot.
+    if (await activePilot(app.tenantId)) return null;
 
     // Resolve the tenant's plan + country → per-hire fee at accept time.
     const [tenant] = await db

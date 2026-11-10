@@ -6,8 +6,7 @@
  *   1. A candidate editing their OWN current company/title fires the same
  *      congratulate/re-engage flow the LinkedIn monitor used: canonical
  *      candidates row synced + a follow_up communication_events row written
- *      (the observable proof the email path completed — sendEmail runs in
- *      simulated mode here because AWS creds are removed in-test).
+ *      (transport acceptance is mocked; no real email or secret changes).
  *   2. QUIET GATES: doNotContact and discoveryPaused suppress the email
  *      (no communication_events row) but NEVER block the profile sync itself.
  *      A paused candidate updating their profile must not get surprise mail.
@@ -25,18 +24,15 @@ import {
   communicationEventsTable,
   tenantsTable,
 } from "@workspace/db";
-import { processSelfReportedJobChange, isSameValueFuzzy } from "./self-report-reengagement.js";
+import { processSelfReportedJobChange as processChange, isSameValueFuzzy, type SelfReportChangeInput } from "./self-report-reengagement.js";
+import {createCadencedCommunicationSender,cadencedCommunicationStore} from "./cadenced-communication";
 
-/* Force the simulated-send branch of email.ts: it reads AWS creds LIVE from
- * process.env, so removing them here guarantees no real SES traffic. */
-const SAVED_ENV: Record<string, string | undefined> = {};
-for (const k of ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "SES_FROM_EMAIL"]) {
-  SAVED_ENV[k] = process.env[k];
-  delete process.env[k];
-}
-process.on("exit", () => {
-  for (const [k, v] of Object.entries(SAVED_ENV)) if (v !== undefined) process.env[k] = v;
-});
+const mockedSend=createCadencedCommunicationSender({...cadencedCommunicationStore,
+  send:async input=>{
+    assert.equal(input.singleAttempt,true);
+    return {ok:true,acceptance:"accepted",delivery:"unverified"};
+  }});
+const processSelfReportedJobChange=(input:SelfReportChangeInput)=>processChange(input,mockedSend);
 
 const uid = () => crypto.randomUUID();
 
@@ -79,8 +75,12 @@ async function candidateRow(candidateId: string) {
 }
 
 async function cleanup(candidateId: string) {
+  const [candidate]=await db.select({tenantId:candidatesTable.tenantId}).from(candidatesTable)
+    .where(eq(candidatesTable.id,candidateId));
   await db.delete(communicationEventsTable).where(eq(communicationEventsTable.candidateId, candidateId));
   await db.delete(candidatesTable).where(eq(candidatesTable.id, candidateId));
+  if(candidate?.tenantId?.startsWith("t_selfreport_"))
+    await db.delete(tenantsTable).where(eq(tenantsTable.id,candidate.tenantId));
 }
 
 /* ── 1. Happy path: self-reported change fires the congratulate flow ────── */

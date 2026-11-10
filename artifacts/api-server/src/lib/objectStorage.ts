@@ -38,10 +38,12 @@ import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
   ListObjectsV2Command,
+  type ListObjectsV2CommandOutput,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "stream";
 import { randomUUID } from "crypto";
+import { createReadStream } from "node:fs";
 import { s3Client } from "./s3";
 import {
   ObjectAclPolicy,
@@ -49,6 +51,7 @@ import {
   canAccessObject,
   getObjectAclPolicy,
   setObjectAclPolicy,
+  objectAclPolicyTags,
 } from "./objectAcl";
 
 export { s3Client };
@@ -132,7 +135,7 @@ export class ObjectStorageService {
 
   async getRecordingUploadURL(
     candidateId: string,
-    filename: string
+    filename: string,
   ): Promise<{ uploadUrl: string; objectPath: string }> {
     const bucket = this.getBucket();
     const objectId = randomUUID();
@@ -142,7 +145,7 @@ export class ObjectStorageService {
     const uploadUrl = await getSignedUrl(
       s3Client,
       new PutObjectCommand({ Bucket: bucket, Key: key, ServerSideEncryption: "AES256" }),
-      { expiresIn: 1800 }
+      { expiresIn: 1800 },
     );
 
     return { uploadUrl, objectPath: `/objects/${key}` };
@@ -150,15 +153,26 @@ export class ObjectStorageService {
 
   /* ── Presigned upload URL for generic entities ──────────────────────────── */
 
-  async getObjectEntityUploadURL(): Promise<string> {
+  async getObjectEntityUploadURL(folder = "uploads", aclPolicy?: ObjectAclPolicy): Promise<string> {
     const bucket = this.getBucket();
     const objectId = randomUUID();
-    const key = `${this.getPrivatePrefix()}/uploads/${objectId}`;
+    const key = `${this.getPrivatePrefix()}/${folder}/${objectId}`;
 
     return getSignedUrl(
       s3Client,
-      new PutObjectCommand({ Bucket: bucket, Key: key, ServerSideEncryption: "AES256" }),
-      { expiresIn: 900 }
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ServerSideEncryption: "AES256",
+        ...(aclPolicy
+          ? {
+              Tagging: objectAclPolicyTags(aclPolicy)
+                .map((tag) => `${encodeURIComponent(tag.Key)}=${encodeURIComponent(tag.Value)}`)
+                .join("&"),
+            }
+          : {}),
+      }),
+      { expiresIn: 900 },
     );
   }
 
@@ -222,18 +236,29 @@ export class ObjectStorageService {
     let continuationToken: string | undefined = undefined;
     try {
       do {
-        const list = await s3Client.send(new ListObjectsV2Command({
-          Bucket: bucket,
-          Prefix: fullPrefix,
-          ContinuationToken: continuationToken,
-        }));
+        const list: ListObjectsV2CommandOutput = await s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: fullPrefix,
+            ContinuationToken: continuationToken,
+          }),
+        );
         const objects = (list.Contents ?? []).map((o) => ({ Key: o.Key! })).filter((o) => o.Key);
         if (objects.length > 0) {
-          await s3Client.send(new DeleteObjectsCommand({
-            Bucket: bucket,
-            Delete: { Objects: objects, Quiet: true },
-          }));
-          deleted += objects.length;
+          const result = await s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: bucket,
+              Delete: { Objects: objects, Quiet: true },
+            }),
+          );
+          const failures = result.Errors?.length ?? 0;
+          deleted += Math.max(0, objects.length - failures);
+          if (failures > 0) {
+            return { deleted, error: `Failed to delete ${failures} storage object(s)` };
+          }
+        }
+        if (list.IsTruncated && !list.NextContinuationToken) {
+          return { deleted, error: "Storage listing is incomplete" };
         }
         continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined;
       } while (continuationToken);
@@ -245,18 +270,59 @@ export class ObjectStorageService {
 
   /* ── Server-side buffer upload ──────────────────────────────────────────── */
 
-  async uploadBuffer(buffer: Buffer, contentType: string, folder = "uploads"): Promise<string> {
+  async uploadBuffer(
+    buffer: Buffer,
+    contentType: string,
+    folder = "uploads",
+    aclPolicy?: ObjectAclPolicy,
+  ): Promise<string> {
+    return this.uploadPrivateBody(buffer, buffer.length, contentType, folder, aclPolicy);
+  }
+
+  /** Stream a server-owned temporary file without allocating its complete contents. */
+  async uploadFile(
+    path: string,
+    size: number,
+    contentType: string,
+    folder = "uploads",
+    aclPolicy?: ObjectAclPolicy,
+  ): Promise<string> {
+    const body = createReadStream(path);
+    try {
+      return await this.uploadPrivateBody(body, size, contentType, folder, aclPolicy);
+    } finally {
+      body.destroy();
+    }
+  }
+
+  private async uploadPrivateBody(
+    body: Buffer | Readable,
+    size: number,
+    contentType: string,
+    folder: string,
+    aclPolicy?: ObjectAclPolicy,
+  ): Promise<string> {
     const bucket = this.getBucket();
     const objectId = randomUUID();
     const key = `${this.getPrivatePrefix()}/${folder}/${objectId}`;
 
-    await s3Client.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-      ServerSideEncryption: "AES256",
-    }));
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentLength: size,
+        ContentType: contentType,
+        ServerSideEncryption: "AES256",
+        ...(aclPolicy
+          ? {
+              Tagging: objectAclPolicyTags(aclPolicy)
+                .map((tag) => `${encodeURIComponent(tag.Key)}=${encodeURIComponent(tag.Value)}`)
+                .join("&"),
+            }
+          : {}),
+      }),
+    );
 
     return `/objects/${folder}/${objectId}`;
   }
@@ -291,10 +357,7 @@ export class ObjectStorageService {
 
   /* ── ACL helpers ────────────────────────────────────────────────────────── */
 
-  async trySetObjectEntityAclPolicy(
-    rawPath: string,
-    aclPolicy: ObjectAclPolicy
-  ): Promise<string> {
+  async trySetObjectEntityAclPolicy(rawPath: string, aclPolicy: ObjectAclPolicy): Promise<string> {
     const normalizedPath = this.normalizeObjectEntityPath(rawPath);
     if (!normalizedPath.startsWith("/objects/")) return normalizedPath;
 

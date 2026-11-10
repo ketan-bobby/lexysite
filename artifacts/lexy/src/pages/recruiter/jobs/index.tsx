@@ -55,6 +55,10 @@ import { formatDate, cn, pluralize } from "@/lib/utils";
 import { useToast } from "@workspace/react-hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import type { RecruitingMode, InterviewPath } from "@workspace/api-client-react";
+import {
+  RecruitingConfigurationFields, DEFAULT_RECRUITING_MODE, DEFAULT_INTERVIEW_PATH,
+} from "@/components/jobs/RecruitingConfiguration";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -255,7 +259,7 @@ function WOSuccessPanel({ workOrderNumber, title, status, onClose }: { workOrder
         <p className="text-sm text-muted-foreground mt-1">
           {pendingApproval
             ? "Your work order has been submitted for approval. You'll be notified once it's reviewed."
-            : "Your work order has been created and the ICP agent is running."}
+            : "Your work order has been created. Open it to review the candidate profile and recruiting settings."}
         </p>
       </div>
       <div className="bg-muted/40 border border-border rounded-xl px-6 py-4 space-y-1">
@@ -318,6 +322,9 @@ function CreateWorkOrderDialog({ open, onClose }: { open: boolean; onClose: () =
   const [clientId, setClientId]       = useState("");
   const [subClientId, setSubClientId] = useState("");
   const [isConfidential, setIsConfidential] = useState(false);
+  const [internalMobility, setInternalMobility] = useState(false);
+  const [recruitingMode, setRecruitingMode] = useState<RecruitingMode>(DEFAULT_RECRUITING_MODE);
+  const [interviewPath, setInterviewPath] = useState<InterviewPath>(DEFAULT_INTERVIEW_PATH);
 
   /* Assignment — multiple recruiters can be staffed on a work order. The first
      selected becomes the primary/lead; every selected recruiter gets access. */
@@ -384,6 +391,7 @@ function CreateWorkOrderDialog({ open, onClose }: { open: boolean; onClose: () =
      selected client so they can still assign someone. */
   const { user } = useAuth() as any;
   const teamTenantId = user?.role === "platform_admin" ? (clientId || null) : (user?.tenantId || null);
+  const canConfigureRecruiting = ["platform_admin", "tenant_admin", "recruiter_admin", "recruiter", "hiring_manager"].includes(user?.role);
   const { data: rawMembers = [] } = useTenantMembers(teamTenantId);
   const clients: any[] = Array.isArray(rawClients) ? rawClients : [];
   /* Resolve avatars over the full tenant list (same canonical pool JobsList
@@ -459,7 +467,8 @@ function CreateWorkOrderDialog({ open, onClose }: { open: boolean; onClose: () =
 
   const handleClose = () => {
     setStep(1); setJdMode("ai"); setCreatedWO(null);
-    setClientId(""); setSubClientId(""); setIsConfidential(false);
+    setClientId(""); setSubClientId(""); setIsConfidential(false); setInternalMobility(false);
+    setRecruitingMode(DEFAULT_RECRUITING_MODE); setInterviewPath(DEFAULT_INTERVIEW_PATH);
     setAssignedRecruiterIds([]); setAssignedHiringManagerId("");
     setTitle(""); setDepartment(""); setClientWorkOrderNumber(""); setLocationCountry(""); setLocationState(""); setLocationCity(""); setCityQuery(""); setCurrencyMode("USD"); setWorkType("hybrid");
     setEmploymentType("full_time"); setSalaryMin(""); setSalaryMax(""); setSalaryPeriod("annual");
@@ -629,6 +638,8 @@ function CreateWorkOrderDialog({ open, onClose }: { open: boolean; onClose: () =
         jdFileName: uploadFileName || undefined,
         language: interviewLanguage,
         isConfidential,
+        internalMobility,
+        ...(canConfigureRecruiting ? { recruitingMode, interviewPath } : {}),
         assignedRecruiterIds: assignedRecruiterIds.length ? assignedRecruiterIds : undefined,
         assignedHiringManagerId: (assignedHiringManagerId && assignedHiringManagerId !== "none") ? assignedHiringManagerId : undefined,
       } as any,
@@ -1045,6 +1056,33 @@ function CreateWorkOrderDialog({ open, onClose }: { open: boolean; onClose: () =
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="rounded-xl border border-primary/25 bg-primary/[0.04] p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={internalMobility}
+                      onCheckedChange={(checked) => setInternalMobility(Boolean(checked))}
+                      className="mt-0.5"
+                      data-testid="checkbox-internal-mobility"
+                    />
+                    <span className="space-y-1">
+                      <span className="text-sm font-medium block">Internal Mobility</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Search only current employees at this client. External discovery and known
+                        nonemployee talent rediscovery are excluded. Leave unchecked to search
+                        known nonemployee talent in your database and external sources.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="rounded-xl border border-border p-4" data-testid="create-recruiting-settings">
+                  <RecruitingConfigurationFields idPrefix="create-recruiting" mode={recruitingMode} path={interviewPath}
+                    disabled={!canConfigureRecruiting} onMode={setRecruitingMode} onPath={setInterviewPath} />
+                  {!canConfigureRecruiting && <p className="text-xs text-muted-foreground mt-2">
+                    Default settings are shown. Your role cannot change recruiting preferences.
+                  </p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

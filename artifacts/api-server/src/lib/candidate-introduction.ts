@@ -24,17 +24,25 @@ function cleanText(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function toApprovedIntroduction(row: typeof candidateIntroductionsTable.$inferSelect): ApprovedCandidateIntroduction {
+function toApprovedIntroduction(
+  row: typeof candidateIntroductionsTable.$inferSelect,
+): ApprovedCandidateIntroduction {
   const strengths = Array.isArray(row.strengths)
-    ? row.strengths.slice(0, 8).map((strength) => ({
-        title: cleanText((strength as any)?.title, 100),
-        evidence: cleanText((strength as any)?.evidence, 500),
-      })).filter((strength) => strength.title && strength.evidence)
+    ? row.strengths
+        .slice(0, 8)
+        .map((strength) => ({
+          title: cleanText((strength as any)?.title, 100),
+          evidence: cleanText((strength as any)?.evidence, 500),
+        }))
+        .filter((strength) => strength.title && strength.evidence)
     : [];
   const achievements = Array.isArray(row.achievements)
-    ? row.achievements.slice(0, 8).map((achievement) => ({
-        text: cleanText((achievement as any)?.text, 500),
-      })).filter((achievement) => achievement.text)
+    ? row.achievements
+        .slice(0, 8)
+        .map((achievement) => ({
+          text: cleanText((achievement as any)?.text, 500),
+        }))
+        .filter((achievement) => achievement.text)
     : [];
 
   return {
@@ -53,12 +61,15 @@ function toApprovedIntroduction(row: typeof candidateIntroductionsTable.$inferSe
 export async function getApprovedCandidateIntroduction(
   candidateId: string,
 ): Promise<ApprovedCandidateIntroduction | null> {
-  const [row] = await db.select()
+  const [row] = await db
+    .select()
     .from(candidateIntroductionsTable)
-    .where(and(
-      eq(candidateIntroductionsTable.candidateId, candidateId),
-      eq(candidateIntroductionsTable.status, "approved"),
-    ))
+    .where(
+      and(
+        eq(candidateIntroductionsTable.candidateId, candidateId),
+        eq(candidateIntroductionsTable.status, "approved"),
+      ),
+    )
     .limit(1);
   return row ? toApprovedIntroduction(row) : null;
 }
@@ -72,11 +83,14 @@ export async function getApprovedCandidateIntroductions(
 ): Promise<Map<string, ApprovedCandidateIntroduction>> {
   const uniqueIds = [...new Set(candidateIds.filter(Boolean))];
   if (uniqueIds.length === 0) return new Map();
-  const rows = await db.select()
+  const rows = await db
+    .select()
     .from(candidateIntroductionsTable)
-    .where(and(
-      inArray(candidateIntroductionsTable.candidateId, uniqueIds),
-      eq(candidateIntroductionsTable.status, "approved"),
-    ));
+    .where(
+      and(
+        inArray(candidateIntroductionsTable.candidateId, uniqueIds),
+        eq(candidateIntroductionsTable.status, "approved"),
+      ),
+    );
   return new Map(rows.map((row) => [row.candidateId, toApprovedIntroduction(row)]));
 }

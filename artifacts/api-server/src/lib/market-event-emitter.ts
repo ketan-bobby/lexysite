@@ -31,6 +31,7 @@ import {
 import { sendEmail } from "./email";
 import { logger } from "./logger";
 import { getViewerPrivacySeal, countSealedRecruiterViews } from "./viewer-privacy.js";
+import { loadRoleAlertContext } from "./role-alert-policy";
 
 const PORTAL_URL =
   process.env.CANDIDATE_PORTAL_URL ??
@@ -272,13 +273,12 @@ export async function recordRecruiterView(opts: {
 
 /**
  * Brochure promise (slide 7): "On open — Lexy pings you the moment a role
- * you'd match opens at one of your target companies." Called from job-create
- * (jobs.ts) for every candidate whose targetCompanies list contains the
- * tenant that just posted.
+ * you'd match opens at one of your target companies." Called after authorized
+ * publication (jobs.ts), not internal creation or approval.
  *
  * Records a `role_open_at_target` action event (surfaced in the dashboard
- * recent-signals feed) and fires a transactional email — both deduped per
- * (candidate, jobId) for 6 hours so re-saves of the same JD don't spam.
+ * recent-signals feed) once per candidate/job. Email retains its existing
+ * six-hour claim/cooldown; quiet settings do not consume a new claim.
  */
 export async function recordRoleOpenAtTarget(opts: {
   candidateId: string;
@@ -286,32 +286,55 @@ export async function recordRoleOpenAtTarget(opts: {
   companyName: string;
   roleTitle:   string;
 }): Promise<void> {
-  const { candidateId, jobId, companyName, roleTitle } = opts;
-
-  /* Activity-feed insert (cheap dedupe via the 6h cooldown below covers email;
-     the action event is intentionally always inserted so the dashboard feed
-     shows accurate history). */
-  await db.insert(candidateActionEventsTable).values({
-    candidateId,
-    eventType: "role_open_at_target",
-    payload:   { jobId, companyName, roleTitle },
-  } as any);
+  const { candidateId, jobId } = opts;
+  // The optional caller snapshot is not authorization or current job content.
+  // Serialize retries so a published role creates one private feed entry.
+  const context = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`role-open:${candidateId}:${jobId}`}, 0))`);
+    const current = await loadRoleAlertContext(candidateId, jobId, tx);
+    if (!current) return null;
+    const [existing] = await tx.select({ id: candidateActionEventsTable.id })
+      .from(candidateActionEventsTable).where(and(
+        eq(candidateActionEventsTable.candidateId, candidateId),
+        eq(candidateActionEventsTable.eventType, "role_open_at_target"),
+        sql`${candidateActionEventsTable.payload}->>'jobId' = ${jobId}`,
+      )).limit(1);
+    if (!existing) {
+      await tx.insert(candidateActionEventsTable).values({
+        candidateId, eventType: "role_open_at_target",
+        payload: { jobId, companyName: current.companyName, roleTitle: current.roleTitle },
+      });
+    }
+    return current;
+  });
+  // Quiet settings suppress email, not the candidate's own eligible activity.
+  // Do not consume a send claim for an opted-out or missing destination.
+  if (!context?.emailAllowed) return;
 
   const eventKey = `role_open_at_target:${jobId}`;
   if (!(await shouldSend(candidateId, eventKey, COOLDOWN.ROLE_OPEN_AT_TARGET))) return;
 
-  const [cand] = await db
-    .select({ id: candidatesTable.id, firstName: candidatesTable.firstName, email: candidatesTable.email })
-    .from(candidatesTable).where(eq(candidatesTable.id, candidateId)).limit(1);
-  if (!cand?.email) return;
+  // Recheck immediately before transport: cancellation, confidentiality,
+  // subscription withdrawal or a newly committed quiet setting must win.
+  // Keep any acquired claim if suppressed or delivery is uncertain.
+  const current = await loadRoleAlertContext(candidateId, jobId);
+  if (!current?.emailAllowed) return;
+  const { companyName, roleTitle } = current;
 
-  const { subject, html } = roleOpenEmail(cand.firstName ?? "there", companyName, roleTitle, PORTAL_URL);
+  const { subject, html } = roleOpenEmail(current.firstName ?? "there", companyName, roleTitle, PORTAL_URL);
   try {
-    await sendEmail({
-      to: cand.email, subject, html,
+    const result = await sendEmail({
+      to: current.email, subject, html,
       audit: { tenantId: "platform", actorLabel: "Market Event Emitter",
-        subjectType: "candidate", subjectId: cand.id, action: "market_event.role_open_at_target" },
+        subjectType: "candidate", subjectId: candidateId, action: "market_event.role_open_at_target" },
     });
+    if (!result.ok || result.simulated || result.suppressed) {
+      logger.info({
+        candidateId, jobId,
+        outcome: !result.ok ? "failed" : result.simulated ? "simulated" : "suppressed",
+      }, "[market-event] role-open-at-target email not delivered");
+      return;
+    }
     logger.info({ candidateId, jobId, companyName }, "[market-event] role-open-at-target alert sent");
   } catch (err: any) {
     logger.warn({ err: err?.message, candidateId, jobId }, "[market-event] role-open-at-target email failed");

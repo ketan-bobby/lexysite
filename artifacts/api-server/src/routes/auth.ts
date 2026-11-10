@@ -20,7 +20,7 @@
  *   POST /auth/register           Self-registration for new candidates. Hashes password
  *                                 with bcrypt, creates a user row with role="candidate".
  *   GET  /auth/me                 Verify token + return current user profile
- *   POST /auth/logout             No-op (tokens are stateless; client discards token)
+ *   POST /auth/logout             Persistently revoke the selected session and clear its cookie
  *
  * ─── Token format ────────────────────────────────────────────────────────────
  * Tokens are HMAC-SHA256 signed v2 tokens (see lib/auth-token.ts):
@@ -33,11 +33,13 @@
  * the frontend can render the correct client branding without a separate fetch.
  */
 import { Router, type IRouter } from "express";
+import { revokeSession } from "../lib/session-revocations";
+import {logoutAllSessions,LogoutAllError} from "../lib/logout-all-sessions";
 import { controlDb, db } from "@workspace/db";
 import { usersTable, tenantsTable, pendingTrialSignupsTable } from "@workspace/db";
 import { and, eq, isNull, gt, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { LoginBody, CandidateLoginBody } from "@workspace/api-zod";
+import { LoginBody, CandidateLoginBody,LogoutAllSessionsBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 import { issueToken, verifyToken, tokenFromRequest, setSessionTokenCookie, clearSessionTokenCookie, devOnlyTokenBody } from "../lib/auth-token";
 import { rateLimit } from "../middlewares/rateLimit";
@@ -211,14 +213,14 @@ router.post("/auth/complete-trial-signup", trialCompleteLimit, async (req, res) 
       const upd = await tx.execute<{ id: string }>(sql`
         UPDATE users SET password_hash = ${passwordHash}
          WHERE id = ${u.id} AND password_hash = 'demo_hash'
-        RETURNING id
+        RETURNING id, credential_version
       `);
       const updRows = (upd as any).rows ?? upd;
       if (!Array.isArray(updRows) || updRows.length === 0) {
         failureReason = "ALREADY_SET"; throw new Error("password_already_set");
       }
 
-      return { user: u, tenantId };
+      return { user: {...u, credentialVersion:updRows[0].credential_version}, tenantId };
     });
   } catch {
     if (failureReason === "INVALID_OR_EXPIRED") { res.status(401).json({ error: "INVALID_OR_EXPIRED" }); return; }
@@ -242,7 +244,7 @@ router.post("/auth/complete-trial-signup", trialCompleteLimit, async (req, res) 
 
   logger.info({ tenantId, userId: u.id, email: u.email }, "[complete-trial-signup] password set, session issued");
 
-  const trialToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, region: tenant?.region ?? null });
+  const trialToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, credentialVersion:u.credentialVersion, region: tenant?.region ?? null });
   setSessionTokenCookie(res, trialToken, req);
   res.json({
     user: {
@@ -273,6 +275,10 @@ router.post("/auth/login", loginIpLimit, loginEmailLimit, validate({ body: Login
   }
 
   const u = user[0];
+  if (u?.accountErasedAt) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
 
   /* Account lockout check — must run BEFORE bcrypt.compare so we don't waste
    * CPU on a locked account and so an attacker can't use response-timing to
@@ -350,7 +356,7 @@ router.post("/auth/login", loginIpLimit, loginEmailLimit, validate({ body: Login
     ? await db.select({ name: tenantsTable.name, clientType: tenantsTable.clientType, region: tenantsTable.region }).from(tenantsTable).where(eq(tenantsTable.id, u.tenantId)).limit(1)
     : [null];
 
-  const sessionToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, region: tenant?.region ?? null });
+  const sessionToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, credentialVersion:u.credentialVersion, region: tenant?.region ?? null });
 
   /* Cookie-auth migration: ALSO set the token in an httpOnly cookie. The JSON
    * body below is unchanged — every existing consumer keeps working;
@@ -395,6 +401,10 @@ router.post("/auth/candidate-login", loginIpLimit, loginEmailLimit, validate({ b
   }
 
   const u = user[0];
+  if (u?.accountErasedAt) {
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
 
   /* Same lockout check as the staff /auth/login above — locked candidate
    * accounts must be unlocked by an admin before they can sign in. */
@@ -463,7 +473,7 @@ router.post("/auth/candidate-login", loginIpLimit, loginEmailLimit, validate({ b
     ? await db.select({ name: tenantsTable.name, clientType: tenantsTable.clientType, region: tenantsTable.region }).from(tenantsTable).where(eq(tenantsTable.id, u.tenantId)).limit(1)
     : [null];
 
-  const candidateToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, region: tenant?.region ?? null });
+  const candidateToken = issueToken({ userId: u.id, role: u.role, tenantId: u.tenantId, credentialVersion:u.credentialVersion, region: tenant?.region ?? null });
   setSessionTokenCookie(res, candidateToken, req);
   res.json({
     user: {
@@ -491,7 +501,7 @@ router.get("/auth/me", async (req, res) => {
     return;
   }
   const [u] = await controlDb.select().from(usersTable).where(eq(usersTable.id, v.payload.sub)).limit(1);
-  if (!u) {
+  if (!u || u.accountErasedAt) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -503,10 +513,35 @@ router.get("/auth/me", async (req, res) => {
   res.json({ id: u.id, tenantId: u.tenantId, tenantName: tenant?.name ?? null, tenantType: tenant?.clientType ?? null, email: u.email, name: u.name, role: u.role, avatarUrl: u.avatarUrl, createdAt: u.createdAt.toISOString() });
 });
 
-router.post("/auth/logout", (req, res) => {
-  /* Cookie-auth migration: clear the httpOnly session cookie so logout
-   * actually terminates cookie-based sessions (the client can't clear an
-   * httpOnly cookie itself). */
+const logoutAllIpLimit=rateLimit({windowMs:15*60_000,max:20,scope:"logout-all-ip"});
+const logoutAllAccountLimit=rateLimit({
+  windowMs:15*60_000,max:5,scope:"logout-all-account",
+  keyFn:req=>{const v=verifyToken(tokenFromRequest(req));return v.ok?v.payload.sub:(req.ip??"anon");},
+});
+router.post("/auth/logout-all",logoutAllIpLimit,logoutAllAccountLimit,
+  validate({body:LogoutAllSessionsBody}),async(req,res):Promise<void>=>{
+    res.setHeader("Cache-Control","no-store");
+    try{
+      await logoutAllSessions(tokenFromRequest(req),req.body.password,req.body.acknowledge);
+      clearSessionTokenCookie(res,req);
+      res.json({success:true,message:"Signed out all devices. Please sign in again."});
+    }catch(error){
+      if(error instanceof LogoutAllError){
+        res.status(error.status).json({error:error.message,code:error.code});return;
+      }
+      req.log.error("[auth/logout-all] transaction failed");
+      res.status(503).json({error:"All-device sign-out could not be confirmed. Retry or sign in again."});
+    }
+  });
+
+router.post("/auth/logout", async (req, res): Promise<void> => {
+  try {
+    await revokeSession(tokenFromRequest(req));
+  } catch {
+    res.status(503).json({error:"Sign-out could not be confirmed. Please retry."});
+    return;
+  }
+  // Revoke first. A storage failure must not masquerade as successful logout.
   clearSessionTokenCookie(res, req);
   res.json({ success: true, message: "Logged out" });
 });

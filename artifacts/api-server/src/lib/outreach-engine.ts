@@ -52,6 +52,7 @@
  */
 
 import { db } from "@workspace/db";
+import { changeCandidateStage } from "./change-candidate-stage";
 import {
   outreachEnrollmentsTable,
   outreachSequenceStepsTable,
@@ -65,14 +66,16 @@ import {
   recruiterInboxTable,
   jobsTable,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
+import {guardedOutreachMail,isUncertainMailReason} from "./outreach-mail-attempt";
 import OpenAI from "openai";
 import { logger } from "./logger";
 import { sendEmail, plainToHtml } from "./email";
 import { isRealEmail } from "./real-email";
 import { findOutreachViolations, enforceOutreachGuardrails } from "./outreach-guardrails";
 
-const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+import { meteredFetch } from "./vendor-usage";
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL, fetch: meteredFetch(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? "openai_proxy" : "openai_direct") });
 
 /**
  * Strip any AI-generated "button-shaped" content from an outreach body before
@@ -265,6 +268,10 @@ export async function generateMessages(campaignId: string) {
   }
 
   for (const enrollment of ready) {
+    const { hasBoundInvitationWorkflow } = await import("./workflow-contact-gates");
+    if (await hasBoundInvitationWorkflow(campaign.jobId, campaign.tenantId, enrollment.candidateId) ||
+      await hasBoundInvitationWorkflow(enrollment.jobId, enrollment.tenantId, enrollment.candidateId))
+      continue;
     const nextStepNum = enrollment.currentStep + 1;
     const step = steps.find(s => s.stepNumber === nextStepNum);
     if (!step) continue;
@@ -431,6 +438,9 @@ ${relocationGuardrail}
 // PHASE 3: Send all scheduled messages (simulated — no real email provider yet)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function sendScheduledMessages(campaignId: string) {
+  const [campaign] = await db.select().from(outreachCampaignsTable)
+    .where(eq(outreachCampaignsTable.id, campaignId)).limit(1);
+  if (!campaign) return { sent: 0, failed: 0 };
   const pending = await db.select().from(outreachStepMessagesTable)
     .where(and(
       eq(outreachStepMessagesTable.campaignId, campaignId),
@@ -441,13 +451,30 @@ export async function sendScheduledMessages(campaignId: string) {
   const now = new Date();
 
   for (const msg of pending) {
+    if(isUncertainMailReason(msg.failedReason)){results.failed++;continue;}
+    const unclaimed=and(eq(outreachStepMessagesTable.id,msg.id),
+      eq(outreachStepMessagesTable.campaignId,campaignId),
+      eq(outreachStepMessagesTable.status,"scheduled"),
+      msg.failedReason===null?isNull(outreachStepMessagesTable.failedReason):eq(outreachStepMessagesTable.failedReason,msg.failedReason));
     const [enrollment] = await db.select().from(outreachEnrollmentsTable)
       .where(eq(outreachEnrollmentsTable.id, msg.enrollmentId)).limit(1);
 
     if (!enrollment || enrollment.status === "replied" || enrollment.status === "stopped") {
       await db.update(outreachStepMessagesTable)
         .set({ status: "failed", failedReason: "Enrollment stopped" })
-        .where(eq(outreachStepMessagesTable.id, msg.id));
+        .where(unclaimed);
+      continue;
+    }
+
+    // Persisted contact ownership governs this lane, not a job mode label.
+    // Legacy campaign approval cannot authorize another workflow-owned contact.
+    const { hasBoundInvitationWorkflow } = await import("./workflow-contact-gates");
+    if (await hasBoundInvitationWorkflow(campaign.jobId, campaign.tenantId, enrollment.candidateId) ||
+      await hasBoundInvitationWorkflow(enrollment.jobId, enrollment.tenantId, enrollment.candidateId)) {
+      await db.update(outreachStepMessagesTable).set({
+        status: "draft",
+        failedReason: "Held: candidate contact belongs to an approved workflow. Use its separate contact approval; campaign scheduling cannot bypass it.",
+      }).where(unclaimed);
       continue;
     }
 
@@ -459,7 +486,7 @@ export async function sendScheduledMessages(campaignId: string) {
     if (dncCheck?.doNotContact) {
       await db.update(outreachStepMessagesTable)
         .set({ status: "failed", failedReason: "Do Not Contact – candidate opted out" })
-        .where(eq(outreachStepMessagesTable.id, msg.id));
+        .where(unclaimed);
       await db.update(outreachEnrollmentsTable)
         .set({ status: "stopped", updatedAt: now })
         .where(eq(outreachEnrollmentsTable.id, msg.enrollmentId));
@@ -467,7 +494,15 @@ export async function sendScheduledMessages(campaignId: string) {
       continue;
     }
 
-    try {
+    const outcome=await guardedOutreachMail({
+      claim:async marker=>(await db.update(outreachStepMessagesTable).set({failedReason:marker})
+        .where(unclaimed).returning({id:outreachStepMessagesTable.id})).length===1,
+      invoke:async()=>{
+      const subject = msg.subject;
+      if (!subject?.trim() || !msg.toEmail?.trim()) {
+        // This is known pre-transport rejection, not an ambiguous provider call.
+        return {ok:false,acceptance:"not_attempted",error:"Missing recipient or subject"};
+      }
       // Append quick-reply buttons (Interested / Not for this role / Stop
       // emailing me). Same buttons go on every step so the candidate can
       // bail at any time with one click — and DNC is always available.
@@ -483,7 +518,7 @@ export async function sendScheduledMessages(campaignId: string) {
       // ── Send-router: the FIRST outreach step for a candidate owned by a
       // recruiter goes from that recruiter's OWN Outlook mailbox (Graph);
       // automated follow-ups (step > 1) always stay on SES. Owner = the job's
-      // assigned recruiter. Any failure falls back to SES inside sendEmail.
+      // assigned recruiter. Uncertain outcomes never fall through to SES.
       let senderUserId: string | undefined;
       const ownerJobId = (msg as any).jobId as string | undefined;
       if (ownerJobId && msg.stepNumber === 1) {
@@ -501,8 +536,9 @@ export async function sendScheduledMessages(campaignId: string) {
 
       // Real send via Amazon SES (falls back to a logged simulation when SES_FROM_EMAIL is not set)
       const result = await sendEmail({
+        singleAttempt:true,
         to: msg.toEmail,
-        subject: msg.subject,
+        subject,
         html: fullHtml,
         text: fullText,
         senderUserId,
@@ -521,7 +557,7 @@ export async function sendScheduledMessages(campaignId: string) {
           },
         },
       });
-      if (!result.ok) throw new Error(result.error || "Email send failed");
+      if (!result.ok) return result;
 
       // Demo-domain send was hard-refused at the transport — record it as
       // "suppressed" and DO NOT bump sentCount (or count it in results.sent),
@@ -535,7 +571,7 @@ export async function sendScheduledMessages(campaignId: string) {
         await db.update(outreachEnrollmentsTable)
           .set({ currentStep: msg.stepNumber, lastSentAt: now, updatedAt: now })
           .where(eq(outreachEnrollmentsTable.id, msg.enrollmentId));
-        continue;
+        return result;
       }
 
       await db.update(outreachStepMessagesTable)
@@ -556,13 +592,17 @@ export async function sendScheduledMessages(campaignId: string) {
         .set({ sentCount: sql`${outreachCampaignsTable.sentCount} + 1` })
         .where(eq(outreachCampaignsTable.id, campaignId));
 
-      results.sent++;
-    } catch (err: any) {
-      await db.update(outreachStepMessagesTable)
-        .set({ status: "failed", failedReason: err.message })
-        .where(eq(outreachStepMessagesTable.id, msg.id));
-      results.failed++;
-    }
+      return result;
+      },
+      finish:async(result,marker,held)=>(await db.update(outreachStepMessagesTable).set({
+        failedReason:held?marker:result.ok?null:result.error??"Provider rejected the send",
+        ...(!result.ok?{status:"failed"}:{}),
+      }).where(and(eq(outreachStepMessagesTable.id,msg.id),
+        eq(outreachStepMessagesTable.campaignId,campaignId),eq(outreachStepMessagesTable.failedReason,marker)))
+        .returning({id:outreachStepMessagesTable.id})).length===1,
+    });
+    if(outcome.ok){if(!outcome.suppressed)results.sent++;}
+    else results.failed++;
   }
 
   return results;

@@ -18,12 +18,17 @@ export type CandidateIntroductionAchievement = {
 };
 
 export const candidateIntroductionsTable = pgTable("candidate_introductions", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   candidateId: text("candidate_id").notNull().unique(),
   tenantId: text("tenant_id").notNull(),
   summary: text("summary").notNull().default(""),
   strengths: jsonb("strengths").$type<CandidateIntroductionStrength[]>().notNull().default([]),
-  achievements: jsonb("achievements").$type<CandidateIntroductionAchievement[]>().notNull().default([]),
+  achievements: jsonb("achievements")
+    .$type<CandidateIntroductionAchievement[]>()
+    .notNull()
+    .default([]),
   careerDirection: text("career_direction"),
   rolePreferences: text("role_preferences"),
   availability: text("availability"),

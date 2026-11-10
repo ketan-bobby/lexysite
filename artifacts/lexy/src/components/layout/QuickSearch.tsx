@@ -1,19 +1,21 @@
 /**
- * QuickSearch.tsx — the header ⌘K command palette (staff only).
+ * QuickSearch.tsx — ⌘K command palette for the staff layout.
  *
- * Opens from the header button or ⌘K / Ctrl+K anywhere. Searches:
- *   • Candidates — server-side via GET /candidates?search= (the endpoint
- *     already enforces tenant scoping, the recruiter ownership ceiling and
- *     the privacy/pool seals — we never add a new search surface here).
- *   • Work orders — GET /jobs (same tenant/role scoping), filtered
- *     client-side on title / WO number (the endpoint has no search param).
- *   • App pages — a static, role-filtered jump list.
- * Selecting a result navigates. Renders nothing for candidate users.
+ * Opens from the header "Quick search…" button or the ⌘K / Ctrl+K shortcut.
+ * Searches, tenant/role-scoped via the EXISTING list endpoints (no new
+ * search routes — GET /candidates?search= and GET /jobs both enforce the
+ * caller's recruiter-ownership / tenant-subtree scoping server-side):
+ *   • Candidates — server-side ?search= filter (name/email/title/company)
+ *   • Work Orders — client-side filter over the caller's scoped jobs list
+ *   • Pages — static filter over the caller's own nav items
+ * Selecting an item navigates. Staff-only: AppLayout only mounts this in the
+ * staff (sidebar) layout, never in the candidate portal.
  */
+
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { authHeaders } from "@/lib/api";
+import { Briefcase, Users, ArrowRight, Loader2 } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -21,223 +23,203 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
-import { Search, User, Briefcase, LayoutDashboard, Loader2 } from "lucide-react";
+import { authHeaders } from "@/lib/api";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-type CandidateHit = {
-  id: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  currentTitle?: string | null;
-  currentCompany?: string | null;
-};
-
-type JobHit = {
-  id: string;
-  title?: string | null;
-  workOrderNumber?: string | null;
-  status?: string | null;
-};
-
-const PAGES: Array<{ label: string; path: string; roles?: string[] }> = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Work Orders", path: "/jobs" },
-  { label: "Candidates", path: "/candidates" },
-  { label: "Decision Queue", path: "/decision-queue" },
-  { label: "Interviews", path: "/interviews" },
-  { label: "Outreach", path: "/outreach" },
-  { label: "Analytics", path: "/analytics" },
-  {
-    label: "Fairness Dashboard",
-    path: "/admin/fairness",
-    roles: ["platform_admin", "tenant_admin"],
-  },
-  {
-    label: "Network Prior",
-    path: "/admin/network-prior",
-    roles: ["platform_admin", "tenant_admin"],
-  },
-];
-
-function useDebounced(value: string, ms: number): string {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return v;
+async function qsFetch<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}/api${path}`, {
+    credentials: "include",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
 }
 
-export function QuickSearch({ role }: { role: string }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const debounced = useDebounced(query.trim(), 300);
-  const [, navigate] = useLocation();
-
-  /* Global ⌘K / Ctrl+K shortcut */
+/** Small debounce hook — avoids hammering /candidates on every keystroke. */
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+export interface QuickSearchPage {
+  title: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+export function QuickSearch({
+  open,
+  onOpenChange,
+  pages,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  pages: QuickSearchPage[];
+}) {
+  const [, navigate] = useLocation();
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query.trim(), 250);
+  const hasQuery = debouncedQuery.length >= 2;
+
+  /* Global ⌘K / Ctrl+K shortcut. */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((o) => !o);
+        onOpenChange(!open);
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onOpenChange]);
 
-  /* Candidates — server-side scoped search, only once 2+ chars typed */
-  const { data: candData, isFetching: candLoading } = useQuery<{ candidates: CandidateHit[] }>({
-    queryKey: ["quick-search", "candidates", debounced],
-    enabled: open && debounced.length >= 2,
+  /* Reset the query whenever the palette closes. */
+  useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
+
+  /* Candidates — server-side search, already tenant/role scoped. */
+  const { data: candidateData, isFetching: candidatesLoading } = useQuery<any>({
+    queryKey: ["quick-search-candidates", debouncedQuery],
+    queryFn: () => qsFetch(`/candidates?search=${encodeURIComponent(debouncedQuery)}&limit=8`),
+    enabled: open && hasQuery,
     staleTime: 30_000,
-    queryFn: async () => {
-      const res = await fetch(
-        `${API_BASE}/api/candidates?search=${encodeURIComponent(debounced)}&limit=8`,
-        { credentials: "include", headers: { ...authHeaders() } },
-      );
-      if (!res.ok) throw new Error("Search failed");
-      return res.json();
-    },
+    retry: false,
   });
+  const candidates: any[] = (candidateData?.candidates ?? []).slice(0, 8);
 
-  /* Work orders — fetch once per open, filter client-side */
-  const { data: jobsData } = useQuery<{ jobs: JobHit[] }>({
-    queryKey: ["quick-search", "jobs"],
+  /* Work orders — fetch the caller's scoped list once while open, filter here. */
+  const { data: jobsData, isFetching: jobsLoading } = useQuery<any>({
+    queryKey: ["quick-search-jobs"],
+    queryFn: () => qsFetch("/jobs"),
     enabled: open,
     staleTime: 60_000,
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/jobs`, {
-        credentials: "include",
-        headers: { ...authHeaders() },
-      });
-      if (!res.ok) throw new Error("Search failed");
-      return res.json();
-    },
+    retry: false,
   });
-
-  const candidates = (candData?.candidates ?? []).slice(0, 8);
-  const jobs = useMemo(() => {
-    const all = jobsData?.jobs ?? [];
-    if (debounced.length < 2) return all.slice(0, 5);
-    const q = debounced.toLowerCase();
-    return all
-      .filter(
-        (j) =>
-          (j.title ?? "").toLowerCase().includes(q) ||
-          (j.workOrderNumber ?? "").toLowerCase().includes(q),
+  const jobs: any[] = useMemo(() => {
+    if (!hasQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return (jobsData?.jobs ?? [])
+      .filter((j: any) =>
+        `${j.title ?? ""} ${j.workOrderNumber ?? ""} ${j.clientWorkOrderNumber ?? ""} ${j.department ?? ""} ${j.location ?? ""}`
+          .toLowerCase()
+          .includes(q),
       )
       .slice(0, 8);
-  }, [jobsData, debounced]);
+  }, [jobsData, debouncedQuery, hasQuery]);
 
-  const pages = useMemo(() => {
-    const allowed = PAGES.filter((p) => !p.roles || p.roles.includes(role));
-    if (debounced.length < 2) return allowed;
-    const q = debounced.toLowerCase();
-    return allowed.filter((p) => p.label.toLowerCase().includes(q));
-  }, [role, debounced]);
+  /* Pages — the caller's own nav (already role-appropriate). */
+  const filteredPages = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return pages.slice(0, 6);
+    return pages.filter((p) => p.title.toLowerCase().includes(q)).slice(0, 8);
+  }, [pages, query]);
 
-  const go = (path: string) => {
-    setOpen(false);
-    setQuery("");
-    navigate(path);
+  const loading = (candidatesLoading || jobsLoading) && hasQuery;
+  const nothingFound =
+    !loading && candidates.length === 0 && jobs.length === 0 && filteredPages.length === 0;
+
+  const go = (href: string) => {
+    onOpenChange(false);
+    navigate(href);
   };
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Quick search"
-        className="hidden md:flex items-center gap-2 h-9 px-4 rounded-xl bg-foreground/5 border border-foreground/8 text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/8 transition-all"
-      >
-        <Search className="w-3.5 h-3.5" />
-        <span>Quick search…</span>
-        <kbd className="ml-2 bg-foreground/10 px-1.5 rounded text-[10px] font-sans text-faint dark:text-inherit">
-          ⌘K
-        </kbd>
-      </button>
+    <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
+      <CommandInput
+        placeholder="Search candidates, work orders, pages…"
+        value={query}
+        onValueChange={setQuery}
+      />
+      <CommandList>
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" /> Searching…
+          </div>
+        )}
 
-      {/* shouldFilter={false}: the server already filtered candidates (incl. on
-          email, which isn't in the visible value string) and jobs/pages are
-          filtered explicitly below — cmdk's second fuzzy pass would silently
-          hide legitimate matches. */}
-      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
-        <CommandInput
-          placeholder="Search candidates, work orders, pages…"
-          value={query}
-          onValueChange={setQuery}
-        />
-        <CommandList>
+        {nothingFound && (
           <CommandEmpty>
-            {candLoading ? (
-              <span className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Searching…
-              </span>
-            ) : debounced.length < 2 ? (
-              "Type at least 2 characters to search candidates and work orders."
-            ) : (
-              "No results found."
-            )}
+            {hasQuery
+              ? "No matches. Search candidates by name, email, title or company; work orders by title or WO number."
+              : "Type at least 2 characters to search candidates and work orders, or jump to a page."}
           </CommandEmpty>
+        )}
 
-          {candidates.length > 0 && (
-            <CommandGroup heading="Candidates">
-              {candidates.map((c) => {
-                const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || "Unnamed";
-                const sub = [c.currentTitle, c.currentCompany].filter(Boolean).join(" · ");
-                return (
-                  <CommandItem
-                    key={`cand-${c.id}`}
-                    value={`candidate ${name} ${sub} ${c.id}`}
-                    onSelect={() => go(`/candidates/${c.id}`)}
-                  >
-                    <User className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span className="truncate">{name}</span>
-                    {sub && (
-                      <span className="ml-2 text-xs text-muted-foreground truncate">{sub}</span>
-                    )}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          )}
+        {candidates.length > 0 && (
+          <CommandGroup heading="Candidates">
+            {candidates.map((c) => (
+              <CommandItem
+                key={`cand-${c.id}`}
+                value={`cand-${c.id}`}
+                onSelect={() => go(`/candidates/${c.id}`)}
+                className="cursor-pointer"
+              >
+                <Users className="text-primary" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">
+                    {c.firstName} {c.lastName}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {[c.currentTitle, c.currentCompany].filter(Boolean).join(" · ") || c.email}
+                  </div>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
 
-          {jobs.length > 0 && (
+        {jobs.length > 0 && (
+          <>
+            {candidates.length > 0 && <CommandSeparator />}
             <CommandGroup heading="Work Orders">
               {jobs.map((j) => (
                 <CommandItem
                   key={`job-${j.id}`}
-                  value={`job ${j.title ?? ""} ${j.workOrderNumber ?? ""} ${j.id}`}
+                  value={`job-${j.id}`}
                   onSelect={() => go(`/jobs/${j.id}`)}
+                  className="cursor-pointer"
                 >
-                  <Briefcase className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="truncate">{j.title ?? "Untitled"}</span>
-                  {j.workOrderNumber && (
-                    <span className="ml-2 text-xs text-muted-foreground font-mono">
-                      {j.workOrderNumber}
-                    </span>
-                  )}
+                  <Briefcase className="text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{j.title}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {[j.workOrderNumber, j.location, j.status].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>
-          )}
+          </>
+        )}
 
-          <CommandGroup heading="Pages">
-            {pages.map((p) => (
-              <CommandItem
-                key={`page-${p.path}`}
-                value={`page ${p.label}`}
-                onSelect={() => go(p.path)}
-              >
-                <LayoutDashboard className="w-4 h-4 mr-2 text-muted-foreground" />
-                {p.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-    </>
+        {filteredPages.length > 0 && (
+          <>
+            {(candidates.length > 0 || jobs.length > 0) && <CommandSeparator />}
+            <CommandGroup heading="Pages">
+              {filteredPages.map((p) => (
+                <CommandItem
+                  key={`page-${p.href}`}
+                  value={`page-${p.href}`}
+                  onSelect={() => go(p.href)}
+                  className="cursor-pointer"
+                >
+                  <p.icon className="text-muted-foreground" />
+                  <span className="flex-1">{p.title}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+      </CommandList>
+    </CommandDialog>
   );
 }

@@ -190,7 +190,7 @@ const INVITE_ROLES_BY_CALLER: Record<string, readonly string[]> = {
 };
 
 /* ── POST /api/staff-invites ── generate invite link ─────────────────────── */
-router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolveUser, requireRole("platform_admin", "tenant_admin", "recruiter_admin"), async (req, res) => {
+router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolveUser, requireRole("platform_admin", "tenant_admin", "recruiter_admin"), async (req, res): Promise<void> => {
   try {
     const caller = req.resolvedUser!;
     const { email, name, role, tenantId } = req.body as {
@@ -198,14 +198,14 @@ router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolve
     };
 
     if (!email || !name || !role) {
-      return res.status(400).json({ error: "email, name, and role are required" });
+      res.status(400).json({ error: "email, name, and role are required" }); return;
     }
     if (!STAFF_ROLES.includes(role as any)) {
-      return res.status(400).json({ error: `role must be one of: ${STAFF_ROLES.join(", ")}` });
+      res.status(400).json({ error: `role must be one of: ${STAFF_ROLES.join(", ")}` }); return;
     }
     const invitableRoles = INVITE_ROLES_BY_CALLER[caller.role] || [];
     if (!invitableRoles.includes(role)) {
-      return res.status(403).json({ error: `Role '${role}' is not permitted for caller role '${caller.role}'` });
+      res.status(403).json({ error: `Role '${role}' is not permitted for caller role '${caller.role}'` }); return;
     }
 
     let targetTenantId: string | null;
@@ -220,13 +220,13 @@ router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolve
       targetTenantId = tenantId || caller.tenantId;
       if (tenantId && tenantId !== caller.tenantId) {
         if (!caller.tenantId || !(await isInSubtree(caller.tenantId, tenantId))) {
-          return res.status(403).json({ error: "Cannot invite into a tenant outside your subtree" });
+          res.status(403).json({ error: "Cannot invite into a tenant outside your subtree" }); return;
         }
       }
     }
 
     if (!targetTenantId) {
-      return res.status(400).json({ error: "tenantId required" });
+      res.status(400).json({ error: "tenantId required" }); return;
     }
 
     // Check if email already registered
@@ -236,7 +236,7 @@ router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolve
       .where(eq(usersTable.email, email))
       .limit(1);
     if (existing) {
-      return res.status(409).json({ error: "A user with this email already exists" });
+      res.status(409).json({ error: "A user with this email already exists" }); return;
     }
 
     // Plan-limit gate: seat cap (active users + pending invites) on the root
@@ -245,7 +245,7 @@ router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolve
     // PLAN_LIMIT_EXCEEDED payload — same shape as the jobs / interviews gates.
     const seatCheck = await checkSeatInviteAllowed(targetTenantId);
     if (!seatCheck.allowed) {
-      return res.status(402).json(buildLimitExceededBody(seatCheck));
+      res.status(402).json(buildLimitExceededBody(seatCheck)); return;
     }
 
     const token = crypto.randomUUID();
@@ -344,7 +344,7 @@ router.post("/staff-invites", validate({ body: CreateStaffInviteBody }), resolve
 });
 
 /* ── GET /api/staff-invites/:token ── validate ────────────────────────────── */
-router.get("/staff-invites/:token", async (req, res) => {
+router.get("/staff-invites/:token", async (req, res): Promise<void> => {
   try {
     const [row] = await db
       .select()
@@ -352,9 +352,9 @@ router.get("/staff-invites/:token", async (req, res) => {
       .where(eq(staffInviteTokensTable.token, req.params.token))
       .limit(1);
 
-    if (!row) return res.status(404).json({ valid: false, error: "Invite link not found" });
-    if (row.usedAt) return res.status(410).json({ valid: false, error: "This invite link has already been used" });
-    if (new Date() > row.expiresAt) return res.status(410).json({ valid: false, error: "This invite link has expired" });
+    if (!row) { res.status(404).json({ valid: false, error: "Invite link not found" }); return; }
+    if (row.usedAt) { res.status(410).json({ valid: false, error: "This invite link has already been used" }); return; }
+    if (new Date() > row.expiresAt) { res.status(410).json({ valid: false, error: "This invite link has expired" }); return; }
 
     res.json({
       valid: true,
@@ -370,12 +370,12 @@ router.get("/staff-invites/:token", async (req, res) => {
 });
 
 /* ── POST /api/staff-invites/:token/accept ── accept + create user ─────── */
-router.post("/staff-invites/:token/accept", validate({ body: AcceptStaffInviteBody }), async (req, res) => {
+router.post("/staff-invites/:token/accept", validate({ body: AcceptStaffInviteBody }), async (req, res): Promise<void> => {
   try {
     const { password } = req.body as { password?: string };
     const policy = validatePasswordStrength(password);
     if (!policy.ok) {
-      return res.status(400).json({ error: policy.code, message: policy.message });
+      res.status(400).json({ error: policy.code, message: policy.message }); return;
     }
 
     const [row] = await db
@@ -384,12 +384,13 @@ router.post("/staff-invites/:token/accept", validate({ body: AcceptStaffInviteBo
       .where(eq(staffInviteTokensTable.token, req.params.token))
       .limit(1);
 
-    if (!row) return res.status(404).json({ error: "Invite link not found" });
-    if (row.usedAt) return res.status(410).json({ error: "This invite link has already been used" });
-    if (new Date() > row.expiresAt) return res.status(410).json({ error: "This invite link has expired" });
+    if (!row) { res.status(404).json({ error: "Invite link not found" }); return; }
+    if (row.usedAt) { res.status(410).json({ error: "This invite link has already been used" }); return; }
+    if (new Date() > row.expiresAt) { res.status(410).json({ error: "This invite link has expired" }); return; }
 
     // Create the user with a real bcrypt hash
-    const passwordHash = await bcrypt.hash(password, 12);
+    // validatePasswordStrength above rejects missing/non-string passwords.
+    const passwordHash = await bcrypt.hash(password!, 12);
     const [user] = await db
       .insert(usersTable)
       .values({
@@ -409,7 +410,7 @@ router.post("/staff-invites/:token/accept", validate({ body: AcceptStaffInviteBo
 
     logger.info({ userId: user.id, email: user.email, role: user.role }, "Staff invite accepted");
 
-    const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, region: await getTenantRegion(user.tenantId) });
+    const acceptToken = issueToken({ userId: user.id, role: user.role, tenantId: user.tenantId, credentialVersion:user.credentialVersion, region: await getTenantRegion(user.tenantId) });
     setSessionTokenCookie(res, acceptToken, req);
     res.json({
       user: {

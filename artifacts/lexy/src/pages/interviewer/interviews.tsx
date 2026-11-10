@@ -13,21 +13,18 @@
  *
  * ─── Feedback form ───────────────────────────────────────────────────────────
  * Per-candidate structured scoring dialog:
- *   technical_score    — 1–5 rating
- *   communication      — 1–5 rating
- *   culture_fit        — 1–5 rating
- *   recommendation     — "advance" | "hold" | "reject"
+ *   overall rating    — 1–5 rating
  *   notes              — free-text interview notes
- * Saved via POST /api/interviews/:id/interviewer-feedback.
+ * Saved via POST /api/interviews/:scheduleId/feedback with a content revision.
  *
  * ─── Data sources ────────────────────────────────────────────────────────────
- *   GET /api/interviews?interviewerId=<userId>
- *   POST /api/interviews/:id/interviewer-feedback
+ *   GET /api/coordinator/schedules — native scheduled interviews, staff scoped
+ *   POST /api/interviews/:scheduleId/feedback — authorized human feedback
  *
  * ─── Route ───────────────────────────────────────────────────────────────────
  *   /interviewer/interviews  (default route for interviewer role)
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +37,7 @@ import { apiFetch, apiBase } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { format, parseISO, isPast } from "date-fns";
 import { useToast } from "@workspace/react-hooks/use-toast";
+import { readAssignedSchedules, readUpdatedSchedule, requireScheduleVersion } from "@/lib/schedule-edit";
 
 const typeColors: Record<string, string> = {
   technical:  "bg-blue-500/10 text-blue-400 border-blue-500/25",
@@ -62,19 +60,43 @@ export default function InterviewerInterviews() {
   const [feedbackModal, setFeedbackModal] = useState<any | null>(null);
   const [feedback, setFeedback]     = useState<FeedbackData>({ rating: 0, notes: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [conflict, setConflict] = useState(false);
+  const [latest, setLatest] = useState<any | null>(null);
+  const [readingLatest, setReadingLatest] = useState(false);
+  const completedWrites = useRef(0);
 
   useEffect(() => {
-    apiFetch(`${apiBase}/interviews`)
-      .then((d: any) => {
-        const all = Array.isArray(d) ? d : d.interviews ?? [];
-        // Filter to only interviews assigned to this interviewer
-        const mine = all.filter((iv: any) =>
-          iv.interviewerId === user?.id || iv.interviewerName === user?.name
-        );
-        setInterviews(mine);
-      })
-      .finally(() => setLoading(false));
-  }, [user?.id]);
+    let stopped = false;
+    let running = false;
+    setInterviews([]);
+    setFeedbackModal(null);
+    setFeedback({ rating: 0, notes: "" });
+    setConflict(false);
+    setLatest(null);
+    setLoadError("");
+    setLoading(true);
+    if (!user?.id) { setLoading(false); return; }
+    const userId = user.id;
+    async function load() {
+      if (running) return;
+      running = true;
+      const atStart = completedWrites.current;
+      try {
+        const rows = await readAssignedSchedules(await apiFetch(`${apiBase}/coordinator/schedules`), userId);
+        if (!stopped && atStart === completedWrites.current) { setInterviews(rows); setLoadError(""); }
+      } catch (error) {
+        if (!stopped && atStart === completedWrites.current) setLoadError(error instanceof Error ? error.message : "Unable to load the interview queue.");
+      } finally {
+        running = false;
+        if (!stopped) setLoading(false);
+      }
+    }
+    void load();
+    const timer = window.setInterval(() => void load(), 60_000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [user?.id, reloadKey]);
 
   const sorted = [...interviews].sort((a, b) =>
     new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime()
@@ -84,36 +106,56 @@ export default function InterviewerInterviews() {
   const list     = tab === "upcoming" ? upcoming : past;
 
   async function submitFeedback() {
-    if (!feedbackModal) return;
+    if (!feedbackModal || submitting || conflict) return;
     if (feedback.rating === 0) {
       toast({ title: "Please select a rating", variant: "destructive" });
       return;
     }
     setSubmitting(true);
     try {
-      await apiFetch(`${apiBase}/interviews/${feedbackModal.id}/feedback`, {
+      const saved = await readUpdatedSchedule(await apiFetch(`${apiBase}/interviews/${feedbackModal.id}/feedback`, {
         method: "POST",
         // Explicit Content-Type: without it the browser sends text/plain and
         // express.json() leaves req.body empty → validation rejects.
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(feedback),
-      });
+        body: JSON.stringify({ ...feedback, expectedVersion: requireScheduleVersion(feedbackModal) }),
+      }), feedbackModal.id);
+      completedWrites.current++;
       toast({ title: "Feedback submitted" });
       setInterviews(prev => prev.map(iv =>
-        iv.id === feedbackModal.id ? { ...iv, feedbackRating: feedback.rating, feedbackNotes: feedback.notes } : iv
+        iv.id === feedbackModal.id ? { ...iv, ...saved } : iv
       ));
       setFeedbackModal(null);
       setFeedback({ rating: 0, notes: "" });
-    } catch {
-      toast({ title: "Failed to submit feedback", variant: "destructive" });
+    } catch (error) {
+      if (error instanceof Error && "status" in error && error.status === 409) {
+        setConflict(true);
+        setLatest(null);
+      }
+      toast({ title: "Feedback not confirmed", description: error instanceof Error ? error.message : "Your draft has been kept.", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
   }
 
   function openFeedback(iv: any) {
-    setFeedbackModal(iv);
+    setFeedbackModal({ ...iv });
     setFeedback({ rating: iv.feedbackRating ?? 0, notes: iv.feedbackNotes ?? "" });
+    setConflict(false);
+    setLatest(null);
+  }
+
+  async function reviewLatest() {
+    if (!feedbackModal || !user?.id || readingLatest) return;
+    setReadingLatest(true);
+    try {
+      const rows = await readAssignedSchedules(await apiFetch(`${apiBase}/coordinator/schedules?${new URLSearchParams({ applicationId: feedbackModal.applicationId })}`), user.id);
+      const saved = rows.find((row) => row.id === feedbackModal.id);
+      if (!saved) throw new Error("This interview is no longer available to you. Your draft has been kept.");
+      setLatest(saved);
+    } catch (error) {
+      toast({ title: "Latest details unavailable", description: error instanceof Error ? error.message : "Your draft has been kept.", variant: "destructive" });
+    } finally { setReadingLatest(false); }
   }
 
   return (
@@ -139,7 +181,12 @@ export default function InterviewerInterviews() {
           ))}
         </div>
 
-        {loading ? (
+        {loadError ? (
+          <Card><CardContent className="p-6 space-y-3" role="alert">
+            <p>Interview queue unavailable: {loadError}</p>
+            <Button variant="outline" onClick={() => setReloadKey((key) => key + 1)}>Reload interviews</Button>
+          </CardContent></Card>
+        ) : loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
@@ -219,8 +266,8 @@ export default function InterviewerInterviews() {
       </div>
 
       {/* Feedback modal */}
-      <Dialog open={!!feedbackModal} onOpenChange={(open) => !open && setFeedbackModal(null)}>
-        <DialogContent className="max-w-md">
+      <Dialog open={!!feedbackModal} onOpenChange={(open) => { if (!open && !submitting && !readingLatest) setFeedbackModal(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Submit Interview Feedback</DialogTitle>
           </DialogHeader>
@@ -233,7 +280,7 @@ export default function InterviewerInterviews() {
               <Label className="mb-2 block">Overall Rating</Label>
               <div className="flex items-center gap-2">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} type="button" aria-label={`Rate ${n} of 5`} aria-pressed={feedback.rating === n} onClick={() => setFeedback(f => ({ ...f, rating: n }))}>
+                  <button key={n} type="button" disabled={submitting} aria-label={`Rate ${n} of 5`} aria-pressed={feedback.rating === n} onClick={() => setFeedback(f => ({ ...f, rating: n }))}>
                     <Star className={`w-7 h-7 transition-colors ${n <= feedback.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground hover:text-amber-300"}`} />
                   </button>
                 ))}
@@ -250,12 +297,29 @@ export default function InterviewerInterviews() {
                 value={feedback.notes}
                 onChange={(e) => setFeedback(f => ({ ...f, notes: e.target.value }))}
                 rows={4}
+                disabled={submitting}
+                maxLength={10000}
               />
             </div>
+            {conflict && <section className="rounded-lg border border-amber-500/40 p-3 space-y-3 text-sm" role="status">
+              <p>This schedule changed. Your rating and notes are still here. Review the saved details before retrying.</p>
+              {!latest ? <Button variant="outline" onClick={reviewLatest} disabled={readingLatest}>
+                {readingLatest ? "Loading latest…" : "Review latest saved details"}
+              </Button> : <>
+                <p>Latest status: {latest.status}. Time: {format(parseISO(latest.scheduledAt), "PPp")}.</p>
+                <p>Saved rating: {latest.feedbackRating ?? "Not rated"}/5</p>
+                <p className="whitespace-pre-wrap break-words">Saved notes: {latest.feedbackNotes || "None"}</p>
+                <Button variant="outline" className="h-auto whitespace-normal" onClick={() => {
+                  setFeedbackModal(latest);
+                  setConflict(false);
+                  setLatest(null);
+                }}>Keep my draft and use this version</Button>
+              </>}
+            </section>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFeedbackModal(null)}>Cancel</Button>
-            <Button onClick={submitFeedback} disabled={submitting}>
+            <Button variant="outline" onClick={() => setFeedbackModal(null)} disabled={submitting || readingLatest}>Cancel</Button>
+            <Button onClick={submitFeedback} disabled={submitting || conflict || feedback.rating === 0}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Submit Feedback
             </Button>

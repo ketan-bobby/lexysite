@@ -21,7 +21,9 @@ export type CandidateLearningInterests = {
  * later canonical profile edit invalidates that confirmation.
  */
 export const candidateLearningProfilesTable = pgTable("candidate_learning_profiles", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   candidateId: text("candidate_id").notNull().unique(),
   tenantId: text("tenant_id").notNull(),
   interests: jsonb("interests").$type<CandidateLearningInterests>(),

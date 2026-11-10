@@ -441,13 +441,13 @@ export async function approveAndSendDraft(
       html: textToHtml(body),
       audit: {
         tenantId: draft.tenantId,
-        actorId: approverUserId,
         actorLabel: "Recruiter (approved AI draft)",
         subjectType: "candidate",
         subjectId: draft.candidateId ?? draft.sourcedId ?? null,
         subjectLabel: draft.candidateName || draft.candidateEmail,
         action: "conversation.reply.approved_sent",
         metadata: {
+          approverUserId,
           draftId: draft.id, jobId: draft.jobId,
           edited: !!overrides,
           subjectChanged: !!overrides?.subject && overrides.subject !== draft.subject,

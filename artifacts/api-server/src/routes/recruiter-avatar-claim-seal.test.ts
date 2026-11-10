@@ -26,26 +26,26 @@
  * proxy falls through to dbAdmin, so RLS never filters — isolating the
  * app-layer gates), uploads tiny REAL objects via uploadBuffer (which writes
  * NO ACL tag — exactly the state the fallbacks exist for), and drives the
- * routes over HTTP with real bearer tokens. Fixture ids prefixed `acs_`;
- * uploaded objects are deleted in teardown.
+ * routes over HTTP with real bearer tokens. PostgreSQL tables are private
+ * temporary fixtures; S3 objects exist in memory only. Auth and ACLs stay real.
  */
-import { test, before, after } from "node:test";
+import { test, before, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
-import { inArray } from "drizzle-orm";
 import {
-  dbAdmin,
   tenantsTable,
   usersTable,
   recruiterAvatarProfilesTable,
   recruiterAvatarVideoJobsTable,
   recruiterAdminClientsTable,
 } from "@workspace/db";
-import { issueToken } from "../lib/auth-token";
-import { ObjectStorageService } from "../lib/objectStorage";
-import storageRouter from "./storage";
-import recruiterAvatarRouter from "./recruiter-avatar";
+import * as schema from "@workspace/db";
+import { createPrivateDb } from "../test-fixtures/private-db";
+import { useMemoryS3 } from "../test-fixtures/memory-s3";
+let fixture: Awaited<ReturnType<typeof createPrivateDb>> | undefined;
+let dbAdmin: NonNullable<typeof fixture>["db"];
+let issueToken: (typeof import("../lib/auth-token"))["issueToken"];
 
 const P = "acs_";
 const id = (s: string) => P + s;
@@ -75,7 +75,7 @@ let avatarAPath: string; // /objects/recruiter-avatars/…  (pinned to ownerA)
 let avatarBPath: string; // /objects/recruiter-avatars/…  (pinned to victimB)
 let videoAPath: string; // /objects/recruiter-intros/…   (ownerA's intro MP4)
 
-const storage = new ObjectStorageService();
+let storage: Awaited<ReturnType<typeof useMemoryS3>>["storage"];
 
 const tok = {
   ownerA: () => issueToken({ userId: id("ownerA"), role: "recruiter", tenantId: id("clientA") }),
@@ -119,22 +119,27 @@ async function claimAvatar(
   return { status: res.status, json };
 }
 
-async function cleanupDb() {
-  await dbAdmin
-    .delete(recruiterAvatarVideoJobsTable)
-    .where(inArray(recruiterAvatarVideoJobsTable.tenantId, TENANT_IDS));
-  await dbAdmin
-    .delete(recruiterAvatarProfilesTable)
-    .where(inArray(recruiterAvatarProfilesTable.recruiterUserId, USER_IDS));
-  await dbAdmin
-    .delete(recruiterAdminClientsTable)
-    .where(inArray(recruiterAdminClientsTable.tenantId, TENANT_IDS));
-  await dbAdmin.delete(usersTable).where(inArray(usersTable.id, USER_IDS));
-  await dbAdmin.delete(tenantsTable).where(inArray(tenantsTable.id, TENANT_IDS));
-}
-
 before(async () => {
-  await cleanupDb();
+  fixture = await createPrivateDb([
+    tenantsTable,
+    usersTable,
+    recruiterAvatarProfilesTable,
+    recruiterAvatarVideoJobsTable,
+    recruiterAdminClientsTable,
+    schema.recruiterManagersTable,
+    schema.applicationsTable,
+    schema.candidateCareerProfilesTable,
+    schema.candidatesTable,
+    schema.interviewPlansTable,
+    schema.interviewSessionsTable,
+    schema.jobsTable,
+    schema.jobRecruitersTable,
+  ]);
+  dbAdmin = fixture.db;
+  ({ storage } = await useMemoryS3());
+  ({ issueToken } = await import("../lib/auth-token"));
+  const { default: storageRouter } = await import("./storage");
+  const { default: recruiterAvatarRouter } = await import("./recruiter-avatar");
 
   await dbAdmin.insert(tenantsTable).values([
     { id: id("agency"), name: "ACS Agency", slug: id("agency"), plan: "enterprise" },
@@ -155,7 +160,11 @@ before(async () => {
     { id: id("strangerTx"), name: "ACS Stranger", slug: id("strangerTx"), plan: "enterprise" },
   ]);
 
-  const u = (uid: string, tenantId: string, role: string) => ({
+  const u = (
+    uid: string,
+    tenantId: string,
+    role: NonNullable<(typeof usersTable.$inferInsert)["role"]>,
+  ) => ({
     id: id(uid),
     tenantId,
     email: id(uid) + "@t.test",
@@ -241,23 +250,22 @@ before(async () => {
   });
   app.use(storageRouter);
   app.use(recruiterAvatarRouter);
-  server = app.listen(0);
+  await new Promise<void>((resolve, reject) => {
+    server = app.listen(0, (error) => (error ? reject(error) : resolve()));
+  });
   const addr = server.address();
   baseUrl = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 });
 
 after(async () => {
-  server?.close();
-  await cleanupDb();
-  // Best-effort S3 cleanup of the four tiny objects.
-  for (const p of [resumePath, avatarAPath, avatarBPath, videoAPath]) {
-    if (!p) continue;
-    const rel = p.replace(/^\/objects\//, "");
-    try {
-      await storage.deleteObjectsUnderPrefix(rel);
-    } catch {
-      /* best-effort */
-    }
+  try {
+    if (server)
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+  } finally {
+    mock.restoreAll();
+    await fixture?.close();
   }
 });
 

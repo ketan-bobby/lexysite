@@ -49,6 +49,7 @@ import {
   Upload, Loader2, Paperclip, FileUp, Monitor, MonitorOff
 } from "lucide-react";
 import { apiBase, apiFetch } from "@/lib/api";
+import { startCareerSpeechRecorder } from "@/lib/career-speech-recorder";
 
 interface Message {
   role: "user" | "assistant";
@@ -127,7 +128,8 @@ function ListeningRings() {
 const VOICE_NOT_SUPPORTED =
   typeof window !== "undefined" &&
   !("SpeechRecognition" in window) &&
-  !("webkitSpeechRecognition" in window);
+  !("webkitSpeechRecognition" in window) &&
+  !("MediaRecorder" in window);
 
 /* ── Lexy animated avatar — mirrors the recruiter interview room style ── */
 type AvatarState = "idle" | "thinking" | "speaking" | "listening";
@@ -241,6 +243,21 @@ export default function CareerInterview() {
   /* Advisor / language selection (set on intro screen) */
   const [selectedPersona, setSelectedPersona] = useState("lexy");
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [languageOptions, setLanguageOptions] = useState<Array<{ code: string; label: string; flag: string }>>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void apiFetch(`${apiBase}/interviews/languages`, { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error("Language catalogue could not be loaded");
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Invalid language catalogue");
+        setLanguageOptions(data.map(lang => ({
+          code: lang.code, label: `${lang.label} — ${lang.nativeName}`, flag: "",
+        })));
+      })
+      .catch(error => { if (!controller.signal.aborted) setError(error.message); });
+    return () => controller.abort();
+  }, []);
   const advisorVoiceRef = useRef("nova");
   const selectedLanguageRef = useRef("en-US");
 
@@ -796,6 +813,12 @@ export default function CareerInterview() {
       const utterance = new SpeechSynthesisUtterance(
         text.replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/[\u{2600}-\u{27BF}]/gu, "").trim()
       );
+      utterance.lang = STT_LANG_MAP[selectedLanguageRef.current] ?? selectedLanguageRef.current;
+      const matchingVoice = window.speechSynthesis.getVoices().find(
+        voice => voice.lang.toLowerCase().startsWith(utterance.lang.split("-")[0].toLowerCase())
+          && !/\bmale\b/i.test(voice.name),
+      );
+      if (matchingVoice) utterance.voice = matchingVoice;
       utterance.rate = 1.05;
       const endFallback = () => {
         clearTimeout(safetyTimer);
@@ -819,6 +842,8 @@ export default function CareerInterview() {
     zh: "zh-CN", ja: "ja-JP", ko: "ko-KR", ar: "ar-SA",
     hi: "hi-IN", bn: "bn-IN", ta: "ta-IN", te: "te-IN",
     mr: "mr-IN", gu: "gu-IN", pa: "pa-IN",
+    kn: "kn-IN", ml: "ml-IN", or: "or-IN", as: "as-IN", ur: "ur-PK",
+    pl: "pl-PL", sv: "sv-SE", no: "nb-NO", da: "da-DK",
     fil: "fil-PH", tl: "fil-PH",
     id: "id-ID", ms: "ms-MY", th: "th-TH", vi: "vi-VN", he: "he-IL",
   };
@@ -840,7 +865,35 @@ export default function CareerInterview() {
 
   const startListening = useCallback(() => {
     if (VOICE_NOT_SUPPORTED) {
-      setMicError("Speech recognition requires Chrome or Edge.");
+      setMicError("This browser cannot record speech. Please type your answer instead.");
+      return;
+    }
+    if (!selectedLanguageRef.current.startsWith("en") ||
+        !((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) {
+      if (recognitionRef.current || isSpeakingRef.current || isLoadingRef.current || isCompleteRef.current) return;
+      setMicError(null);
+      setIsListening(true);
+      const handle = startCareerSpeechRecorder({
+        language: selectedLanguageRef.current,
+        onStatus: text => setInterimText(text),
+        onTranscript: text => {
+          if (recognitionRef.current !== handle) return;
+          recognitionRef.current = null;
+          handle.stop();
+          setIsListening(false);
+          setInterimText("");
+          if (!isCompleteRef.current) sendVoiceMessageRef.current(text);
+        },
+        onError: message => {
+          if (recognitionRef.current !== handle) return;
+          recognitionRef.current = null;
+          handle.stop();
+          setIsListening(false);
+          setInterimText("");
+          setMicError(message);
+        },
+      });
+      recognitionRef.current = handle;
       return;
     }
     setMicError(null);
@@ -1257,7 +1310,7 @@ export default function CareerInterview() {
   /* When switching TO voice mode, speak the last assistant message */
   function activateVoiceMode() {
     setVoiceMode(true);
-    setInput("");
+    // Switching input methods must not discard a candidate's unsent draft.
     const lastAssistant = [...messages].reverse().find(m => m.role === "assistant");
     if (lastAssistant && !isDone) {
       speakText(lastAssistant.content, () => {
@@ -1612,7 +1665,7 @@ export default function CareerInterview() {
 
   /* ---------- Intro screen ---------- */
   if (showIntro) {
-    const LANGUAGES = [
+    const FALLBACK_LANGUAGES = [
       { code: "en-US", label: "English (US)", flag: "🇺🇸" },
       { code: "en-GB", label: "English (UK)", flag: "🇬🇧" },
       { code: "en-AU", label: "English (AU)", flag: "🇦🇺" },
@@ -1648,6 +1701,7 @@ export default function CareerInterview() {
       { code: "he",    label: "עברית",              flag: "🇮🇱" },
     ];
 
+    const LANGUAGES = languageOptions.length ? languageOptions : FALLBACK_LANGUAGES;
     const activeLang = LANGUAGES.find(l => l.code === selectedLanguage) ?? LANGUAGES[0];
 
     return (

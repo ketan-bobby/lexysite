@@ -1,3 +1,5 @@
+import { interviewEvaluationWarning } from "./interview-turn-policy";
+
 /**
  * interview-report-pdf.ts — Client-shareable "Interview Performance" PDF.
  *
@@ -15,6 +17,8 @@ import { jsPDF } from "jspdf";
 export interface InterviewQuestionScore {
   questionText: string;
   score: number | null;
+  /** Used only to distinguish missing capture from a genuinely graded answer. */
+  answer?: string | null;
   /** The assessor's analysis of how the candidate answered — NOT the verbatim answer. */
   feedback?: string | null;
 }
@@ -435,6 +439,11 @@ export async function generateInterviewReportPdf(data: InterviewReportPdfData): 
   doc.setTextColor(...rec.color);
   doc.text(rec.label, margin + doc.getTextWidth("Recommendation:  "), y);
   y += 18;
+  const evaluationWarning = interviewEvaluationWarning(data.overallScore, data.recommendation, data.questionScores ?? [], data.totalQuestions);
+  if (evaluationWarning) {
+    paragraph(`Human evaluation review required: ${evaluationWarning}`, { color: INK });
+    y += 6;
+  }
   if (data.aiSummary) {
     paragraph(data.aiSummary, { color: INK });
     y += 6;

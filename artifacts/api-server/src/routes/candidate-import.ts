@@ -35,6 +35,8 @@ import multer from "multer";
 import { createRequire } from "node:module";
 import nodeCrypto from "node:crypto";
 import mammoth from "mammoth";
+import { bindImportedResume } from "../lib/candidate-resume-access";
+import { mergeSkillsIntoCandidate } from "../lib/enrich-candidate";
 import { controlDb, db } from "@workspace/db";
 import {
   candidatesTable,
@@ -341,11 +343,17 @@ router.post(
     /* ── 3. Upload file to S3 ─────────────────────────────────────────────── */
     let resumeUrl: string | null = null;
     try {
-      resumeUrl = await storage.uploadBuffer(file.buffer, file.mimetype || "application/octet-stream");
+      resumeUrl = await storage.uploadBuffer(file.buffer, file.mimetype || "application/octet-stream", "resumes", {
+        owner: `import:${targetTenantId}`, visibility: "private", resumeUploadTenantId: targetTenantId,
+      });
       logger.info({ resumeUrl }, "[candidate-import] Resume uploaded to S3");
     } catch (err: any) {
-      logger.warn({ err: err.message }, "[candidate-import] S3 upload failed — continuing without resumeUrl");
-      // Non-fatal: candidate is still created, just without a stored file link
+      logger.error({ err: err.message }, "[candidate-import] S3 upload failed — import held");
+      await db.insert(candidateImportRecordsTable).values({
+        batchId: batch.id, tenantId: rawTenantId, fileName: file.originalname,
+        status: "failed", errorMessage: "Résumé storage failed; no candidate changes made.",
+      });
+      return res.status(503).json({ error: "Résumé storage failed; no candidate changes were made." });
     }
 
     /* ── 4. Duplicate detection (scoped to the target tenant) ────────────── */
@@ -375,13 +383,17 @@ router.post(
       if (!existingCandidate.currentCompany && parsed.currentCompany) updates.currentCompany = parsed.currentCompany;
       if (!existingCandidate.linkedinUrl  && parsed.linkedinUrl)  updates.linkedinUrl  = parsed.linkedinUrl;
       if (!existingCandidate.resumeUrl    && resumeUrl)           updates.resumeUrl    = resumeUrl;
-      if (parsed.skills?.length && !existingCandidate.skills?.length) updates.skills = parsed.skills;
 
       let status = "duplicate_skipped";
       if (Object.keys(updates).length > 0) {
         updates.updatedAt = new Date();
         await db.update(candidatesTable).set(updates).where(eq(candidatesTable.id, existingCandidate.id));
         status = "duplicate_updated";
+      }
+      if (updates.resumeUrl === resumeUrl && resumeUrl) await bindImportedResume(resumeUrl, targetTenantId, existingCandidate.id);
+      if (parsed.skills?.length) {
+        const merged = await mergeSkillsIntoCandidate(existingCandidate.id, parsed.skills);
+        if (merged && merged.length > (existingCandidate.skills?.length ?? 0)) status = "duplicate_updated";
       }
 
       await db.insert(candidateImportRecordsTable).values({
@@ -399,7 +411,7 @@ router.post(
         status,
         candidateId: existingCandidate.id,
         batchId:     batch.id,
-        resumeUrl,
+        resumeUrl: updates.resumeUrl ?? existingCandidate.resumeUrl,
         parsed: {
           name:  `${parsed.firstName} ${parsed.lastName}`,
           email: parsed.email,
@@ -451,7 +463,8 @@ router.post(
         })
         .returning();
 
-      // TODO: Future step — trigger AI enrichment and embeddings after successful import.
+      if (resumeUrl) await bindImportedResume(resumeUrl, targetTenantId, newCandidate.id);
+      // No additional AI calls: the parsed skills already come from this import.
 
       await db.insert(candidateImportRecordsTable).values({
         batchId:     batch.id,
@@ -503,12 +516,16 @@ router.post(
           if (!dupe.linkedinUrl    && parsed.linkedinUrl)    updates.linkedinUrl    = parsed.linkedinUrl;
           if (!dupe.githubUrl      && parsed.githubUrl)      updates.githubUrl      = parsed.githubUrl;
           if (!dupe.resumeUrl      && resumeUrl)             updates.resumeUrl      = resumeUrl;
-          if (parsed.skills?.length && !dupe.skills?.length) updates.skills         = parsed.skills;
           let status = "duplicate_skipped";
           if (Object.keys(updates).length > 0) {
             updates.updatedAt = new Date();
             await db.update(candidatesTable).set(updates).where(eq(candidatesTable.id, dupe.id));
             status = "duplicate_updated";
+          }
+          if (updates.resumeUrl === resumeUrl && resumeUrl) await bindImportedResume(resumeUrl, targetTenantId, dupe.id);
+          if (parsed.skills?.length) {
+            const merged = await mergeSkillsIntoCandidate(dupe.id, parsed.skills);
+            if (merged && merged.length > (dupe.skills?.length ?? 0)) status = "duplicate_updated";
           }
           await db.insert(candidateImportRecordsTable).values({
             batchId:     batch.id,
@@ -523,7 +540,7 @@ router.post(
             status,
             candidateId: dupe.id,
             batchId:     batch.id,
-            resumeUrl,
+            resumeUrl: updates.resumeUrl ?? dupe.resumeUrl,
             parsed: { name: `${parsed.firstName} ${parsed.lastName}`, email: parsed.email, title: parsed.currentTitle },
             message: status === "duplicate_updated"
               ? "Existing candidate found — missing fields updated"

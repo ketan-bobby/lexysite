@@ -34,6 +34,7 @@ import { and, eq, gt, gte, isNull, sql, inArray } from "drizzle-orm";
 import { getPlan, type PlanCode, type PlanPackage } from "./plans.js";
 import { getSubtreeTenantIds } from "./tenantUtils.js";
 import { sendEmail, plainToHtml } from "./email.js";
+import { activePilot, complimentaryPlan } from "./pilot-codes";
 
 export type CreditKind = "interview" | "candidate_db_search" | "ai_generation" | "outreach_message";
 
@@ -88,7 +89,8 @@ async function loadTenantWithPlan(tenantId: string): Promise<{
     gracePeriodDays: tenantsTable.gracePeriodDays,
   }).from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
 
-  const plan = getPlan(t?.plan);
+  const complimentary = !!await activePilot(tenantId);
+  const plan = complimentary ? complimentaryPlan(getPlan("enterprise")) : getPlan(t?.plan);
   const planActivatedAt = (t?.planActivatedAt ?? t?.createdAt ?? new Date()) as Date;
   let planExpired = false;
   // Manual-billing override: when sales has set paid_through_at, that date
@@ -101,7 +103,7 @@ async function loadTenantWithPlan(tenantId: string): Promise<{
   // becomes hard-expired once now > paid_through_at + grace. This mirrors the
   // status the subscription-lifecycle-scheduler sets (active → past_due →
   // suspended) so enforcement and the displayed status stay consistent.
-  if (t?.paidThroughAt) {
+  if (!complimentary && t?.paidThroughAt) {
     const graceCutoff =
       new Date(t.paidThroughAt).getTime() + graceDaysFor(t.gracePeriodDays) * 24 * 60 * 60 * 1000;
     planExpired = graceCutoff < Date.now();

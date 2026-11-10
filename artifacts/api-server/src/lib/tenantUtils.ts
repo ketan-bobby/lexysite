@@ -33,6 +33,7 @@
 
 import { db, jobsTable, jobRecruitersTable } from "@workspace/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
+export type TenantScopeReader = Pick<typeof db, "select" | "execute">;
 
 export interface CallerUser {
   id:       string;
@@ -51,8 +52,8 @@ export interface CallerUser {
  * this returns the full subtree even when run on the request-scoped lexy_app
  * connection. Always includes `rootId` itself, even if the row is missing.
  */
-export async function getSubtreeTenantIds(rootId: string): Promise<string[]> {
-  const result = await db.execute<{ id: string }>(sql`
+export async function getSubtreeTenantIds(rootId: string, reader: TenantScopeReader = db): Promise<string[]> {
+  const result = await reader.execute<{ id: string }>(sql`
     WITH RECURSIVE subtree AS (
       SELECT id FROM tenants WHERE id = ${rootId}
       UNION
@@ -80,10 +81,11 @@ export async function getSubtreeTenantIds(rootId: string): Promise<string[]> {
  */
 export async function getAllowedTenantIds(
   user: Pick<CallerUser, "role" | "tenantId">,
+  reader: TenantScopeReader = db,
 ): Promise<string[] | null> {
   if (user.role === "platform_admin") return null;
   if (!user.tenantId) return [];
-  return getSubtreeTenantIds(user.tenantId);
+  return getSubtreeTenantIds(user.tenantId, reader);
 }
 
 /**
@@ -96,8 +98,8 @@ export async function getAllowedTenantIds(
  * (app_tenant_in_scope), which is inside the caller's published subtree GUC, so
  * the caller's own assignment rows are always visible.
  */
-export async function getRecruiterAdminClientTenantIds(userId: string): Promise<string[]> {
-  const result = await db.execute<{ client_tenant_id: string }>(sql`
+export async function getRecruiterAdminClientTenantIds(userId: string, reader: TenantScopeReader = db): Promise<string[]> {
+  const result = await reader.execute<{ client_tenant_id: string }>(sql`
     SELECT client_tenant_id FROM recruiter_admin_clients
     WHERE recruiter_admin_user_id = ${userId}
   `);
@@ -123,8 +125,8 @@ export async function getRecruiterAdminClientTenantIds(userId: string): Promise<
  * Runs on the request-scoped lexy_app connection; recruiter_managers is
  * RLS-scoped by its agency tenant_id, which is inside the caller's subtree GUC.
  */
-export async function getManagedRecruiterClientTenantIds(userId: string): Promise<string[]> {
-  const result = await db.execute<{ tenant_id: string }>(sql`
+export async function getManagedRecruiterClientTenantIds(userId: string, reader: TenantScopeReader = db): Promise<string[]> {
+  const result = await reader.execute<{ tenant_id: string }>(sql`
     -- Per-work-order override links: the specific job's tenant.
     SELECT j.tenant_id AS tenant_id
     FROM recruiter_managers rm
@@ -173,8 +175,8 @@ export async function getManagedRecruiterClientTenantIds(userId: string): Promis
  * Third half of the recruiter_admin data-scope union in getDataScopeTenantIds;
  * intersected there with the agency subtree ceiling.
  */
-export async function getOwnAssignedJobTenantIds(userId: string): Promise<string[]> {
-  const result = await db.execute<{ tenant_id: string }>(sql`
+export async function getOwnAssignedJobTenantIds(userId: string, reader: TenantScopeReader = db): Promise<string[]> {
+  const result = await reader.execute<{ tenant_id: string }>(sql`
     SELECT j.tenant_id AS tenant_id
     FROM jobs j
     WHERE j.assigned_recruiter_id = ${userId}
@@ -205,6 +207,7 @@ export async function getOwnAssignedJobTenantIds(userId: string): Promise<string
  */
 export async function getDataScopeTenantIds(
   user: Pick<CallerUser, "id" | "role" | "tenantId">,
+  reader: TenantScopeReader = db,
 ): Promise<string[] | null> {
   if (user.role === "platform_admin") return null;
   if (user.role === "recruiter_admin") {
@@ -216,19 +219,19 @@ export async function getDataScopeTenantIds(
     //      "working manager" who also carries requisitions).
     // A recruiter_admin sees a client if ANY of the three links them to it.
     const [clients, managed, own] = await Promise.all([
-      getRecruiterAdminClientTenantIds(user.id),
-      getManagedRecruiterClientTenantIds(user.id),
-      getOwnAssignedJobTenantIds(user.id),
+      getRecruiterAdminClientTenantIds(user.id, reader),
+      getManagedRecruiterClientTenantIds(user.id, reader),
+      getOwnAssignedJobTenantIds(user.id, reader),
     ]);
     const union = new Set([...clients, ...managed, ...own]);
     if (union.size === 0) return [];
     // Intersect with the agency subtree as a hard ceiling — a stale assignment
     // row pointing outside the agency must never widen visibility.
-    const subtree = await getSubtreeTenantIds(user.tenantId);
+    const subtree = await getSubtreeTenantIds(user.tenantId, reader);
     const allowedSet = new Set(subtree);
     return [...union].filter(id => allowedSet.has(id));
   }
-  return getAllowedTenantIds(user);
+  return getAllowedTenantIds(user, reader);
 }
 
 /**
@@ -251,19 +254,20 @@ export async function getDataScopeTenantIds(
  */
 export async function getRecruiterAssignedJobIds(
   user: Pick<CallerUser, "id" | "role" | "tenantId">,
+  reader: TenantScopeReader = db,
 ): Promise<string[]> {
   if (user.role !== "recruiter" || !user.tenantId) return [];
-  const subtree = await getSubtreeTenantIds(user.tenantId);
+  const subtree = await getSubtreeTenantIds(user.tenantId, reader);
   if (subtree.length === 0) return [];
   // Primary-recruiter reqs.
-  const primaryRows = await db
+  const primaryRows = await reader
     .select({ id: jobsTable.id })
     .from(jobsTable)
     .where(and(inArray(jobsTable.tenantId, subtree), eq(jobsTable.assignedRecruiterId, user.id)));
   // Join-table (additional-recruiter) reqs — join back to jobsTable so the
   // subtree ceiling is enforced against the JOB's tenant, not the (possibly
   // stale) tenant stamped on the assignment row.
-  const joinRows = await db
+  const joinRows = await reader
     .select({ id: jobsTable.id })
     .from(jobRecruitersTable)
     .innerJoin(jobsTable, eq(jobRecruitersTable.jobId, jobsTable.id))

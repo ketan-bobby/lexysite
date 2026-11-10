@@ -112,6 +112,7 @@ const STRONG_TOKENS = [
   "requireAgentWriter",
   // Purpose-built access gates
   "gateJobAccess",
+  "resolveWorkflowJobAccess",
   "gateCandidate",
   "gateCandidateAccess",
   "gateRowByTenant",
@@ -168,6 +169,9 @@ const EXEMPT_RE = new RegExp(`\\b(?:${EXEMPTION_TOKENS.join("|")})\\b`);
  *     and then removed from this list — do NOT add new KNOWN GAP entries.
  */
 const ALLOWLIST = new Map([
+  ["src/routes/outlook-candidate-invitations.ts POST /outlook-calendar/schedules/:scheduleId/invitation", "Stored-role calendarStaff plus visibleSchedule (getDataScopeTenantIds, recruiterOwnsResource and calendarScheduleVisible); lockCurrent repeats that gate after schedule/application/job/candidate locks; explicit revision and canonical-email checks, erasure/DNC and approval checks, server-private one-attempt receipt. Request-role PostgreSQL fixture verifies candidate denial, stale recipient/version rejection and private-table denial."],
+  ["src/routes/interview-booking-links.ts POST /public/interview-booking/choose", "32-byte bearer capability, SHA-256 lookup; resolveLink gates live candidate/application/job/schedule, approval, erasure, expiry and revisions under the schedule row lock; consumes atomically with native confirmation and event"],
+  ["src/routes/controlled-offers.ts GET /controlled-offers/public/:token", "256-bit offer token SHA-256 lookup; current candidate privacy seal and work-order approval; no private assessment data"],
   // ── 1. VERIFIED-CONTROLLED (scanner blind spots) ──────────────────────────
   // connection-engine: file-level `router.use("/connection-*", featureGuard,
   // resolveUser, scopeCandidate)` scopes every route below; the gate is not in
@@ -209,20 +213,9 @@ const ALLOWLIST = new Map([
   ["src/routes/fee-ledger.ts GET /fee-ledger/export.csv", "platform_admin-only role gate (inline); cross-tenant revenue export by design"],
   ["src/routes/fee-ledger.ts POST /fee-ledger/corrections", "platform_admin-only role gate (inline); cross-tenant staff correction workflow, fully audited"],
 
-  // ── 2. KNOWN GAP: pre-existing, must fix (Tier-2 did not cover these) ──────
-  // agents.ts: the file's OWN standard is resolveAgentViewer/requireAgentWriter
-  // + recruiterOwnsResource(jobId); these six pipeline routes read/write
-  // jobPipelinesTable/jobsTable by :jobId with NO caller resolution and NO
-  // ownership gate — any tenant member could read/alter another req's pipeline.
-  ["src/routes/agents.ts GET /jobs/:jobId/pipeline-config", "KNOWN GAP: no caller resolution / ownership gate; apply resolveAgentViewer + recruiterOwnsResource(jobId)"],
-  ["src/routes/agents.ts POST /jobs/:jobId/pipeline-config", "KNOWN GAP: no caller resolution / ownership gate; apply requireAgentWriter + recruiterOwnsResource(jobId)"],
-  ["src/routes/agents.ts GET /jobs/:jobId/interview-direction", "KNOWN GAP: no caller resolution / ownership gate; apply resolveAgentViewer + recruiterOwnsResource(jobId)"],
-  ["src/routes/agents.ts POST /jobs/:jobId/interview-direction", "KNOWN GAP: no caller resolution / ownership gate; apply requireAgentWriter + recruiterOwnsResource(jobId)"],
-  ["src/routes/agents.ts GET /jobs/:jobId/pipeline-status", "KNOWN GAP: no caller resolution / ownership gate; apply resolveAgentViewer + recruiterOwnsResource(jobId)"],
-  ["src/routes/agents.ts POST /jobs/:jobId/pipeline-stop", "KNOWN GAP: no caller resolution / ownership gate; apply requireAgentWriter + recruiterOwnsResource(jobId)"],
-  // learning.ts: cross-tenant source-quality aggregate with no staff gate; the
-  // file has a getCallerUser+role helper the other routes use — this one omits it.
-  ["src/routes/learning.ts GET /source-quality", "KNOWN GAP: no staff/role gate; apply the file's getCallerUser + STAFF_ROLES helper"],
+  // The former job-pipeline controls now resolve staff, tenant scope and
+  // recruiter ownership in their handlers. Source quality already has its
+  // explicit requireRole(..., STAFF_ROLES) gate. None needs a gap exemption.
 ]);
 
 const KNOWN_GAP_PREFIX = "KNOWN GAP:";

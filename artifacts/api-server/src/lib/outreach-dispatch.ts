@@ -8,12 +8,20 @@
  * same send path — there must be ONE way a first-touch email goes out.
  */
 import { db } from "@workspace/db";
-import { outreachMessagesTable, jobsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { outreachMessagesTable, jobsTable, candidatesTable } from "@workspace/db";
+import { and, eq, sql, isNull } from "drizzle-orm";
+import {guardedOutreachMail,isUncertainMailReason,heldMailError} from "./outreach-mail-attempt";
 import { sendEmail, plainToHtml } from "./email";
 import { buildMessageQuickReplyBlocks } from "./outreach-reply-tokens";
 import { isRealEmail } from "./real-email";
 import { logger } from "./logger";
+import { isCandidateErased } from "./candidate-erasure-barrier";
+import {
+  executeWorkflowAction,
+  type WorkflowActionContext,
+} from "./workflow-execution";
+import { fingerprint, WorkflowConflict } from "./recruiting-workflows";
+import { storedOutreachWorkflow } from "./workflow-outreach";
 
 export type DispatchResult =
   | { ok: true; simulated: boolean; suppressed?: boolean; messageId?: string }
@@ -30,7 +38,107 @@ export async function dispatchOutreachMessage(
   body: string,
   subject: string,
   candidateEmail: string | undefined | null,
+  workflow?: WorkflowActionContext,
 ): Promise<DispatchResult> {
+  const stored = await storedOutreachWorkflow(msgId, { body, subject, candidateEmail });
+  if (
+    stored &&
+    workflow &&
+    (stored.input.workflowId !== workflow.input.workflowId ||
+      stored.input.candidateId !== workflow.input.candidateId ||
+      stored.input.journeyId !== workflow.input.journeyId ||
+      stored.input.journeyVersion !== workflow.input.journeyVersion)
+  )
+    throw new WorkflowConflict("Stored outreach binding cannot be overridden.", 409);
+  workflow = stored ?? workflow;
+  if (workflow) {
+    const context = workflow;
+    if (
+      workflow.input.stepKey !== "engagement" ||
+      workflow.input.actionKind !== "outreach_send" ||
+      workflow.input.payloadHash !== fingerprint({ msgId, body, subject, candidateEmail })
+    )
+      throw new WorkflowConflict("Outreach does not match the bound workflow action.", 409);
+    const result = await executeWorkflowAction(workflow, {
+      mode: "live",
+      isSuccessful: (output) => output.ok && !output.simulated && !output.suppressed,
+      invoke: async () => {
+        const [message] = await db
+          .select()
+          .from(outreachMessagesTable)
+          .where(
+            and(
+              eq(outreachMessagesTable.id, msgId),
+              eq(outreachMessagesTable.tenantId, workflow.scope.tenantId),
+              eq(outreachMessagesTable.jobId, workflow.scope.jobId),
+            ),
+          );
+        if (
+          !message ||
+          message.body !== body ||
+          message.subject !== subject ||
+          ["sent", "replied", "opened"].includes(message.status)
+        )
+          throw new WorkflowConflict("Outreach source needs human reconciliation.", 409);
+        const [candidate] = await db
+          .select()
+          .from(candidatesTable)
+          .where(eq(candidatesTable.id, workflow.input.candidateId));
+        if (
+          !candidate ||
+          candidate.dataErasedAt ||
+          candidate.doNotContact ||
+          !candidate.email ||
+          candidate.email.trim().toLowerCase() !== candidateEmail?.trim().toLowerCase()
+        )
+          throw new WorkflowConflict("Outreach recipient needs human reconciliation.", 409);
+        // Ownership of canonical OR sourced IDs is checked when the binding
+        // is persisted; resolve the row again to catch subsequent tampering.
+        if (message.candidateId !== context.input.candidateId) {
+          const { sourcedCandidatesTable } = await import("@workspace/db");
+          const [source] = await db.select().from(sourcedCandidatesTable).where(and(
+            eq(sourcedCandidatesTable.id, message.candidateId),
+            sql`EXISTS (SELECT 1 FROM applications a WHERE a.candidate_id=${sourcedCandidatesTable.normalizedCandidateId} AND a.job_id=${context.scope.jobId})`,
+            eq(sourcedCandidatesTable.tenantId, context.scope.tenantId),
+            eq(sourcedCandidatesTable.normalizedCandidateId, context.input.candidateId),
+          ));
+          if (!source) throw new WorkflowConflict("Outreach candidate binding changed.", 409);
+        }
+        return sendFirstTouch(msgId, body, subject, candidateEmail);
+      },
+    });
+    if (result.state === "succeeded") return result.output;
+    return {
+      ok: false,
+      error:
+        result.state === "already_claimed"
+          ? "Workflow action was already claimed; reconcile its outcome before retrying."
+          : "Workflow action outcome is uncertain; do not resend automatically.",
+    };
+  }
+  return sendFirstTouch(msgId, body, subject, candidateEmail);
+}
+
+/** Private transport boundary: workflow checks cannot recursively bypass themselves. */
+async function sendFirstTouch(
+  msgId: string,
+  body: string,
+  subject: string,
+  candidateEmail: string | undefined | null,
+): Promise<DispatchResult> {
+  const [msgRow] = await db.select({
+    jobId:outreachMessagesTable.jobId,candidateId:outreachMessagesTable.candidateId,
+    tenantId:outreachMessagesTable.tenantId,failedReason:outreachMessagesTable.failedReason,
+    status:outreachMessagesTable.status,
+  }).from(outreachMessagesTable).where(eq(outreachMessagesTable.id,msgId)).limit(1);
+  if(!msgRow)return {ok:false,error:"Outreach message no longer exists."};
+  if(isUncertainMailReason(msgRow.failedReason))return {ok:false,error:heldMailError};
+  if(["sent","replied","opened","suppressed"].includes(msgRow.status))
+    return {ok:false,error:"Outreach was already processed; no new send was attempted."};
+  const unchanged=and(eq(outreachMessagesTable.id,msgId),
+    eq(outreachMessagesTable.tenantId,msgRow.tenantId),eq(outreachMessagesTable.jobId,msgRow.jobId),
+    eq(outreachMessagesTable.status,msgRow.status),
+    msgRow.failedReason===null?isNull(outreachMessagesTable.failedReason):eq(outreachMessagesTable.failedReason,msgRow.failedReason));
   /* Sink-level guardrail (defense in depth): no message goes out to an empty or
      synthetic placeholder (@unknown.local / @import.local) address. Upstream
      callers already gate on this, but centralising the refusal here means a
@@ -41,7 +149,7 @@ export async function dispatchOutreachMessage(
   if (!isRealEmail(candidateEmail)) {
     await db.update(outreachMessagesTable)
       .set({ status: "failed", failedReason: "Candidate has no email address on file" })
-      .where(eq(outreachMessagesTable.id, msgId));
+      .where(unchanged);
     logger.warn({ messageId: msgId }, "[outreach] no real email on candidate – cannot dispatch");
     return { ok: false, error: "Candidate has no email address on file" };
   }
@@ -56,21 +164,11 @@ export async function dispatchOutreachMessage(
 
   /* ── Send-router: a first-touch outreach email for a candidate owned by a
      recruiter goes from that recruiter's OWN Outlook mailbox (Graph) when
-     connected; any failure falls back to SES inside sendEmail. This is the
+     connected; only known non-attempts/rejections permit SES fallback. This is the
      canonical first/approved-step dispatcher (approve, regenerate, and the
      orchestrator auto-send all flow through here), so the owner is the job's
      assigned recruiter. We look the row up to find its jobId + candidate +
      tenant (the function previously only ever UPDATEd this row). */
-  const [msgRow] = await db
-    .select({
-      jobId: outreachMessagesTable.jobId,
-      candidateId: outreachMessagesTable.candidateId,
-      tenantId: outreachMessagesTable.tenantId,
-    })
-    .from(outreachMessagesTable)
-    .where(eq(outreachMessagesTable.id, msgId))
-    .limit(1);
-
   let senderUserId: string | undefined;
   if (msgRow?.jobId) {
     try {
@@ -85,8 +183,17 @@ export async function dispatchOutreachMessage(
     }
   }
 
-  try {
+    // The content and recipient may have been assembled before erasure.
+    // Re-read at the provider boundary; never send from a deleted message.
+    if (!msgRow || await isCandidateErased(msgRow.candidateId)) {
+      return { ok: false, error: "candidate_erased" };
+    }
+    const sendResult=await guardedOutreachMail({
+      claim:async marker=>(await db.update(outreachMessagesTable).set({failedReason:marker})
+        .where(unchanged).returning({id:outreachMessagesTable.id})).length===1,
+      invoke:async()=>{
     const sendResult = await sendEmail({
+      singleAttempt:true,
       to: candidateEmail,
       subject,
       html: fullHtml,
@@ -113,18 +220,16 @@ export async function dispatchOutreachMessage(
         .set({ status, sentAt: new Date() })
         .where(eq(outreachMessagesTable.id, msgId));
       logger.info({ to: candidateEmail, messageId: sendResult.messageId, simulated: !!sendResult.simulated, suppressed: !!sendResult.suppressed }, "[outreach] message dispatched");
-      return { ok: true, simulated: !!sendResult.simulated, suppressed: !!sendResult.suppressed, messageId: sendResult.messageId };
+      return sendResult;
     }
-    await db.update(outreachMessagesTable)
-      .set({ status: "failed", failedReason: sendResult.error || "SES send failed" })
-      .where(eq(outreachMessagesTable.id, msgId));
-    logger.error({ to: candidateEmail, err: sendResult.error }, "[outreach] SES send failed");
-    return { ok: false, error: sendResult.error || "SES send failed" };
-  } catch (err: any) {
-    await db.update(outreachMessagesTable)
-      .set({ status: "failed", failedReason: err?.message || "Dispatch error" })
-      .where(eq(outreachMessagesTable.id, msgId));
-    logger.error({ to: candidateEmail, err: err?.message }, "[outreach] dispatch threw");
-    return { ok: false, error: err?.message || "Dispatch error" };
-  }
+    return sendResult;
+      },
+      finish:async(result,marker,held)=>(await db.update(outreachMessagesTable).set({
+        failedReason:held?marker:result.ok?null:result.error??"Provider rejected the send",
+        ...(!result.ok?{status:"failed"}:{}),
+      }).where(and(eq(outreachMessagesTable.id,msgId),eq(outreachMessagesTable.tenantId,msgRow.tenantId),
+        eq(outreachMessagesTable.failedReason,marker))).returning({id:outreachMessagesTable.id})).length===1,
+    });
+    return sendResult.ok?{ok:true,simulated:!!sendResult.simulated,suppressed:!!sendResult.suppressed,messageId:sendResult.messageId}:
+      {ok:false,error:sendResult.error??heldMailError};
 }

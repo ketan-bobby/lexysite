@@ -37,6 +37,7 @@ import {
   dbAdmin,
   interviewPlansTable,
   interviewSessionsTable,
+  interviewSummariesTable,
   candidateAiConsentTable,
 } from "@workspace/db";
 import { signCookie, cookieNameFor } from "../lib/interview-session-cookie";
@@ -106,6 +107,7 @@ async function postJson(path: string, body: any, cookie?: string): Promise<{ sta
 
 async function cleanup() {
   if (sessionIds.length) {
+    await dbAdmin.delete(interviewSummariesTable).where(inArray(interviewSummariesTable.interviewSessionId, sessionIds));
     await dbAdmin.delete(interviewSessionsTable).where(inArray(interviewSessionsTable.id, sessionIds));
   }
   await dbAdmin.delete(candidateAiConsentTable)
@@ -153,6 +155,70 @@ before(async () => {
 after(async () => {
   await cleanup();
   await new Promise<void>((resolve) => server.close(() => resolve()));
+});
+
+test("end: an existing assessment returns only a completion receipt, never hiring-team feedback", async () => {
+  const session = await seedSession(CAND_CONSENTED);
+  await dbAdmin.insert(interviewSummariesTable).values({
+    interviewSessionId: session.id,
+    overallScore: 87.5,
+    recommendation: "yes",
+    recruiterSummary: "Private hiring-team assessment",
+    recruiterComments: "Private reviewer note",
+    strengths: ["Private strength"],
+    weaknesses: ["Private weakness"],
+    transcript: [{ privateEvidence: "Hiring-team evidence" }],
+  });
+  const response = await postJson(
+    `/interviews/${session.id}/end`,
+    {},
+    cookieFor(session.id, session.nonce),
+  );
+  assert.equal(response.status, 200, JSON.stringify(response.json));
+  assert.deepEqual(response.json, { status: "completed", sessionId: session.id });
+  const [saved] = await dbAdmin.select().from(interviewSummariesTable)
+    .where(eq(interviewSummariesTable.interviewSessionId, session.id));
+  assert.equal(saved.overallScore, 87.5);
+  assert.equal(saved.recruiterComments, "Private reviewer note");
+});
+
+test("save-turn: audio correction consumes no question, retry races dedupe, completed answers stay immutable", async () => {
+  const { id, nonce } = await seedSession(CAND_CONSENTED);
+  await dbAdmin.update(interviewSessionsTable).set({ totalQuestions: 2 }).where(eq(interviewSessionsTable.id, id));
+  const cookie = cookieFor(id, nonce);
+  const save = (questionText: string, answerText: string, turnNumber: number) =>
+    postJson(`/interviews/${id}/save-turn`, { questionText, answerText, turnNumber }, cookie);
+  const snapshot = async () => (await dbAdmin.select().from(interviewSessionsTable).where(eq(interviewSessionsTable.id, id)))[0];
+  assert.equal((await save("Describe your API project.", "unclear capture", 1)).status, 200);
+  const clarification = "I may not have caught that correctly — could you repeat what you said?";
+  const retries = await Promise.all([
+    save(clarification, "I built REST APIs.", 2),
+    save(clarification, "I built REST APIs.", 2),
+  ]);
+  assert.deepEqual(retries.map(r => r.status), [200, 200]);
+  let row = await snapshot();
+  let answers = row.answers as any[];
+  assert.equal(row.currentQuestionIndex, 1);
+  assert.equal(answers.length, 1);
+  assert.equal(answers[0].questionText, "Describe your API project.");
+  assert.equal(answers[0].answer, "I built REST APIs.");
+  assert.equal(answers[0].score, null);
+  assert.equal(answers[0].captureClarifications.length, 1);
+  // Resume state uses the saved index, not the number of capture requests.
+  await dbAdmin.update(interviewSessionsTable).set({ status: "resumed" }).where(eq(interviewSessionsTable.id, id));
+  assert.equal((await save("How did you validate requests?", "I checked required fields.", 2)).status, 200);
+  assert.equal((await save(clarification, "I checked field types too.", 3)).status, 200);
+  row = await snapshot();
+  answers = row.answers as any[];
+  assert.equal(answers.length, 2);
+  assert.equal(row.currentQuestionIndex, 2);
+  assert.equal((await save("An extra substantive question?", "No extra slot.", 3)).status, 409);
+  await dbAdmin.update(interviewSessionsTable).set({ status: "completed" }).where(eq(interviewSessionsTable.id, id));
+  const frozen = JSON.stringify((await snapshot()).answers);
+  // The existing session-cookie middleware rejects completed sessions before
+  // the route runs. Retain that stronger lifecycle gate.
+  assert.equal((await save(clarification, "Do not rewrite completed evidence.", 3)).status, 410);
+  assert.equal(JSON.stringify((await snapshot()).answers), frozen);
 });
 
 /* ── converse ─────────────────────────────────────────────────────────────── */

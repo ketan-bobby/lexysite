@@ -1,5 +1,12 @@
 import { useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,11 +14,17 @@ import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { useConfirmLearningGrowthGoals, useGetLearningGrowth } from "@/lib/use-learning-growth";
 import type { LearningGrowthResponse } from "@workspace/api-client-react";
 
-export function GoalsForm({ data, onComplete }: { data: LearningGrowthResponse; onComplete?: () => void }) {
+export function GoalsForm({
+  data,
+  onComplete,
+}: {
+  data: LearningGrowthResponse;
+  onComplete?: () => void;
+}) {
   const confirmGoals = useConfirmLearningGrowthGoals();
   const draftRevision = useRef(data.revision);
   const { refetch } = useGetLearningGrowth();
-  
+
   const [immediateGoal, setImmediateGoal] = useState(data.goals?.immediateGoal || "");
   const [careerGoal3yr, setCareerGoal3yr] = useState(data.goals?.careerGoal3yr || "");
   const [careerGoal5yr, setCareerGoal5yr] = useState(data.goals?.careerGoal5yr || "");
@@ -31,24 +44,30 @@ export function GoalsForm({ data, onComplete }: { data: LearningGrowthResponse; 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
-    
-    confirmGoals.mutate({
-      revision: draftRevision.current,
-      immediateGoal,
-      careerGoal3yr,
-      careerGoal5yr
-    }, {
-      onSuccess: () => {
-        if (onComplete) onComplete();
-      }
-    });
+
+    confirmGoals.mutate(
+      {
+        revision: draftRevision.current,
+        immediateGoal,
+        careerGoal3yr,
+        careerGoal5yr,
+      },
+      {
+        onSuccess: () => {
+          if (onComplete) onComplete();
+        },
+      },
+    );
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Confirm Your Goals</CardTitle>
-        <CardDescription>Based on your profile, we've drafted some goals. Edit them to reflect where you want to be.</CardDescription>
+        <CardDescription>
+          Based on your profile, we've drafted some goals. Edit them to reflect where you want to
+          be.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {confirmGoals.error && (
@@ -66,23 +85,50 @@ export function GoalsForm({ data, onComplete }: { data: LearningGrowthResponse; 
         )}
         <form id="goals-form" onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="immediate-goal" className="text-base font-semibold">Immediate Goal <span className="text-destructive">*</span></Label>
-            <Textarea id="immediate-goal" value={immediateGoal} onChange={e => setImmediateGoal(e.target.value)} maxLength={2000} rows={3} placeholder="What are you trying to achieve right now? (e.g. Find a software engineering role)" />
+            <Label htmlFor="immediate-goal" className="text-base font-semibold">
+              Immediate Goal <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="immediate-goal"
+              value={immediateGoal}
+              onChange={(e) => setImmediateGoal(e.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="What are you trying to achieve right now? (e.g. Find a software engineering role)"
+            />
           </div>
           <div className="space-y-3">
-            <Label htmlFor="3yr-goal" className="text-base font-semibold">3-Year Career Goal <span className="text-destructive">*</span></Label>
-            <Textarea id="3yr-goal" value={careerGoal3yr} onChange={e => setCareerGoal3yr(e.target.value)} maxLength={2000} rows={3} placeholder="Where do you see yourself in 3 years? (e.g. Lead a project team)" />
+            <Label htmlFor="3yr-goal" className="text-base font-semibold">
+              3-Year Career Goal <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="3yr-goal"
+              value={careerGoal3yr}
+              onChange={(e) => setCareerGoal3yr(e.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="Where do you see yourself in 3 years? (e.g. Lead a project team)"
+            />
           </div>
           <div className="space-y-3">
-            <Label htmlFor="5yr-goal" className="text-base font-semibold">5-Year Career Goal <span className="text-destructive">*</span></Label>
-            <Textarea id="5yr-goal" value={careerGoal5yr} onChange={e => setCareerGoal5yr(e.target.value)} maxLength={2000} rows={3} placeholder="Where do you see yourself in 5 years? (e.g. Become a technical architect or engineering manager)" />
+            <Label htmlFor="5yr-goal" className="text-base font-semibold">
+              5-Year Career Goal <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="5yr-goal"
+              value={careerGoal5yr}
+              onChange={(e) => setCareerGoal5yr(e.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="Where do you see yourself in 5 years? (e.g. Become a technical architect or engineering manager)"
+            />
           </div>
         </form>
       </CardContent>
       <CardFooter className="bg-muted/20 border-t flex justify-end">
-        <Button 
-          type="submit" 
-          form="goals-form" 
+        <Button
+          type="submit"
+          form="goals-form"
           disabled={!isValid || confirmGoals.isPending}
           className="min-w-32"
         >

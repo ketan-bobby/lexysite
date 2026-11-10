@@ -1,8 +1,4 @@
-export type {
-  CourseDefinition,
-  ExerciseDefinition,
-  LessonDefinition,
-} from "./types";
+export type { CourseDefinition, ExerciseDefinition, LessonDefinition } from "./types";
 
 import { SUPPORT_COMMUNICATION_FOUNDATIONS } from "./course-foundations";
 import { SUPPORT_COMMUNICATION_PRACTICE } from "./course-practice";

@@ -47,7 +47,7 @@
 import { db } from "@workspace/db";
 import { candidatesTable, communicationEventsTable, tenantsTable } from "@workspace/db";
 import { eq, and, isNotNull, sql, inArray } from "drizzle-orm";
-import { sendEmail } from "./email.js";
+import { sendCadencedCommunication } from "./cadenced-communication";
 import { logger } from "./logger.js";
 import { compliantCandidatePredicate } from "./compliance-scope.js";
 
@@ -471,39 +471,28 @@ export async function runLinkedInProfileMonitor(): Promise<LinkedInScanResult> {
         emailPayload = buildCheckInEmail(firstName, brand);
       }
 
-      const sendResult = await sendEmail({
+      const sendResult = await sendCadencedCommunication({
+        kind:"status_checkin",intervalDays:ENGAGEMENT_COOLDOWN_DAYS,
+        tenantId:candidate.tenantId,ownerTenantId:candidate.tenantId,candidateId:candidate.id,
+        expectedUpdatedAt:new Date(candidate.updatedAt),expectedPool:candidate.pool,
         to:      candidate.email!,
         subject: emailPayload.subject,
-        html:    emailPayload.html,
-        audit: {
-          tenantId:     candidate.tenantId,
+        html:    emailPayload.html,htmlOnly:true,
+        body:`Status check-in (${emailType}${newTitle ? ` · ${newTitle}` : ""}${newCompany ? ` @ ${newCompany}` : ""})`,
           actorLabel:   "Candidate Status Check-in",
-          subjectType:  "candidate",
-          subjectId:    candidate.id,
           subjectLabel: fullName,
           action:       "linkedin.profile_check",
           metadata:     { emailType, newTitle: newTitle ?? null, newCompany: newCompany ?? null },
-        },
       });
 
-      if (sendResult.ok) {
-        await db.insert(communicationEventsTable).values({
-          tenantId:    candidate.tenantId,
-          candidateId: candidate.id,
-          type:        "follow_up",
-          channel:     "email",
-          status:      "sent",
-          subject:     emailPayload.subject,
-          body:        `Status check-in (${emailType}${newTitle ? ` · ${newTitle}` : ""}${newCompany ? ` @ ${newCompany}` : ""})`,
-          sentAt:      new Date(),
-        } as any);
-
+      if (sendResult.ok&&!sendResult.simulated&&!sendResult.suppressed) {
         result.emailsSent++;
         result.details.push({ candidateId: candidate.id, name: fullName, action: emailType, newTitle, newCompany });
         logger.info({ candidateId: candidate.id, emailType }, "[linkedin-monitor] Email sent");
       } else {
-        result.errors++;
-        logger.warn({ candidateId: candidate.id, error: sendResult.error }, "[linkedin-monitor] Email send failed");
+        if(sendResult.reviewRequired||sendResult.reason==="send_failed")result.errors++;
+        else result.skipped++;
+        logger.info({ candidateId: candidate.id, reason: sendResult.reason }, "[linkedin-monitor] Email not counted as accepted");
       }
     } catch (err: any) {
       result.errors++;

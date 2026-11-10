@@ -4,6 +4,13 @@ Run through this list before pointing any new environment (staging, EU cell,
 in-region cell, fresh prod) at real traffic. Items marked **HARD BLOCKER**
 will cause user-visible breakage if skipped — do not launch without them.
 
+Production hosting and its database are externally managed. This document is
+an operator checklist, not permission to access production. Development results
+and external acceptance must be recorded separately. See the
+[consolidated six-stage closure list](qa/lexy-release-closure-2026-11-03.md),
+[latest development verification](qa/assisted-release-verification-2026-11-03.md)
+and [Zoho release handoff](zoho-release-checklist.md) for evidence and limits.
+
 ## 1. Database
 
 - [ ] Postgres reachable from the API server (`SELECT 1` succeeds).
@@ -30,8 +37,9 @@ will cause user-visible breakage if skipped — do not launch without them.
 - [ ] `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`,
       `AWS_S3_BUCKET` set.
 - [ ] `DEV_AUTH_FALLBACK` is **unset** or `false` in production. If true in
-      prod, the legacy `demo_token_<userId>` format is accepted and every
-      user is impersonable.
+      non-production, the legacy `demo_token_<userId>` format is accepted.
+      The current verifier refuses that format in production regardless of
+      the flag; do not enable it in a shared environment.
 
 ## 3. S3 bucket — **HARD BLOCKER**
 
@@ -77,41 +85,51 @@ Bucket policy / IAM:
 - [ ] Each cell's API has its own database; no cross-region replication of
       candidate PII.
 
-## 5. Smoke pass — **HARD BLOCKER**
+## 5. Verification and acceptance — **HARD BLOCKER**
 
-Run the automated smoke script against the freshly provisioned environment:
+- [ ] Retain completed development verification reports and review all failures
+      and follow-up corrections. Do not automatically rerun expensive combined
+      checks when the relevant evidence is already current.
+- [ ] Verify externally managed schema/configuration through the deployment
+      owner's approved process before release.
+- [ ] Record authorized Linx and calendar/meeting acceptance separately from
+      synthetic development checks. Zoho reconnection/live campaign acceptance
+      remains deferred until the employer is ready.
+- [ ] Do not count pending or simulated provider operations as live success.
 
-```bash
-SMOKE_BASE_URL=https://api.<env>.lexy.ai \
-SMOKE_EMAIL=smoke+<env>@lexy.ai \
-SMOKE_PASSWORD='<strong-pw>' \
-SMOKE_STAFF_TOKEN='<bearer-token-of-any-tenant_admin-or-recruiter-in-this-env>' \
-SMOKE_REQUIRE_SHADOW_GUARD=true \
-  node artifacts/api-server/scripts/smoke-critical-journeys.mjs
+For a new, authorized development verification run:
+
+```sh
+pnpm test:assisted-baseline
 ```
 
-`SMOKE_STAFF_TOKEN` is mandatory on release runs — the script will refuse to
-exit 0 without it when `SMOKE_REQUIRE_SHADOW_GUARD=true`. Obtain it by
-logging into the target environment as a tenant_admin in a browser, opening
-DevTools → Application → Local Storage, and copying the `lexy.session.token`
-value. The script uses it only to assert that staff tokens are correctly
-REFUSED by `/portal/*` (the auth-shadowing regression closed by migration
-0012); it does not mutate any data with that token.
+This suite is not production acceptance or proof of every user journey.
+Native offer-session checks require separate independently verified development
+database targeting; see [the session and recovery guide](qa/offer-session-role-and-recovery-2026-11-03.md).
 
-The script must exit 0. It exercises:
+### Legacy mutating smoke: isolated development only
 
-1. Tenant + admin signup
-2. Stripe checkout session creation (only when `ENABLE_SELF_SERVE_BILLING=true`;
-   otherwise this step is expected to warn `billing not configured`)
-3. Recruiter invite generation and acceptance
-4. Job posting creation
-5. Public candidate application against that job
-6. Candidate portal session resolves to the right candidate (auth-shadowing
-   regression test for migration 0012)
-7. Interview kickoff
-8. Hire decision
+`artifacts/api-server/scripts/smoke-critical-journeys.mjs` is **not** the
+release gate. It can create durable accounts and business records, attempt
+billing/email/automation, and does not automatically clean up. Its
+best-effort/optional branches and absent admin token can skip major paths;
+exit zero does not prove those paths passed.
 
-If any step fails, **do not launch this environment**.
+It now refuses production runtimes and external hosts before sending requests.
+An operator who explicitly needs it must first verify that the local API uses
+isolated development data and safe backing services, then supply all three:
+`SMOKE_ALLOW_MUTATIONS=true`, an explicit loopback `SMOKE_BASE_URL`, and
+`SMOKE_CONFIRMED_ORIGIN` matching that URL's normalized origin, including its
+non-default port. No default target is used and HTTP redirects are refused.
+Loopback targeting alone does not prove database or provider isolation.
+
+Do not extract session credentials from browser storage or paste them into
+chat. Use native authenticated sessions for the supported checks. Testing this
+legacy tool's refusal requires no application credentials or business writes:
+
+```sh
+pnpm test:smoke-target-guard
+```
 
 ## 6. Billing (sales-led / manual)
 

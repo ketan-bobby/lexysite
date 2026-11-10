@@ -1,0 +1,52 @@
+{
+  "status": "passed",
+  "scope": "Structured workflow-local human Hire/Hold/Decline decisions",
+  "behavior": {
+    "hireAndDecline": "Complete the decision step, not confirmed employment or an offer",
+    "hold": "Keeps the workflow open for further review",
+    "reason": "Required, trimmed, 10 to 4000 characters",
+    "reviewerAndTimestamp": "Server-owned authenticated reviewer details and decision time",
+    "classification": "Server-owned shared canonical-plus-audit synthetic exclusion",
+    "history": "Previous Hold records retained when a later decision is saved",
+    "legacy": "No inferred outcome or data backfill for old free-text completions",
+    "confirmation": "Explicit review and confirmation; edits reset confirmation"
+  },
+  "checks": {
+    "apiRegressionTestsPassed": 498,
+    "frontendLogicTestsPassed": 50,
+    "runnerAndEgressTestsPassed": 12,
+    "totalRegressionTestsPassed": 560,
+    "regressionFailures": 0,
+    "regressionTestsSkipped": 0,
+    "focusedDecisionTests": "2 passed; real and synthetic branches, role authority, invalid input, stale revisions, retries and concurrent submissions",
+    "sharedLibraryTypes": "passed",
+    "frontendTypecheck": "passed",
+    "apiBuildAndSecurityGuards": "passed",
+    "lint": "passed with zero errors; repository warnings remain",
+    "format": "passed",
+    "disposableBrowserFixture": "cleaned after verification",
+    "completedPilotProtection": "all seven protected record-group fingerprints unchanged",
+    "browserFixtureSideEffects": "applications stayed applied with null confirmed final outcomes; no candidate outreach records created",
+    "regressionRunnerInterruption": "The runner was interrupted after all test batches, frontend typecheck and API build completed; remaining lint and format checks were completed separately without rerunning unchanged passing tests",
+    "browser": {
+      "readonlyRecruiter": "passed",
+      "confirmationResetOnEdit": "passed",
+      "holdSaveAndReload": "passed",
+      "declineSaveAndReload": "passed",
+      "historyAndTestOnlyLabels": "passed",
+      "decisionComponentAt390Pixels": "fits without overflowing descendants",
+      "legacyLabel": "parent rendering condition repaired; targeted browser confirmation passed",
+      "unrelatedPageOverflow": "6 pixels outside the changed decision component",
+      "interruptions": "Initial session seeding corrected to use the canonical cookie; preview services restored after a notebook interruption"
+    }
+  },
+  "sideEffects": {
+    "offersSent": false,
+    "confirmedEmploymentCreated": false,
+    "pipelineStagesChangedByDecision": false,
+    "candidateCommunicationsTriggered": false,
+    "feesCreated": false,
+    "modelsPromptsOrProviderRoutingChanged": false,
+    "pricingOrExternalSourcingRestrictionsAdded": false
+  }
+}

@@ -42,7 +42,6 @@ import {
   jobsTable,
   candidatesTable,
   usersTable,
-  applicationsTable,
   jobPipelinesTable,
 } from "@workspace/db";
 import { eq, desc, and, or, isNull, ne, inArray, sql } from "drizzle-orm";
@@ -70,7 +69,7 @@ import { recruiterOwnsResource } from "../lib/ownership";
 import { findExistingCandidate } from "../lib/candidate-dedup.js";
 import { DEFAULT_PIPELINE_AGENTS } from "../lib/pipeline-defaults.js";
 import { logger } from "../lib/logger";
-import { originFields } from "../lib/sourcing-origin";
+import { ensureSourcedApplication } from "../lib/sourced-application";
 
 const SourcingSearchBody = z
   .object({
@@ -146,6 +145,78 @@ export function buildSearchContext(job: any, icp: any | null, maxPerSource: numb
     booleanSearchString: icp?.booleanSearchString ?? null,
     maxResults: maxPerSource,
   };
+}
+
+type InternalDiscoveryMode = "known_talent" | "internal_mobility";
+
+function internalDiscoveryMode(job: any): InternalDiscoveryMode {
+  return job?.internalMobility === true ? "internal_mobility" : "known_talent";
+}
+
+function sourceSummary(
+  mode: InternalDiscoveryMode,
+  bySource: Record<string, number>,
+  icpMissing: boolean,
+) {
+  const internalLabel =
+    mode === "internal_mobility" ? "Internal Mobility" : "Known Talent Rediscovery";
+  const externalCount = ["github", "pdl", "serp", "enrichlayer"].reduce(
+    (sum, source) => sum + (bySource[source] ?? 0),
+    0,
+  );
+  const total = Object.values(bySource).reduce((sum, count) => sum + count, 0);
+  return {
+    mode,
+    label: internalLabel,
+    internalLabel,
+    externalLabel: mode === "internal_mobility" ? null : "External Discovery",
+    internalMobility: mode === "internal_mobility",
+    externalEnabled: mode !== "internal_mobility",
+    bySource,
+    total,
+    icpMissing,
+    noMatches: total === 0,
+  };
+}
+
+function skippedExternalResults(reason: string) {
+  const skipped = (source: string) => ({
+    candidates: [] as any[],
+    query: `${source}: ${reason}`,
+    skipped: reason,
+  });
+  return {
+    github: skipped("GitHub"),
+    pdl: skipped("PDL"),
+    serp: skipped("SERP"),
+    enrichlayer: skipped("EnrichLayer"),
+  };
+}
+
+async function excludeProtectedTenantMatches(candidates: any[], tenantId: string) {
+  const eligible: any[] = [];
+  for (const candidate of candidates) {
+    const existing: any = await findExistingCandidate({
+      tenantId,
+      email: candidate.email,
+      phone: candidate.phone,
+      linkedinUrl: candidate.linkedinUrl,
+      firstName: candidate.firstName,
+      lastName: candidate.lastName,
+      location: candidate.location,
+    });
+    if (
+      existing &&
+      (existing.pool !== "tenant" ||
+        existing.isCurrentEmployee ||
+        existing.doNotContact ||
+        existing.dataErasedAt)
+    ) {
+      continue;
+    }
+    eligible.push(candidate);
+  }
+  return eligible;
 }
 
 /* ── Internal-first gate ─────────────────────────────────────────────────
@@ -224,6 +295,7 @@ export async function searchInternalDatabase(
   ctx: SearchContext,
   tenantScope: string | string[] | null,
   dbc: typeof db = db,
+  mode: InternalDiscoveryMode = "known_talent",
 ): Promise<AdapterResult> {
   // Subtree scope: an array searches the full descendant tenant tree; null =
   // platform_admin (no tenant restriction). `and()` drops undefined conditions.
@@ -254,6 +326,12 @@ export async function searchInternalDatabase(
          * pool='tenant') rather than referencing the personal profile, so "saved
          * candidates" is not a bridge back into personal/job-seeking scope. */
         eq(candidatesTable.pool, "tenant"),
+        mode === "internal_mobility"
+          ? eq(candidatesTable.isCurrentEmployee, true)
+          : or(
+              isNull(candidatesTable.isCurrentEmployee),
+              ne(candidatesTable.isCurrentEmployee, true),
+            ),
         or(
           isNull((candidatesTable as any).doNotContact),
           ne((candidatesTable as any).doNotContact, true),
@@ -300,12 +378,10 @@ export async function searchInternalDatabase(
     };
   });
 
-  /* Current employees are ALWAYS surfaced — internal mobility is a primary
-     channel for tenants that have given us HRIS/ATS access, and they should
-     never be silently truncated by the maxResults cap. We carve them out
-     first (bounded by EMPLOYEE_CAP so a 10k-employee tenant doesn't explode
-     the downstream LLM scoring batch), then fill the remainder with the
-     highest-scoring non-employees. */
+  /* Employee-only searches carve employees out first (bounded by EMPLOYEE_CAP
+     so a 10k-employee tenant doesn't explode the downstream scoring batch).
+     Known-talent rediscovery excludes current employees in the SQL predicate
+     above, then fills its limit with the highest-scoring saved candidates. */
   const EMPLOYEE_CAP = Math.max(25, Math.ceil(ctx.maxResults * 1.5));
   const employees = scored
     .filter((c) => c.isCurrentEmployee)
@@ -323,12 +399,10 @@ export async function searchInternalDatabase(
   };
 }
 
-/* ── POST /sourcing/internal — internal-first discovery (tenant pool only) ──
- * Step 1 of the enforced internal-first flow. Searches ONLY the caller's own
- * tenant pool (current employees + previously-saved candidates) against the
- * job's ICP — never external providers, never the platform pool, so the
- * work↔personal firewall stays intact. Running it records the internal-review
- * marker that unlocks external sourcing spend for this requisition. */
+/* ── POST /sourcing/internal — internal-only discovery (tenant pool only) ──
+ * Searches only the job's own tenant pool, using current employees when
+ * internal mobility is enabled and known non-employee candidates otherwise.
+ * It never calls external providers or reads the platform pool. */
 router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), async (req, res) => {
   const { jobId, maxPerSource = 15 } = req.body;
   if (!jobId) {
@@ -382,7 +456,8 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
   // Internal ONLY — tenant pool. searchInternalDatabase is scoped to the job's
   // tenant and never reads the platform pool, so personal/job-seeking profiles
   // are never linked to the employer.
-  const internalRes = await searchInternalDatabase(ctx, tenantId);
+  const mode = internalDiscoveryMode(job);
+  const internalRes = await searchInternalDatabase(ctx, tenantId, db, mode);
   const internalScored =
     icp && internalRes.candidates.length > 0
       ? await scoreExternalCandidates(internalRes.candidates as any[], icp as any)
@@ -411,6 +486,8 @@ router.post("/sourcing/internal", validate({ body: SourcingInternalBody }), asyn
   res.json({
     total: flagged.length,
     bySource: { internal: flagged.length },
+    internalMobility: mode === "internal_mobility",
+    sourceSummary: sourceSummary(mode, { internal: flagged.length }, !icp),
     queries: { internal: { query: internalRes.query, skipped: (internalRes as any).skipped } },
     icpMissing: !icp,
     internalReviewedAt: new Date().toISOString(),
@@ -489,32 +566,37 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
    * internal pool is always searched as part of this fan-out anyway. */
 
   const tenantId = job.tenantId || "";
+  const mode = internalDiscoveryMode(job);
   const ctx = buildSearchContext(job, icp || null, maxPerSource);
 
-  /* `internal` is ALWAYS run — current employees and previously-saved tenant
-     candidates must surface in every search regardless of which external
-     sources the recruiter has toggled on. Recruiters never want to source for
-     a role and miss someone already inside the company. The external providers
+  /* Internal DB discovery always runs, but the job's persisted internalMobility
+     setting determines whether it searches current employees or known
+     non-employee talent. In employee-only mode provider fan-out is disabled
+     completely; a request-body flag cannot override the stored job setting.
+     Otherwise external providers
      (GitHub, PDL, SerpAPI, EnrichLayer) all run through the adapter layer
      (Task #28): two-phase discovery→enrichment, config-driven selection, and
      graceful degradation — see lib/sourcing-providers.ts.
      The caller's tenant membership for `jobId` is verified above before any
      search runs or any sourced application row is written. */
   const [internalRes, providerResults] = await Promise.all([
-    searchInternalDatabase(ctx, tenantId),
-    runSourcingProviders(ctx, { requested: sources }),
+    searchInternalDatabase(ctx, tenantId, db, mode),
+    mode === "internal_mobility"
+      ? Promise.resolve(skippedExternalResults("Disabled by Internal Mobility job setting"))
+      : runSourcingProviders(ctx, { requested: sources }),
   ]);
   const ghRes = providerResults.github;
   const pdlRes = providerResults.pdl;
   const serpRes = providerResults.serp;
   const elRes = providerResults.enrichlayer;
 
-  const externalAll = [
+  const externalDiscovered = [
     ...ghRes.candidates,
     ...pdlRes.candidates,
     ...serpRes.candidates,
     ...elRes.candidates,
   ];
+  const externalAll = await excludeProtectedTenantMatches(externalDiscovered, tenantId);
   const externalScored = icp ? await scoreExternalCandidates(externalAll, icp as any) : externalAll;
 
   const internalScored =
@@ -524,7 +606,11 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
 
   const internalFinal = internalScored.map((s: any) => {
     const orig = internalRes.candidates.find((c: any) => c.id === s.id);
-    return { ...s, candidateId: (orig as any)?.candidateId ?? (s as any).candidateId };
+    return {
+      ...s,
+      candidateId: (orig as any)?.candidateId ?? (s as any).candidateId,
+      isInternalCandidate: true,
+    };
   });
 
   // DNC filter for external candidates
@@ -611,6 +697,17 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
         location: c.location,
       });
       if (existingCand) {
+        // External discovery cannot be used to reintroduce protected database
+        // identities through email/LinkedIn dedup. Internal mobility and
+        // known-talent eligibility are enforced from the stored job setting.
+        if (
+          existingCand.pool !== "tenant" ||
+          existingCand.isCurrentEmployee ||
+          existingCand.doNotContact ||
+          existingCand.dataErasedAt
+        ) {
+          continue;
+        }
         normalizedId = existingCand.id;
       } else {
         const [inserted] = await db
@@ -663,30 +760,23 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
       // so no AI credits are consumed. Best-effort — never blocks sourcing.
       if (jobTenantId && normalizedId) {
         try {
-          const existingApp = await db
-            .select({ id: applicationsTable.id })
-            .from(applicationsTable)
-            .where(
-              and(
-                eq(applicationsTable.candidateId, normalizedId),
-                eq(applicationsTable.jobId, jobId),
-              ),
-            )
-            .limit(1);
-          if (existingApp.length === 0) {
-            await db.insert(applicationsTable).values({
-              tenantId: jobTenantId,
+          await ensureSourcedApplication({
+            dbc: db,
+            tenantId: jobTenantId,
+            jobId,
+            candidateId: normalizedId,
+            channel: existingCand ? "known_talent_rediscovery" : "ai_sourcing",
+            evidence: {
+              source: c.source,
               jobId,
-              candidateId: normalizedId,
-              stage: "sourced",
-              ...originFields(
-                "ai_sourcing",
-                { source: c.source, jobId, via: "sourcing_scan", matchScore: c.matchScore ?? null },
-                "sourcing_agent",
-              ),
-            });
-          }
-        } catch {
+              via: "sourcing_scan",
+              matchScore: c.matchScore ?? null,
+            },
+            setBy: "sourcing_agent",
+            matchScore: c.matchScore ?? null,
+          });
+        } catch (error) {
+          logger.warn({ err: error, jobId, candidateId: normalizedId }, "Failed to create sourcing application link");
           /* best-effort: never block sourcing on app-row creation */
         }
       }
@@ -694,10 +784,54 @@ router.post("/sourcing/search", validate({ body: SourcingSearchBody }), async (r
       /* skip duplicates */
     }
   }
+  // Internal selections already resolve to canonical tenant candidate IDs;
+  // link every selection to this exact requisition even when no provider ran.
+  if (jobTenantId) {
+    for (const candidate of internalFlagged as any[]) {
+      if (!candidate.isInternalCandidate || !candidate.candidateId) continue;
+      try {
+        await ensureSourcedApplication({
+          dbc: db,
+          tenantId: jobTenantId,
+          jobId,
+          candidateId: candidate.candidateId,
+          channel: mode === "internal_mobility"
+            ? "internal_mobility"
+            : "known_talent_rediscovery",
+          evidence: {
+            source: "internal",
+            jobId,
+            via: "sourcing_scan",
+            matchScore: candidate.matchScore ?? null,
+          },
+          setBy: "sourcing_agent",
+          matchScore: candidate.matchScore ?? null,
+        });
+      } catch (error) {
+        logger.warn(
+          { err: error, jobId, candidateId: candidate.candidateId },
+          "Failed to create internal sourcing application link",
+        );
+        /* best-effort: a failed pipeline link must not break candidate discovery */
+      }
+    }
+  }
 
   res.json({
     total: all.length,
     saved,
+    internalMobility: mode === "internal_mobility",
+    sourceSummary: sourceSummary(
+      mode,
+      {
+        internal: internalRes.candidates.length,
+        github: ghRes.candidates.length,
+        pdl: pdlRes.candidates.length,
+        serp: serpRes.candidates.length,
+        enrichlayer: elRes.candidates.length,
+      },
+      !icp,
+    ),
     bySource: {
       internal: internalRes.candidates.length,
       github: ghRes.candidates.length,
@@ -899,8 +1033,9 @@ router.post("/sourcing/ingest", validate({ body: SourcingIngestBody }), async (r
    with 8 years of experience" and we:
      1. Use OpenAI to parse the prose into a structured SearchContext
         (title, alt-titles, skills, location, seniority/minYears, keywords).
-     2. ALWAYS search the tenant's internal candidates table (same partition
-        rules as /sourcing/search — current employees never get truncated).
+      2. ALWAYS search the tenant's internal candidates table (same partition
+         rules as /sourcing/search — the job setting chooses employees or known
+         non-employee talent).
      3. Optionally fan out to external sources gated on env keys.
      4. If `jobId` is supplied, also re-score against that job's ICP so the
         recruiter can compare the NL hits against their formal target.
@@ -1079,6 +1214,7 @@ Only include items actually implied by the query. Empty arrays are fine.`,
        * blocking gate — internal results are included in the fan-out below and
        * the UI nudges recruiters to review them first. */
     }
+    const mode = internalDiscoveryMode(job);
 
     const ctx: SearchContext = {
       jobTitle: parsed.jobTitle || icp?.jobTitle || job?.title || "",
@@ -1105,20 +1241,31 @@ Only include items actually implied by the query. Empty arrays are fine.`,
     /* Step 3: same fan-out as /sourcing/search. Internal is always on; the
      * external providers run through the adapter layer (Task #28). */
     const [internalRes, providerResults] = await Promise.all([
-      searchInternalDatabase(ctx, allowed),
-      runSourcingProviders(ctx, { requested: sources }),
+      searchInternalDatabase(
+        ctx,
+        mode === "internal_mobility" ? (job?.tenantId ?? "") : allowed,
+        db,
+        mode,
+      ),
+      mode === "internal_mobility"
+        ? Promise.resolve(skippedExternalResults("Disabled by Internal Mobility job setting"))
+        : runSourcingProviders(ctx, { requested: sources }),
     ]);
     const ghRes = providerResults.github;
     const pdlRes = providerResults.pdl;
     const serpRes = providerResults.serp;
     const elRes = providerResults.enrichlayer;
 
-    const externalAll = [
+    const externalDiscovered = [
       ...ghRes.candidates,
       ...pdlRes.candidates,
       ...serpRes.candidates,
       ...elRes.candidates,
     ];
+    const externalAll =
+      job?.tenantId && mode !== "internal_mobility"
+        ? await excludeProtectedTenantMatches(externalDiscovered, job.tenantId)
+        : externalDiscovered;
     /* Re-score using the ICP if we have one, otherwise leave the per-adapter
      * scores in place — scoreExternalCandidates needs a real ICP row to
      * work, so synthesising one from `parsed` would just degrade quality. */
@@ -1180,6 +1327,18 @@ Only include items actually implied by the query. Empty arrays are fine.`,
       jobId: jobId ?? null, // echoed back so the UI can pre-fill the attach picker
       total: all.length,
       saved: 0, // NL search doesn't persist — call /sourcing/save explicitly if needed
+      internalMobility: mode === "internal_mobility",
+      sourceSummary: sourceSummary(
+        mode,
+        {
+          internal: internalRes.candidates.length,
+          github: ghRes.candidates.length,
+          pdl: pdlRes.candidates.length,
+          serp: serpRes.candidates.length,
+          enrichlayer: elRes.candidates.length,
+        },
+        !icp,
+      ),
       bySource: {
         internal: internalRes.candidates.length,
         github: ghRes.candidates.length,

@@ -58,7 +58,7 @@ import {
   Plus,
   Check,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/react-hooks/use-toast";
@@ -90,11 +90,11 @@ const SOURCE_META: Record<
   { name: string; icon: any; color: string; border: string; desc: string }
 > = {
   internal: {
-    name: "Talent Pool",
+    name: "Known Talent Rediscovery",
     icon: Users,
     color: "text-violet-400 bg-violet-500/15",
     border: "border-violet-500/30",
-    desc: "Existing candidates in your database",
+    desc: "Known nonemployee talent already in your database",
   },
   github: {
     name: "GitHub",
@@ -197,11 +197,15 @@ export default function Sourcing() {
   const [tab, setTab] = useState<"job" | "nl">("job");
   const [selectedJob, setSelectedJob] = useState("");
   const [results, setResults] = useState<any[]>([]);
+  const [hasSearchContext, setHasSearchContext] = useState(false);
+  const [searchRunning, setSearchRunning] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const resultsContextId = useRef(0);
   /* "all" | "none" (no work order) | a job id — filters the saved sourced pool. */
   const [poolJobFilter, setPoolJobFilter] = useState<string>("all");
   const [sourceSummary, setSourceSummary] = useState<any>(null);
-  /* Enforced internal-first: the id of the job whose OWN internal talent the
-   * recruiter has reviewed this session. External sourcing ("Go to Market") is
+  /* Enforced internal-first: the id of the job whose known talent the
+   * recruiter has reviewed this session. External sourcing ("External Discovery") is
    * unlocked only once this === selectedJob. The server enforces the same gate
    * (409 INTERNAL_REVIEW_REQUIRED) so this is UX, not the security boundary. */
   const [internalReviewedJobId, setInternalReviewedJobId] = useState<string | null>(null);
@@ -240,10 +244,36 @@ export default function Sourcing() {
    * button can flip to a confirmed state without a full refetch. */
   const [attached, setAttached] = useState<Record<string, string>>({}); // candidateId → jobId
 
+  const clearSearchContext = () => {
+    resultsContextId.current += 1;
+    setResults([]);
+    setSourceSummary(null);
+    setHasSearchContext(false);
+    setSearchRunning(false);
+    setSearchFailed(false);
+  };
+
+  const beginSearchContext = () => {
+    const contextId = ++resultsContextId.current;
+    setResults([]);
+    setSourceSummary(null);
+    setHasSearchContext(true);
+    setSearchRunning(true);
+    setSearchFailed(false);
+    return contextId;
+  };
+
   const { data: jobs } = useQuery<any>({
     queryKey: ["/api/jobs"],
     queryFn: () => apiFetch("/jobs"),
   });
+  const jobList = (jobs as any)?.jobs || [];
+  const selectedJobRecord = jobList.find((j: any) => j.id === selectedJob);
+  const selectedJobInternalMobility = !!selectedJobRecord?.internalMobility;
+  const nlAttachJobRecord = jobList.find((j: any) => j.id === nlAttachJobId);
+  const nlAttachJobInternalMobility = !!nlAttachJobRecord?.internalMobility;
+  const selectedSearchIsInternalMobility =
+    tab === "job" ? selectedJobInternalMobility : nlAttachJobInternalMobility;
   const { data: status } = useQuery<any>({
     queryKey: ["/api/sourcing/status"],
     queryFn: () => apiFetch("/sourcing/status"),
@@ -253,59 +283,80 @@ export default function Sourcing() {
     queryFn: () => apiFetch("/sourcing/candidates"),
   });
 
-  /* STEP 1 — internal-first review. Searches ONLY the tenant's own talent pool
-   * (current employees + previously-saved candidates), never external providers
-   * and never the platform pool. Running it records the server-side marker that
-   * unlocks external sourcing spend for this requisition. */
+  /* STEP 1 — known-talent review. For regular requisitions this rediscovers
+   * known nonemployee candidates; Internal Mobility requisitions search current
+   * employees only. Running it records the server-side marker used for sourcing. */
   const internalMutation = useMutation({
-    mutationFn: (jobId: string) =>
+    mutationFn: ({ jobId }: { jobId: string; contextId: number; internalMobility: boolean }) =>
       apiFetch<any>("/sourcing/internal", {
         method: "POST",
         body: JSON.stringify({ jobId, maxPerSource: 15 }),
       }),
-    onSuccess: (data, jobId) => {
+    onSuccess: (data, variables) => {
+      const { jobId, contextId, internalMobility } = variables;
+      refetchSaved();
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      if (contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
       setResults(data.candidates || []);
       setSourceSummary(data);
       setInternalReviewedJobId(jobId);
       setInternalMatchCount(data.total ?? data.candidates?.length ?? 0);
-      refetchSaved();
-      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
         title:
           data.total > 0
-            ? `${pluralize(data.total, "internal match")} in your talent pool`
-            : "No internal matches for this role",
+            ? `${pluralize(data.total, internalMobility ? "employee match" : "known talent match")} found`
+            : internalMobility
+              ? "No current employee matches for this role"
+              : "No known talent matches for this role",
         description: data.icpMissing
-          ? "Run the ICP agent first for sharper internal matching. You can now go to market if needed."
-          : "Reviewed your own talent first — you can now source externally if you need to.",
+          ? "Run the ICP agent first for sharper matching."
+          : internalMobility
+            ? "Only current employees are included in this Internal Mobility search."
+            : "Known nonemployee talent already in your database was reviewed. External Discovery remains available.",
       });
     },
-    onError: () => toast({ title: "Internal search failed", variant: "destructive" }),
+    onError: (_error, variables) => {
+      if (variables.contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
+      setSearchFailed(true);
+      toast({
+        title: variables.internalMobility ? "Internal Mobility search failed" : "Known Talent Rediscovery failed",
+        variant: "destructive",
+      });
+    },
   });
 
   const searchMutation = useMutation({
-    mutationFn: (jobId: string) =>
+    mutationFn: ({ jobId, internalMobility }: { jobId: string; contextId: number; internalMobility: boolean }) =>
       apiFetch<any>("/sourcing/search", {
         method: "POST",
         body: JSON.stringify({
           jobId,
-          sources: ["internal", "github", "pdl", "serp", "enrichlayer"],
+          sources: internalMobility
+            ? ["internal"]
+            : ["internal", "github", "pdl", "serp", "enrichlayer"],
           maxPerSource: 15,
         }),
       }),
-    onSuccess: (data, jobId) => {
-      setResults(data.candidates || []);
-      setSourceSummary(data);
+    onSuccess: (data, variables) => {
+      const { jobId, contextId, internalMobility } = variables;
       refetchSaved();
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       queryClient.invalidateQueries({ queryKey: ["pipeline-stages", jobId] });
       queryClient.invalidateQueries({ queryKey: ["intelligence", "job", jobId] });
+      if (contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
+      setResults(data.candidates || []);
+      setSourceSummary(data);
       const failedCount = Object.values((data.queries ?? {}) as Record<string, any>).filter(
         (q: any) => classifySkip(q?.skipped) === "error",
       ).length;
-      const desc = data.icpMissing
-        ? "Run the ICP agent for this job first — sourcing accuracy will be much higher."
-        : `Internal: ${data.bySource.internal} · GH: ${data.bySource.github} · PDL: ${data.bySource.pdl} · Web: ${data.bySource.serp} · EnrichLayer: ${data.bySource.enrichlayer ?? 0}`;
+      const desc = internalMobility
+        ? `Internal Mobility: ${data.bySource.internal ?? 0} current employees`
+        : data.icpMissing
+          ? "Run the ICP agent for this job first — sourcing accuracy will be much higher."
+          : `Known Talent Rediscovery: ${data.bySource.internal ?? 0} · External Discovery: ${(data.bySource.github ?? 0) + (data.bySource.pdl ?? 0) + (data.bySource.serp ?? 0) + (data.bySource.enrichlayer ?? 0)}`;
       toast({
         title: `Found ${pluralize(data.total, "candidate")}`,
         description:
@@ -315,15 +366,18 @@ export default function Sourcing() {
         variant: failedCount > 0 ? "destructive" : undefined,
       });
     },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
+      if (variables.contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
+      setSearchFailed(true);
       /* Server-side internal-first gate (safety net — the button is normally
        * disabled until step 1 runs). Reset the marker and steer them back. */
       if (String(err?.message ?? "").includes("INTERNAL_REVIEW_REQUIRED")) {
         setInternalReviewedJobId(null);
         setInternalMatchCount(null);
         toast({
-          title: "Review your internal talent first",
-          description: "Run the internal search for this role before going to market.",
+          title: "Review known talent first",
+          description: "Run Known Talent Rediscovery for this role before External Discovery.",
           variant: "destructive",
         });
         return;
@@ -371,17 +425,30 @@ export default function Sourcing() {
   /* Conversational sourcing mutation. Same response shape as searchMutation
    * so the existing results UI doesn't have to branch. */
   const nlMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: ({
+      query,
+      jobId,
+      internalMobility,
+    }: {
+      query: string;
+      jobId?: string;
+      internalMobility: boolean;
+      contextId: number;
+    }) =>
       apiFetch<any>("/sourcing/nl-search", {
         method: "POST",
         body: JSON.stringify({
-          query: nlQuery.trim(),
-          jobId: nlAttachJobId || undefined,
-          sources: ["internal", "github", "pdl", "serp", "enrichlayer"],
+          query,
+          jobId,
+          sources: internalMobility
+            ? ["internal"]
+            : ["internal", "github", "pdl", "serp", "enrichlayer"],
           maxPerSource: 15,
         }),
       }),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      if (variables.contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
       setResults(data.candidates || []);
       setSourceSummary(data);
       const failedCount = Object.values((data.queries ?? {}) as Record<string, any>).filter(
@@ -389,7 +456,9 @@ export default function Sourcing() {
       ).length;
       const base =
         data.interpretation ||
-        `Internal: ${data.bySource.internal} · External: ${data.bySource.github + data.bySource.pdl + data.bySource.serp + (data.bySource.enrichlayer ?? 0)}`;
+        (variables.internalMobility
+          ? `Internal Mobility: ${data.bySource.internal ?? 0} current employees`
+          : `Known Talent Rediscovery: ${data.bySource.internal ?? 0} · External Discovery: ${(data.bySource.github ?? 0) + (data.bySource.pdl ?? 0) + (data.bySource.serp ?? 0) + (data.bySource.enrichlayer ?? 0)}`);
       toast({
         title: `Found ${pluralize(data.total, "candidate")}`,
         description:
@@ -399,13 +468,16 @@ export default function Sourcing() {
         variant: failedCount > 0 ? "destructive" : undefined,
       });
     },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
+      if (variables.contextId !== resultsContextId.current) return;
+      setSearchRunning(false);
+      setSearchFailed(true);
       /* Internal-first gate when the NL search is tied to a requisition. */
       if (String(err?.message ?? "").includes("INTERNAL_REVIEW_REQUIRED")) {
         toast({
-          title: "Review your internal talent first",
+          title: "Review known talent first",
           description:
-            "Switch to the \u201cSelect a Job\u201d tab and run the internal search for this role before sourcing externally.",
+            "Switch to the \u201cSelect a Job\u201d tab and run Known Talent Rediscovery for this role before External Discovery.",
           variant: "destructive",
         });
         return;
@@ -432,7 +504,38 @@ export default function Sourcing() {
       toast({ title: "Attach failed", description: err?.message ?? "", variant: "destructive" }),
   });
 
-  const jobList = (jobs as any)?.jobs || [];
+  function runInternalSearch() {
+    if (!selectedJob) return;
+    const contextId = beginSearchContext();
+    internalMutation.mutate({
+      jobId: selectedJob,
+      contextId,
+      internalMobility: selectedJobInternalMobility,
+    });
+  }
+
+  function runExternalSearch() {
+    if (!selectedJob) return;
+    const contextId = beginSearchContext();
+    searchMutation.mutate({
+      jobId: selectedJob,
+      contextId,
+      internalMobility: selectedJobInternalMobility,
+    });
+  }
+
+  function runNlSearch() {
+    const query = nlQuery.trim();
+    if (query.length < 3) return;
+    const contextId = beginSearchContext();
+    nlMutation.mutate({
+      query,
+      jobId: nlAttachJobId || undefined,
+      internalMobility: nlAttachJobInternalMobility,
+      contextId,
+    });
+  }
+
   const connectors = status?.connectors || {};
   const savedPool = ((savedData as any) || []).map((s: any) => ({
     ...s,
@@ -450,7 +553,11 @@ export default function Sourcing() {
       : savedPool.filter((c: any) =>
           poolJobFilter === "none" ? !c.jobId : c.jobId === poolJobFilter,
         );
-  const displayCandidates = results.length > 0 ? results : poolFiltered;
+  const displayCandidates = hasSearchContext
+    ? results
+    : selectedSearchIsInternalMobility
+      ? []
+      : poolFiltered;
   const jobTitleById = new Map<string, string>(jobList.map((j: any) => [j.id, j.title]));
 
   /* Helper for the per-row attach UI on the NL tab: if the recruiter
@@ -531,18 +638,28 @@ export default function Sourcing() {
             Sourcing Engine
           </h1>
           <p className="text-muted-foreground mt-1">
-            AI-powered candidate discovery from your talent pool, GitHub, PDL, web search and more.
+            AI-powered discovery from known nonemployee talent and external sources; Internal Mobility requisitions search current employees only.
           </p>
         </div>
       </div>
 
-      {/* Connector status — 6 cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
-        {Object.entries(SOURCE_META).map(([id, meta]) => {
+      {/* Connector status; external providers are omitted for Internal Mobility jobs. */}
+      <div className={`grid grid-cols-2 ${selectedSearchIsInternalMobility ? "md:grid-cols-1" : "md:grid-cols-6"} gap-3 mb-8`}>
+        {Object.entries(SOURCE_META)
+          .filter(([id]) => !selectedSearchIsInternalMobility || id === "internal")
+          .map(([id, meta]) => {
           const Icon = meta.icon;
           const conn = connectors[id];
           const isLive = conn?.available;
           const hasKey = conn?.apiKey;
+          const displayedName =
+            id === "internal" && selectedSearchIsInternalMobility
+              ? "Internal Mobility"
+              : meta.name;
+          const displayedDescription =
+            id === "internal" && selectedSearchIsInternalMobility
+              ? "Current employees at the client only"
+              : meta.desc;
           return (
             <Card
               key={id}
@@ -569,9 +686,9 @@ export default function Sourcing() {
                     )}
                   </div>
                 </div>
-                <p className="font-semibold text-xs">{meta.name}</p>
+                <p className="font-semibold text-xs">{displayedName}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                  {meta.desc}
+                  {displayedDescription}
                 </p>
                 {id === "internal" && (
                   <p className="text-[10px] text-violet-400/80 mt-2">Always available</p>
@@ -587,13 +704,20 @@ export default function Sourcing() {
               </CardContent>
             </Card>
           );
-        })}
+          })}
       </div>
 
       {/* Two-mode input: Select a Job vs Describe What You Need */}
       <Card className="mb-6 border-primary/20 bg-primary/5">
         <CardContent className="p-5">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "job" | "nl")}>
+          <Tabs
+            value={tab}
+            onValueChange={(v) => {
+              const nextTab = v as "job" | "nl";
+              if (nextTab !== tab) clearSearchContext();
+              setTab(nextTab);
+            }}
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="job" className="gap-2">
                 <Briefcase className="w-3.5 h-3.5" /> Select a Job
@@ -623,15 +747,16 @@ export default function Sourcing() {
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1">Source Candidates for a Job</h3>
                         <p className="text-sm text-muted-foreground">
-                          Internal talent first: review who's already in your own talent pool, then
-                          go to market only if you need to. Run the ICP agent first for best
-                          results.
+                          {selectedJobInternalMobility
+                            ? "Internal Mobility searches current employees at the client only. External Discovery and known nonemployee talent rediscovery are excluded."
+                            : "Review known nonemployee talent already in your database, then use External Discovery for candidates from GitHub, PDL, the web and other sources. Run the ICP agent first for best results."}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <Select
                           value={selectedJob}
                           onValueChange={(v) => {
+                            if (v !== selectedJob) clearSearchContext();
                             setSelectedJob(v);
                             setInternalReviewedJobId(null);
                             setInternalMatchCount(null);
@@ -643,7 +768,7 @@ export default function Sourcing() {
                           <SelectContent>
                             {jobList.map((j: any) => (
                               <SelectItem key={j.id} value={j.id} className="text-sm">
-                                {j.title}
+                                {j.title}{j.internalMobility ? " · Internal Mobility" : ""}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -652,7 +777,11 @@ export default function Sourcing() {
                           variant="outline"
                           className="gap-2 shrink-0"
                           disabled={!selectedJob || demoMutation.isPending || demoRunActive}
-                          onClick={() => selectedJob && demoMutation.mutate(selectedJob)}
+                          onClick={() => {
+                            if (!selectedJob) return;
+                            clearSearchContext();
+                            demoMutation.mutate(selectedJob);
+                          }}
                           title="Run a simulated sourcing sequence that creates demo candidates and shows live progress"
                         >
                           {demoMutation.isPending || demoRunActive ? (
@@ -668,9 +797,9 @@ export default function Sourcing() {
                       </div>
                     </div>
 
-                    {/* Two enforced steps: (1) internal review, (2) external market. */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Step 1 — internal talent pool (always available) */}
+                    {/* Known talent review; Internal Mobility excludes all nonemployee and external sources. */}
+                    <div className={`grid grid-cols-1 ${selectedJobInternalMobility ? "" : "sm:grid-cols-2"} gap-3`}>
+                      {/* Known Talent Rediscovery or employee-only Internal Mobility */}
                       <div
                         className={`rounded-lg border p-4 transition-colors ${internalDone ? "border-violet-500/30 bg-violet-500/5" : "border-primary/20 bg-primary/5"}`}
                       >
@@ -678,18 +807,20 @@ export default function Sourcing() {
                           <span className="flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 text-violet-300 text-[11px] font-bold">
                             1
                           </span>
-                          <span className="font-semibold text-sm">Review internal talent</span>
+                          <span className="font-semibold text-sm">
+                            {selectedJobInternalMobility ? "Internal Mobility" : "Known Talent Rediscovery"}
+                          </span>
                           {internalDone && <Check className="w-4 h-4 text-violet-400 ml-auto" />}
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">
-                          Searches only your own talent pool — current employees and candidates
-                          already in your database. No external spend, fully private.
+                          {selectedJobInternalMobility
+                            ? "Searches current employees at the client only. No known nonemployee candidates or external sources are searched."
+                            : "Searches known nonemployee candidates already in your database. External Discovery is a separate step."}
                         </p>
                         {internalHasBench && (
                           <p className="text-xs font-medium text-violet-300 mb-3 flex items-center gap-1.5">
                             <Check className="w-3.5 h-3.5" />
-                            {pluralize(internalMatchCount ?? 0, "internal match")} found — review
-                            below before spending on external.
+                            {pluralize(internalMatchCount ?? 0, selectedJobInternalMobility ? "employee match" : "known talent match")} found.
                           </p>
                         )}
                         {internalEmpty && (
@@ -697,8 +828,12 @@ export default function Sourcing() {
                             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span>
                               {internalIcpMissing
-                                ? "We searched your pool on job title and skills and found no internal matches. Generate an ICP for sharper matching, or source externally on the right."
-                                : "No internal matches for this role — external sourcing is unlocked on the right."}
+                                ? selectedJobInternalMobility
+                                  ? "We searched current employees using the job title and skills. Generate an ICP for sharper matching."
+                                  : "We searched known talent using the job title and skills. Generate an ICP for sharper matching."
+                                : selectedJobInternalMobility
+                                  ? "No current employees matched this role."
+                                  : "No known talent matched this role — External Discovery is available in the next step."}
                             </span>
                           </p>
                         )}
@@ -706,7 +841,7 @@ export default function Sourcing() {
                           <Button
                             className="gap-2 shrink-0"
                             disabled={!selectedJob || internalMutation.isPending}
-                            onClick={() => selectedJob && internalMutation.mutate(selectedJob)}
+                            onClick={runInternalSearch}
                           >
                             {internalMutation.isPending ? (
                               <>
@@ -718,20 +853,19 @@ export default function Sourcing() {
                               </>
                             ) : (
                               <>
-                                <Users className="w-4 h-4" /> Search Internal
+                                <Users className="w-4 h-4" /> {selectedJobInternalMobility ? "Search Employees" : "Search Known Talent"}
                               </>
                             )}
                           </Button>
                           <Hotspot
                             id="sourcing-run"
-                            tooltip="Pick a job, then review your internal talent first"
+                            tooltip="Pick a job, then review known talent or current employees according to its sourcing mode"
                           />
                         </div>
                       </div>
 
-                      {/* Step 2 — external market. Internal review first is a
-                          RECOMMENDATION (advisory), never a blocker. */}
-                      <div
+                      {/* External Discovery is not available for Internal Mobility requisitions. */}
+                      {!selectedJobInternalMobility && <div
                         className={`rounded-lg border p-4 transition-colors ${internalEmpty ? "border-primary/40 bg-primary/10" : internalDone ? "border-primary/20 bg-primary/5" : "border-white/10 bg-white/[0.02]"}`}
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -740,27 +874,27 @@ export default function Sourcing() {
                           >
                             2
                           </span>
-                          <span className="font-semibold text-sm">Go to market</span>
+                          <span className="font-semibold text-sm">External Discovery</span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">
                           {!internalDone
-                            ? "Tip: run the free internal search first — you may already have a fit on your bench. You can go straight to market whenever you're ready."
+                            ? "Tip: review known talent first — you may already have a fit in your database. External Discovery is available whenever you need it."
                             : internalEmpty
-                              ? "No one internal fits — searching externally is the right call. One click below."
+                              ? "No known talent fits — search external sources with one click."
                               : internalHasBench
-                                ? "Reviewed your bench and still need more reach? Search GitHub, PDL and the web using the job's ICP."
+                                ? "Reviewed known talent and still need more reach? Search GitHub, PDL and the web using the job's ICP."
                                 : "Searches GitHub, PDL and the web using the job's ICP."}
                         </p>
                         <p className="text-[11px] font-medium text-amber-300/90 mb-3 flex items-center gap-1.5">
                           <Zap className="w-3 h-3 shrink-0" />
-                          This searches external sources and uses credits.
+                          External sources may use credits.
                         </p>
                         <Button
                           className="gap-2 shrink-0"
                           variant={internalDone ? "default" : "outline"}
                           disabled={!selectedJob || searchMutation.isPending}
-                          onClick={() => selectedJob && searchMutation.mutate(selectedJob)}
-                          title="Search external sources — uses credits"
+                          onClick={runExternalSearch}
+                          title="Search external sources — may use credits"
                         >
                           {searchMutation.isPending ? (
                             <>
@@ -768,11 +902,11 @@ export default function Sourcing() {
                             </>
                           ) : (
                             <>
-                              <Zap className="w-4 h-4" /> Proceed to External Sourcing
+                              <Zap className="w-4 h-4" /> Search External Sources
                             </>
                           )}
                         </Button>
-                      </div>
+                      </div>}
                     </div>
                   </div>
                 );
@@ -785,13 +919,18 @@ export default function Sourcing() {
                 <div>
                   <h3 className="font-semibold mb-1">Describe the candidate you're looking for</h3>
                   <p className="text-sm text-muted-foreground">
-                    Type it like you'd ask a colleague. Our AI parses your description, then
-                    searches your talent pool and external sources.
+                    Type it like you'd ask a colleague. Our AI parses your description, then{" "}
+                    {nlAttachJobInternalMobility
+                      ? "searches current employees at the client only for this Internal Mobility work order."
+                      : "searches known nonemployee talent in your database and external sources."}
                   </p>
                 </div>
                 <Textarea
                   value={nlQuery}
-                  onChange={(e) => setNlQuery(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value !== nlQuery) clearSearchContext();
+                    setNlQuery(e.target.value);
+                  }}
                   placeholder={nlPlaceholder}
                   rows={3}
                   className="resize-none text-sm"
@@ -803,7 +942,7 @@ export default function Sourcing() {
                       nlQuery.trim().length >= 3 &&
                       !nlMutation.isPending
                     ) {
-                      nlMutation.mutate();
+                      runNlSearch();
                     }
                   }}
                 />
@@ -813,7 +952,11 @@ export default function Sourcing() {
                     <span>Attach matches to:</span>
                     <Select
                       value={nlAttachJobId || "__none__"}
-                      onValueChange={(v) => setNlAttachJobId(v === "__none__" ? "" : v)}
+                      onValueChange={(v) => {
+                        const nextJobId = v === "__none__" ? "" : v;
+                        if (nextJobId !== nlAttachJobId) clearSearchContext();
+                        setNlAttachJobId(nextJobId);
+                      }}
                     >
                       <SelectTrigger className="w-52 h-8 text-xs">
                         <SelectValue placeholder="(optional — pick later)" />
@@ -824,7 +967,7 @@ export default function Sourcing() {
                         </SelectItem>
                         {jobList.map((j: any) => (
                           <SelectItem key={j.id} value={j.id} className="text-xs">
-                            {j.title}
+                            {j.title}{j.internalMobility ? " · Internal Mobility" : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -833,7 +976,7 @@ export default function Sourcing() {
                   <Button
                     className="gap-2"
                     disabled={nlQuery.trim().length < 3 || nlMutation.isPending}
-                    onClick={() => nlMutation.mutate()}
+                    onClick={runNlSearch}
                   >
                     {nlMutation.isPending ? (
                       <>
@@ -856,25 +999,29 @@ export default function Sourcing() {
                 Total: <strong className="text-foreground">{sourceSummary.total}</strong>
               </span>
               <span className="text-muted-foreground text-violet-400">
-                Talent Pool:{" "}
+                {selectedSearchIsInternalMobility
+                  ? "Internal Mobility (current employees): "
+                  : "Known Talent Rediscovery: "}
                 <strong className="text-violet-300">{sourceSummary.bySource?.internal ?? 0}</strong>
               </span>
-              <span className="text-muted-foreground">
-                GitHub:{" "}
-                <strong className="text-foreground">{sourceSummary.bySource?.github}</strong>
-              </span>
-              <span className="text-muted-foreground">
-                PDL: <strong className="text-foreground">{sourceSummary.bySource?.pdl}</strong>
-              </span>
-              <span className="text-muted-foreground">
-                Web: <strong className="text-foreground">{sourceSummary.bySource?.serp}</strong>
-              </span>
-              <span className="text-muted-foreground text-fuchsia-300">
-                EnrichLayer:{" "}
-                <strong className="text-fuchsia-200">
-                  {sourceSummary.bySource?.enrichlayer ?? 0}
-                </strong>
-              </span>
+              {!selectedSearchIsInternalMobility && (
+                <>
+                  <span className="text-muted-foreground font-medium">External Discovery:</span>
+                  <span className="text-muted-foreground">
+                    GitHub: <strong className="text-foreground">{sourceSummary.bySource?.github}</strong>
+                  </span>
+                  <span className="text-muted-foreground">
+                    PDL: <strong className="text-foreground">{sourceSummary.bySource?.pdl}</strong>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Web: <strong className="text-foreground">{sourceSummary.bySource?.serp}</strong>
+                  </span>
+                  <span className="text-muted-foreground text-fuchsia-300">
+                    EnrichLayer:{" "}
+                    <strong className="text-fuchsia-200">{sourceSummary.bySource?.enrichlayer ?? 0}</strong>
+                  </span>
+                </>
+              )}
               {sourceSummary.saved > 0 && (
                 <span className="text-muted-foreground">
                   Saved: <strong className="text-emerald-400">{sourceSummary.saved}</strong>
@@ -1100,10 +1247,18 @@ export default function Sourcing() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
-            {results.length > 0 ? `${results.length} Candidates Found` : "Sourced Candidates"}
+            {hasSearchContext
+              ? searchRunning
+                ? "Searching..."
+                : results.length > 0
+                  ? `${results.length} Candidates Found`
+                  : "Search Results"
+              : displayCandidates.length > 0
+                ? `${displayCandidates.length} Sourced Candidates`
+                : "Sourced Candidates"}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {results.length === 0 && (
+            {!hasSearchContext && !selectedSearchIsInternalMobility && (
               /* Work-order filter — the saved pool spans every job you've sourced
                * for, so let the recruiter narrow it to one work order. */
               <Select value={poolJobFilter} onValueChange={setPoolJobFilter}>
@@ -1170,13 +1325,41 @@ export default function Sourcing() {
           {displayCandidates.length === 0 ? (
             <div className="py-16 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-primary/60" />
+                {searchRunning
+                  ? <RefreshCw className="w-8 h-8 text-primary/60 animate-spin" />
+                  : searchFailed
+                    ? <AlertCircle className="w-8 h-8 text-rose-400" />
+                    : <Search className="w-8 h-8 text-primary/60" />}
               </div>
-              <h3 className="font-semibold mb-1">No candidates sourced yet</h3>
+              <h3 className="font-semibold mb-1">
+                {searchRunning
+                  ? "Searching for candidates…"
+                  : searchFailed
+                    ? "The search could not be completed"
+                    : hasSearchContext
+                      ? selectedSearchIsInternalMobility
+                        ? "No current employees matched this Internal Mobility search"
+                        : "No candidates matched this search"
+                      : selectedSearchIsInternalMobility
+                        ? "Employee-only results will appear here"
+                        : "No candidates sourced yet"}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                {tab === "nl"
-                  ? "Describe the candidate you're looking for, then click Source Now."
-                  : "Select a job and click Source Now to search your talent pool, GitHub, PDL and the web."}
+                {searchRunning
+                  ? selectedSearchIsInternalMobility
+                    ? "Searching only current employees at the selected client."
+                    : "Your current search is in progress."
+                  : searchFailed
+                    ? "Check the search settings and try again."
+                    : hasSearchContext
+                      ? selectedSearchIsInternalMobility
+                        ? "No current employees matched this role. Candidates from other sourcing modes are not shown here."
+                        : "Try adjusting the search criteria or run another sourcing search."
+                      : selectedSearchIsInternalMobility
+                        ? "Run Internal Mobility to search current employees at this client. Saved candidates from other searches are not shown in this mode."
+                        : tab === "nl"
+                          ? "Describe the candidate you're looking for, then click Source Now."
+                          : "Select a job to search Known Talent Rediscovery and, when allowed, External Discovery."}
               </p>
             </div>
           ) : (
@@ -1185,6 +1368,11 @@ export default function Sourcing() {
                 const src = SOURCE_META[c.source as keyof typeof SOURCE_META];
                 const Icon = src?.icon || Globe;
                 const isInternal = c.source === "internal";
+                const sourceBadgeLabel = isInternal
+                  ? c.isCurrentEmployee
+                    ? "Internal Mobility"
+                    : "Known Talent Rediscovery"
+                  : src?.name || c.source;
                 const cid = c.candidateId || (isInternal ? undefined : c.normalizedCandidateId);
                 return (
                   <div
@@ -1207,7 +1395,7 @@ export default function Sourcing() {
                             variant="outline"
                             className={`text-[10px] gap-1 py-0 ${isInternal ? "border-violet-500/30 text-violet-400 bg-violet-500/10" : ""}`}
                           >
-                            <Icon className="w-2.5 h-2.5" /> {src?.name || c.source}
+                            <Icon className="w-2.5 h-2.5" /> {sourceBadgeLabel}
                           </Badge>
                           {c.jobId && jobTitleById.get(c.jobId) && (
                             <Badge

@@ -1,3 +1,12 @@
+export * from "./meeting-attendance";
+export * from "./staff-google-meet-recordings";
+export * from "./zoho-interview-campaigns";
+export * from "./zoho-campaign-reviews";
+export * from "./zoho-imported-jobs";
+export * from "./interview-offered-times";
+export * from "./interview-booking-links";
+export * from "./interview-time-change-requests";
+export * from "./interview-calendar-invitations";
 /**
  * schema/index.ts — Drizzle Schema Barrel
  *
@@ -10,8 +19,10 @@
  */
 export * from "./tenants";
 export * from "./users";
+export * from "./session-revocations";
 export * from "./jobs";
 export * from "./candidates";
+export * from "./candidate-erasure-tombstones";
 export * from "./applications";
 export * from "./icp";
 export * from "./interviews";
@@ -84,3 +95,21 @@ export * from "./job-recruiters";
 export * from "./recruiter-mail-accounts";
 export * from "./agent-runs";
 export * from "./evaluations";
+export * from "./recruiting-workflows";
+export * from "./sourcing-controls";
+export * from "./sourcing-metering";
+export * from "./vendor-usage";
+export * from "./pilot-codes";
+export * from "./calendar-panel-consents";
+export * from "./calendar-working-hours";
+export * from "./interview-schedule-panels";
+export * from "./staff-google-calendars";
+export * from "./ats-verification";
+export * from "./ats-imports";
+export * from "./ats-refresh-schedules";
+export * from "./google-panel-consents";
+export * from "./interview-zoom-links";
+export * from "./staff-zoom-accounts";
+export * from "./zoho-recruit-accounts";
+export * from "./zoho-stage-handoff";
+export * from "./meeting-notes";

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Loader2, AlertTriangle, Zap, TrendingUp } from "lucide-react";
+import { PilotAdminPanel } from "@/components/recruiter/pilot-codes";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 
 const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
@@ -243,6 +244,8 @@ export default function PlatformSubscriptions() {
             </div>
           </CardContent>
         </Card>
+
+        <PilotAdminPanel tenants={rows.map((r) => ({ id: r.tenant.id, name: r.tenant.name }))} onChanged={load} />
       </div>
     </AppLayout>
   );

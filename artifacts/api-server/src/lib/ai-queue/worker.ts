@@ -21,8 +21,10 @@
 import { randomUUID } from "crypto";
 import os from "os";
 import { logger } from "../logger";
+import { isErasedAiWork } from "../candidate-erasure-barrier";
 import { claimNextJob, completeJob, failJob, reclaimStuckJobs } from "./queue";
 import { handlers } from "./handlers";
+import { withUsageActivity } from "../vendor-usage-context";
 
 const CONCURRENCY = Number(process.env.AI_WORKER_CONCURRENCY) || 4;
 const POLL_MS = Number(process.env.AI_WORKER_POLL_MS) || 1_000;
@@ -48,6 +50,10 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 
 /** Run a single already-claimed job to completion (handler + record result). */
 async function runJob(job: NonNullable<Awaited<ReturnType<typeof claimNextJob>>>): Promise<void> {
+  if (await isErasedAiWork(job.payload, job.interviewSessionId)) {
+    await failJob(job, new Error("candidate_erased"));
+    return;
+  }
   const handler = handlers[job.type];
   if (!handler) {
     await failJob(job, new Error(`No handler registered for job type "${job.type}"`));
@@ -55,7 +61,13 @@ async function runJob(job: NonNullable<Awaited<ReturnType<typeof claimNextJob>>>
   }
   const startedAt = Date.now();
   try {
-    const result = await withTimeout(handler(job), JOB_TIMEOUT_MS, `job ${job.id} (${job.type})`);
+    const result = await withTimeout(
+      withUsageActivity(job.tenantId ?? null,
+        ["score_answer", "summarize_interview", "transcribe_answer"].includes(job.type)
+          ? "interview" : job.type === "match_candidate_to_job" ? "matching" : "intelligence",
+        () => handler(job)),
+      JOB_TIMEOUT_MS, `job ${job.id} (${job.type})`,
+    );
     await completeJob(job.id, result);
     logger.info(
       { jobId: job.id, type: job.type, ms: Date.now() - startedAt, attempt: job.retryCount },
