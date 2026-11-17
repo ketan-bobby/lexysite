@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from "../lib/auth-context";
 import { Toaster } from "../components/ui/toaster";
 import { WorkflowHandoffReceipt } from "../components/jobs/WorkflowHandoffReceipt";
 import { SignOutAllDevices } from "../components/settings/SignOutAllDevices";
+import { GreenhouseHrHandoff } from "../components/jobs/GreenhouseHrHandoff";
+import type { AtsHandoffState } from "@workspace/api-client-react";
 import "../index.css";
 
 export function mountSecurityFixture(host: HTMLElement) {
@@ -14,10 +16,13 @@ export function mountSecurityFixture(host: HTMLElement) {
   });
   const root = createRoot(host);
   let setAuthority: (enabled: boolean) => void = () => {};
+  let setGreenhouse: (state: AtsHandoffState | null) => void = () => {};
   const records: string[] = [];
   function Fixture() {
     const { user, logout } = useAuth();
     const [enabled, setEnabled] = useState(true);
+    const [greenhouse, setGreenhouseState] = useState<AtsHandoffState | null>(null);
+    setGreenhouse = setGreenhouseState;
     const [receipt, setReceipt] = useState<{
       recordedBy: string;
       recordedAt: string;
@@ -33,6 +38,13 @@ export function mountSecurityFixture(host: HTMLElement) {
           Sign out
         </button>
         <SignOutAllDevices />
+        {greenhouse && (
+          <GreenhouseHrHandoff
+            key={`${enabled}:${greenhouse.workflowRevision}`}
+            state={greenhouse}
+            enabled={enabled}
+          />
+        )}
         <WorkflowHandoffReceipt
           workflowId="fixture"
           enabled={enabled}
@@ -66,6 +78,7 @@ export function mountSecurityFixture(host: HTMLElement) {
   );
   return {
     setAuthority: (enabled: boolean) => setAuthority(enabled),
+    setGreenhouse: (state: AtsHandoffState | null) => setGreenhouse(state),
     switchIdentity: () =>
       client.setQueryData(["auth/me"], {
         ...client.getQueryData<object>(["auth/me"]),

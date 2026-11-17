@@ -26,9 +26,6 @@ async function buildAll() {
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
     loader: { ".html": "text" },
-    alias: {
-      "nodemailer/lib/addressparser": "nodemailer/lib/addressparser/index.js",
-    },
     // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
     // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
     // Examples of unbundleable packages:
@@ -111,6 +108,18 @@ async function buildAll() {
     ],
     sourcemap: "linked",
     plugins: [
+      {
+        name: "nodemailer-addressparser-extension",
+        setup(build) {
+          build.onResolve(
+            { filter: /^nodemailer\/lib\/addressparser$/ },
+            () => ({
+              path: "nodemailer/lib/addressparser/index.js",
+              external: true,
+            }),
+          );
+        },
+      },
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],

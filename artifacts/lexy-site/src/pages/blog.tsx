@@ -8,7 +8,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}

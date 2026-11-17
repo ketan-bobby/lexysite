@@ -33,7 +33,6 @@ DO $$ DECLARE t text; BEGIN
  FOREACH t IN ARRAY ARRAY['sourcing_execution_leases','sourcing_cost_operations'] LOOP
   EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('DROP POLICY IF EXISTS sourcing_meter_tenant_scope ON %I',t);
   EXECUTE format('CREATE POLICY sourcing_meter_tenant_scope ON %I TO lexy_app USING (current_setting(''app.is_platform_admin'',true)=''true'' OR tenant_id=ANY(string_to_array(current_setting(''app.allowed_tenant_ids'',true),'',''))) WITH CHECK (current_setting(''app.is_platform_admin'',true)=''true'' OR tenant_id=ANY(string_to_array(current_setting(''app.allowed_tenant_ids'',true),'','')))',t);
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO lexy_app',t);
  END LOOP;

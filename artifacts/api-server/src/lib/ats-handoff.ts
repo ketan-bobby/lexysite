@@ -27,7 +27,13 @@ import { handoffReceipt } from "./ats-handoff-receipt";
 type Handle = Parameters<Parameters<typeof dbAdmin.transaction>[0]>[0] | typeof dbAdmin;
 type Visible = (handle: Handle, candidateId: string) => Promise<boolean>;
 
-async function context(handle: Handle, scope: WorkflowScope, workflowId: string, visible: Visible) {
+export async function atsHandoffContext(
+  handle: Handle,
+  scope: WorkflowScope,
+  workflowId: string,
+  visible: Visible,
+  requireManager = true,
+) {
   const row = await scopedRow(handle, scope, workflowId, visible);
   const authority = await offerAuthority(handle, scope, row);
   const final = row.steps.find((s) => s.key === "hiring_decision")!;
@@ -65,7 +71,7 @@ async function context(handle: Handle, scope: WorkflowScope, workflowId: string,
   )
     blockers.push("The journey or approved brief changed; review it first.");
   if (!final?.humanDecision) blockers.push("An explicit human hiring decision is required.");
-  if (!canManage)
+  if (requireManager && !canManage)
     blockers.push(
       "Only the employer administrator or designated handoff owner can manage this packet.",
     );
@@ -137,7 +143,7 @@ async function context(handle: Handle, scope: WorkflowScope, workflowId: string,
         evidenceVersions: sorted.map((o) => [o.stepKey, o.sourceType, o.sourceId, o.version]),
       })
     : null;
-  return { row, final, config, canManage, blockers, content, snapshotHash, record };
+  return { row, final, config, canManage, blockers, content, snapshotHash, record, authority };
 }
 
 export async function readAtsHandoff(
@@ -145,7 +151,7 @@ export async function readAtsHandoff(
   id: string,
   visible: Visible,
 ): Promise<AtsHandoffState> {
-  const ctx = await context(dbAdmin, scope, id, visible);
+  const ctx = await atsHandoffContext(dbAdmin, scope, id, visible);
   return {
     connectionState: "not_connected",
     workflowRevision: ctx.row.revision,
@@ -179,7 +185,7 @@ export async function controlAtsHandoff(
   visible: Visible,
 ): Promise<AtsHandoffState> {
   await atomic(scope, `ats.handoff_${input.action}`, { ...input, workflowId }, async (tx) => {
-    const ctx = await context(tx, scope, workflowId, visible);
+    const ctx = await atsHandoffContext(tx, scope, workflowId, visible);
     if (!ctx.canManage) throw new WorkflowConflict("Employer handoff authority required.", 403);
     if (ctx.row.revision !== input.expectedRevision)
       throw new WorkflowConflict("Workflow changed. Refresh before continuing.");

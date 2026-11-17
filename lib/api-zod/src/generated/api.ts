@@ -443,6 +443,466 @@ export const PublishZohoInterviewNoteResponse = zod.object({
   at: zod.date(),
 });
 
+export const GetZohoStageRulesParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceContractReferenceMin = 8;
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceContractReferenceMax = 200;
+
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceIsolationReferenceMin = 8;
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceIsolationReferenceMax = 200;
+
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceRequirementsReferenceMin = 8;
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceRequirementsReferenceMax = 200;
+
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceSideEffectsReferenceMin = 8;
+export const getZohoStageRulesResponseCurrentRuleOneEvidenceSideEffectsReferenceMax = 200;
+
+export const getZohoStageRulesResponseHistoryItemEvidenceContractReferenceMin = 8;
+export const getZohoStageRulesResponseHistoryItemEvidenceContractReferenceMax = 200;
+
+export const getZohoStageRulesResponseHistoryItemEvidenceIsolationReferenceMin = 8;
+export const getZohoStageRulesResponseHistoryItemEvidenceIsolationReferenceMax = 200;
+
+export const getZohoStageRulesResponseHistoryItemEvidenceRequirementsReferenceMin = 8;
+export const getZohoStageRulesResponseHistoryItemEvidenceRequirementsReferenceMax = 200;
+
+export const getZohoStageRulesResponseHistoryItemEvidenceSideEffectsReferenceMin = 8;
+export const getZohoStageRulesResponseHistoryItemEvidenceSideEffectsReferenceMax = 200;
+
+export const getZohoStageRulesResponseHistoryMax = 1000;
+
+export const GetZohoStageRulesResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  sourceRevision: zod.string(),
+  currentApplication: zod.object({
+    applicationId: zod.string(),
+    candidateId: zod.string(),
+    jobId: zod.string(),
+  }),
+  status: zod.enum([
+    "unavailable",
+    "proposal_required",
+    "pending_review",
+    "verified",
+    "expired",
+    "stale",
+    "revoked",
+  ]),
+  canPropose: zod.boolean(),
+  canVerify: zod.boolean(),
+  canRevoke: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  reason: zod.string(),
+  currentRule: zod.union([
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum(["proposed", "verified", "revoked"]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      evidence: zod.object({
+        contractReference: zod
+          .string()
+          .min(getZohoStageRulesResponseCurrentRuleOneEvidenceContractReferenceMin)
+          .max(getZohoStageRulesResponseCurrentRuleOneEvidenceContractReferenceMax),
+        isolationReference: zod
+          .string()
+          .min(getZohoStageRulesResponseCurrentRuleOneEvidenceIsolationReferenceMin)
+          .max(getZohoStageRulesResponseCurrentRuleOneEvidenceIsolationReferenceMax),
+        requirementsReference: zod
+          .string()
+          .min(getZohoStageRulesResponseCurrentRuleOneEvidenceRequirementsReferenceMin)
+          .max(getZohoStageRulesResponseCurrentRuleOneEvidenceRequirementsReferenceMax),
+        sideEffectsReference: zod
+          .string()
+          .min(getZohoStageRulesResponseCurrentRuleOneEvidenceSideEffectsReferenceMin)
+          .max(getZohoStageRulesResponseCurrentRuleOneEvidenceSideEffectsReferenceMax),
+        requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+        notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+      }),
+      submittedBy: zod.string(),
+      submittedAt: zod.number(),
+      verifiedBy: zod.string().nullable(),
+      verifiedAt: zod.number().nullable(),
+      expiresAt: zod.number().nullable(),
+      reviewReference: zod.string().nullable(),
+      revokedBy: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  history: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        revision: zod.string(),
+        state: zod.enum(["proposed", "verified", "revoked"]),
+        currentStatus: zod.string(),
+        targetStatus: zod.string(),
+        decision: zod.enum(["advance", "hold", "decline"]),
+        evidence: zod.object({
+          contractReference: zod
+            .string()
+            .min(getZohoStageRulesResponseHistoryItemEvidenceContractReferenceMin)
+            .max(getZohoStageRulesResponseHistoryItemEvidenceContractReferenceMax),
+          isolationReference: zod
+            .string()
+            .min(getZohoStageRulesResponseHistoryItemEvidenceIsolationReferenceMin)
+            .max(getZohoStageRulesResponseHistoryItemEvidenceIsolationReferenceMax),
+          requirementsReference: zod
+            .string()
+            .min(getZohoStageRulesResponseHistoryItemEvidenceRequirementsReferenceMin)
+            .max(getZohoStageRulesResponseHistoryItemEvidenceRequirementsReferenceMax),
+          sideEffectsReference: zod
+            .string()
+            .min(getZohoStageRulesResponseHistoryItemEvidenceSideEffectsReferenceMin)
+            .max(getZohoStageRulesResponseHistoryItemEvidenceSideEffectsReferenceMax),
+          requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+          notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+        }),
+        submittedBy: zod.string(),
+        submittedAt: zod.number(),
+        verifiedBy: zod.string().nullable(),
+        verifiedAt: zod.number().nullable(),
+        expiresAt: zod.number().nullable(),
+        reviewReference: zod.string().nullable(),
+        revokedBy: zod.string().nullable(),
+      }),
+    )
+    .max(getZohoStageRulesResponseHistoryMax),
+});
+
+export const ProposeZohoStageRuleParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const proposeZohoStageRuleBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const proposeZohoStageRuleBodyExpectedRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const proposeZohoStageRuleBodyEvidenceContractReferenceMin = 8;
+export const proposeZohoStageRuleBodyEvidenceContractReferenceMax = 200;
+
+export const proposeZohoStageRuleBodyEvidenceIsolationReferenceMin = 8;
+export const proposeZohoStageRuleBodyEvidenceIsolationReferenceMax = 200;
+
+export const proposeZohoStageRuleBodyEvidenceRequirementsReferenceMin = 8;
+export const proposeZohoStageRuleBodyEvidenceRequirementsReferenceMax = 200;
+
+export const proposeZohoStageRuleBodyEvidenceSideEffectsReferenceMin = 8;
+export const proposeZohoStageRuleBodyEvidenceSideEffectsReferenceMax = 200;
+
+export const ProposeZohoStageRuleBody = zod.object({
+  expectedRevision: zod.string().regex(proposeZohoStageRuleBodyExpectedRevisionRegExp),
+  expectedRuleRevision: zod
+    .string()
+    .regex(proposeZohoStageRuleBodyExpectedRuleRevisionRegExp)
+    .nullable(),
+  requestId: zod.string().uuid(),
+  evidence: zod.object({
+    contractReference: zod
+      .string()
+      .min(proposeZohoStageRuleBodyEvidenceContractReferenceMin)
+      .max(proposeZohoStageRuleBodyEvidenceContractReferenceMax),
+    isolationReference: zod
+      .string()
+      .min(proposeZohoStageRuleBodyEvidenceIsolationReferenceMin)
+      .max(proposeZohoStageRuleBodyEvidenceIsolationReferenceMax),
+    requirementsReference: zod
+      .string()
+      .min(proposeZohoStageRuleBodyEvidenceRequirementsReferenceMin)
+      .max(proposeZohoStageRuleBodyEvidenceRequirementsReferenceMax),
+    sideEffectsReference: zod
+      .string()
+      .min(proposeZohoStageRuleBodyEvidenceSideEffectsReferenceMin)
+      .max(proposeZohoStageRuleBodyEvidenceSideEffectsReferenceMax),
+    requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+    notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+  }),
+  confirm: zod.boolean(),
+});
+
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMin = 8;
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMin = 8;
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMin = 8;
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMin = 8;
+export const proposeZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseHistoryItemEvidenceContractReferenceMin = 8;
+export const proposeZohoStageRuleResponseHistoryItemEvidenceContractReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMin = 8;
+export const proposeZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMin = 8;
+export const proposeZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMin = 8;
+export const proposeZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMax = 200;
+
+export const proposeZohoStageRuleResponseHistoryMax = 1000;
+
+export const ProposeZohoStageRuleResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  sourceRevision: zod.string(),
+  currentApplication: zod.object({
+    applicationId: zod.string(),
+    candidateId: zod.string(),
+    jobId: zod.string(),
+  }),
+  status: zod.enum([
+    "unavailable",
+    "proposal_required",
+    "pending_review",
+    "verified",
+    "expired",
+    "stale",
+    "revoked",
+  ]),
+  canPropose: zod.boolean(),
+  canVerify: zod.boolean(),
+  canRevoke: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  reason: zod.string(),
+  currentRule: zod.union([
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum(["proposed", "verified", "revoked"]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      evidence: zod.object({
+        contractReference: zod
+          .string()
+          .min(proposeZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMin)
+          .max(proposeZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMax),
+        isolationReference: zod
+          .string()
+          .min(proposeZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMin)
+          .max(proposeZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMax),
+        requirementsReference: zod
+          .string()
+          .min(proposeZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMin)
+          .max(proposeZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMax),
+        sideEffectsReference: zod
+          .string()
+          .min(proposeZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMin)
+          .max(proposeZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMax),
+        requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+        notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+      }),
+      submittedBy: zod.string(),
+      submittedAt: zod.number(),
+      verifiedBy: zod.string().nullable(),
+      verifiedAt: zod.number().nullable(),
+      expiresAt: zod.number().nullable(),
+      reviewReference: zod.string().nullable(),
+      revokedBy: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  history: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        revision: zod.string(),
+        state: zod.enum(["proposed", "verified", "revoked"]),
+        currentStatus: zod.string(),
+        targetStatus: zod.string(),
+        decision: zod.enum(["advance", "hold", "decline"]),
+        evidence: zod.object({
+          contractReference: zod
+            .string()
+            .min(proposeZohoStageRuleResponseHistoryItemEvidenceContractReferenceMin)
+            .max(proposeZohoStageRuleResponseHistoryItemEvidenceContractReferenceMax),
+          isolationReference: zod
+            .string()
+            .min(proposeZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMin)
+            .max(proposeZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMax),
+          requirementsReference: zod
+            .string()
+            .min(proposeZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMin)
+            .max(proposeZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMax),
+          sideEffectsReference: zod
+            .string()
+            .min(proposeZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMin)
+            .max(proposeZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMax),
+          requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+          notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+        }),
+        submittedBy: zod.string(),
+        submittedAt: zod.number(),
+        verifiedBy: zod.string().nullable(),
+        verifiedAt: zod.number().nullable(),
+        expiresAt: zod.number().nullable(),
+        reviewReference: zod.string().nullable(),
+        revokedBy: zod.string().nullable(),
+      }),
+    )
+    .max(proposeZohoStageRuleResponseHistoryMax),
+});
+
+export const ActOnZohoStageRuleParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+  ruleId: zod.coerce.string().uuid(),
+});
+
+export const actOnZohoStageRuleBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const actOnZohoStageRuleBodyReviewReferenceMin = 8;
+export const actOnZohoStageRuleBodyReviewReferenceMax = 200;
+
+export const ActOnZohoStageRuleBody = zod.object({
+  expectedRevision: zod.string().regex(actOnZohoStageRuleBodyExpectedRevisionRegExp),
+  requestId: zod.string().uuid(),
+  action: zod.enum(["verify", "revoke"]),
+  reviewReference: zod
+    .string()
+    .min(actOnZohoStageRuleBodyReviewReferenceMin)
+    .max(actOnZohoStageRuleBodyReviewReferenceMax)
+    .optional(),
+  confirm: zod.boolean(),
+});
+
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMin = 8;
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMin = 8;
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMin = 8;
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMin = 8;
+export const actOnZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseHistoryItemEvidenceContractReferenceMin = 8;
+export const actOnZohoStageRuleResponseHistoryItemEvidenceContractReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMin = 8;
+export const actOnZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMin = 8;
+export const actOnZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMin = 8;
+export const actOnZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMax = 200;
+
+export const actOnZohoStageRuleResponseHistoryMax = 1000;
+
+export const ActOnZohoStageRuleResponse = zod.object({
+  campaignId: zod.string(),
+  recipientId: zod.string(),
+  sourceRevision: zod.string(),
+  currentApplication: zod.object({
+    applicationId: zod.string(),
+    candidateId: zod.string(),
+    jobId: zod.string(),
+  }),
+  status: zod.enum([
+    "unavailable",
+    "proposal_required",
+    "pending_review",
+    "verified",
+    "expired",
+    "stale",
+    "revoked",
+  ]),
+  canPropose: zod.boolean(),
+  canVerify: zod.boolean(),
+  canRevoke: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  reason: zod.string(),
+  currentRule: zod.union([
+    zod.object({
+      id: zod.string().uuid(),
+      revision: zod.string(),
+      state: zod.enum(["proposed", "verified", "revoked"]),
+      currentStatus: zod.string(),
+      targetStatus: zod.string(),
+      decision: zod.enum(["advance", "hold", "decline"]),
+      evidence: zod.object({
+        contractReference: zod
+          .string()
+          .min(actOnZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMin)
+          .max(actOnZohoStageRuleResponseCurrentRuleOneEvidenceContractReferenceMax),
+        isolationReference: zod
+          .string()
+          .min(actOnZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMin)
+          .max(actOnZohoStageRuleResponseCurrentRuleOneEvidenceIsolationReferenceMax),
+        requirementsReference: zod
+          .string()
+          .min(actOnZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMin)
+          .max(actOnZohoStageRuleResponseCurrentRuleOneEvidenceRequirementsReferenceMax),
+        sideEffectsReference: zod
+          .string()
+          .min(actOnZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMin)
+          .max(actOnZohoStageRuleResponseCurrentRuleOneEvidenceSideEffectsReferenceMax),
+        requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+        notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+      }),
+      submittedBy: zod.string(),
+      submittedAt: zod.number(),
+      verifiedBy: zod.string().nullable(),
+      verifiedAt: zod.number().nullable(),
+      expiresAt: zod.number().nullable(),
+      reviewReference: zod.string().nullable(),
+      revokedBy: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+  history: zod
+    .array(
+      zod.object({
+        id: zod.string().uuid(),
+        revision: zod.string(),
+        state: zod.enum(["proposed", "verified", "revoked"]),
+        currentStatus: zod.string(),
+        targetStatus: zod.string(),
+        decision: zod.enum(["advance", "hold", "decline"]),
+        evidence: zod.object({
+          contractReference: zod
+            .string()
+            .min(actOnZohoStageRuleResponseHistoryItemEvidenceContractReferenceMin)
+            .max(actOnZohoStageRuleResponseHistoryItemEvidenceContractReferenceMax),
+          isolationReference: zod
+            .string()
+            .min(actOnZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMin)
+            .max(actOnZohoStageRuleResponseHistoryItemEvidenceIsolationReferenceMax),
+          requirementsReference: zod
+            .string()
+            .min(actOnZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMin)
+            .max(actOnZohoStageRuleResponseHistoryItemEvidenceRequirementsReferenceMax),
+          sideEffectsReference: zod
+            .string()
+            .min(actOnZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMin)
+            .max(actOnZohoStageRuleResponseHistoryItemEvidenceSideEffectsReferenceMax),
+          requirements: zod.enum(["no_additional_fields_or_blueprint_actions"]),
+          notifications: zod.enum(["no_automatic_messages_or_cross_application_changes"]),
+        }),
+        submittedBy: zod.string(),
+        submittedAt: zod.number(),
+        verifiedBy: zod.string().nullable(),
+        verifiedAt: zod.number().nullable(),
+        expiresAt: zod.number().nullable(),
+        reviewReference: zod.string().nullable(),
+        revokedBy: zod.string().nullable(),
+      }),
+    )
+    .max(actOnZohoStageRuleResponseHistoryMax),
+});
+
 export const GetZohoStageRequestsParams = zod.object({
   id: zod.coerce.string().uuid(),
   recipientId: zod.coerce.string().uuid(),
@@ -611,6 +1071,442 @@ export const ActOnZohoStageRequestResponse = zod.object({
       canRecover: zod.boolean(),
     }),
   ),
+});
+
+/**
+ * @summary Read controlled execution requests and blockers without provider calls
+ */
+export const GetZohoStageExecutionParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const getZohoStageExecutionResponseHandoffRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const getZohoStageExecutionResponseRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const getZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin = 0;
+
+export const getZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin = 0;
+
+export const getZohoStageExecutionResponseRequestsMax = 1000;
+
+export const GetZohoStageExecutionResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string().regex(getZohoStageExecutionResponseHandoffRevisionRegExp),
+  ruleRevision: zod.string().regex(getZohoStageExecutionResponseRuleRevisionRegExp).nullable(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  reason: zod.string(),
+  requests: zod
+    .array(
+      zod
+        .object({
+          id: zod.string().uuid(),
+          revision: zod.string(),
+          state: zod.enum([
+            "prepared",
+            "approved",
+            "withdrawn",
+            "claimed",
+            "provider_accepted",
+            "verified",
+            "not_sent",
+            "review_required",
+            "observed_target",
+            "observed_other",
+          ]),
+          currentStatus: zod.string(),
+          targetStatus: zod.string(),
+          decision: zod.enum(["advance", "hold", "decline"]),
+          preparedBy: zod.string(),
+          approvedBy: zod.string().nullable(),
+          createdAt: zod.string(),
+          updatedAt: zod.string(),
+          stale: zod.boolean(),
+          canApprove: zod.boolean(),
+          canWithdraw: zod.boolean(),
+          canRecover: zod.boolean(),
+        })
+        .and(
+          zod.object({
+            canExecute: zod.boolean(),
+            executionRequestId: zod.string().uuid().nullable(),
+            sequence: zod.number().min(1),
+            canProposeResolution: zod.boolean(),
+            canReviewResolution: zod.boolean(),
+            resolution: zod.union([
+              zod.object({
+                proposedBy: zod.string(),
+                proposedAt: zod
+                  .number()
+                  .min(getZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin),
+                reason: zod.string(),
+                evidenceReference: zod.string(),
+                observedStatus: zod.string(),
+                review: zod.union([
+                  zod.object({
+                    action: zod.enum(["approve", "reject"]),
+                    by: zod.string(),
+                    at: zod
+                      .number()
+                      .min(getZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin),
+                    reason: zod.string(),
+                    evidenceReference: zod.string(),
+                  }),
+                  zod.null(),
+                ]),
+              }),
+              zod.null(),
+            ]),
+          }),
+        ),
+    )
+    .max(getZohoStageExecutionResponseRequestsMax),
+});
+
+/**
+ * @summary Prepare an evidence-bound request without sending a stage change
+ */
+export const PrepareZohoStageExecutionParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+});
+
+export const prepareZohoStageExecutionBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareZohoStageExecutionBodyExpectedRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const PrepareZohoStageExecutionBody = zod.object({
+  expectedRevision: zod.string().regex(prepareZohoStageExecutionBodyExpectedRevisionRegExp),
+  expectedRuleRevision: zod.string().regex(prepareZohoStageExecutionBodyExpectedRuleRevisionRegExp),
+  requestId: zod.string().uuid(),
+  confirm: zod.boolean(),
+});
+
+export const prepareZohoStageExecutionResponseHandoffRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const prepareZohoStageExecutionResponseRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const prepareZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin = 0;
+
+export const prepareZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin = 0;
+
+export const prepareZohoStageExecutionResponseRequestsMax = 1000;
+
+export const PrepareZohoStageExecutionResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string().regex(prepareZohoStageExecutionResponseHandoffRevisionRegExp),
+  ruleRevision: zod.string().regex(prepareZohoStageExecutionResponseRuleRevisionRegExp).nullable(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  reason: zod.string(),
+  requests: zod
+    .array(
+      zod
+        .object({
+          id: zod.string().uuid(),
+          revision: zod.string(),
+          state: zod.enum([
+            "prepared",
+            "approved",
+            "withdrawn",
+            "claimed",
+            "provider_accepted",
+            "verified",
+            "not_sent",
+            "review_required",
+            "observed_target",
+            "observed_other",
+          ]),
+          currentStatus: zod.string(),
+          targetStatus: zod.string(),
+          decision: zod.enum(["advance", "hold", "decline"]),
+          preparedBy: zod.string(),
+          approvedBy: zod.string().nullable(),
+          createdAt: zod.string(),
+          updatedAt: zod.string(),
+          stale: zod.boolean(),
+          canApprove: zod.boolean(),
+          canWithdraw: zod.boolean(),
+          canRecover: zod.boolean(),
+        })
+        .and(
+          zod.object({
+            canExecute: zod.boolean(),
+            executionRequestId: zod.string().uuid().nullable(),
+            sequence: zod.number().min(1),
+            canProposeResolution: zod.boolean(),
+            canReviewResolution: zod.boolean(),
+            resolution: zod.union([
+              zod.object({
+                proposedBy: zod.string(),
+                proposedAt: zod
+                  .number()
+                  .min(prepareZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin),
+                reason: zod.string(),
+                evidenceReference: zod.string(),
+                observedStatus: zod.string(),
+                review: zod.union([
+                  zod.object({
+                    action: zod.enum(["approve", "reject"]),
+                    by: zod.string(),
+                    at: zod
+                      .number()
+                      .min(
+                        prepareZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin,
+                      ),
+                    reason: zod.string(),
+                    evidenceReference: zod.string(),
+                  }),
+                  zod.null(),
+                ]),
+              }),
+              zod.null(),
+            ]),
+          }),
+        ),
+    )
+    .max(prepareZohoStageExecutionResponseRequestsMax),
+});
+
+/**
+ * @summary Independently review closure without writing or retrying an ATS stage change
+ */
+export const ResolveZohoStageExecutionParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+  requestId: zod.coerce.string().uuid(),
+});
+
+export const resolveZohoStageExecutionBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const resolveZohoStageExecutionBodyExpectedSourceRevisionRegExp = new RegExp(
+  "^[a-f0-9]{64}$",
+);
+
+export const resolveZohoStageExecutionBodyReasonMin = 20;
+export const resolveZohoStageExecutionBodyReasonMax = 1000;
+
+export const resolveZohoStageExecutionBodyEvidenceReferenceMin = 10;
+export const resolveZohoStageExecutionBodyEvidenceReferenceMax = 200;
+
+export const ResolveZohoStageExecutionBody = zod.object({
+  expectedRevision: zod.string().regex(resolveZohoStageExecutionBodyExpectedRevisionRegExp),
+  expectedSourceRevision: zod
+    .string()
+    .regex(resolveZohoStageExecutionBodyExpectedSourceRevisionRegExp),
+  expectedSequence: zod.number().min(1),
+  commandId: zod.string().uuid(),
+  action: zod.enum(["propose", "approve", "reject"]),
+  reason: zod
+    .string()
+    .min(resolveZohoStageExecutionBodyReasonMin)
+    .max(resolveZohoStageExecutionBodyReasonMax),
+  evidenceReference: zod
+    .string()
+    .min(resolveZohoStageExecutionBodyEvidenceReferenceMin)
+    .max(resolveZohoStageExecutionBodyEvidenceReferenceMax),
+  confirm: zod.boolean(),
+  acknowledgeUnknown: zod.boolean(),
+  acknowledgeNoRetry: zod.boolean(),
+});
+
+export const resolveZohoStageExecutionResponseHandoffRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const resolveZohoStageExecutionResponseRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const resolveZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin = 0;
+
+export const resolveZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin = 0;
+
+export const resolveZohoStageExecutionResponseRequestsMax = 1000;
+
+export const ResolveZohoStageExecutionResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string().regex(resolveZohoStageExecutionResponseHandoffRevisionRegExp),
+  ruleRevision: zod.string().regex(resolveZohoStageExecutionResponseRuleRevisionRegExp).nullable(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  reason: zod.string(),
+  requests: zod
+    .array(
+      zod
+        .object({
+          id: zod.string().uuid(),
+          revision: zod.string(),
+          state: zod.enum([
+            "prepared",
+            "approved",
+            "withdrawn",
+            "claimed",
+            "provider_accepted",
+            "verified",
+            "not_sent",
+            "review_required",
+            "observed_target",
+            "observed_other",
+          ]),
+          currentStatus: zod.string(),
+          targetStatus: zod.string(),
+          decision: zod.enum(["advance", "hold", "decline"]),
+          preparedBy: zod.string(),
+          approvedBy: zod.string().nullable(),
+          createdAt: zod.string(),
+          updatedAt: zod.string(),
+          stale: zod.boolean(),
+          canApprove: zod.boolean(),
+          canWithdraw: zod.boolean(),
+          canRecover: zod.boolean(),
+        })
+        .and(
+          zod.object({
+            canExecute: zod.boolean(),
+            executionRequestId: zod.string().uuid().nullable(),
+            sequence: zod.number().min(1),
+            canProposeResolution: zod.boolean(),
+            canReviewResolution: zod.boolean(),
+            resolution: zod.union([
+              zod.object({
+                proposedBy: zod.string(),
+                proposedAt: zod
+                  .number()
+                  .min(resolveZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin),
+                reason: zod.string(),
+                evidenceReference: zod.string(),
+                observedStatus: zod.string(),
+                review: zod.union([
+                  zod.object({
+                    action: zod.enum(["approve", "reject"]),
+                    by: zod.string(),
+                    at: zod
+                      .number()
+                      .min(
+                        resolveZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin,
+                      ),
+                    reason: zod.string(),
+                    evidenceReference: zod.string(),
+                  }),
+                  zod.null(),
+                ]),
+              }),
+              zod.null(),
+            ]),
+          }),
+        ),
+    )
+    .max(resolveZohoStageExecutionResponseRequestsMax),
+});
+
+/**
+ * @summary Deliberately approve, execute, withdraw or observe one exact request
+ */
+export const ActOnZohoStageExecutionParams = zod.object({
+  id: zod.coerce.string().uuid(),
+  recipientId: zod.coerce.string().uuid(),
+  requestId: zod.coerce.string().uuid(),
+});
+
+export const actOnZohoStageExecutionBodyExpectedRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const actOnZohoStageExecutionBodyExpectedRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const ActOnZohoStageExecutionBody = zod.object({
+  expectedRevision: zod.string().regex(actOnZohoStageExecutionBodyExpectedRevisionRegExp),
+  expectedRuleRevision: zod
+    .string()
+    .regex(actOnZohoStageExecutionBodyExpectedRuleRevisionRegExp)
+    .nullable(),
+  requestId: zod.string().uuid(),
+  action: zod.enum(["approve", "execute", "withdraw", "recover"]),
+  confirm: zod.boolean(),
+});
+
+export const actOnZohoStageExecutionResponseHandoffRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+export const actOnZohoStageExecutionResponseRuleRevisionRegExp = new RegExp("^[a-f0-9]{64}$");
+
+export const actOnZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin = 0;
+
+export const actOnZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin = 0;
+
+export const actOnZohoStageExecutionResponseRequestsMax = 1000;
+
+export const ActOnZohoStageExecutionResponse = zod.object({
+  campaignId: zod.string().uuid(),
+  recipientId: zod.string().uuid(),
+  handoffRevision: zod.string().regex(actOnZohoStageExecutionResponseHandoffRevisionRegExp),
+  ruleRevision: zod.string().regex(actOnZohoStageExecutionResponseRuleRevisionRegExp).nullable(),
+  transitionVerified: zod.boolean(),
+  liveEnabled: zod.boolean(),
+  canPrepare: zod.boolean(),
+  reason: zod.string(),
+  requests: zod
+    .array(
+      zod
+        .object({
+          id: zod.string().uuid(),
+          revision: zod.string(),
+          state: zod.enum([
+            "prepared",
+            "approved",
+            "withdrawn",
+            "claimed",
+            "provider_accepted",
+            "verified",
+            "not_sent",
+            "review_required",
+            "observed_target",
+            "observed_other",
+          ]),
+          currentStatus: zod.string(),
+          targetStatus: zod.string(),
+          decision: zod.enum(["advance", "hold", "decline"]),
+          preparedBy: zod.string(),
+          approvedBy: zod.string().nullable(),
+          createdAt: zod.string(),
+          updatedAt: zod.string(),
+          stale: zod.boolean(),
+          canApprove: zod.boolean(),
+          canWithdraw: zod.boolean(),
+          canRecover: zod.boolean(),
+        })
+        .and(
+          zod.object({
+            canExecute: zod.boolean(),
+            executionRequestId: zod.string().uuid().nullable(),
+            sequence: zod.number().min(1),
+            canProposeResolution: zod.boolean(),
+            canReviewResolution: zod.boolean(),
+            resolution: zod.union([
+              zod.object({
+                proposedBy: zod.string(),
+                proposedAt: zod
+                  .number()
+                  .min(actOnZohoStageExecutionResponseRequestsItemTwoResolutionOneProposedAtMin),
+                reason: zod.string(),
+                evidenceReference: zod.string(),
+                observedStatus: zod.string(),
+                review: zod.union([
+                  zod.object({
+                    action: zod.enum(["approve", "reject"]),
+                    by: zod.string(),
+                    at: zod
+                      .number()
+                      .min(
+                        actOnZohoStageExecutionResponseRequestsItemTwoResolutionOneReviewOneAtMin,
+                      ),
+                    reason: zod.string(),
+                    evidenceReference: zod.string(),
+                  }),
+                  zod.null(),
+                ]),
+              }),
+              zod.null(),
+            ]),
+          }),
+        ),
+    )
+    .max(actOnZohoStageExecutionResponseRequestsMax),
 });
 
 export const CheckZohoStageMetadataParams = zod.object({
@@ -3338,6 +4234,293 @@ export const GetEmployerOfferInboxItemResponse = zod.object({
     }),
     zod.null(),
   ]),
+});
+
+export const GetGreenhouseOfferWorkspaceParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const getGreenhouseOfferWorkspaceResponseHistoryMax = 1000;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneOpeningIdMax = 128;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneStartDateMax = 10;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneApproverIdMax = 200;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneSubmitterIdMax = 200;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneValuesOneMax = 4000;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMin = 0;
+export const getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMax = 9007199254740991;
+
+export const getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+
+export const GetGreenhouseOfferWorkspaceResponse = zod.object({
+  history: zod
+    .array(
+      zod.object({
+        sequence: zod.number().min(1),
+        attemptId: zod.string().uuid(),
+        state: zod.enum([
+          "prepared",
+          "approved",
+          "claimed",
+          "draft_created",
+          "provider_accepted",
+          "verified_submission",
+          "not_sent",
+          "review_required",
+          "observed_match",
+          "observed_other",
+        ]),
+        recordedAt: zod.date(),
+        actorId: zod.string().nullable(),
+        receiptRecorded: zod.boolean(),
+      }),
+    )
+    .max(getGreenhouseOfferWorkspaceResponseHistoryMax),
+  workflowRevision: zod.number(),
+  localRevision: zod.string(),
+  proposal: zod.union([
+    zod.object({
+      openingId: zod
+        .string()
+        .max(getGreenhouseOfferWorkspaceResponseProposalOneOpeningIdMax)
+        .nullable(),
+      startDate: zod
+        .string()
+        .max(getGreenhouseOfferWorkspaceResponseProposalOneStartDateMax)
+        .nullable(),
+      approverId: zod
+        .string()
+        .min(1)
+        .max(getGreenhouseOfferWorkspaceResponseProposalOneApproverIdMax),
+      submitterId: zod
+        .string()
+        .min(1)
+        .max(getGreenhouseOfferWorkspaceResponseProposalOneSubmitterIdMax),
+      values: zod.record(
+        zod.string(),
+        zod.union([
+          zod.string().max(getGreenhouseOfferWorkspaceResponseProposalOneValuesOneMax),
+          zod.number(),
+          zod.object({
+            amountMinor: zod
+              .number()
+              .min(getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMin)
+              .max(getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMax),
+            currency: zod
+              .string()
+              .regex(getGreenhouseOfferWorkspaceResponseProposalOneValuesThreeCurrencyRegExp),
+          }),
+        ]),
+      ),
+    }),
+    zod.null(),
+  ]),
+  people: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSubmit: zod.boolean(),
+  blockers: zod.array(zod.string()),
+  controlRevision: zod.string().nullable(),
+  attempt: zod.union([
+    zod.object({
+      id: zod.string(),
+      revision: zod.string(),
+      state: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  executionMode: zod.enum(["unavailable", "simulated", "controlled"]),
+});
+
+export const ControlGreenhouseOfferWorkspaceParams = zod.object({
+  jobId: zod.coerce.string(),
+  workflowId: zod.coerce.string(),
+});
+
+export const controlGreenhouseOfferWorkspaceBodyExpectedLocalRevisionRegExp = new RegExp(
+  "^[a-f0-9]{64}$",
+);
+export const controlGreenhouseOfferWorkspaceBodyExpectedControlRevisionRegExp = new RegExp(
+  "^[a-f0-9]{64}$",
+);
+export const controlGreenhouseOfferWorkspaceBodyProposalOpeningIdMax = 128;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalStartDateMax = 10;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalApproverIdMax = 200;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalSubmitterIdMax = 200;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalValuesOneMax = 4000;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalValuesThreeAmountMinorMin = 0;
+export const controlGreenhouseOfferWorkspaceBodyProposalValuesThreeAmountMinorMax = 9007199254740991;
+
+export const controlGreenhouseOfferWorkspaceBodyProposalValuesThreeCurrencyRegExp = new RegExp(
+  "^[A-Z]{3}$",
+);
+
+export const ControlGreenhouseOfferWorkspaceBody = zod.object({
+  action: zod.enum(["save", "prepare", "approve", "submit", "recover"]),
+  expectedLocalRevision: zod
+    .string()
+    .regex(controlGreenhouseOfferWorkspaceBodyExpectedLocalRevisionRegExp),
+  expectedControlRevision: zod
+    .string()
+    .regex(controlGreenhouseOfferWorkspaceBodyExpectedControlRevisionRegExp)
+    .optional(),
+  idempotencyKey: zod.string().uuid(),
+  confirm: zod.literal(true),
+  proposal: zod
+    .object({
+      openingId: zod
+        .string()
+        .max(controlGreenhouseOfferWorkspaceBodyProposalOpeningIdMax)
+        .nullable(),
+      startDate: zod
+        .string()
+        .max(controlGreenhouseOfferWorkspaceBodyProposalStartDateMax)
+        .nullable(),
+      approverId: zod.string().min(1).max(controlGreenhouseOfferWorkspaceBodyProposalApproverIdMax),
+      submitterId: zod
+        .string()
+        .min(1)
+        .max(controlGreenhouseOfferWorkspaceBodyProposalSubmitterIdMax),
+      values: zod.record(
+        zod.string(),
+        zod.union([
+          zod.string().max(controlGreenhouseOfferWorkspaceBodyProposalValuesOneMax),
+          zod.number(),
+          zod.object({
+            amountMinor: zod
+              .number()
+              .min(controlGreenhouseOfferWorkspaceBodyProposalValuesThreeAmountMinorMin)
+              .max(controlGreenhouseOfferWorkspaceBodyProposalValuesThreeAmountMinorMax),
+            currency: zod
+              .string()
+              .regex(controlGreenhouseOfferWorkspaceBodyProposalValuesThreeCurrencyRegExp),
+          }),
+        ]),
+      ),
+    })
+    .optional(),
+  attemptId: zod.string().uuid().optional(),
+});
+
+export const controlGreenhouseOfferWorkspaceResponseHistoryMax = 1000;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneOpeningIdMax = 128;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneStartDateMax = 10;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneApproverIdMax = 200;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneSubmitterIdMax = 200;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneValuesOneMax = 4000;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMin = 0;
+export const controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMax = 9007199254740991;
+
+export const controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeCurrencyRegExp =
+  new RegExp("^[A-Z]{3}$");
+
+export const ControlGreenhouseOfferWorkspaceResponse = zod.object({
+  history: zod
+    .array(
+      zod.object({
+        sequence: zod.number().min(1),
+        attemptId: zod.string().uuid(),
+        state: zod.enum([
+          "prepared",
+          "approved",
+          "claimed",
+          "draft_created",
+          "provider_accepted",
+          "verified_submission",
+          "not_sent",
+          "review_required",
+          "observed_match",
+          "observed_other",
+        ]),
+        recordedAt: zod.date(),
+        actorId: zod.string().nullable(),
+        receiptRecorded: zod.boolean(),
+      }),
+    )
+    .max(controlGreenhouseOfferWorkspaceResponseHistoryMax),
+  workflowRevision: zod.number(),
+  localRevision: zod.string(),
+  proposal: zod.union([
+    zod.object({
+      openingId: zod
+        .string()
+        .max(controlGreenhouseOfferWorkspaceResponseProposalOneOpeningIdMax)
+        .nullable(),
+      startDate: zod
+        .string()
+        .max(controlGreenhouseOfferWorkspaceResponseProposalOneStartDateMax)
+        .nullable(),
+      approverId: zod
+        .string()
+        .min(1)
+        .max(controlGreenhouseOfferWorkspaceResponseProposalOneApproverIdMax),
+      submitterId: zod
+        .string()
+        .min(1)
+        .max(controlGreenhouseOfferWorkspaceResponseProposalOneSubmitterIdMax),
+      values: zod.record(
+        zod.string(),
+        zod.union([
+          zod.string().max(controlGreenhouseOfferWorkspaceResponseProposalOneValuesOneMax),
+          zod.number(),
+          zod.object({
+            amountMinor: zod
+              .number()
+              .min(controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMin)
+              .max(controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeAmountMinorMax),
+            currency: zod
+              .string()
+              .regex(controlGreenhouseOfferWorkspaceResponseProposalOneValuesThreeCurrencyRegExp),
+          }),
+        ]),
+      ),
+    }),
+    zod.null(),
+  ]),
+  people: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  canEdit: zod.boolean(),
+  canApprove: zod.boolean(),
+  canSubmit: zod.boolean(),
+  blockers: zod.array(zod.string()),
+  controlRevision: zod.string().nullable(),
+  attempt: zod.union([
+    zod.object({
+      id: zod.string(),
+      revision: zod.string(),
+      state: zod.string(),
+    }),
+    zod.null(),
+  ]),
+  executionMode: zod.enum(["unavailable", "simulated", "controlled"]),
 });
 
 export const GetCandidateOfferRoutingParams = zod.object({

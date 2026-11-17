@@ -35,6 +35,8 @@ function fixture() {
   let fenceAllowed = true;
   let insideFence = false;
   const readLocks: boolean[] = [];
+  const recoveryContexts: unknown[] = [];
+  let observedCandidateId = h.externalCandidateId;
   const rows: StageRequestRecord[] = [];
   const deps = {
     handoff: { detail: async () => structuredClone(h) },
@@ -48,7 +50,7 @@ function fixture() {
         externalJobId: h.externalJobId,
         externalCandidateId: h.externalCandidateId,
         applicationId: h.applicationId,
-        sourceEvidenceHash: "c".repeat(64),
+        sourceEvidenceHash: h.revision,
         latestReviewId: "review",
       }),
     },
@@ -60,7 +62,19 @@ function fixture() {
         configFingerprint: "e".repeat(64),
       }),
     },
-    assertSourceCurrent: async () => {},
+    assertSourceCurrent: async (
+      _actor: unknown,
+      _campaign: unknown,
+      _recipient: unknown,
+      sourceHash: string,
+      _review: unknown,
+      transaction: unknown,
+    ) => {
+      assert.equal(insideFence, true);
+      assert.ok(transaction);
+      if (sourceHash !== h.revision)
+        throw new CalendarError(409, "source_changed", "Source changed");
+    },
     validation: {
       check: async () => {
         reads++;
@@ -71,6 +85,37 @@ function fixture() {
         };
         afterRead?.();
         return result;
+      },
+    },
+    recoveryConnections: {
+      connect: async (requester: typeof actor, context: Record<string, unknown>) => {
+        assert.deepEqual(requester, actor);
+        recoveryContexts.push(structuredClone(context));
+        return {
+          provider: {
+            read: async (binding: Record<string, string>) => {
+              assert.equal(insideFence, true);
+              reads++;
+              readLocks.push(insideFence);
+              const result = { ...binding, candidateId: observedCandidateId, currentStatus };
+              afterRead?.();
+              return result;
+            },
+            change: async () => {
+              throw Error("Recovery must never invoke a write");
+            },
+          },
+          fence: async (work: (tx: unknown) => Promise<unknown>) => {
+            if (!fenceAllowed) throw new CalendarError(409, "source_changed", "Source changed");
+            fences++;
+            insideFence = true;
+            try {
+              return await work({});
+            } finally {
+              insideFence = false;
+            }
+          },
+        };
       },
     },
     authority: {
@@ -98,6 +143,8 @@ function fixture() {
         const { binding, proof: _proof, ...rest } = s;
         const row: StageRequestRecord = {
           version: 1,
+          purpose: "local",
+          resolution: null,
           campaignId: scope.campaignId,
           requestId: randomUUID(),
           sequence: 1,
@@ -162,6 +209,7 @@ function fixture() {
     h,
     rows,
     readLocks,
+    recoveryContexts,
     stats: () => ({ reads, writes, fences }),
     change: (values: {
       connection?: string | null;
@@ -170,6 +218,7 @@ function fixture() {
       match?: string;
       after?: () => void;
       fenceAllowed?: boolean;
+      observedCandidateId?: string;
     }) => {
       if ("connection" in values) connectionRevision = values.connection!;
       if ("consent" in values) writeConsentSaved = values.consent!;
@@ -177,6 +226,7 @@ function fixture() {
       if ("match" in values) metadataResult = values.match!;
       if ("after" in values) afterRead = values.after!;
       if ("fenceAllowed" in values) fenceAllowed = values.fenceAllowed!;
+      if ("observedCandidateId" in values) observedCandidateId = values.observedCandidateId!;
     },
   };
 }
@@ -300,6 +350,76 @@ test("recovery refuses prepared requests and never creates attributable delivery
     }),
   );
   assert.deepEqual(f.stats(), prior);
+});
+test("connected recovery rejects foreign observations, replaced accounts and absent claims without recording success", async () => {
+  for (const failure of ["identity", "connection", "missing-claim", "authority"]) {
+    const f = fixture();
+    await f.service.prepare(actor, scope, {
+      expectedRevision: f.h.revision,
+      requestId: randomUUID(),
+      confirm: true,
+    });
+    const row = f.rows[0];
+    row.state = "claimed";
+    row.executionRequestId = failure === "missing-claim" ? null : randomUUID();
+    if (failure === "identity") f.change({ observedCandidateId: "999" });
+    if (failure === "connection") f.change({ connection: "replacement" });
+    if (failure === "authority") f.change({ fenceAllowed: false });
+    await assert.rejects(
+      f.service.act(actor, scope, row.requestId, {
+        expectedRevision: row.revision,
+        action: "recover",
+        confirm: true,
+      }),
+    );
+    assert.equal(row.state, "claimed");
+    assert.equal(f.stats().writes, 1, "Only the original local preparation was written");
+    if (failure !== "identity") assert.equal(f.stats().reads, 1, "No unauthorized recovery read");
+    if (failure === "connection" || failure === "missing-claim")
+      assert.equal(
+        f.recoveryContexts.length,
+        0,
+        "No OAuth work before a bound claim is established",
+      );
+  }
+});
+test("connected recovery records another observed status without permission to dispatch", async () => {
+  const f = fixture();
+  await f.service.prepare(actor, scope, {
+    expectedRevision: f.h.revision,
+    requestId: randomUUID(),
+    confirm: true,
+  });
+  const row = f.rows[0];
+  row.state = "claimed";
+  row.executionRequestId = randomUUID();
+  f.change({ status: "Unrelated status", consent: false });
+  const result = await f.service.act(actor, scope, row.requestId, {
+    expectedRevision: row.revision,
+    action: "recover",
+    confirm: true,
+  });
+  assert.equal(result.requests[0].state, "observed_other");
+  assert.equal(result.liveEnabled, false);
+  assert.equal(result.writeConsentSaved, false);
+  assert.deepEqual(f.recoveryContexts, [
+    {
+      tenantId: actor.tenantId,
+      ...scope,
+      candidateId: "local-candidate",
+      accountRef: "a".repeat(64),
+      connectionRevision: "connection",
+      externalJobId: f.h.externalJobId,
+      externalCandidateId: f.h.externalCandidateId,
+      applicationId: f.h.applicationId,
+      sourceEvidenceHash: f.h.revision,
+      latestReviewId: "review",
+      sourceConnectionRevision: "connection",
+      custodyRevision: "d".repeat(64),
+      configFingerprint: "e".repeat(64),
+      mappingRevision: f.h.mapping.revision,
+    },
+  ]);
 });
 test("OAuth write scope is explicit opt-in, and custody stage permission cannot be borrowed", async () => {
   const cfg = zohoOAuthConfig({
@@ -459,6 +579,9 @@ test("stage-request routes authenticate, reject forged authority/proof and disal
       undefined,
       undefined,
       () => ({
+        resolve: async () => {
+          throw new Error("Unexpected resolution");
+        },
         gateCandidateAccess: async () => ({
           view: async () => {
             calls++;

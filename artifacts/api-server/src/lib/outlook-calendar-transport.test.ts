@@ -77,6 +77,18 @@ test("request is delegated, UTC, immutable-id, bounded, and preserves revision h
   assert.equal(init.redirect, "error");
   assert.ok(init.signal);
 });
+test("panel sharing can verify its delegated mailbox through the real request guard", async () => {
+  state.response = new Response('{"id":"fixture-mailbox"}', { status: 200 });
+  const request = await outlookCalendarRequest("fixture-user");
+  const mailbox = await request<{ id: string }>("/me?$select=id");
+  assert.equal(mailbox.id, "fixture-mailbox");
+  assert.equal(state.calls.length, 1);
+  assert.equal(state.calls[0].url, "https://graph.microsoft.com/v1.0/me?$select=id");
+  assert.equal(
+    new Headers(state.calls[0].init.headers).get("Authorization"),
+    "Bearer fixture-access",
+  );
+});
 test("provider status failures remain explicit and do not expose private response bodies", async () => {
   for (const [status, expected, mapped] of [
     [401, "calendar_reconnect_required", 502],

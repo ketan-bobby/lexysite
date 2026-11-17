@@ -13,6 +13,128 @@ import {
 import { zohoStageWriteHttp } from "./zoho-stage-write-http";
 
 const at = Date.parse("2026-11-06T10:00:00Z");
+test("a claimed worker waiting for its source fence cannot write after independent closure", async () => {
+  const s = fixture();
+  let writes = 0,
+    reads = 0;
+  const attempt: StageWriteAttempt = {
+    id: randomUUID(),
+    requestId: randomUUID(),
+    snapshot: s,
+    revision: stageWriteRevision(s),
+    state: "claimed",
+  };
+  const writer = zohoStageWriter({
+    now: () => at,
+    source: {
+      current: async () => s,
+      fence: async (_actor, _scope, work) => {
+        attempt.closed = true;
+        attempt.state = "observed_target";
+        return work(s);
+      },
+    },
+    store: {
+      claim: async () => ({ acquired: true, attempt: structuredClone(attempt) }),
+      get: async () => structuredClone(attempt),
+      record: async () => structuredClone(attempt), // real ledger preserves closed outcomes
+    },
+    provider: {
+      read: async () => {
+        reads++;
+        return { ...s.binding, currentStatus: s.currentStatus };
+      },
+      change: async () => {
+        writes++;
+        return "accepted";
+      },
+    },
+  });
+  const result = await writer.execute(s.actor, s.scope, {
+    expectedRevision: attempt.revision,
+    requestId: attempt.requestId,
+    confirm: true,
+  });
+  assert.equal(result.attempt?.closed, true);
+  assert.equal(result.attempt?.state, "observed_target");
+  assert.equal(writes, 0);
+  assert.equal(reads, 0);
+});
+test("content revisions exclude only the acting staff ID, not tenant, scope, proof or transition content", () => {
+  const original = fixture(),
+    revision = stageWriteRevision(original);
+  assert.equal(
+    stageWriteRevision({ ...original, actor: { ...original.actor, id: "another-staff" } }),
+    revision,
+  );
+  const changes: Array<(s: StageWriteSnapshot) => void> = [
+    (s) => {
+      s.actor.tenantId = "foreign";
+    },
+    (s) => {
+      s.scope.campaignId = "another-campaign";
+    },
+    (s) => {
+      s.scope.recipientId = "another-recipient";
+    },
+    (s) => {
+      s.binding.applicationId = "301";
+    },
+    (s) => {
+      s.binding.candidateId = "201";
+    },
+    (s) => {
+      s.binding.jobId = "101";
+    },
+    (s) => {
+      s.accountRef = "c".repeat(64);
+    },
+    (s) => {
+      s.connectionRevision = "another-connection";
+    },
+    (s) => {
+      s.sourceRevision = "d".repeat(64);
+    },
+    (s) => {
+      s.currentStatus = "Changed";
+    },
+    (s) => {
+      s.targetStatus = "Changed";
+    },
+    (s) => {
+      s.targetStage = "Changed";
+    },
+    (s) => {
+      s.decision = "hold";
+    },
+    (s) => {
+      s.currentHumanDecision = false;
+    },
+    (s) => {
+      s.writePermissionConfirmed = false;
+    },
+    (s) => {
+      s.proof!.verifiedBy = "another-proof-reviewer";
+    },
+    (s) => {
+      s.proof!.evidenceReference = "another-report";
+    },
+    (s) => {
+      s.proof!.verifiedAt++;
+    },
+    (s) => {
+      s.proof!.expiresAt++;
+    },
+    (s) => {
+      s.proof = null;
+    },
+  ];
+  for (const change of changes) {
+    const changed = structuredClone(original);
+    change(changed);
+    assert.notEqual(stageWriteRevision(changed), revision);
+  }
+});
 function fixture(): StageWriteSnapshot {
   return {
     actor: { id: "synthetic-admin", tenantId: "synthetic-employer" },
@@ -413,6 +535,86 @@ test("replacement connection prevents recovery reads of an old employer attempt"
 const acceptedBody = (id = "200") => ({
   data: [[{ code: "SUCCESS", status: "success", details: { id } }]],
 });
+for (const scenario of [
+  "accepted",
+  "lost-response",
+  "wrong-candidate",
+  "permission-denied",
+  "readback-mismatch",
+] as const) {
+  test(`composed writer and HTTP adapter: ${scenario} preserves scoped execution and recovery`, async () => {
+    const h = harness();
+    let requests = 0;
+    let held = false;
+    const wire = zohoStageWriteHttp({
+      region: "us",
+      token: "synthetic-nonsecret-token",
+      now: () => at,
+      request: (async (_url, init) => {
+        assert.equal(held, true, "provider mutation must remain inside the authority fence");
+        assert.equal([...h.j.attempts.values()][0]?.state, "claimed", "claim precedes transport");
+        requests++;
+        const body = JSON.parse(String(init?.body));
+        assert.deepEqual(body.data[0].ids, [h.snapshot.binding.candidateId]);
+        assert.deepEqual(body.data[0].jobids, [h.snapshot.binding.jobId]);
+        if (scenario === "permission-denied")
+          return Response.json({ code: "NO_PERMISSION" }, { status: 403 });
+        if (scenario !== "readback-mismatch")
+          h.setRemote({ ...h.snapshot.binding, currentStatus: h.snapshot.targetStatus });
+        if (scenario === "lost-response") throw Error("private simulated lost response");
+        return Response.json(acceptedBody(scenario === "wrong-candidate" ? "999" : "200"));
+      }) as typeof fetch,
+    });
+    const dependencies = {
+      ...h.dependencies,
+      source: {
+        ...h.dependencies.source,
+        async fence<T>(
+          actor: StageWriteSnapshot["actor"],
+          scope: StageWriteSnapshot["scope"],
+          work: (snapshot: StageWriteSnapshot) => Promise<T>,
+        ) {
+          held = true;
+          try {
+            return await h.dependencies.source.fence(actor, scope, work);
+          } finally {
+            held = false;
+          }
+        },
+      },
+      provider: {
+        read: h.dependencies.provider.read,
+        change: wire.change,
+      },
+    };
+    const writer = zohoStageWriter(dependencies);
+    const input = h.input();
+    const result = await writer.execute(h.snapshot.actor, h.snapshot.scope, input);
+    assert.ok(result.attempt);
+    assert.equal(result.attempt.state, scenario === "accepted" ? "verified" : "review_required");
+    assert.equal(requests, 1);
+    // A replacement worker and a different request ID must not repeat transport.
+    const restarted = zohoStageWriter(dependencies);
+    const replay = await restarted.execute(h.snapshot.actor, h.snapshot.scope, {
+      ...input,
+      requestId: randomUUID(),
+    });
+    assert.equal(replay.attempt?.id, result.attempt.id);
+    assert.equal(requests, 1);
+    const recovery = await restarted.recover(h.snapshot.actor, h.snapshot.scope, result.attempt.id);
+    assert.equal(
+      recovery.state,
+      scenario === "accepted"
+        ? "verified"
+        : ["lost-response", "wrong-candidate"].includes(scenario)
+          ? "observed_target"
+          : "observed_other",
+    );
+    assert.equal(requests, 1, "read-only recovery cannot resend");
+    assert.equal(held, false);
+  });
+}
+
 test("HTTP payload is fixed-origin, job-scoped, single-candidate and never retries", async () => {
   let calls = 0;
   const adapter = zohoStageWriteHttp({

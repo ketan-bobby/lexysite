@@ -285,6 +285,52 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ZohoInterviewNoteReceipt" }
+  /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-rules:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: recipientId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getZohoStageRules
+      tags: [Zoho Recruit]
+      responses:
+        "200":
+          description: Current employer evidence review and immutable history; no provider calls or execution.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageRuleWorkspace" }
+    post:
+      operationId: proposeZohoStageRule
+      tags: [Zoho Recruit]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZohoStageRuleInput" }
+      responses:
+        "200":
+          description: Evidence proposal saved after a read-only metadata check. It is not verified or executable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageRuleWorkspace" }
+  /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-rules/{ruleId}/actions:
+    post:
+      operationId: actOnZohoStageRule
+      tags: [Zoho Recruit]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: recipientId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: ruleId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZohoStageRuleAction" }
+      responses:
+        "200":
+          description: Independent employer evidence verification or local revocation. Never dispatches a stage update.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageRuleWorkspace" }
   /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-requests:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -331,6 +377,75 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ZohoStageRequestWorkspace" }
+  /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-execution:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: recipientId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getZohoStageExecution
+      tags: [Zoho Recruit]
+      summary: Read controlled execution requests and blockers without provider calls
+      responses:
+        "200":
+          description: Scoped execution history, distinct from earlier local simulation approvals.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageExecutionWorkspace" }
+    post:
+      operationId: prepareZohoStageExecution
+      tags: [Zoho Recruit]
+      summary: Prepare an evidence-bound request without sending a stage change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZohoStageExecutionInput" }
+      responses:
+        "200":
+          description: Prepared after current read-only validation and locked authority checks.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageExecutionWorkspace" }
+  /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-execution/{requestId}/resolution:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: recipientId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: requestId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: resolveZohoStageExecution
+      tags: [Zoho Recruit]
+      summary: Independently review closure without writing or retrying an ATS stage change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZohoStageResolutionInput" }
+      responses:
+        "200":
+          description: Updated local execution history after a read-only observation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageExecutionWorkspace" }
+  /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-execution/{requestId}/actions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: recipientId, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: requestId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: actOnZohoStageExecution
+      tags: [Zoho Recruit]
+      summary: Deliberately approve, execute, withdraw or observe one exact request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZohoStageExecutionAction" }
+      responses:
+        "200":
+          description: Current history; only execute can send, subject to deployment activation and current authority.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZohoStageExecutionWorkspace" }
   /zoho-recruit/campaigns/{id}/recipients/{recipientId}/stage-validation:
     post:
       operationId: checkZohoStageMetadata
@@ -1771,6 +1886,33 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/OfferInboxItem" }
         "404": { description: Not found or no longer assigned }
+  /jobs/{jobId}/candidate-workflows/{workflowId}/greenhouse-offer:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string } }
+      - { name: workflowId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getGreenhouseOfferWorkspace
+      tags: [Workflows]
+      responses:
+        "200":
+          description: Human-owned local proposal and connected-control readiness
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GreenhouseOfferWorkspace" }
+    post:
+      operationId: controlGreenhouseOfferWorkspace
+      tags: [Workflows]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GreenhouseOfferWorkspaceInput" }
+      responses:
+        "200":
+          description: Updated local workspace; not candidate delivery
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GreenhouseOfferWorkspace" }
   /jobs/{jobId}/candidate-workflows/{workflowId}/offer-routing:
     parameters:
       - { name: jobId, in: path, required: true, schema: { type: string } }
@@ -6000,6 +6142,170 @@ components:
         preparedAt: { type: string, format: date-time }
         state: { type: string, enum: [prepared] }
         delivery: { type: string, enum: [unverified] }
+    ZohoStageRuleEvidence:
+      type: object
+      additionalProperties: false
+      required: [contractReference, isolationReference, requirementsReference, sideEffectsReference, requirements, notifications]
+      properties:
+        contractReference: { type: string, minLength: 8, maxLength: 200 }
+        isolationReference: { type: string, minLength: 8, maxLength: 200 }
+        requirementsReference: { type: string, minLength: 8, maxLength: 200 }
+        sideEffectsReference: { type: string, minLength: 8, maxLength: 200 }
+        requirements: { type: string, enum: [no_additional_fields_or_blueprint_actions] }
+        notifications: { type: string, enum: [no_automatic_messages_or_cross_application_changes] }
+    ZohoStageRuleInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, expectedRuleRevision, requestId, evidence, confirm]
+      properties:
+        expectedRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedRuleRevision: { type: [string, "null"], pattern: "^[a-f0-9]{64}$" }
+        requestId: { type: string, format: uuid }
+        evidence: { $ref: "#/components/schemas/ZohoStageRuleEvidence" }
+        confirm: { type: boolean, const: true }
+    ZohoStageRuleAction:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, requestId, action, confirm]
+      properties:
+        expectedRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        requestId: { type: string, format: uuid }
+        action: { type: string, enum: [verify, revoke] }
+        reviewReference: { type: string, minLength: 8, maxLength: 200 }
+        confirm: { type: boolean, const: true }
+    ZohoStageRule:
+      type: object
+      required: [id, revision, state, currentStatus, targetStatus, decision, evidence, submittedBy, submittedAt, verifiedBy, verifiedAt, expiresAt, reviewReference, revokedBy]
+      properties:
+        id: { type: string, format: uuid }
+        revision: { type: string }
+        state: { type: string, enum: [proposed, verified, revoked] }
+        currentStatus: { type: string }
+        targetStatus: { type: string }
+        decision: { type: string, enum: [advance, hold, decline] }
+        evidence: { $ref: "#/components/schemas/ZohoStageRuleEvidence" }
+        submittedBy: { type: string }
+        submittedAt: { type: number }
+        verifiedBy: { type: [string, "null"] }
+        verifiedAt: { type: [number, "null"] }
+        expiresAt: { type: [number, "null"] }
+        reviewReference: { type: [string, "null"] }
+        revokedBy: { type: [string, "null"] }
+    ZohoStageRuleWorkspace:
+      type: object
+      required: [campaignId, recipientId, sourceRevision, currentApplication, status, canPropose, canVerify, canRevoke, liveEnabled, reason, currentRule, history]
+      properties:
+        campaignId: { type: string }
+        recipientId: { type: string }
+        sourceRevision: { type: string }
+        currentApplication:
+          type: object
+          required: [applicationId, candidateId, jobId]
+          properties:
+            applicationId: { type: string }
+            candidateId: { type: string }
+            jobId: { type: string }
+        status: { type: string, enum: [unavailable, proposal_required, pending_review, verified, expired, stale, revoked] }
+        canPropose: { type: boolean }
+        canVerify: { type: boolean }
+        canRevoke: { type: boolean }
+        liveEnabled: { type: boolean, const: false }
+        reason: { type: string }
+        currentRule:
+          oneOf:
+            - { $ref: "#/components/schemas/ZohoStageRule" }
+            - { type: "null" }
+        history:
+          type: array
+          maxItems: 1000
+          items: { $ref: "#/components/schemas/ZohoStageRule" }
+    ZohoStageResolutionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, expectedSourceRevision, expectedSequence, commandId, action, reason, evidenceReference, confirm, acknowledgeUnknown, acknowledgeNoRetry]
+      properties:
+        expectedRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedSourceRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedSequence: { type: integer, minimum: 1 }
+        commandId: { type: string, format: uuid }
+        action: { type: string, enum: [propose, approve, reject] }
+        reason: { type: string, minLength: 20, maxLength: 1000 }
+        evidenceReference: { type: string, minLength: 10, maxLength: 200 }
+        confirm: { type: boolean, const: true }
+        acknowledgeUnknown: { type: boolean, const: true }
+        acknowledgeNoRetry: { type: boolean, const: true }
+    ZohoStageResolutionReview:
+      type: object
+      required: [action, by, at, reason, evidenceReference]
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        by: { type: string }
+        at: { type: integer, minimum: 0 }
+        reason: { type: string }
+        evidenceReference: { type: string }
+    ZohoStageResolution:
+      type: object
+      required: [proposedBy, proposedAt, reason, evidenceReference, observedStatus, review]
+      properties:
+        proposedBy: { type: string }
+        proposedAt: { type: integer, minimum: 0 }
+        reason: { type: string }
+        evidenceReference: { type: string }
+        observedStatus: { type: string }
+        review:
+          anyOf:
+            - { $ref: "#/components/schemas/ZohoStageResolutionReview" }
+            - { type: "null" }
+    ZohoStageExecutionInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, expectedRuleRevision, requestId, confirm]
+      properties:
+        expectedRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedRuleRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        requestId: { type: string, format: uuid }
+        confirm: { type: boolean, const: true }
+    ZohoStageExecutionAction:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, expectedRuleRevision, requestId, action, confirm]
+      properties:
+        expectedRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedRuleRevision: { type: ["string", "null"], pattern: "^[a-f0-9]{64}$" }
+        requestId: { type: string, format: uuid }
+        action: { type: string, enum: [approve, execute, withdraw, recover] }
+        confirm: { type: boolean, const: true }
+    ZohoStageExecutionRequest:
+      allOf:
+        - { $ref: "#/components/schemas/ZohoStageRequest" }
+        - type: object
+          required: [canExecute, executionRequestId, sequence, resolution, canProposeResolution, canReviewResolution]
+          properties:
+            canExecute: { type: boolean }
+            executionRequestId: { type: ["string", "null"], format: uuid }
+            sequence: { type: integer, minimum: 1 }
+            canProposeResolution: { type: boolean }
+            canReviewResolution: { type: boolean }
+            resolution:
+              anyOf:
+                - { $ref: "#/components/schemas/ZohoStageResolution" }
+                - { type: "null" }
+    ZohoStageExecutionWorkspace:
+      type: object
+      required: [campaignId, recipientId, handoffRevision, ruleRevision, transitionVerified, liveEnabled, canPrepare, reason, requests]
+      properties:
+        campaignId: { type: string, format: uuid }
+        recipientId: { type: string, format: uuid }
+        handoffRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        ruleRevision: { type: ["string", "null"], pattern: "^[a-f0-9]{64}$" }
+        transitionVerified: { type: boolean }
+        liveEnabled: { type: boolean }
+        canPrepare: { type: boolean }
+        reason: { type: string }
+        requests:
+          type: array
+          maxItems: 1000
+          items: { $ref: "#/components/schemas/ZohoStageExecutionRequest" }
     ZohoStageRequestInput:
       type: object
       additionalProperties: false
@@ -7939,6 +8245,94 @@ components:
             externalJobId: { type: string, minLength: 1, maxLength: 128 }
             externalCandidateId: { type: string, minLength: 1, maxLength: 128 }
             externalApplicationId: { type: string, minLength: 1, maxLength: 128 }
+    GreenhouseOfferMoney:
+      type: object
+      additionalProperties: false
+      required: [amountMinor, currency]
+      properties:
+        amountMinor: { type: integer, minimum: 0, maximum: 9007199254740991 }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+    GreenhouseOfferProposal:
+      type: object
+      additionalProperties: false
+      required: [openingId, startDate, approverId, submitterId, values]
+      properties:
+        openingId: { type: [string, "null"], maxLength: 128 }
+        startDate: { type: [string, "null"], maxLength: 10 }
+        approverId: { type: string, minLength: 1, maxLength: 200 }
+        submitterId: { type: string, minLength: 1, maxLength: 200 }
+        values:
+          type: object
+          additionalProperties:
+            oneOf:
+              - { type: string, maxLength: 4000 }
+              - { type: number }
+              - { $ref: "#/components/schemas/GreenhouseOfferMoney" }
+    GreenhouseOfferWorkspaceInput:
+      type: object
+      additionalProperties: false
+      required: [action, expectedLocalRevision, idempotencyKey, confirm]
+      properties:
+        action: { type: string, enum: [save, prepare, approve, submit, recover] }
+        expectedLocalRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        expectedControlRevision: { type: string, pattern: "^[a-f0-9]{64}$" }
+        idempotencyKey: { type: string, format: uuid }
+        confirm: { type: boolean, enum: [true] }
+        proposal: { $ref: "#/components/schemas/GreenhouseOfferProposal" }
+        attemptId: { type: string, format: uuid }
+    GreenhouseOfferAttemptView:
+      type: object
+      required: [id, revision, state]
+      properties:
+        id: { type: string }
+        revision: { type: string }
+        state: { type: string }
+    GreenhouseOfferHistoryEntry:
+      type: object
+      additionalProperties: false
+      required: [sequence, attemptId, state, recordedAt, actorId, receiptRecorded]
+      properties:
+        sequence: { type: integer, minimum: 1 }
+        attemptId: { type: string, format: uuid }
+        state:
+          type: string
+          enum: [prepared, approved, claimed, draft_created, provider_accepted, verified_submission, not_sent, review_required, observed_match, observed_other]
+        recordedAt: { type: string, format: date-time }
+        actorId: { type: [string, "null"] }
+        receiptRecorded: { type: boolean }
+    GreenhouseOfferWorkspace:
+      type: object
+      required: [workflowRevision, localRevision, proposal, people, canEdit, canApprove, canSubmit, blockers, controlRevision, attempt, executionMode, history]
+      properties:
+        history:
+          type: array
+          maxItems: 1000
+          items: { $ref: "#/components/schemas/GreenhouseOfferHistoryEntry" }
+        workflowRevision: { type: integer }
+        localRevision: { type: string }
+        proposal:
+          anyOf:
+            - { $ref: "#/components/schemas/GreenhouseOfferProposal" }
+            - { type: "null" }
+        people:
+          type: array
+          items: { $ref: "#/components/schemas/GreenhouseOfferPerson" }
+        canEdit: { type: boolean }
+        canApprove: { type: boolean }
+        canSubmit: { type: boolean }
+        blockers: { type: array, items: { type: string } }
+        controlRevision: { type: [string, "null"] }
+        attempt:
+          anyOf:
+            - { $ref: "#/components/schemas/GreenhouseOfferAttemptView" }
+            - { type: "null" }
+        executionMode: { type: string, enum: [unavailable, simulated, controlled] }
+    GreenhouseOfferPerson:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
     OfferRoutingConfiguration:
       type: object
       required: [mode, ownerUserId, approverUserId, senderUserId, externalSystem, externalApplicationUrl, configuredBy, configuredAt]

@@ -19,6 +19,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Keep the public-site navy wordmark readable on the app's dark surfaces. */
+.lexy-brand-logo {
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-sizing: content-box;
+}
+
 @theme inline {
   /* Motion defaults — transition utilities without an explicit duration/ease
      inherit a 200ms brand curve so hovers feel physical (Step 5 motion tuning). */

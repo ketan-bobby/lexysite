@@ -5,6 +5,28 @@ export interface ScheduleApplication {
   job: { title: string | null } | null;
 }
 
+function readCandidate(candidate: unknown): ScheduleApplication["candidate"] {
+  if (candidate === null) return null;
+  if (!candidate || typeof candidate !== "object")
+    throw new Error("The candidate list could not be verified.");
+  // /applications returns canonical name parts; older responses may have name.
+  if ("name" in candidate) {
+    if (candidate.name !== null && typeof candidate.name !== "string")
+      throw new Error("The candidate list could not be verified.");
+    return { name: candidate.name };
+  }
+  if (!("firstName" in candidate) && !("lastName" in candidate))
+    throw new Error("The candidate list could not be verified.");
+  const firstName = "firstName" in candidate ? candidate.firstName : null;
+  const lastName = "lastName" in candidate ? candidate.lastName : null;
+  if (
+    (firstName !== null && typeof firstName !== "string") ||
+    (lastName !== null && typeof lastName !== "string")
+  )
+    throw new Error("The candidate list could not be verified.");
+  return { name: [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ") || null };
+}
+
 // Validate the picker boundary without retaining private fields it does not use.
 export function parseScheduleApplications(body: unknown): ScheduleApplication[] {
   if (!Array.isArray(body)) throw new Error("The candidate list could not be verified.");
@@ -23,26 +45,21 @@ export function parseScheduleApplications(body: unknown): ScheduleApplication[] 
       ids.has(row.id)
     )
       throw new Error("The candidate list could not be verified.");
-    const candidate = row.candidate;
+    const candidate = readCandidate(row.candidate);
     const job = row.job;
     if (
-      (candidate !== null &&
-        (!candidate ||
-          typeof candidate !== "object" ||
-          !("name" in candidate) ||
-          (candidate.name !== null && typeof candidate.name !== "string"))) ||
-      (job !== null &&
-        (!job ||
-          typeof job !== "object" ||
-          !("title" in job) ||
-          (job.title !== null && typeof job.title !== "string")))
+      job !== null &&
+      (!job ||
+        typeof job !== "object" ||
+        !("title" in job) ||
+        (job.title !== null && typeof job.title !== "string"))
     )
       throw new Error("The candidate list could not be verified.");
     ids.add(row.id);
     return {
       id: row.id,
       stage: row.stage,
-      candidate: candidate === null ? null : { name: (candidate as { name: string | null }).name },
+      candidate,
       job: job === null ? null : { title: (job as { title: string | null }).title },
     };
   });

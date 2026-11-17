@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServer } from "vite";
@@ -26,6 +27,49 @@ const failures = [];
 const T = (id) => `[data-testid="${id}"]`;
 const stamp = "2026-01-01T00:00:00.000Z";
 const revision = "a".repeat(64);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Synthetic, deterministic 64-hex revisions for seeded rows; fresh ones for mutations.
+const hexRev = (n) => n.toString(16).padStart(2, "0").repeat(32);
+const newRev = () => randomUUID().replaceAll("-", "").repeat(2);
+const ROW_A = "00000000-0000-4000-8000-00000000000a";
+const ROW_R = "00000000-0000-4000-8000-00000000000b";
+const ROW_O = "00000000-0000-4000-8000-00000000000c";
+// Observed-state row that can carry a local administrative closure (resolution contract).
+const ROW_P = "00000000-0000-4000-8000-00000000000d";
+const HEX64 = /^[a-f0-9]{64}$/;
+const PROPOSAL_REASON =
+  "Zoho shows a different status than the approved target; closure proposed for independent review.";
+const PROPOSAL_EVIDENCE = "PROPOSAL-REF-0001";
+const REVIEW_REASON = "Independent reviewer checked the observed status against the reference.";
+const REVIEW_EVIDENCE = "REVIEW-REF-0002";
+const DRAFT_REASON = "Unsent reviewer note that must not survive a failed read.";
+const DRAFT_EVIDENCE = "DRAFT-REF-0003";
+const UNRESOLVED = [
+  "claimed",
+  "provider_accepted",
+  "review_required",
+  "observed_target",
+  "observed_other",
+];
+const execRow = (id, state, rev, extra = {}) => ({
+  id,
+  revision: rev,
+  state,
+  decision: "advance",
+  currentStatus: "New",
+  targetStatus: "Panel interview",
+  preparedBy: "staff",
+  approvedBy: state === "prepared" ? null : "staff",
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  executionRequestId: null,
+  // Safe defaults for the resolution contract: existing rows carry no closure and no closure capability.
+  sequence: 1,
+  canProposeResolution: false,
+  canReviewResolution: false,
+  resolution: null,
+  ...extra,
+});
 try {
   await server.listen();
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
@@ -60,6 +104,10 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
       noteWriteAuthorized = true,
       notePreviewFailure = false,
       notePublicationState = "published",
+      // Synthetic stage-execution authority. Default: unverified evidence, live disabled, no rows.
+      stageExecution = null,
+      // Fixture identity id. A distinct id models an independent reviewer or a changed actor.
+      actorId = "staff",
     } = {},
   ) {
     const context = await browser.createBrowserContext();
@@ -71,7 +119,7 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
     let noteHistory = [];
     let noteCanPublish = true;
     let fixtureAuth = {
-      id: "staff",
+      id: actorId,
       tenantId: "tenant",
       name: "Fixture admin",
       role: "tenant_admin",
@@ -157,6 +205,68 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
       history: [],
     };
     const prefix = "/api/zoho-recruit/campaigns";
+    const execPath = `${prefix}/campaign/recipients/recipient/stage-execution`;
+    // Synthetic Lexy-local ledger. Never a real Zoho or database client; every
+    // stage-execution call is recorded here and answered by this fixture only.
+    const exec = {
+      verified: !!stageExecution?.verified,
+      liveEnabled: !!stageExecution?.liveEnabled,
+      ruleRevision: stageExecution?.ruleRevision ?? "f".repeat(64),
+      rows: (stageExecution?.rows ?? []).map((r) => ({ ...r })),
+      // Consumed per execute POST; empty means one accepted, unverified write.
+      outcomes: [...(stageExecution?.executeOutcomes ?? [])],
+      // Consumed per resolution POST; empty means one accepted, unverified local closure write.
+      resolutionOutcomes: [...(stageExecution?.resolutionOutcomes ?? [])],
+      // Test-only failed authority read status for the stage-execution GET (null = normal).
+      getFailure: null,
+      recoverOutcome: "observed_target",
+      forbidden: false,
+      calls: [],
+    };
+    const execWorkspace = () => {
+      const held = exec.rows.some((r) => UNRESOLVED.includes(r.state));
+      return {
+        campaignId: "campaign",
+        recipientId: "recipient",
+        handoffRevision: handoff.revision,
+        ruleRevision: exec.verified ? exec.ruleRevision : null,
+        transitionVerified: exec.verified,
+        liveEnabled: exec.liveEnabled,
+        canPrepare: exec.verified && !held,
+        reason: held
+          ? "An earlier attempt remains unresolved. Only read-only recovery is available."
+          : !exec.verified
+            ? "Current application-specific evidence and independent employer review are required."
+            : !exec.liveEnabled
+              ? "Execution is disabled on this server. Preparation and approval never send."
+              : "Execution requires a separate deliberate action on the exact approved request. No automatic retries.",
+        requests: exec.rows.map((r) => ({
+          id: r.id,
+          revision: r.revision,
+          state: r.state,
+          currentStatus: r.currentStatus,
+          targetStatus: r.targetStatus,
+          decision: r.decision,
+          preparedBy: r.preparedBy,
+          approvedBy: r.approvedBy,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+          stale: false,
+          canApprove: r.state === "prepared" && exec.verified && !held,
+          canWithdraw: ["prepared", "approved"].includes(r.state),
+          canRecover: ["claimed", "review_required"].includes(r.state),
+          // Test-only override: lets a case prove the client refuses execute even when a row claims canExecute.
+          canExecute:
+            r.canExecuteOverride ??
+            (exec.liveEnabled && exec.verified && r.state === "approved" && !held),
+          executionRequestId: r.executionRequestId,
+          sequence: r.sequence,
+          canProposeResolution: r.canProposeResolution,
+          canReviewResolution: r.canReviewResolution,
+          resolution: r.resolution ? { ...r.resolution } : null,
+        })),
+      };
+    };
     await page.setViewport({ width: mobile ? 390 : 1200, height: 900 });
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setRequestInterception(true);
@@ -295,6 +405,168 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
           assert.match(body.requestId, /^[0-9a-f-]{36}$/i);
           return await send(detail());
         }
+        // Stage execution: local ledger only. Zoho writes are represented by the
+        // fixture outcome; the real execute endpoint is never reached.
+        if (method === "GET" && p === execPath) {
+          if (exec.forbidden)
+            return await send({ error: "Stage execution is not available to this account." }, 403);
+          if (exec.getFailure)
+            return await send(
+              { error: "Stage execution is temporarily unavailable." },
+              exec.getFailure,
+            );
+          return await send(execWorkspace());
+        }
+        if (method === "POST" && p === execPath) {
+          const body = JSON.parse(request.postData());
+          exec.calls.push({ kind: "prepare", body, path: p });
+          assert.deepEqual(Object.keys(body).sort(), [
+            "confirm",
+            "expectedRevision",
+            "expectedRuleRevision",
+            "requestId",
+          ]);
+          assert.equal(body.confirm, true);
+          assert.match(body.requestId, UUID_RE);
+          assert.equal(body.expectedRevision, handoff.revision);
+          assert.equal(body.expectedRuleRevision, exec.ruleRevision);
+          assert.ok(exec.verified, "prepare requires verified evidence");
+          exec.rows.unshift(execRow(body.requestId, "prepared", newRev(), { approvedBy: null }));
+          return await send(execWorkspace());
+        }
+        // Local closure ledger only: contract and UI gating, never Zoho or a provider.
+        if (method === "POST" && p.startsWith(`${execPath}/`) && p.endsWith("/resolution")) {
+          const id = p.slice(execPath.length + 1, -"/resolution".length);
+          const body = JSON.parse(request.postData());
+          const row = exec.rows.find((r) => r.id === id);
+          assert.ok(row, "Unknown stage-execution row for resolution");
+          assert.deepEqual(Object.keys(body).sort(), [
+            "acknowledgeNoRetry",
+            "acknowledgeUnknown",
+            "action",
+            "commandId",
+            "confirm",
+            "evidenceReference",
+            "expectedRevision",
+            "expectedSequence",
+            "expectedSourceRevision",
+            "reason",
+          ]);
+          assert.equal(body.confirm, true);
+          assert.equal(body.acknowledgeUnknown, true);
+          assert.equal(body.acknowledgeNoRetry, true);
+          assert.match(body.commandId, UUID_RE);
+          assert.match(body.expectedRevision, HEX64, "revision is 64 lowercase hex");
+          assert.match(body.expectedSourceRevision, HEX64, "source revision is 64 lowercase hex");
+          assert.equal(body.expectedRevision, row.revision, "exact row revision");
+          assert.equal(body.expectedSourceRevision, handoff.revision, "exact source revision");
+          assert.equal(body.expectedSequence, row.sequence, "exact sequence");
+          assert.ok(["propose", "approve", "reject"].includes(body.action), "closed action set");
+          assert.ok(body.reason.length >= 20 && body.reason.length <= 1000, "reason 20..1000");
+          assert.ok(
+            body.evidenceReference.length >= 10 && body.evidenceReference.length <= 200,
+            "reference 10..200",
+          );
+          // UI gating contract: the client may only send what the row's capability flags allow.
+          if (body.action === "propose")
+            assert.ok(row.canProposeResolution && !row.resolution, "propose only when offered");
+          else
+            assert.ok(
+              row.canReviewResolution && row.resolution && !row.resolution.review,
+              "review only when offered",
+            );
+          exec.calls.push({ kind: `resolution:${body.action}`, body, path: p });
+          const outcome = exec.resolutionOutcomes.shift() ?? "accepted";
+          if (outcome === "uncommitted-network") return await request.abort("failed");
+          if (body.action === "propose") {
+            row.resolution = {
+              proposedBy: fixtureAuth.id,
+              proposedAt: Date.parse(stamp),
+              reason: body.reason,
+              evidenceReference: body.evidenceReference,
+              observedStatus: "Screening",
+              review: null,
+            };
+          } else {
+            row.resolution = {
+              ...row.resolution,
+              review: {
+                action: body.action,
+                by: fixtureAuth.id,
+                at: Date.parse(stamp),
+                reason: body.reason,
+                evidenceReference: body.evidenceReference,
+              },
+            };
+          }
+          // Either a proposal or a review closes the offered capability for this actor.
+          row.canProposeResolution = false;
+          row.canReviewResolution = false;
+          // Closure changes the journal sequence, not the frozen stage-request revision.
+          row.sequence++;
+          // Model a committed server transaction whose response never reaches
+          // the caller, or whose response fails after commit. GET must reveal it.
+          if (outcome === "committed-network") return await request.abort("failed");
+          if (outcome === "committed-409")
+            return await send({ error: "Synthetic failure after saved closure" }, 409);
+          if (outcome === "committed-422")
+            return await send({ error: "Synthetic response validation failure after commit" }, 422);
+          return await send(execWorkspace());
+        }
+        if (method === "POST" && p.startsWith(`${execPath}/`) && p.endsWith("/actions")) {
+          const id = p.slice(execPath.length + 1, -"/actions".length);
+          const body = JSON.parse(request.postData());
+          const row = exec.rows.find((r) => r.id === id);
+          assert.ok(row, "Unknown stage-execution row");
+          assert.deepEqual(Object.keys(body).sort(), [
+            "action",
+            "confirm",
+            "expectedRevision",
+            "expectedRuleRevision",
+            "requestId",
+          ]);
+          assert.equal(body.confirm, true);
+          assert.match(body.requestId, UUID_RE);
+          assert.equal(body.expectedRevision, row.revision, "exact row revision");
+          assert.equal(
+            body.expectedRuleRevision,
+            exec.verified ? exec.ruleRevision : null,
+            "exact rule revision",
+          );
+          exec.calls.push({ kind: body.action, body, path: p });
+          if (body.action === "approve") {
+            assert.equal(row.state, "prepared");
+            row.state = "approved";
+            row.approvedBy = "staff";
+            row.revision = newRev();
+            return await send(execWorkspace());
+          }
+          if (body.action === "execute") {
+            assert.equal(row.state, "approved", "execute only from an approved row");
+            assert.ok(exec.liveEnabled && exec.verified, "execute requires runtime and evidence");
+            const outcome = exec.outcomes.shift() ?? "accepted";
+            if (outcome === "uncommitted-network") return await request.abort("failed");
+            row.state = outcome === "accepted" ? "provider_accepted" : "claimed";
+            row.revision = newRev();
+            row.executionRequestId = body.requestId;
+            if (outcome === "claimed-network") return await request.abort("failed");
+            if (outcome === "claimed-409")
+              return await send({ error: "Stage execution changed." }, 409);
+            if (outcome === "claimed-422")
+              return await send({ error: "Stage execution response could not be confirmed." }, 422);
+            return await send(execWorkspace());
+          }
+          if (body.action === "recover") {
+            assert.ok(
+              ["claimed", "review_required"].includes(row.state),
+              "recover only unresolved",
+            );
+            row.state = exec.recoverOutcome;
+            row.revision = newRev();
+            return await send(execWorkspace());
+          }
+          assert.fail(`Unsupported stage-execution action ${body.action}`);
+        }
         if (method === "GET") {
           if (p === prefix)
             return await send({
@@ -341,6 +613,26 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
               blocker: "application_transition_contract_required",
               reason: "Separate local stage-request journey; live execution is unavailable.",
               requests: [],
+            });
+          // Parent mounts ZohoStageRules: default closed, no saved employer rule, live disabled.
+          if (p === `${prefix}/campaign/recipients/recipient/stage-rules`)
+            return await send({
+              campaignId: "campaign",
+              recipientId: "recipient",
+              sourceRevision: handoff.revision,
+              currentApplication: {
+                applicationId: "application",
+                candidateId: "candidate",
+                jobId: "job",
+              },
+              status: "proposal_required",
+              canPropose: false,
+              canVerify: false,
+              canRevoke: false,
+              liveEnabled: false,
+              reason: "No employer-reviewed transition rule is saved for this application.",
+              currentRule: null,
+              history: [],
             });
           if (p === `${prefix}/campaign/recipients/recipient/handoff`) return await send(handoff);
         }
@@ -485,6 +777,7 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
         review,
         handoff,
         holdResponse,
+        exec,
         initialDetail,
         conflict: () => {
           conflict = true;
@@ -505,6 +798,717 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
   const fill = async (f, reason = "Job-related evidence supports this decision.") => {
     await f.page.select(T("select-review-decision"), "advance");
     await f.page.type(T("input-review-reason"), reason);
+  };
+  const waitStatus = (f, id, label) =>
+    f.page.waitForFunction(
+      (testid, text) =>
+        document.querySelector(`[data-testid="${testid}"]`)?.textContent.includes(text),
+      { timeout: 4000 },
+      `status-stage-execution-${id}`,
+      label,
+    );
+  const waitEnabled = (f, testid) =>
+    f.page.waitForFunction(
+      (t) => {
+        const el = document.querySelector(`[data-testid="${t}"]`);
+        return !!el && !el.disabled;
+      },
+      { timeout: 4000 },
+      testid,
+    );
+  const waitGone = (f, testid) =>
+    f.page.waitForFunction(
+      (t) => !document.querySelector(`[data-testid="${t}"]`),
+      { timeout: 4000 },
+      testid,
+    );
+  const isChecked = (f, testid) => f.page.$eval(T(testid), (el) => el.checked);
+  const noneChecked = (f) =>
+    f.page.evaluate(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="section-stage-execution"] input[type="checkbox"]:checked',
+        ).length === 0,
+    );
+  const callsOf = (f, kind) => f.exec.calls.filter((c) => c.kind === kind);
+  const settle = (f) => f.page.waitForNetworkIdle({ idleTime: 300, timeout: 4000 });
+  const rowText = (f, id) => f.text(`row-stage-execution-${id}`);
+  const refreshStage = async (f) => {
+    await waitEnabled(f, "button-refresh-stage-execution");
+    await f.click("button-refresh-stage-execution");
+    await settle(f);
+  };
+  const openStageExecution = async (f) => {
+    await openReview(f);
+    await f.wait("section-stage-execution");
+    await f.wait("checkbox-prepare-execution-ack");
+  };
+  // Each action has its own acknowledgement; the button is inert until it is checked.
+  const armAndClick = async (f, action, id) => {
+    await f.click(`checkbox-execution-${action}-${id}`);
+    await waitEnabled(f, `button-execution-${action}-${id}`);
+    await f.click(`button-execution-${action}-${id}`);
+  };
+  const approvedRows = () => [execRow(ROW_A, "approved", hexRev(0x41))];
+  const journeyFixture = {
+    verified: true,
+    liveEnabled: true,
+    executeOutcomes: ["claimed-network"],
+  };
+  // Full critical journey: prepare -> approve -> explicit execute -> uncertain -> recovery.
+  const journey = async (f) => {
+    await openStageExecution(f);
+    assert.equal((await f.text("text-stage-execution-live")).trim(), "Enabled on server");
+    assert.equal(
+      await f.disabled("button-prepare-execution"),
+      true,
+      "prepare waits for its checkbox",
+    );
+    await f.click("checkbox-prepare-execution-ack");
+    await waitEnabled(f, "button-prepare-execution");
+    assert.equal(f.exec.calls.length, 0, "acknowledging prepare writes nothing");
+    await f.click("button-prepare-execution");
+    await f.page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-testid^="status-stage-execution-"]')
+          ?.textContent.includes("Prepared for execution"),
+      { timeout: 4000 },
+    );
+    const [prepare] = callsOf(f, "prepare");
+    const id = prepare.body.requestId;
+    assert.equal(f.exec.calls.length, 1, "prepare is the only call so far");
+    assert.match(id, UUID_RE);
+    assert.deepEqual(prepare.body, {
+      expectedRevision: f.handoff.revision,
+      expectedRuleRevision: f.exec.ruleRevision,
+      requestId: id,
+      confirm: true,
+    });
+    assert.equal(f.writes.length, 0, "no legacy write channel is used");
+    assert.equal(
+      await f.page.$(T(`checkbox-execution-execute-${id}`)),
+      null,
+      "prepared row has no execute control",
+    );
+    assert.equal(
+      await f.disabled(`button-execution-approve-${id}`),
+      true,
+      "approve needs its own checkbox",
+    );
+    assert.doesNotMatch(await rowText(f, id), /Execution ref/);
+
+    // Approval: local state change only.
+    const preparedRev = f.exec.rows[0].revision;
+    await armAndClick(f, "approve", id);
+    await waitStatus(f, id, "Approved, not executed");
+    assert.deepEqual(
+      f.exec.calls.map((c) => c.kind),
+      ["prepare", "approve"],
+      "approval never calls execute",
+    );
+    const [approve] = callsOf(f, "approve");
+    assert.deepEqual(approve.body, {
+      expectedRevision: preparedRev,
+      expectedRuleRevision: f.exec.ruleRevision,
+      requestId: approve.body.requestId,
+      action: "approve",
+      confirm: true,
+    });
+    assert.match(approve.body.requestId, UUID_RE);
+    assert.notEqual(approve.body.requestId, id, "approval is its own command");
+    assert.equal(await isChecked(f, `checkbox-execution-execute-${id}`), false);
+    assert.equal(
+      await f.disabled(`button-execution-execute-${id}`),
+      true,
+      "approval does not arm execute",
+    );
+    assert.equal(
+      await f.page.$(T("text-stage-execution-notice")),
+      null,
+      "success notice must not outlive the row state change it describes",
+    );
+
+    // Explicit execute: its own checkbox and button, exact revisions, no retry.
+    const approvedRev = f.exec.rows[0].revision;
+    await f.click(`checkbox-execution-execute-${id}`);
+    await waitEnabled(f, `button-execution-execute-${id}`);
+    assert.equal(callsOf(f, "execute").length, 0, "arming execute calls nothing");
+    await f.click(`button-execution-execute-${id}`);
+    await waitStatus(f, id, "Execution claimed, outcome unknown");
+    await f.wait("text-stage-execution-error");
+    const error = await f.text("text-stage-execution-error");
+    assert.match(error, /outcome is unknown/);
+    assert.match(error, /Do not assume it failed/);
+    await settle(f);
+    const executes = callsOf(f, "execute");
+    assert.equal(executes.length, 1, "no automatic resend after an ambiguous response");
+    const [execute] = executes;
+    assert.deepEqual(execute.body, {
+      expectedRevision: approvedRev,
+      expectedRuleRevision: f.exec.ruleRevision,
+      requestId: execute.body.requestId,
+      action: "execute",
+      confirm: true,
+    });
+    assert.match(execute.body.requestId, UUID_RE);
+    assert.match(await rowText(f, id), new RegExp(`Execution ref ${execute.body.requestId}`));
+    assert.equal(
+      await f.page.$(T(`button-execution-execute-${id}`)),
+      null,
+      "claimed row cannot execute",
+    );
+    assert.equal(await f.page.$(T(`checkbox-execution-execute-${id}`)), null);
+    assert.equal(
+      await f.disabled(`button-execution-recover-${id}`),
+      true,
+      "recover needs its own checkbox",
+    );
+
+    // Recovery: read-only, observed target is not delivery proof.
+    const claimedRev = f.exec.rows[0].revision;
+    await armAndClick(f, "recover", id);
+    await waitStatus(f, id, "Target observed, delivery not proven");
+    const [recover] = callsOf(f, "recover");
+    assert.deepEqual(recover.body, {
+      expectedRevision: claimedRev,
+      expectedRuleRevision: f.exec.ruleRevision,
+      requestId: recover.body.requestId,
+      action: "recover",
+      confirm: true,
+    });
+    assert.deepEqual(
+      f.exec.calls.map((c) => c.kind),
+      ["prepare", "approve", "execute", "recover"],
+    );
+    assert.doesNotMatch(
+      await rowText(f, id),
+      /Verified in Zoho/,
+      "observed target is not delivery proof",
+    );
+    assert.equal(await f.page.$(T(`button-execution-execute-${id}`)), null);
+    assert.equal(await f.page.$(T(`button-execution-recover-${id}`)), null);
+    assert.equal(await noneChecked(f), true, "recovery leaves no stale acknowledgement");
+    assert.equal(
+      await f.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      true,
+      "no horizontal overflow",
+    );
+    assert.equal(
+      await f.page.evaluate(() =>
+        [...document.querySelectorAll('[data-testid="section-stage-execution"] button')].every(
+          (el) => el.getBoundingClientRect().right <= window.innerWidth + 1,
+        ),
+      ),
+      true,
+      "stage-execution buttons stay inside the viewport",
+    );
+    assert.equal(f.writes.length, 0);
+  };
+  // Shared: an uncertain execute (4xx or network) must not be resent automatically.
+  const uncertainExecute = async (f, label) => {
+    await openStageExecution(f);
+    await f.wait(`checkbox-execution-execute-${ROW_A}`);
+    await armAndClick(f, "execute", ROW_A);
+    await waitStatus(f, ROW_A, label);
+    await f.wait("text-stage-execution-error");
+    await settle(f);
+    assert.equal(callsOf(f, "execute").length, 1, "a failed-after-effect response is never resent");
+    assert.equal(
+      await f.page.$(T(`button-execution-execute-${ROW_A}`)),
+      null,
+      "no execute after claim",
+    );
+    assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_A}`)), null);
+    await f.wait(`checkbox-execution-recover-${ROW_A}`);
+    assert.equal(f.exec.calls.length, 1);
+    return f.text("text-stage-execution-error");
+  };
+  // Local closure (resolution) helpers. Test ids come from the component's data-testids.
+  const RES = {
+    panel: `stage-resolution-${ROW_P}`,
+    open: `open-resolution-${ROW_P}`,
+    reason: `resolution-reason-${ROW_P}`,
+    evidence: `resolution-evidence-${ROW_P}`,
+    unknown: `resolution-unknown-${ROW_P}`,
+    noRetry: `resolution-no-retry-${ROW_P}`,
+    propose: `propose-resolution-${ROW_P}`,
+    approve: `approve-resolution-${ROW_P}`,
+    reject: `reject-resolution-${ROW_P}`,
+  };
+  const RES_PATH = `/api/zoho-recruit/campaigns/campaign/recipients/recipient/stage-execution/${ROW_P}/resolution`;
+  const resolutionCalls = (f) => f.exec.calls.filter((c) => c.kind.startsWith("resolution:"));
+  const waitResolution = (f, label) =>
+    f.page.waitForFunction(
+      (testid, text) =>
+        document.querySelector(`[data-testid="${testid}"]`)?.textContent.includes(text),
+      { timeout: 4000 },
+      RES.panel,
+      label,
+    );
+  const waitAlert = (f, label) =>
+    f.page.waitForFunction(
+      (testid, text) =>
+        document
+          .querySelector(`[data-testid="${testid}"] [role="alert"]`)
+          ?.textContent.includes(text),
+      { timeout: 4000 },
+      RES.panel,
+      label,
+    );
+  const openClosure = async (f) => {
+    await f.click(RES.open);
+    await f.wait(RES.reason);
+  };
+  const fillDraft = async (f, reason, evidence) => {
+    await f.page.type(T(RES.reason), reason);
+    await f.page.type(T(RES.evidence), evidence);
+  };
+  const confirmDraft = async (f) => {
+    await f.click(RES.unknown);
+    await f.click(RES.noRetry);
+  };
+  const draftIsEmpty = async (f) => {
+    assert.equal(await f.page.$eval(T(RES.reason), (el) => el.value), "", "reason starts empty");
+    assert.equal(
+      await f.page.$eval(T(RES.evidence), (el) => el.value),
+      "",
+      "reference starts empty",
+    );
+    assert.equal(await isChecked(f, RES.unknown), false, "attribution box starts unchecked");
+    assert.equal(await isChecked(f, RES.noRetry), false, "no-retry box starts unchecked");
+  };
+  const expectDraftCleared = async (f) => {
+    await waitGone(f, RES.reason);
+    await f.wait(RES.open);
+    await openClosure(f);
+    await draftIsEmpty(f);
+  };
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const assertFitsViewport = async (f, label) => {
+    assert.equal(
+      await f.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      true,
+      `${label}: no horizontal overflow`,
+    );
+    assert.equal(
+      await f.page.evaluate(() =>
+        [
+          ...document.querySelectorAll(
+            '[data-testid="section-stage-execution"] button, [data-testid="section-stage-execution"] textarea, [data-testid="section-stage-execution"] input',
+          ),
+        ].every((el) => el.getBoundingClientRect().right <= window.innerWidth + 1),
+      ),
+      true,
+      `${label}: controls stay inside the viewport`,
+    );
+  };
+  const proposableRows = () => [
+    execRow(ROW_P, "observed_other", hexRev(0x61), { canProposeResolution: true }),
+  ];
+  const reviewableRows = () => [
+    execRow(ROW_P, "observed_other", hexRev(0x62), {
+      canReviewResolution: true,
+      resolution: {
+        proposedBy: "staff",
+        proposedAt: Date.parse(stamp),
+        reason: PROPOSAL_REASON,
+        evidenceReference: PROPOSAL_EVIDENCE,
+        observedStatus: "Screening",
+        review: null,
+      },
+    }),
+  ];
+  const resolvedStage = (rows, extra = {}) => ({
+    verified: true,
+    liveEnabled: true,
+    rows,
+    ...extra,
+  });
+  const both = (name, run, options = {}) => [
+    [`${name} (desktop)`, run, options],
+    [`${name} (390px)`, run, { ...options, mobile: true }],
+  ];
+  const committedClosureFailure = (action) => async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    const reason = action === "propose" ? PROPOSAL_REASON : REVIEW_REASON;
+    const evidence = action === "propose" ? PROPOSAL_EVIDENCE : REVIEW_EVIDENCE;
+    const revision = f.exec.rows[0].revision;
+    const sequence = f.exec.rows[0].sequence;
+    await fillDraft(f, reason, evidence);
+    await confirmDraft(f);
+    await waitEnabled(f, RES[action]);
+    await f.click(RES[action]);
+    const savedLabel =
+      action === "propose"
+        ? "Closure proposed — hold remains"
+        : action === "approve"
+          ? "Closed after independent review — delivery remains unknown"
+          : "Closure rejected — hold remains";
+    await waitResolution(f, savedLabel);
+    await pause(1000);
+    assert.equal(resolutionCalls(f).length, 1, "committed failure must never automatically repeat");
+    assert.equal(f.exec.calls.length, 1, "no execute, prepare or recovery request is triggered");
+    const [call] = resolutionCalls(f);
+    assert.equal(call.kind, `resolution:${action}`);
+    assert.equal(call.path, RES_PATH);
+    assert.equal(call.body.expectedSequence, sequence);
+    assert.equal(call.body.expectedRevision, revision);
+    assert.equal(call.body.expectedSourceRevision, f.handoff.revision);
+    assert.match(call.body.commandId, UUID_RE);
+    assert.equal(call.body.reason, reason);
+    assert.equal(call.body.evidenceReference, evidence);
+    assert.equal(f.exec.rows[0].sequence, sequence + 1);
+    assert.equal(f.exec.rows[0].revision, revision, "frozen request revision is unchanged");
+    await refreshStage(f);
+    await waitResolution(f, savedLabel);
+    const panel = await f.text(RES.panel);
+    assert(
+      panel.includes(reason) && panel.includes(evidence),
+      "saved review evidence survives refresh",
+    );
+    assert.match(panel, /not proof of delivery or permission to resend/);
+    assert.match(await rowText(f, ROW_P), /Different status observed/);
+    assert.doesNotMatch(await rowText(f, ROW_P), /Verified in Zoho|Execution ref/);
+    for (const id of [
+      RES.reason,
+      RES.evidence,
+      RES.unknown,
+      RES.noRetry,
+      RES.propose,
+      RES.approve,
+      RES.reject,
+      `button-execution-execute-${ROW_P}`,
+    ])
+      assert.equal(await f.page.$(T(id)), null, `${id}: no stale confirmation or resend control`);
+    assert.equal(resolutionCalls(f).length, 1, "explicit GET refresh never repeats a command");
+    assert.equal(f.writes.length, 0, "no legacy write side channel");
+    await assertFitsViewport(f, `saved ${action} after interrupted response`);
+  };
+  const otherAdmin = (role = "tenant_admin") => ({
+    id: "other-admin",
+    tenantId: "tenant",
+    name: "Other admin",
+    role,
+    email: "other@example.invalid",
+    createdAt: stamp,
+  });
+  // Proposer: draft, two explicit confirmations, one proposal; no send and no execute.
+  const proposeClosure = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    assert.match(await f.text("text-stage-execution-reason"), /earlier attempt remains unresolved/);
+    assert.equal(await f.disabled("button-prepare-execution"), true, "held: no new preparation");
+    assert.equal(await f.page.$(T(RES.propose)), null, "no proposal control before opening");
+    await openClosure(f);
+    assert.equal(await f.disabled(RES.propose), true, "an empty draft cannot propose");
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    assert.equal(await f.disabled(RES.propose), true, "explicit confirmations are still required");
+    await f.click(RES.unknown);
+    assert.equal(await f.disabled(RES.propose), true, "the no-retry confirmation is also required");
+    await f.click(RES.noRetry);
+    await waitEnabled(f, RES.propose);
+    await assertFitsViewport(f, "open closure form");
+    assert.equal(f.exec.calls.length, 0, "drafting and confirming call nothing");
+    const before = f.exec.rows[0].revision;
+    await f.click(RES.propose);
+    await waitResolution(f, "Closure proposed");
+    await settle(f);
+    assert.equal(f.exec.calls.length, 1, "the proposal is the only stage-execution call");
+    const calls = resolutionCalls(f);
+    assert.equal(calls.length, 1, "exactly one resolution POST");
+    const [call] = calls;
+    assert.equal(call.path, RES_PATH);
+    assert.match(call.body.commandId, UUID_RE);
+    assert.deepEqual(call.body, {
+      action: "propose",
+      commandId: call.body.commandId,
+      expectedRevision: before,
+      expectedSourceRevision: f.handoff.revision,
+      expectedSequence: 1,
+      reason: PROPOSAL_REASON,
+      evidenceReference: PROPOSAL_EVIDENCE,
+      confirm: true,
+      acknowledgeUnknown: true,
+      acknowledgeNoRetry: true,
+    });
+    const panel = await f.text(RES.panel);
+    assert.match(panel, /Closure proposed — hold remains/);
+    assert.ok(panel.includes(PROPOSAL_REASON) && panel.includes(PROPOSAL_EVIDENCE));
+    for (const id of [RES.open, RES.propose, RES.approve, RES.reject])
+      assert.equal(await f.page.$(T(id)), null, `${id} is gone after proposing`);
+    assert.match(await rowText(f, ROW_P), /Different status observed/, "observation persists");
+    assert.doesNotMatch(await rowText(f, ROW_P), /Verified in Zoho|Execution ref/);
+    assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_P}`)), null);
+    assert.equal(await f.page.$(T(`button-execution-execute-${ROW_P}`)), null);
+    assert.equal(f.writes.length, 0, "no legacy write channel");
+    await assertFitsViewport(f, "after proposal");
+  };
+  // Distinct reviewer: starts with an empty form, then approves or rejects with its own evidence.
+  const reviewClosure = async (f, decision) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await waitResolution(f, "Closure proposed — hold remains");
+    assert.equal(await f.page.$(T(RES.propose)), null, "reviewer is not offered a new proposal");
+    await openClosure(f);
+    await draftIsEmpty(f);
+    assert.equal(await f.disabled(RES.approve), true, "approve needs both confirmations");
+    assert.equal(await f.disabled(RES.reject), true, "reject needs both confirmations");
+    await fillDraft(f, REVIEW_REASON, REVIEW_EVIDENCE);
+    await confirmDraft(f);
+    const button = decision === "approve" ? RES.approve : RES.reject;
+    await waitEnabled(f, button);
+    assert.equal(f.exec.calls.length, 0, "reviewing drafts call nothing");
+    const before = f.exec.rows[0].revision;
+    await f.click(button);
+    await waitResolution(
+      f,
+      decision === "approve"
+        ? "Closed after independent review"
+        : "Closure rejected — hold remains",
+    );
+    await settle(f);
+    assert.equal(f.exec.calls.length, 1, "the review is the only stage-execution call");
+    const [call] = resolutionCalls(f);
+    assert.equal(call.kind, `resolution:${decision}`);
+    assert.equal(call.path, RES_PATH);
+    assert.deepEqual(call.body, {
+      action: decision,
+      commandId: call.body.commandId,
+      expectedRevision: before,
+      expectedSourceRevision: f.handoff.revision,
+      expectedSequence: 1,
+      reason: REVIEW_REASON,
+      evidenceReference: REVIEW_EVIDENCE,
+      confirm: true,
+      acknowledgeUnknown: true,
+      acknowledgeNoRetry: true,
+    });
+    assert.match(call.body.commandId, UUID_RE);
+    const panel = await f.text(RES.panel);
+    assert.ok(
+      panel.includes(REVIEW_REASON) && panel.includes(REVIEW_EVIDENCE),
+      "own evidence shown",
+    );
+    if (decision === "approve") {
+      assert.match(panel, /Closed after independent review — delivery remains unknown/);
+      assert.match(panel, /Read-only observation: Screening/, "original observation persists");
+    } else {
+      assert.match(panel, /Closure rejected — hold remains/);
+    }
+    assert.match(await rowText(f, ROW_P), /Different status observed/, "observed state persists");
+    assert.doesNotMatch(await rowText(f, ROW_P), /Verified in Zoho/);
+    // No resend or execute surface remains for this row: no buttons, no inputs.
+    assert.equal(
+      await f.page.$(`[data-testid="row-stage-execution-${ROW_P}"] button`),
+      null,
+      "closed or rejected row exposes no buttons",
+    );
+    assert.equal(
+      await f.page.$(`[data-testid="row-stage-execution-${ROW_P}"] input`),
+      null,
+      "closed or rejected row exposes no inputs",
+    );
+    assert.equal(f.writes.length, 0);
+    await assertFitsViewport(f, `after ${decision}`);
+  };
+  // Uncommitted failure: draft kept, confirmations cleared, no auto-retry, same UUID on deliberate retry.
+  const ambiguousRetry = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.click(RES.propose);
+    await waitAlert(f, "could not be confirmed");
+    await settle(f);
+    await pause(1000);
+    assert.equal(resolutionCalls(f).length, 1, "no automatic retry after an uncommitted failure");
+    assert.equal(await f.disabled(RES.propose), true, "failure clears confirmations");
+    assert.equal(await isChecked(f, RES.unknown), false);
+    assert.equal(await isChecked(f, RES.noRetry), false);
+    assert.equal(await f.page.$eval(T(RES.reason), (el) => el.value), PROPOSAL_REASON);
+    assert.match(await f.text(RES.panel), /could not be confirmed/);
+    assert.match(await f.text(RES.panel), /Nothing was resent/);
+    const [first] = resolutionCalls(f);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.click(RES.propose);
+    await waitResolution(f, "Closure proposed — hold remains");
+    await settle(f);
+    const calls = resolutionCalls(f);
+    assert.equal(calls.length, 2, "one deliberate retry, not more");
+    const { commandId: firstId, ...firstRest } = first.body;
+    const { commandId: retryId, ...retryRest } = calls[1].body;
+    assert.equal(retryId, firstId, "unchanged deliberate retry reuses the command UUID");
+    assert.deepEqual(retryRest, firstRest, "the retry is the identical command");
+    assert.equal(f.exec.calls.length, 2);
+  };
+  // Changed reason after an uncommitted failure is a different command and gets a fresh UUID.
+  const changedRetry = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.click(RES.propose);
+    await waitAlert(f, "could not be confirmed");
+    await settle(f);
+    const [first] = resolutionCalls(f);
+    const revised = "Revised proposal reason after the uncommitted attempt failed.";
+    await f.click(RES.reason);
+    await f.page.keyboard.down("Control");
+    await f.page.keyboard.press("KeyA");
+    await f.page.keyboard.up("Control");
+    await f.page.keyboard.type(revised);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.click(RES.propose);
+    await waitResolution(f, "Closure proposed — hold remains");
+    await settle(f);
+    const calls = resolutionCalls(f);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].body.reason, revised);
+    assert.notEqual(calls[1].body.commandId, first.body.commandId, "changed command is not reused");
+  };
+  // Sequence change: the open draft is dropped; the next proposal carries the new sequence.
+  const sequenceChange = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    f.exec.rows[0].sequence = 2;
+    await refreshStage(f);
+    await expectDraftCleared(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    const before = f.exec.rows[0].revision;
+    await f.click(RES.propose);
+    await waitResolution(f, "Closure proposed — hold remains");
+    await settle(f);
+    const [call] = resolutionCalls(f);
+    assert.equal(resolutionCalls(f).length, 1);
+    assert.equal(call.body.expectedSequence, 2, "exact new sequence");
+    assert.equal(call.body.expectedRevision, before);
+  };
+  // Source change: the handoff revision moves; the next proposal carries the new source revision.
+  const sourceChange = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    f.handoff.revision = hexRev(0x77);
+    await refreshStage(f);
+    await expectDraftCleared(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.click(RES.propose);
+    await waitResolution(f, "Closure proposed — hold remains");
+    await settle(f);
+    const calls = resolutionCalls(f);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].body.expectedSourceRevision, hexRev(0x77), "exact new source revision");
+  };
+  // Actor change: an identity switch drops the draft; a non-admin sees no closure controls.
+  const actorChange = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    await f.page.evaluate((user) => window.setFixtureIdentity(user), otherAdmin());
+    // An identity change returns the app to the campaign list, so the open draft cannot survive.
+    await f.wait("button-select-campaign-campaign");
+    assert.equal(await f.page.$(T(RES.panel)), null, "identity change leaves no closure panel");
+    assert.equal(await f.page.$(T(RES.reason)), null, "identity change drops the draft");
+    await f.click("button-select-campaign-campaign");
+    await f.wait("button-approve-campaign");
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await draftIsEmpty(f);
+    assert.equal(f.exec.calls.length, 0, "identity changes call nothing");
+    // Campaigns are enabled only for tenant_admin, so a recruiter reaches no closure surface at all.
+    await f.page.evaluate((user) => window.setFixtureIdentity(user), otherAdmin("recruiter"));
+    await pause(1000);
+    assert.equal(
+      await f.page.$(T("button-select-campaign-campaign")),
+      null,
+      "non-admin: no campaign list",
+    );
+    assert.equal(
+      await f.page.$('[data-testid^="row-stage-execution-"]'),
+      null,
+      "non-admin: no rows",
+    );
+    for (const id of [RES.open, RES.reason, RES.panel, RES.propose])
+      assert.equal(await f.page.$(T(id)), null, `non-admin: ${id} is not rendered`);
+    assert.equal(f.exec.calls.length, 0, "role change calls nothing");
+  };
+  // Capability change: the same row now offers review only; the proposal draft is dropped.
+  const capabilityChange = async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await openClosure(f);
+    await fillDraft(f, PROPOSAL_REASON, PROPOSAL_EVIDENCE);
+    await confirmDraft(f);
+    await waitEnabled(f, RES.propose);
+    f.exec.rows[0].canProposeResolution = false;
+    f.exec.rows[0].canReviewResolution = true;
+    await refreshStage(f);
+    await waitGone(f, RES.reason);
+    await f.wait(RES.open);
+    assert.match(await f.text(RES.open), /Independently review closure/);
+    assert.equal(await f.page.$(T(RES.propose)), null, "proposal control is gone");
+    await openClosure(f);
+    await draftIsEmpty(f);
+    assert.equal(await f.disabled(RES.approve), true);
+    assert.equal(f.exec.calls.length, 0);
+  };
+  // Failed authority read: cached closure details and drafts must not remain visible.
+  const failedReadHidesPrivate = (status) => async (f) => {
+    await openStageExecution(f);
+    await f.wait(`row-stage-execution-${ROW_P}`);
+    await waitResolution(f, PROPOSAL_REASON.slice(0, 40));
+    await openClosure(f);
+    await fillDraft(f, DRAFT_REASON, DRAFT_EVIDENCE);
+    if (status === 403) f.exec.forbidden = true;
+    else f.exec.getFailure = status;
+    await refreshStage(f);
+    await f.wait("text-stage-execution-load-error");
+    const message = await f.text("text-stage-execution-load-error");
+    assert.match(
+      message,
+      status === 403 ? /not available to this account/ : /temporarily unavailable/,
+    );
+    assert.equal(await f.page.$('[data-testid^="row-stage-execution-"]'), null, "no rows");
+    for (const id of [
+      RES.panel,
+      RES.open,
+      RES.reason,
+      RES.evidence,
+      RES.propose,
+      RES.approve,
+      RES.reject,
+    ])
+      assert.equal(await f.page.$(T(id)), null, `${id} must not survive a failed read`);
+    const visible = await f.page.evaluate(() => document.body.innerText);
+    for (const secret of [PROPOSAL_REASON, PROPOSAL_EVIDENCE, DRAFT_REASON])
+      assert.equal(visible.includes(secret), false, "private closure text is hidden");
+    assert.notEqual(await f.page.$(T("section-stage-execution")), null);
+    assert.equal(f.exec.calls.length, 0);
+    await assertFitsViewport(f, `after ${status} read`);
   };
   const cases = [
     ...[
@@ -1072,6 +2076,409 @@ window.mountFixture = (connected = true) => mountZohoFixture(document.getElement
         assert.equal(f.writes.length, 0);
       },
     ],
+    [
+      "stage execution is closed by default: unverified evidence blocks prepare and shows no rows",
+      async (f) => {
+        await openStageExecution(f);
+        assert.equal((await f.text("text-stage-execution-live")).trim(), "Disabled on server");
+        assert.equal((await f.text("text-stage-execution-transition")).trim(), "Not current");
+        assert.equal(await f.disabled("checkbox-prepare-execution-ack"), true);
+        assert.equal(await f.disabled("button-prepare-execution"), true);
+        await f.wait("text-prepare-execution-blocked");
+        await f.wait("text-no-stage-executions");
+        assert.equal(await f.page.$('[data-testid^="row-stage-execution-"]'), null);
+        assert.equal(f.exec.calls.length, 0);
+        assert.equal(f.writes.length, 0);
+      },
+    ],
+    [
+      "stage execution journey: evidence gates prepare, approval is local, uncertain execute only offers recovery",
+      journey,
+      { stageExecution: journeyFixture },
+    ],
+    [
+      "stage execution journey on a mobile width has no overflow and keeps the same gates",
+      journey,
+      { mobile: true, stageExecution: journeyFixture },
+    ],
+    [
+      "stage execution runtime disabled shows no execute control for an approved request",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`row-stage-execution-${ROW_A}`);
+        assert.equal((await f.text("text-stage-execution-live")).trim(), "Disabled on server");
+        assert.match(
+          await f.text("text-stage-execution-reason"),
+          /Execution is disabled on this server/,
+        );
+        assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_A}`)), null);
+        assert.equal(await f.page.$(T(`button-execution-execute-${ROW_A}`)), null);
+        assert.equal(f.exec.calls.length, 0);
+      },
+      { stageExecution: { verified: true, liveEnabled: false, rows: approvedRows() } },
+    ],
+    [
+      "stage execution client refuses execute when runtime is disabled even if a row claims canExecute",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`row-stage-execution-${ROW_A}`);
+        assert.match(await f.text(`text-execute-blocked-${ROW_A}`), /live execution is disabled/);
+        assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_A}`)), null);
+        assert.equal(await f.page.$(T(`button-execution-execute-${ROW_A}`)), null);
+        assert.equal(f.exec.calls.length, 0);
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: false,
+          rows: [execRow(ROW_A, "approved", hexRev(0x41), { canExecuteOverride: true })],
+        },
+      },
+    ],
+    [
+      "stage execution runtime enabled sends one exact execute command with a stable command UUID",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`checkbox-execution-execute-${ROW_A}`);
+        assert.equal((await f.text("text-stage-execution-live")).trim(), "Enabled on server");
+        const approvedRev = f.exec.rows[0].revision;
+        await armAndClick(f, "execute", ROW_A);
+        await waitStatus(f, ROW_A, "Accepted by Zoho, unverified");
+        await settle(f);
+        const executes = callsOf(f, "execute");
+        assert.equal(executes.length, 1);
+        assert.deepEqual(executes[0].body, {
+          expectedRevision: approvedRev,
+          expectedRuleRevision: f.exec.ruleRevision,
+          requestId: executes[0].body.requestId,
+          action: "execute",
+          confirm: true,
+        });
+        assert.match(executes[0].body.requestId, UUID_RE);
+        assert.match(
+          await rowText(f, ROW_A),
+          new RegExp(`Execution ref ${executes[0].body.requestId}`),
+        );
+        assert.doesNotMatch(await rowText(f, ROW_A), /Verified in Zoho/);
+        assert.equal(
+          await f.page.$(T(`button-execution-execute-${ROW_A}`)),
+          null,
+          "accepted is not executable again",
+        );
+        assert.equal(f.exec.calls.length, 1);
+        assert.equal(f.writes.length, 0);
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: true,
+          rows: approvedRows(),
+          executeOutcomes: ["accepted"],
+        },
+      },
+    ],
+    [
+      "stage execution: committed execute followed by a 409 shows claimed history, no resend, and recovery only",
+      async (f) => {
+        const message = await uncertainExecute(f, "Execution claimed");
+        assert.ok(message.trim().length > 0, "the failure is visible to the operator");
+        console.log("STAGE_EXECUTION_409_COPY", JSON.stringify(message));
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: true,
+          rows: approvedRows(),
+          executeOutcomes: ["claimed-409"],
+        },
+      },
+    ],
+    [
+      "stage execution: committed execute followed by a 422 shows claimed history, no resend, and recovery only",
+      async (f) => {
+        const message = await uncertainExecute(f, "Execution claimed");
+        assert.match(message, /could not be confirmed/);
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: true,
+          rows: approvedRows(),
+          executeOutcomes: ["claimed-422"],
+        },
+      },
+    ],
+    [
+      "stage execution: uncommitted network failure keeps approval and a manual retry reuses the command UUID",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`checkbox-execution-execute-${ROW_A}`);
+        await armAndClick(f, "execute", ROW_A);
+        await f.page.waitForFunction(
+          () =>
+            document
+              .querySelector('[data-testid="text-stage-execution-error"]')
+              ?.textContent.includes("outcome is unknown"),
+          { timeout: 4000 },
+        );
+        await settle(f);
+        assert.equal(
+          callsOf(f, "execute").length,
+          1,
+          "no automatic resend after a network failure",
+        );
+        await waitStatus(f, ROW_A, "Approved, not executed");
+        assert.equal(await isChecked(f, `checkbox-execution-execute-${ROW_A}`), false);
+        assert.equal(
+          await f.disabled(`button-execution-execute-${ROW_A}`),
+          true,
+          "failure clears the acknowledgement",
+        );
+        await armAndClick(f, "execute", ROW_A);
+        await waitStatus(f, ROW_A, "Accepted by Zoho, unverified");
+        await settle(f);
+        const executes = callsOf(f, "execute");
+        assert.equal(executes.length, 2);
+        assert.equal(
+          executes[1].body.requestId,
+          executes[0].body.requestId,
+          "manual retry reuses the command UUID",
+        );
+        assert.equal(executes[1].body.expectedRevision, executes[0].body.expectedRevision);
+        assert.equal(executes[1].body.expectedRuleRevision, executes[0].body.expectedRuleRevision);
+        assert.equal(await f.page.$(T(`button-execution-execute-${ROW_A}`)), null);
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: true,
+          rows: approvedRows(),
+          executeOutcomes: ["uncommitted-network", "accepted"],
+        },
+      },
+    ],
+    [
+      "stage execution: review-required and observed-target rows expose read-only recovery only, never execute",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`row-stage-execution-${ROW_R}`);
+        await f.wait(`row-stage-execution-${ROW_O}`);
+        assert.match(
+          await f.text("text-stage-execution-reason"),
+          /earlier attempt remains unresolved/,
+        );
+        assert.equal(
+          await f.disabled("button-prepare-execution"),
+          true,
+          "unresolved evidence blocks new preparation",
+        );
+        assert.match(await rowText(f, ROW_R), /Human review required/);
+        assert.equal(await f.page.$(T(`button-execution-execute-${ROW_R}`)), null);
+        assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_R}`)), null);
+        await f.wait(`checkbox-execution-recover-${ROW_R}`);
+        assert.match(await rowText(f, ROW_O), /Target observed, delivery not proven/);
+        assert.doesNotMatch(await rowText(f, ROW_O), /Verified in Zoho/);
+        assert.equal(
+          await f.page.$(`[data-testid="row-stage-execution-${ROW_O}"] button`),
+          null,
+          "observed target has no actions",
+        );
+        assert.equal(await f.page.$(T(`checkbox-execution-execute-${ROW_O}`)), null);
+        const rev = f.exec.rows.find((r) => r.id === ROW_R).revision;
+        await armAndClick(f, "recover", ROW_R);
+        await waitStatus(f, ROW_R, "Target observed, delivery not proven");
+        const [recover] = callsOf(f, "recover");
+        assert.deepEqual(recover.body, {
+          expectedRevision: rev,
+          expectedRuleRevision: f.exec.ruleRevision,
+          requestId: recover.body.requestId,
+          action: "recover",
+          confirm: true,
+        });
+        assert.equal(callsOf(f, "execute").length, 0);
+        assert.equal(await noneChecked(f), true);
+        assert.equal(
+          await f.page.$(T(`button-execution-recover-${ROW_R}`)),
+          null,
+          "recovery does not repeat",
+        );
+      },
+      {
+        stageExecution: {
+          verified: true,
+          liveEnabled: true,
+          rows: [
+            execRow(ROW_R, "review_required", hexRev(0x51)),
+            execRow(ROW_O, "observed_target", hexRev(0x52)),
+          ],
+        },
+      },
+    ],
+    [
+      "stage execution: authorization 403 after cached execution history removes private rows and actions",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`button-execution-execute-${ROW_A}`);
+        f.exec.forbidden = true;
+        await refreshStage(f);
+        await f.wait("text-stage-execution-load-error");
+        assert.match(
+          await f.text("text-stage-execution-load-error"),
+          /not available to this account/,
+        );
+        assert.equal(await f.page.$('[data-testid^="row-stage-execution-"]'), null);
+        for (const testid of [
+          `button-execution-execute-${ROW_A}`,
+          `checkbox-execution-execute-${ROW_A}`,
+          "button-prepare-execution",
+          "checkbox-prepare-execution-ack",
+          "text-stage-execution-live",
+          "text-stage-execution-reason",
+        ])
+          assert.equal(await f.page.$(T(testid)), null, `${testid} must not survive 403`);
+        assert.notEqual(await f.page.$(T("section-stage-execution")), null);
+        assert.equal(f.exec.calls.length, 0);
+      },
+      { stageExecution: { verified: true, liveEnabled: true, rows: approvedRows() } },
+    ],
+    [
+      "stage execution: runtime and evidence changes clear execution acknowledgements before any call",
+      async (f) => {
+        await openStageExecution(f);
+        await f.wait(`checkbox-execution-execute-${ROW_A}`);
+        // Tick only the acknowledgement here: the execute button must not be pressed in this case.
+        await f.click(`checkbox-execution-execute-${ROW_A}`);
+        await f.page.waitForFunction(
+          (t) => document.querySelector(`[data-testid="${t}"]`)?.checked === true,
+          { timeout: 4000 },
+          `checkbox-execution-execute-${ROW_A}`,
+        );
+        // Evidence changes (new rule revision): the acknowledgement is dropped.
+        f.exec.ruleRevision = newRev();
+        await refreshStage(f);
+        await f.page.waitForFunction(
+          (t) => document.querySelector(`[data-testid="${t}"]`)?.checked === false,
+          { timeout: 4000 },
+          `checkbox-execution-execute-${ROW_A}`,
+        );
+        assert.equal(await f.disabled(`button-execution-execute-${ROW_A}`), true);
+        // Runtime disabled: execute controls disappear; re-enabling does not restore the old tick.
+        await f.click(`checkbox-execution-execute-${ROW_A}`);
+        await waitEnabled(f, `button-execution-execute-${ROW_A}`);
+        f.exec.liveEnabled = false;
+        await refreshStage(f);
+        await waitGone(f, `checkbox-execution-execute-${ROW_A}`);
+        f.exec.liveEnabled = true;
+        await refreshStage(f);
+        await f.wait(`checkbox-execution-execute-${ROW_A}`);
+        assert.equal(await isChecked(f, `checkbox-execution-execute-${ROW_A}`), false);
+        assert.equal(await f.disabled(`button-execution-execute-${ROW_A}`), true);
+        assert.equal(f.exec.calls.length, 0, "no execute call during authority changes");
+      },
+      { stageExecution: { verified: true, liveEnabled: true, rows: approvedRows() } },
+    ],
+    ...both(
+      "stage resolution: observed state proposes a held closure after two explicit confirmations and sends nothing",
+      proposeClosure,
+      {
+        stageExecution: resolvedStage(proposableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: distinct reviewer approves with independent evidence; delivery stays unknown with no resend controls",
+      (f) => reviewClosure(f, "approve"),
+      {
+        actorId: "reviewer",
+        stageExecution: resolvedStage(reviewableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: distinct reviewer rejection keeps the proposal held",
+      (f) => reviewClosure(f, "reject"),
+      {
+        actorId: "reviewer",
+        stageExecution: resolvedStage(reviewableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: uncommitted proposal failure keeps the draft, never auto-retries, and a deliberate retry reuses the command UUID",
+      ambiguousRetry,
+      {
+        stageExecution: resolvedStage(proposableRows(), {
+          resolutionOutcomes: ["uncommitted-network", "accepted"],
+        }),
+      },
+    ),
+    ...["propose", "approve", "reject"].flatMap((action) =>
+      ["committed-network", "committed-409", "committed-422"].flatMap((outcome) =>
+        both(
+          `stage resolution: committed closure ${action} survives ${outcome} without repeating`,
+          committedClosureFailure(action),
+          {
+            actorId: action === "propose" ? "staff" : "reviewer",
+            stageExecution: resolvedStage(
+              action === "propose" ? proposableRows() : reviewableRows(),
+              {
+                resolutionOutcomes: [outcome],
+              },
+            ),
+          },
+        ),
+      ),
+    ),
+    ...both(
+      "stage resolution: a changed reason after an uncommitted failure is a new command, not a reused UUID",
+      changedRetry,
+      {
+        stageExecution: resolvedStage(proposableRows(), {
+          resolutionOutcomes: ["uncommitted-network", "accepted"],
+        }),
+      },
+    ),
+    ...both(
+      "stage resolution: sequence change clears confirmations; next proposal carries the new sequence",
+      sequenceChange,
+      {
+        stageExecution: resolvedStage(proposableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: source revision change clears confirmations; next proposal carries the new source revision",
+      sourceChange,
+      {
+        stageExecution: resolvedStage(proposableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: actor change clears drafts and a non-admin actor sees no closure controls",
+      actorChange,
+      {
+        stageExecution: resolvedStage(proposableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: capability change clears proposal confirmations and offers review only",
+      capabilityChange,
+      {
+        stageExecution: resolvedStage(proposableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: failed authority read (403) hides cached closure details and drafts",
+      failedReadHidesPrivate(403),
+      {
+        actorId: "reviewer",
+        stageExecution: resolvedStage(reviewableRows()),
+      },
+    ),
+    ...both(
+      "stage resolution: failed authority read (500) hides cached closure details and drafts",
+      failedReadHidesPrivate(500),
+      {
+        actorId: "reviewer",
+        stageExecution: resolvedStage(reviewableRows()),
+      },
+    ),
   ];
   const caseFilter = process.env.ZOHO_CASE_FILTER;
   const selectedCases = caseFilter ? cases.filter(([name]) => name.includes(caseFilter)) : cases;

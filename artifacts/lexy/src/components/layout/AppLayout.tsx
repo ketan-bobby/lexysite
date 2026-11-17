@@ -174,7 +174,7 @@ function Logo({
         <img
           src={`${import.meta.env.BASE_URL}lexy-logo.png`}
           alt="Lexy AI"
-          className="h-8 w-auto object-contain opacity-90 group-hover:opacity-100 transition-opacity"
+          className="lexy-brand-logo h-8 w-auto object-contain"
         />
       )}
     </Link>

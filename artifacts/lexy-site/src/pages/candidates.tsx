@@ -1,4 +1,5 @@
 import SiteFooter from "@/components/SiteFooter";
+import ProductCapabilities from "@/components/ProductCapabilities";
 /*
  * candidates.tsx — Public "for candidates" marketing landing page.
  *
@@ -12,6 +13,7 @@ import { Link } from "wouter";
 import { useRef, useState } from "react";
 import {
   Sparkles,
+  BookOpen,
   ArrowRight,
   ArrowLeft,
   User,
@@ -44,7 +46,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}
@@ -54,22 +56,26 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
 function Nav() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 backdrop-blur-xl bg-background/80">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <Link href="/" className="shrink-0">
           <div className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
             <LexyLogo size="md" />
           </div>
         </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link href="/employers" className="text-xs sm:text-sm whitespace-nowrap text-muted-foreground hover:text-foreground transition-colors">
+            Employers
+          </Link>
+          <Link href="/" className="hidden sm:block">
             <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back to overview
+              <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Overview</span>
             </button>
           </Link>
           <a href={`${MAIN_APP}/career-register`}>
             <button className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-              Start My AI Interview
+              <span className="sm:hidden">Get Started</span>
+              <span className="hidden sm:inline">Create My Career Profile</span>
             </button>
           </a>
         </div>
@@ -81,32 +87,32 @@ function Nav() {
 const coreCards = [
   {
     icon: User,
-    title: "Build Your Lexy Hiring Profile",
-    desc: "Know exactly what employers see — a living profile built on how you perform, not what you list.",
+    title: "Career profile",
+    desc: "Tell Lexy about your experience, goals and the kind of work you want next. It becomes the starting point for your coaching.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
-    icon: Mic,
-    title: "Practice Before It Counts",
-    desc: "Walk into interviews with confidence — practice real scenarios until you're ready.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    icon: Brain,
+    title: "Baseline insights",
+    desc: "A first read on your strengths and the gaps worth working on, so you know where to start.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
   {
-    icon: Target,
-    title: "Find Roles You Can Actually Win",
-    desc: "Stop wasting time on the wrong jobs — see opportunities that match your actual ability.",
+    icon: Mic,
+    title: "Interview practice",
+    desc: "Practise answering the kinds of questions asked for the roles you want, and get specific feedback.",
     color: "text-emerald-600",
     bg: "bg-emerald-600/10",
     border: "border-emerald-600/20",
   },
   {
-    icon: TrendingUp,
-    title: "Know Your Next Best Move",
-    desc: "Understand your next moves, skill gaps, and how to move forward faster.",
+    icon: BookOpen,
+    title: "Learning paths",
+    desc: "Work through the learning paths available to you, matched to the gaps your coach found.",
     color: "text-amber-600",
     bg: "bg-amber-600/10",
     border: "border-amber-600/20",
@@ -116,84 +122,57 @@ const coreCards = [
 const steps = [
   {
     num: "01",
-    title: "Prove what you can actually do",
-    desc: "Start with a short AI interview that evaluates how you think, communicate, and solve problems.",
+    title: "Build your career profile",
+    desc: "Add your experience, goals and the roles you are aiming for.",
   },
   {
     num: "02",
-    title: "Know where you stand",
-    desc: "Lexy builds your career identity based on real signals — not resumes or keywords.",
+    title: "Get your baseline",
+    desc: "Your coach gives you a first view of your strengths and what to work on.",
   },
   {
     num: "03",
-    title: "Improve before it matters",
-    desc: "Practice, get feedback, and increase your chances before your next real interview.",
+    title: "Practise and learn",
+    desc: "Run practice interviews and follow learning paths. Watch your progress over time.",
   },
   {
     num: "04",
-    title: "Find roles you can actually win",
-    desc: "Get matched to opportunities where your skills, readiness, and strengths truly align.",
+    title: "Explore relevant roles",
+    desc: "See opportunities that fit where you are heading. You choose whether to be introduced.",
   },
 ];
 
-const benefits = [
-  {
-    icon: Star,
-    title: "A Profile That Grows With You",
-    desc: "Your career profile evolves as you interview, learn, and explore new opportunities.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Interview Coaching Built In",
-    desc: "Improve your communication, structure, and confidence with every practice session.",
-  },
-  {
-    icon: Brain,
-    title: "Career Direction, Not Guesswork",
-    desc: "Understand what roles you can target now and what you need to improve.",
-  },
-  {
-    icon: BarChart3,
-    title: "Better Visibility Into Opportunities",
-    desc: "Get access to roles aligned with your skills and aspirations.",
-  },
-];
-
-const seoPoints = [
-  "Complete a structured interview that measures how you think, communicate, and solve problems",
-  "Build a hiring profile based on evidence",
-  "Discover your strengths, gaps, and employability",
-  "Match with opportunities aligned to your abilities",
+const privacyPoints = [
+  "Your baseline, practice sessions and learning progress are for you",
+  "They are not shared with employers as assessment or matching scores",
+  "Employers only hear about you if you approve an introduction",
+  "A job interview an employer asks you to take is a separate process",
 ];
 
 const careerInsights = [
-  "Know which roles you're most likely to land",
-  "See exactly what separates you from your next promotion",
-  "Know the few skills that will have the biggest impact",
-  "Apply where your strengths actually match the role",
-];
-
-const interviewFeatures = [
-  "Role-specific mock interviews",
-  "Behavioral and technical questions",
-  "Instant feedback on answers",
-  "Readiness insights",
+  "Which strengths come through most clearly",
+  "Which gaps are worth working on first",
+  "How your practice answers are improving",
+  "Which kinds of roles fit your direction",
 ];
 
 const readinessFeatures = [
   {
-    title: "Role-specific interviews",
-    desc: "Not generic practice — real scenarios based on the roles you want.",
+    title: "Practice for your target roles",
+    desc: "Questions shaped around the kind of role you are preparing for, not a generic list.",
   },
   {
-    title: "Real performance",
-    desc: "Behavioral and technical signals, not rehearsed answers.",
+    title: "Specific feedback",
+    desc: "Notes on structure, clarity and examples, so you know what to change next time.",
   },
   {
-    title: "Actionable feedback",
-    desc: "Understand exactly what to improve — immediately.",
+    title: "Learning that follows the feedback",
+    desc: "Move from a gap your coach spotted to an available learning path that covers it.",
   },
-  { title: "Progress over time", desc: "See how close you are to getting hired." },
+  {
+    title: "Progress you can see",
+    desc: "Compare your sessions over time and see where you have improved.",
+  },
 ];
 
 function LexyVideoPlayer() {
@@ -254,9 +233,9 @@ function LexyVideoPlayer() {
 
 export default function Candidates() {
   usePageMeta({
-    title: "Get Hired for What You Can Actually Do",
+    title: "Lexy for Candidates | Your Private AI Career Coach",
     description:
-      "Complete one AI interview and build a living candidate profile. Show employers verified proof of your skills — not just a resume.",
+      "Build a career profile, get baseline insights, practise interviews, follow learning paths, track progress and find relevant roles. Your coaching stays private, and you choose any employer introduction.",
     path: "/candidates",
   });
   return (
@@ -264,43 +243,43 @@ export default function Candidates() {
       <Nav />
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="pt-40 pb-28 px-6">
+      <section className="hero-navy pt-40 pb-28 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium mb-8">
-            <Sparkles className="w-3 h-3" /> Interview-Based Hiring
+            <Sparkles className="w-3 h-3" /> For Candidates
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.1] mb-6 text-balance">
-            Get hired for what you can do —{" "}
-            <span className="gradient-text text-glow">not just what your resume says.</span>
+            Your AI career coach.{" "}
+            <span className="gradient-text text-glow">Private, practical, on your side.</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Skip resume filters. Show what you can actually do—and get matched to opportunities
-            based on evidence, not keywords.
+            Build a career profile, see where you stand, practise interviews, learn what is
+            missing and track your progress. When a relevant role comes up, you decide whether
+            an employer hears about you.
           </p>
 
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto -mt-6 mb-10">
-            Every candidate is evaluated using the same structured interview process.
+            Your coaching is private. It is not shared with employers as an assessment.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-7 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary">
-                Start My AI Interview
+                Create My Career Profile
                 <ArrowRight className="w-5 h-5" />
               </button>
             </a>
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-7 py-4 rounded-xl text-base font-medium border border-border hover:border-primary/40 transition-colors text-muted-foreground hover:text-foreground">
-                <Mic className="w-5 h-5" /> Practice Before You Apply
+                <Mic className="w-5 h-5" /> Start With Interview Practice
               </button>
             </a>
           </div>
 
           <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
-            <p>Takes 10 minutes. Changes how you get hired.</p>
-            <p>See your strengths, gaps, and best-fit roles instantly.</p>
+            <p>Start with your profile, then work at your own pace.</p>
           </div>
         </div>
       </section>
@@ -311,14 +290,14 @@ export default function Candidates() {
           {/* Headline */}
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-6">
-              <AlertCircle className="w-3 h-3" /> The Landscape Has Shifted
+              <AlertCircle className="w-3 h-3" /> Why a coach helps
             </div>
             <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-6">
-              The Hiring Game Has Changed —{" "}
-              <span className="gradient-text">Most Candidates Don't Realize It</span>
+              Job hunting gives you very little{" "}
+              <span className="gradient-text">honest feedback.</span>
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Most candidates are invisible in today's hiring process.
+              You apply, you interview, and you rarely learn what to do differently. A coach changes that.
             </p>
           </div>
 
@@ -328,37 +307,37 @@ export default function Candidates() {
               <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                 <TrendingDown className="w-4 h-4 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Your Resume Is Not Getting You Seen</h3>
+              <h3 className="text-lg font-semibold">You rarely hear why</h3>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Your resume opens the door—but employers increasingly make decisions based on
-                interviews, communication, and demonstrated capability.
+                Rejections usually arrive without reasons, so it is hard to know whether to work on
+                your answers, your skills, or the roles you target.
               </p>
             </div>
             <div className="p-7 rounded-2xl border border-border/50 bg-card space-y-4">
               <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                 <AlertCircle className="w-4 h-4 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold">Applying More Is Making It Worse</h3>
+              <h3 className="text-lg font-semibold">More applications is not a plan</h3>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Sending more applications doesn't automatically improve your chances. Standing out
-                does.
+                Sending more of the same application rarely helps. Preparing better for the right roles
+                usually does.
               </p>
             </div>
           </div>
 
           {/* Bold callout */}
-          <div className="text-center p-10 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent mb-16">
+          <div className="marketing-panel text-center p-10 rounded-3xl mb-16">
             <p className="text-2xl sm:text-3xl font-semibold leading-snug">
               Applying to more jobs isn't the answer.
             </p>
             <p className="text-2xl sm:text-3xl font-semibold leading-snug mt-1">
-              <span className="gradient-text">Standing out is.</span>
+              <span className="gradient-text">Knowing what to work on is.</span>
             </p>
             <p className="text-lg text-muted-foreground mt-5 font-medium">
-              Being prepared is what actually gets you hired.
+              Lexy helps you see where you stand and what to do next.
             </p>
             <p className="text-lg text-muted-foreground mt-2 font-medium">
-              The goal isn't to apply to more jobs. It's to become the candidate employers remember.
+              No promises of jobs or salaries. Just steady, practical preparation.
             </p>
           </div>
 
@@ -366,18 +345,18 @@ export default function Candidates() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary/50 text-[10px] font-medium uppercase tracking-widest mb-5">
-                <Zap className="w-2.5 h-2.5" /> Stay Ahead With Lexy
+                <Zap className="w-2.5 h-2.5" /> What your coach does
               </div>
               <h3 className="text-2xl sm:text-3xl font-semibold mb-4">
                 Know where you stand —{" "}
-                <span className="gradient-text">and how to actually get hired.</span>
+                <span className="gradient-text">and what to do next.</span>
               </h3>
               <p className="text-primary font-semibold mb-3">
-                Most platforms help you apply. Lexy helps you get hired.
+                Lexy helps you prepare, not just apply.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Stop guessing. See your strengths, fix your gaps, and focus only on roles you can
-                actually land.
+                See your strengths, work on your gaps, and focus on roles that make sense for where you
+                want to go.
               </p>
             </div>
             <ul className="space-y-4">
@@ -386,31 +365,31 @@ export default function Candidates() {
                   icon: Eye,
                   color: "text-primary",
                   bg: "bg-primary/10 border-primary/20",
-                  text: "Know exactly how employers see you",
+                  text: "See a baseline of your strengths and gaps",
                 },
                 {
                   icon: Target,
                   color: "text-primary",
                   bg: "bg-primary/10 border-primary/20",
-                  text: "Improve the skills employers actually reward",
+                  text: "Follow available learning paths for your gaps",
                 },
                 {
                   icon: Mic,
                   color: "text-primary",
                   bg: "bg-primary/10 border-primary/20",
-                  text: "Practice before the interview counts",
+                  text: "Practise interviews for the roles you want",
                 },
                 {
                   icon: TrendingUp,
                   color: "text-primary",
                   bg: "bg-primary/10 border-primary/20",
-                  text: "Receive actionable feedback after every interview",
+                  text: "Get specific feedback after each practice session",
                 },
                 {
                   icon: Briefcase,
                   color: "text-primary",
                   bg: "bg-primary/10 border-primary/20",
-                  text: "Apply only where you're likely to succeed",
+                  text: "Explore relevant roles and choose your introductions",
                 },
               ].map(({ icon: Icon, color, bg, text }) => (
                 <li key={text} className="flex items-center gap-4">
@@ -424,42 +403,34 @@ export default function Candidates() {
               ))}
             </ul>
             <p className="text-xs text-muted-foreground/50 mt-5 text-right italic">
-              No more applying blindly. No more wasted effort.
+              Your practice and progress stay private.
             </p>
           </div>
 
           {/* Manifesto block */}
           <div className="relative p-10 sm:p-14 rounded-3xl border border-border/40 bg-card overflow-hidden mb-16">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
             <div className="relative">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-6">
-                <Brain className="w-3 h-3" /> Real Hiring Signals
+                <Brain className="w-3 h-3" /> How coaching works
               </div>
               <h3 className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-6 leading-snug">
-                Getting hired isn't about applying more.{" "}
-                <span className="gradient-text">It's about being ready.</span>
+                Your first baseline is a starting point.{" "}
+                <span className="gradient-text">Not a verdict.</span>
               </h3>
               <div className="space-y-4 max-w-2xl">
-                <p className="text-muted-foreground leading-relaxed">Know your strengths.</p>
-                <p className="text-muted-foreground leading-relaxed">Improve your weak spots.</p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Walk into every interview prepared.
+                  Your coach starts with what you tell it and a short baseline.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Your first interview isn't your final score. Every interview makes your profile
-                  stronger.
+                  It points out what is working and the few things worth practising first.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  You need to know where you stand — and how to improve.
+                  You practise, follow learning paths, and come back to see what has changed.
                 </p>
                 <p className="text-foreground/80 leading-relaxed font-medium">
-                  You need real feedback, clear signals, and a system that actually moves you
-                  forward.
+                  All of it is for you. None of it is sent to employers as a score.
                 </p>
-                <p className="text-lg font-semibold text-primary">That's what Lexy gives you.</p>
-                <p className="text-xs text-muted-foreground/60 italic pt-1">
-                  Built on real interview signals — not resumes or guesswork.
-                </p>
+                <p className="text-lg font-semibold text-primary">Preparation you control.</p>
               </div>
             </div>
           </div>
@@ -467,27 +438,27 @@ export default function Candidates() {
           {/* Move Forward closer */}
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-8">
-              <Rocket className="w-3 h-3" /> Move Forward With Confidence
+              <Rocket className="w-3 h-3" /> Where it leads
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
               {[
                 {
                   icon: ShieldCheck,
-                  color: "text-violet-600",
-                  bg: "bg-violet-600/10 border-violet-600/20",
-                  label: "Know exactly where you stand",
+                  color: "text-navy",
+                  bg: "bg-navy/10 border-navy/20",
+                  label: "A clearer picture of where you stand",
                 },
                 {
                   icon: TrendingUp,
                   color: "text-emerald-600",
                   bg: "bg-emerald-600/10 border-emerald-600/20",
-                  label: "Improve what actually gets you hired",
+                  label: "Steady progress on the skills you chose",
                 },
                 {
                   icon: Rocket,
                   color: "text-amber-600",
                   bg: "bg-amber-600/10 border-amber-600/20",
-                  label: "Unlock opportunities you can actually land",
+                  label: "Relevant roles, introduced only with your consent",
                 },
               ].map(({ icon: Icon, color, bg, label }) => (
                 <div
@@ -503,12 +474,12 @@ export default function Candidates() {
             </div>
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary mx-auto">
-                Start My AI Interview
+                Create My Career Profile
                 <ArrowRight className="w-5 h-5" />
               </button>
             </a>
             <p className="text-xs text-muted-foreground mt-3">
-              Free to start. No credit card required.
+              Ask us what is currently enabled for candidates in your region.
             </p>
           </div>
         </div>
@@ -518,22 +489,26 @@ export default function Candidates() {
       <section className="py-24 px-6 border-t border-border/50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-semibold mb-6">
-            Your Resume Doesn't Tell Your Story. <span className="gradient-text">Lexy Does.</span>
+            Private coaching. <span className="gradient-text">Separate from employer interviews.</span>
           </h2>
           <div className="space-y-4 max-w-2xl mx-auto">
             <p className="text-lg text-muted-foreground leading-relaxed">
-              Your resume tells employers where you've been. Lexy shows them what you're capable of.
+              Some employers use Lexy to run their own job interviews. Those are a separate process,
+              run by the employer, for a specific role.
             </p>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              How you think. How you communicate. How you perform. Not keywords. Not formatting.
-              Just evidence.
-            </p>
-            <p className="text-lg font-semibold text-primary">
-              This is what companies actually hire for.
-            </p>
+            <ul className="space-y-3 text-left inline-flex flex-col">
+              {privacyPoints.map((pt) => (
+                <li key={pt} className="flex items-start gap-3 text-base text-muted-foreground">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  {pt}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
+
+      <ProductCapabilities audience="candidates" />
 
       {/* ── VIDEO DEMO ────────────────────────────────────────────────────── */}
       <LexyVideoPlayer />
@@ -543,10 +518,10 @@ export default function Candidates() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Your Competitive Advantage <span className="gradient-text">Starts Here</span>
+              What your career coach <span className="gradient-text">includes</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Everything is designed to help you become the candidate employers choose.
+              Four parts that work together, plus progress tracking and relevant roles.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -576,10 +551,10 @@ export default function Candidates() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              How You Get Ahead <span className="gradient-text">With Lexy</span>
+              How it works, <span className="gradient-text">step by step</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Everything starts with one thing: showing what you can actually do.
+              Start with your profile. Everything else builds from there.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -601,7 +576,7 @@ export default function Candidates() {
           <div className="text-center mt-12">
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary mx-auto">
-                Start My AI Interview
+                Create My Career Profile
                 <ArrowRight className="w-5 h-5" />
               </button>
             </a>
@@ -615,24 +590,18 @@ export default function Candidates() {
           {/* Heading */}
           <div className="text-center mb-14">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-medium tracking-widest text-primary/60 uppercase mb-4">
-              <BarChart3 className="w-3 h-3" /> Your Career Command Centre
+              <BarChart3 className="w-3 h-3" /> Your progress
             </span>
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
               Your career dashboard.{" "}
-              <span className="gradient-text">Built from real interviews—not resumes.</span>
+              <span className="gradient-text">Everything in one place.</span>
             </h2>
             <div className="space-y-3 max-w-2xl mx-auto">
               <p className="text-lg text-muted-foreground">
-                Know your strengths, uncover your gaps, and discover the roles you're ready to win.
-              </p>
-              <p className="text-lg text-muted-foreground">
-                No guesswork. No blind applying. Just clarity on how to move forward.
-              </p>
-              <p className="text-lg text-muted-foreground">
-                Walk into every interview knowing exactly where you stand.
+                Your baseline, practice sessions, learning and suggested next steps, side by side.
               </p>
               <p className="text-base font-semibold text-primary">
-                This is what hiring looks like when it's built around you.
+                Visible to you. Not to employers.
               </p>
             </div>
           </div>
@@ -641,7 +610,7 @@ export default function Candidates() {
           <div className="rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 border border-border/30">
             <img
               src={`${import.meta.env.BASE_URL}dashboard-preview-v2.png`}
-              alt="Lexy Candidate Intelligence Dashboard — showing career score, next best actions, profile strength, and interview performance"
+              alt="Example of the Lexy candidate dashboard showing progress, practice results and suggested next steps"
               className="w-full block"
               style={{ imageRendering: "auto" }}
             />
@@ -651,12 +620,12 @@ export default function Candidates() {
           <div className="text-center mt-10">
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary mx-auto">
-                Start My AI Interview
+                Create My Career Profile
                 <ArrowRight className="w-5 h-5" />
               </button>
             </a>
             <p className="text-xs text-muted-foreground mt-3">
-              Free to start. No credit card required.
+              Ask us what is currently enabled for candidates in your region.
             </p>
           </div>
         </div>
@@ -667,20 +636,20 @@ export default function Candidates() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4 leading-tight">
-              This isn't interview prep.
+              Relevant opportunities,
               <br />
-              <span className="gradient-text">It's your hiring advantage.</span>
+              <span className="gradient-text">on your terms.</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Most interview tools help you practice. Lexy helps you demonstrate what employers
-              actually hire for.
+              As your profile develops, Lexy can show roles that fit your direction. Nothing is
+              shared with an employer unless you approve the introduction.
             </p>
           </div>
 
           <div className="p-8 rounded-2xl border border-border/60 bg-card text-center">
-            <p className="text-muted-foreground mb-5 font-medium">What Lexy actually gives you:</p>
+            <p className="text-muted-foreground mb-5 font-medium">How discovery works:</p>
             <ul className="space-y-3 mb-8 inline-flex flex-col items-start">
-              {seoPoints.map((pt) => (
+              {["You see roles that look relevant to your profile and goals", "You decide which employers you want to be introduced to", "Employers then run their own hiring process, including any interview", "Lexy does not promise interviews, jobs or salaries"].map((pt) => (
                 <li key={pt} className="flex items-center gap-3 text-sm text-foreground/80">
                   <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                   {pt}
@@ -688,7 +657,7 @@ export default function Candidates() {
               ))}
             </ul>
             <div className="pt-5 border-t border-border/50 text-primary font-semibold text-lg sm:text-xl leading-relaxed">
-              You stop applying blindly — and start getting real traction.
+              You choose. Every time.
             </div>
           </div>
         </div>
@@ -700,37 +669,37 @@ export default function Candidates() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl sm:text-4xl font-semibold mb-5 leading-tight">
-                See what roles you're actually ready for
+                See your progress
                 <br />
-                <span className="gradient-text">— right now</span>
+                <span className="gradient-text">over time</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed mb-3">
-                Lexy shows you which roles you're truly ready for — and what's holding you back.
+                Your coach keeps track of what you have practised and learned, so improvement is something you can see.
               </p>
               <p className="text-base font-semibold text-foreground/80 mb-8">
-                No more guessing where you stand.
+                Progress tracking covers:
               </p>
               <ul className="space-y-3">
                 {careerInsights.map((insight) => (
                   <li key={insight} className="flex items-center gap-3 text-sm">
-                    <ChevronRight className="w-4 h-4 text-violet-600 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-navy shrink-0" />
                     {insight}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="p-8 rounded-3xl border border-primary/20 bg-primary/5 glow-primary">
+            <div className="marketing-panel p-8 rounded-3xl">
               <div className="space-y-4">
                 {[
-                  { role: "Senior Engineer", prob: 88, color: "bg-primary" },
-                  { role: "Engineering Manager", prob: 71, color: "bg-primary" },
-                  { role: "Staff Engineer", prob: 64, color: "bg-primary" },
-                  { role: "Principal Architect", prob: 42, color: "bg-primary" },
+                  { role: "Structuring answers", prob: 72, color: "bg-primary" },
+                  { role: "Using specific examples", prob: 58, color: "bg-primary" },
+                  { role: "Stakeholder communication", prob: 64, color: "bg-primary" },
+                  { role: "Learning path progress", prob: 40, color: "bg-primary" },
                 ].map((r) => (
                   <div key={r.role}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm font-medium">{r.role}</span>
-                      <span className="text-xs text-primary">{r.prob}% match</span>
+                      <span className="text-xs text-primary">{r.prob}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-border/50">
                       <div
@@ -742,7 +711,7 @@ export default function Candidates() {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground/60 mt-6 text-center italic font-bold">
-                Based on your actual interview performance — not your resume
+                Illustrative example of private practice progress
               </p>
             </div>
           </div>
@@ -753,13 +722,13 @@ export default function Candidates() {
       <section className="py-24 px-6 border-t border-border/50">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-600/30 bg-amber-600/10 text-amber-600 text-xs font-medium mb-6">
-            <Zap className="w-3 h-3" /> Readiness Engine
+            <Zap className="w-3 h-3" /> Practice and learning
           </div>
           <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-            Get better before it counts — <span className="gradient-text">with real signals</span>
+            Practise, learn, <span className="gradient-text">repeat</span>
           </h2>
           <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
-            Every interaction improves your readiness — not just your confidence.
+            Feedback tells you what to work on. Learning paths help you work on it.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 text-left">
@@ -773,7 +742,7 @@ export default function Candidates() {
 
           <a href={`${MAIN_APP}/career-register`}>
             <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary mx-auto">
-              Start My AI Interview
+              Create My Career Profile
               <ArrowRight className="w-5 h-5" />
             </button>
           </a>
@@ -783,39 +752,30 @@ export default function Candidates() {
       {/* ── SECTION 9 — FINAL CTA ─────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-border/50">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="p-14 rounded-3xl border border-primary/20 bg-primary/5 glow-primary">
+          <div className="marketing-panel p-14 rounded-3xl">
             <Sparkles className="w-10 h-10 text-primary mx-auto mb-6" />
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Your Resume Is Static.
+              Your next role starts
               <br />
-              <span className="gradient-text">Your Career Isn't.</span>
+              <span className="gradient-text">with knowing where you stand.</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
-              See where you stand, understand what to improve, and move toward roles you can
-              actually get.
+              Create your career profile, get your baseline, and start practising with a coach that
+              works for you.
             </p>
-            <p className="text-base font-semibold text-foreground mb-3">
-              One interview can change how employers see you.
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Join thousands of candidates building evidence-based hiring profiles.
-            </p>
+
             <a href={`${MAIN_APP}/career-register`}>
               <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary mx-auto mb-4">
-                Start My AI Interview
+                Create My Career Profile
                 <ArrowRight className="w-5 h-5" />
               </button>
             </a>
-            <p className="text-xs text-muted-foreground mb-1">
-              Takes 10 minutes. No resume required.
-            </p>
-            <p className="text-xs text-muted-foreground mb-6">Free to start. No credit card.</p>
-            <p className="text-sm text-primary/70 italic mb-8">
-              Know where you stand before your next interview.
+            <p className="text-xs text-muted-foreground mb-8">
+              Learning paths and features can vary. Ask us what is currently enabled for you.
             </p>
             <p className="text-xl sm:text-2xl font-semibold text-foreground max-w-2xl mx-auto leading-snug">
-              Your resume tells employers where you've been.{" "}
-              <span className="gradient-text">Lexy shows them what you're capable of.</span>
+              Your coaching stays yours.{" "}
+              <span className="gradient-text">Your introductions are your choice.</span>
             </p>
           </div>
         </div>

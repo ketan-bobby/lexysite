@@ -16,6 +16,8 @@ import { Loader2 } from "lucide-react";
 import { errText } from "./workflow-shared";
 import { WorkflowAtsVerification } from "./WorkflowAtsVerification";
 import { WorkflowHandoffReceipt } from "./WorkflowHandoffReceipt";
+import { GreenhouseHrHandoff } from "./GreenhouseHrHandoff";
+import { GreenhouseOfferWorkspace } from "./GreenhouseOfferWorkspace";
 
 type MapForm = {
   accountRef: string;
@@ -479,6 +481,20 @@ export function WorkflowAtsHandoff({ jobId, workflowId }: { jobId: string; workf
             </div>
           )}
         </div>
+      )}
+
+      <GreenhouseHrHandoff
+        key={`${workflowId}:${pktId}:${pktHash}:${st.workflowRevision}:${dirty}:${q.isFetching}`}
+        state={st}
+        enabled={!busy && !dirty && !q.isFetching}
+      />
+      {st.mapping?.system.trim().toLowerCase() === "greenhouse" && (
+        <GreenhouseOfferWorkspace
+          key={`${jobId}:${workflowId}`}
+          jobId={jobId}
+          workflowId={workflowId}
+          enabled={!busy && !dirty && !q.isFetching}
+        />
       )}
 
       <WorkflowAtsVerification

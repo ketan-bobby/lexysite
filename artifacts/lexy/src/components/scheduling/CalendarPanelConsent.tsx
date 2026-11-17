@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Loader2 } from "lucide-react";
 import { formatInterviewInstant } from "@/lib/interview-time-display";
 import { useAuth } from "@/lib/auth-context";
+import { parseOutlookPanelConsent, saveOutlookPanelConsent } from "@/lib/outlook-panel-consent";
 
 export function CalendarPanelConsent() {
   const { user } = useAuth();
@@ -27,16 +28,10 @@ function CalendarPanelConsentInner({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const raw = query.data as unknown;
-  const receipt = raw as { enabled?: unknown; grantedAt?: unknown } | null;
-  const valid =
-    !!receipt &&
-    typeof receipt.enabled === "boolean" &&
-    (receipt.enabled
-      ? typeof receipt.grantedAt === "string" && Number.isFinite(Date.parse(receipt.grantedAt))
-      : receipt.grantedAt === null);
-  const enabled = valid && (raw as { enabled: boolean }).enabled;
-  const grantedAt = valid ? (raw as { grantedAt?: unknown }).grantedAt : null;
+  const receipt = parseOutlookPanelConsent(query.data);
+  const valid = receipt !== null;
+  const enabled = receipt?.enabled ?? false;
+  const grantedAt = receipt?.grantedAt ?? null;
 
   async function save(next: boolean) {
     if (lock.current) return;
@@ -44,18 +39,10 @@ function CalendarPanelConsentInner({ userId }: { userId: string }) {
     setPending(true);
     setError(null);
     try {
-      const result = (await set.mutateAsync({ data: { enabled: next } })) as unknown as {
-        enabled?: unknown;
-        grantedAt?: unknown;
-      };
-      if (
-        typeof result?.enabled !== "boolean" ||
-        result.enabled !== next ||
-        (next
-          ? typeof result.grantedAt !== "string" || !Number.isFinite(Date.parse(result.grantedAt))
-          : result.grantedAt !== null)
-      )
-        throw new Error("unconfirmed");
+      const result = await saveOutlookPanelConsent(next, {
+        cancelPendingRead: () => qc.cancelQueries({ queryKey: key }),
+        write: (enabled) => set.mutateAsync({ data: { enabled } }),
+      });
       qc.setQueryData(key, result);
     } catch (e) {
       const status = (e as { status?: number })?.status;

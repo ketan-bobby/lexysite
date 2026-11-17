@@ -78,6 +78,7 @@ import { readAtsCandidateProfile, controlAtsCandidateProfile } from "../lib/ats-
 import { refreshAtsImport, readAtsImportHistory } from "../lib/ats-import-refresh";
 import { readAtsSchedule, controlAtsSchedule } from "../lib/ats-refresh-schedules";
 import { readAtsStageOwnership, controlAtsStageOwnership } from "../lib/ats-stage-ownership";
+import { createGreenhouseOfferWorkspaceRouter } from "./greenhouse-offer-workspace";
 
 const path = "/jobs/:jobId/candidate-workflows/:workflowId/offer";
 const body = ControlCandidateWorkflowOfferBody.strict();
@@ -109,8 +110,10 @@ function requestOfferOrigin(req: Request) {
 export function createControlledOffersRouter(
   deliver?: (input: SendEmailInput) => Promise<SendEmailResult>,
   atsGateway?: GreenhouseGateway,
+  greenhouseWorkspace?: Parameters<typeof createGreenhouseOfferWorkspaceRouter>[0],
 ) {
   const router = Router();
+  router.use(createGreenhouseOfferWorkspaceRouter(greenhouseWorkspace));
   router.use(createAtsCampaignRouter(atsGateway, deliver));
   router.use(createAtsInvitationEvidenceRouter());
   const importsPath = "/jobs/:jobId/candidate-workflows/:workflowId/ats-imports";

@@ -58,9 +58,11 @@ function snapshot() {
 test(
   "committed Zoho ledger survives killed workers and isolated PostgreSQL crash recovery",
   {
-    timeout: 180_000,
+    timeout: 480_000,
   },
   async (t) => {
+    const filter = process.env.ZOHO_DURABILITY_CASE_FILTER;
+    const check = (name, work) => t.test(name, { skip: !!filter && !name.includes(filter) }, work);
     const root = await mkdtemp("/tmp/lexy-stage-durability-");
     const directory = `${root}/data`;
     const socket = `${root}/socket`;
@@ -92,6 +94,11 @@ test(
       ...env,
       NODE_ENV: "test",
       DATABASE_URL: connection,
+      // Import-time SDK construction only; outbound HTTP is denied by the
+      // preload. Never inherit real application credentials into this worker.
+      OPENAI_API_KEY: "synthetic-unused-restart-fixture",
+      AI_INTEGRATIONS_OPENAI_API_KEY: "synthetic-unused-restart-fixture",
+      AI_INTEGRATIONS_OPENAI_BASE_URL: "https://fixture.invalid",
     };
     function launch(s, mode, extra = {}) {
       const child = spawn(process.execPath, ["--import", guard, "--import", loader, worker], {
@@ -193,11 +200,28 @@ test(
         created_at timestamp NOT NULL DEFAULT now()
       );
     `);
+      // Exact minimal schema for the connected assembly's real SQL stage barrier.
+      // Kept here rather than importing application modules into the parent.
+      await pool.query(`
+        CREATE TABLE users(id text PRIMARY KEY,tenant_id text,role text,status text,account_erased_at timestamptz);
+        CREATE TABLE candidates(id text PRIMARY KEY,tenant_id text,pool text,do_not_contact boolean,data_erased_at timestamptz);
+        CREATE TABLE candidate_erasure_tombstones(subject_id text);
+        CREATE TABLE jobs(id text PRIMARY KEY,tenant_id text);
+        CREATE TABLE interview_plans(id text PRIMARY KEY,tenant_id text,job_id text);
+        CREATE TABLE zoho_interview_campaigns(id text PRIMARY KEY,tenant_id text,account_ref text,
+          external_job_id text,job_id text,frozen_plan_id text,revision text);
+        CREATE TABLE zoho_campaign_recipients(id text PRIMARY KEY,tenant_id text,candidate_id text,
+          campaign_id text,account_ref text,external_job_id text,external_application_id text,external_candidate_id text);
+        CREATE TABLE zoho_stage_mappings(campaign_id text,tenant_id text,revision text);
+        CREATE TABLE zoho_recruit_accounts(tenant_id text PRIMARY KEY,account_ref text,user_id text,
+          revision text,approved_at timestamptz,fingerprint text,refresh_token_enc text);
+        CREATE TABLE fixture_stage_source(campaign_id text PRIMARY KEY,revision text);
+      `);
       await pool.query("INSERT INTO fixture_owner VALUES ($1)", [token]);
       await pool.end();
       pool = null;
 
-      await t.test("stage and combined source fences serialize concurrent changes", async () => {
+      await check("stage and combined source fences serialize concurrent changes", async () => {
         assert.deepEqual(await run(snapshot(), "authority"), {
           barrier: {
             cases: 11,
@@ -214,7 +238,7 @@ test(
         });
       });
 
-      await t.test(
+      await check(
         "killed uncommitted preparation rolls back and can be prepared again",
         async () => {
           const s = snapshot();
@@ -225,8 +249,127 @@ test(
         },
       );
 
+      // Each run creates a new worker, module graph, dispatch/rule/OAuth assembly
+      // and real HTTP router. Only the disposable database persists.
+      for (const point of ["before_claim", "claimed", "effect", "provider_accepted"]) {
+        await check(`connected HTTP assembly survives SIGKILL at ${point}`, async () => {
+          const s = snapshot();
+          await run(s, "assembly-bootstrap");
+          const requestId = randomUUID();
+          const job = launch(s, "assembly-execute", { requestId, pauseAt: point });
+          assert.deepEqual(await job.message, { kind: "checkpoint", point });
+          job.child.kill("SIGKILL");
+          assert.deepEqual(await job.exited, { code: null, signal: "SIGKILL" });
+          const persisted = await run(s, "assembly-view");
+          assert.equal(persisted.status, 200);
+          assert.equal(persisted.connections, 0, "GET after restart is local");
+          assert.equal(persisted.requests, 0);
+          const expectedEffects = ["effect", "provider_accepted"].includes(point) ? 1 : 0;
+          assert.equal(persisted.effects, expectedEffects);
+          if (point === "before_claim") {
+            assert.equal(persisted.body.requests[0].state, "approved");
+            const resumed = await run(s, "assembly-execute", { requestId });
+            assert.equal(resumed.status, 200);
+            assert.equal(resumed.body.requests[0].state, "verified");
+            assert.equal((await run(s, "assembly-view")).effects, 1);
+          } else {
+            const replay = await run(s, "assembly-execute", {
+              requestId,
+              enabled: false,
+              expired: true,
+            });
+            assert.equal(replay.status, 200);
+            assert.equal(replay.requests, 0, "exact replay never contacts upstream");
+            assert.equal(replay.connections, 0);
+            const recovered = await run(s, "assembly-recover", { expired: true, enabled: false });
+            assert.equal(recovered.status, 200);
+            assert.equal(
+              recovered.body.requests[0].state,
+              expectedEffects ? "observed_target" : "observed_other",
+            );
+            assert.equal(recovered.body.canPrepare, false, "observation cannot release the hold");
+            assert.equal((await run(s, "assembly-view")).effects, expectedEffects);
+          }
+        });
+      }
+      await check(
+        "connected HTTP assembly preserves controls after database crash recovery",
+        async () => {
+          const s = snapshot();
+          await run(s, "assembly-bootstrap");
+          await run(s, "assembly-local");
+          const requestId = randomUUID();
+          const job = launch(s, "assembly-execute", { requestId, pauseAt: "effect" });
+          assert.deepEqual(await job.message, { kind: "checkpoint", point: "effect" });
+          job.child.kill("SIGKILL");
+          await job.exited;
+          await ctl(["-m", "immediate", "stop"]);
+          started = false;
+          await start();
+          const replay = await run(s, "assembly-execute", { requestId });
+          assert.equal(replay.status, 200);
+          assert.equal(replay.requests, 0);
+          await run(s, "assembly-local");
+          assert.equal((await run(s, "assembly-view")).effects, 1);
+          const recovered = await run(s, "assembly-recover", { expired: true, enabled: false });
+          assert.equal(recovered.body.requests[0].state, "observed_target");
+          assert.equal(recovered.body.canPrepare, false);
+        },
+      );
+      for (const control of ["disabled", "expired", "revoke", "stale"]) {
+        await check(`fresh connected assembly blocks ${control} authority`, async () => {
+          const s = snapshot();
+          await run(s, "assembly-bootstrap");
+          if (["revoke", "stale"].includes(control)) await run(s, `assembly-${control}`);
+          const outcome = await run(s, "assembly-execute", {
+            enabled: control !== "disabled",
+            expired: control === "expired",
+          });
+          assert.equal(outcome.status, 409);
+          assert.equal(outcome.requests, 0);
+          assert.equal(outcome.connections, 0);
+          assert.equal((await run(s, "assembly-view")).effects, 0);
+        });
+      }
+      await check(
+        "independent closure serializes reviewers and survives PostgreSQL restart without resending",
+        async () => {
+          const s = snapshot(),
+            requestId = randomUUID();
+          await run(s, "assembly-bootstrap");
+          const job = launch(s, "assembly-execute", { requestId, pauseAt: "effect" });
+          assert.deepEqual(await job.message, { kind: "checkpoint", point: "effect" });
+          job.child.kill("SIGKILL");
+          await job.exited;
+          assert.equal((await run(s, "assembly-recover")).status, 200);
+          const proposed = await run(s, "assembly-propose-resolution", { enabled: false });
+          assert.equal(proposed.status, 200);
+          const results = await Promise.all([
+            run(s, "assembly-approve-resolution", { enabled: false }),
+            run(s, "assembly-approve-resolution", { enabled: false }),
+          ]);
+          assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+          await ctl(["-m", "immediate", "stop"]);
+          started = false;
+          await start();
+          const current = await run(s, "assembly-view");
+          assert.equal(current.body.requests[0].resolution.review.action, "approve");
+          assert.equal(current.body.requests[0].state, "observed_target");
+          assert.equal(current.body.requests[0].canRecover, false);
+          assert.equal(
+            current.body.canPrepare,
+            false,
+            "closed requests cannot reuse their evidence",
+          );
+          const replay = await run(s, "assembly-execute", { requestId, enabled: false });
+          assert.equal(replay.status, 200);
+          assert.equal(replay.requests, 0);
+          assert.equal((await run(s, "assembly-view")).effects, 1);
+        },
+      );
+
       for (const point of ["claimed", "effect", "provider_accepted"]) {
-        await t.test(`SIGKILL after ${point}: recovery observes without resending`, async () => {
+        await check(`SIGKILL after ${point}: recovery observes without resending`, async () => {
           const s = snapshot();
           const prepared = await run(s, "prepare");
           await killAt(s, "execute", point);
@@ -243,7 +386,7 @@ test(
         });
       }
 
-      await t.test("competing processes acquire exactly one committed claim", async () => {
+      await check("competing processes acquire exactly one committed claim", async () => {
         const s = snapshot();
         await run(s, "prepare");
         const outcomes = await Promise.all([run(s, "claim"), run(s, "claim")]);
@@ -251,7 +394,7 @@ test(
         assert.deepEqual(await run(s, "inspect"), { states: ["claimed"], effects: 0, sequence: 3 });
       });
 
-      await t.test(
+      await check(
         "verified receipt and uncertain claim survive PostgreSQL immediate stop/recovery",
         async () => {
           const verified = snapshot();

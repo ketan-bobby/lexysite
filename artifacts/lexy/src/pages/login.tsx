@@ -187,7 +187,7 @@ export default function Login() {
 
           {/* Brand */}
           <div className="flex items-center">
-            <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy AI" className="h-14 w-auto object-contain" />
+            <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy AI" className="lexy-brand-logo h-14 w-auto object-contain" />
           </div>
 
           {/* Headline block */}
@@ -244,7 +244,7 @@ export default function Login() {
 
           {/* Mobile brand */}
           <div className="lg:hidden mb-8 flex items-center">
-            <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy AI" className="h-8 w-auto object-contain" />
+            <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy AI" className="lexy-brand-logo h-8 w-auto object-contain" />
           </div>
 
           {/* Portal tag */}

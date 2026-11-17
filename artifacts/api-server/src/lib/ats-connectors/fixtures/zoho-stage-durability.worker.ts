@@ -21,10 +21,29 @@ const command = z.strictObject({
   systemIdentifier: z.string().regex(/^\d+$/),
   token: z.uuid(),
   snapshot: stageWriteSnapshotSchema,
-  mode: z.enum(["prepare", "uncommitted", "execute", "claim", "recover", "inspect", "authority"]),
+  mode: z.enum([
+    "prepare",
+    "uncommitted",
+    "execute",
+    "claim",
+    "recover",
+    "inspect",
+    "authority",
+    "assembly-bootstrap",
+    "assembly-view",
+    "assembly-execute",
+    "assembly-recover",
+    "assembly-revoke",
+    "assembly-stale",
+    "assembly-local",
+    "assembly-propose-resolution",
+    "assembly-approve-resolution",
+  ]),
   requestId: z.uuid(),
   attemptId: z.uuid().optional(),
-  pauseAt: z.enum(["claimed", "effect", "provider_accepted"]).optional(),
+  pauseAt: z.enum(["before_claim", "claimed", "effect", "provider_accepted"]).optional(),
+  enabled: z.boolean().optional(),
+  expired: z.boolean().optional(),
 });
 
 async function send(value: object) {
@@ -64,6 +83,14 @@ process.once("message", async (raw) => {
     );
     assert.equal(markers.rows.length, 1, "exact isolated cluster ownership required");
 
+    if (input.mode.startsWith("assembly-")) {
+      const { runRestartAssembly } = await import("./zoho-stage-restart-assembly");
+      const result = await runRestartAssembly(input, pause);
+      await pool.end();
+      await send({ kind: "result", result });
+      process.disconnect?.();
+      return;
+    }
     const s = input.snapshot;
     const ledger = zohoStageRequestStore();
     const base = ledger.asWriterStore(s.binding);

@@ -82,6 +82,8 @@ export type StageWriteAttempt = {
   requestId: string;
   snapshot: StageWriteSnapshot;
   state: StageWriteState;
+  /** Human closure preserves the observed state; it never means delivered/not sent. */
+  closed?: boolean;
 };
 export type StageApplication = StageWriteBinding & { currentStatus: string };
 export type StageWriteAcknowledgment = "accepted" | "rejected" | "uncertain";
@@ -128,18 +130,28 @@ const fail = (code: string, message: string, httpStatus = 409) =>
 const changed = () =>
   fail("zoho_stage_write_changed", "Stage approval is stale. Reload and review again.");
 export function stageWriteRevision(raw: StageWriteSnapshot) {
-  // Parsing fixes property order and rejects unknown/caller-injected authority.
+  // v2 binds immutable transition content and tenant, not the staff member
+  // currently resolving it. Fresh sources must still identify the actual caller.
+  // Legacy actor-bound revisions are intentionally not silently upgraded.
   const snapshot = stageWriteSnapshotSchema.parse(raw);
-  return createHash("sha256").update(JSON.stringify(snapshot)).digest("hex");
+  const { actor, ...content } = snapshot;
+  return createHash("sha256")
+    .update(JSON.stringify({ version: 2, tenantId: actor.tenantId, ...content }))
+    .digest("hex");
 }
-function authorized(raw: StageWriteSnapshot, actor: StageWriteActor, scope: StageWriteScope) {
+function boundSnapshot(raw: StageWriteSnapshot, actor: StageWriteActor, scope: StageWriteScope) {
   const snapshot = stageWriteSnapshotSchema.parse(raw);
   if (
-    snapshot.actor.id !== actor.id ||
     snapshot.actor.tenantId !== actor.tenantId ||
     snapshot.scope.campaignId !== scope.campaignId ||
     snapshot.scope.recipientId !== scope.recipientId
   )
+    throw fail("not_found", "This stage update is unavailable.", 404);
+  return snapshot;
+}
+function authorized(raw: StageWriteSnapshot, actor: StageWriteActor, scope: StageWriteScope) {
+  const snapshot = boundSnapshot(raw, actor, scope);
+  if (snapshot.actor.id !== actor.id)
     throw fail("not_found", "This stage update is unavailable.", 404);
   return snapshot;
 }
@@ -229,7 +241,9 @@ export function zohoStageWriter({
       if (snapshot.currentStatus === snapshot.targetStatus)
         return { attempt: null, noUpdateNeeded: true };
       const claim = await store.claim(snapshot, input);
-      authorized(claim.attempt.snapshot, actor, scope);
+      // The committed snapshot preserves its preparer. It is not a substitute
+      // for the freshly authorized executing caller above or inside the fence.
+      boundSnapshot(claim.attempt.snapshot, actor, scope);
       if (
         claim.attempt.revision !== input.expectedRevision ||
         stageWriteRevision(claim.attempt.snapshot) !== input.expectedRevision
@@ -247,6 +261,10 @@ export function zohoStageWriter({
             stageWriteBlocker(locked, now())
           )
             throw changed();
+          // A claimed worker may have waited while another administrator
+          // recovered and independently closed it. Recheck under source locks
+          // before any provider invocation; closure cannot revive this worker.
+          if ((await store.get(actor, scope, attempt.id))?.closed) throw changed();
           const before = observation(locked, await provider.read(locked.binding));
           if (before !== locked.currentStatus) throw changed();
           // Proof can expire while waiting for provider reads.
@@ -274,7 +292,7 @@ export function zohoStageWriter({
       const snapshot = await current(actor, scope);
       const prior = await store.get(actor, scope, attemptId);
       if (!prior) throw fail("not_found", "This stage update is unavailable.", 404);
-      const original = authorized(prior.snapshot, actor, scope);
+      const original = boundSnapshot(prior.snapshot, actor, scope);
       // An old employer connection cannot authorize reads on its replacement.
       if (
         original.accountRef !== snapshot.accountRef ||
@@ -282,7 +300,7 @@ export function zohoStageWriter({
         !bindingMatches(original.binding, snapshot.binding)
       )
         throw changed();
-      if (prior.state === "verified" || prior.state === "not_sent") return prior;
+      if (prior.closed || prior.state === "verified" || prior.state === "not_sent") return prior;
       return source.fence(actor, scope, async (rawLocked) => {
         const locked = authorized(rawLocked, actor, scope);
         if (

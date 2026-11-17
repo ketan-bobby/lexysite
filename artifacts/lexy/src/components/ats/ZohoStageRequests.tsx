@@ -13,6 +13,8 @@ import type {
 } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { ZohoStageRules } from "./ZohoStageRules";
+import { ZohoStageExecution } from "./ZohoStageExecution";
 
 type Action = "approve" | "withdraw" | "recover";
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleString() : "—");
@@ -300,7 +302,9 @@ export function ZohoStageRequests({
           className="space-y-1 rounded border border-amber-600/40 bg-amber-500/5 p-2 text-xs"
           data-testid="text-stage-requests-scope"
         >
-          <p className="font-semibold">Live Zoho stage updates are disabled. Nothing here sends.</p>
+          <p className="font-semibold">
+            Legacy local-only workflow. These preparation and approval controls never send.
+          </p>
           <ul className="list-disc space-y-0.5 pl-4">
             <li>Prepare runs a read-only Zoho check and saves a request in Lexy.</li>
             <li>Approve saves a local approval. It does not dispatch anything to Zoho.</li>
@@ -344,7 +348,7 @@ export function ZohoStageRequests({
             </dd>
             <dt className="text-muted-foreground">Transition</dt>
             <dd data-testid="text-stage-requests-transition">Not verified</dd>
-            <dt className="text-muted-foreground">Live execution</dt>
+            <dt className="text-muted-foreground">Legacy dispatch</dt>
             <dd data-testid="text-stage-requests-live">Disabled</dd>
             <dt className="text-muted-foreground">Blocker</dt>
             <dd className="break-words" data-testid="text-stage-requests-blocker">
@@ -506,6 +510,18 @@ export function ZohoStageRequests({
           </div>
         </>
       )}
+
+      <ZohoStageRules
+        campaignId={campaignId}
+        recipientId={recipientId}
+        reviewRevision={reviewRevision}
+      />
+
+      <ZohoStageExecution
+        campaignId={campaignId}
+        recipientId={recipientId}
+        reviewRevision={reviewRevision}
+      />
 
       {notice && (
         <p

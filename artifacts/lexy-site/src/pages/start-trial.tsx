@@ -18,7 +18,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}
@@ -30,8 +30,8 @@ type Status = "idle" | "submitting" | "submitted" | "error";
 
 export default function StartTrial() {
   usePageMeta({
-    title: "Start Your Free Trial",
-    description: "Start your free L3XY AI trial — no implementation delays, live in minutes.",
+    title: "Request a Guided Employer Trial",
+    description: "Request a guided Lexy trial for your hiring team. We review each request and set up a workspace around one of your roles.",
     path: "/start-trial",
   });
   const [name, setName] = useState("");
@@ -151,9 +151,9 @@ export default function StartTrial() {
             <ul className="space-y-4 mb-10">
               {[
                 "Personalized workspace built around one of your live roles",
-                "Watch interviews become structured hiring intelligence",
-                "Human-reviewed recommendations—not black-box AI",
-                "See exactly why every candidate is recommended",
+                "Run structured interviews and review the evidence they produce",
+                "Your team reviews every recommendation and makes every decision",
+                "Ask us about connecting Zoho Recruit or Greenhouse if you use them",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -321,7 +321,7 @@ export default function StartTrial() {
 
             <div className="mt-6">
               <p className="text-xs font-medium text-muted-foreground/70 tracking-widest uppercase text-center mb-3">
-                Enterprise-ready
+                Built around
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 {["GDPR", "EU AI Act", "Human-in-the-loop", "Explainable AI"].map((badge) => (

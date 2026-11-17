@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:greenhouse-offer-browser": "node scripts/check-greenhouse-offer-browser.mjs",
     "test:logout-all-browser": "node --import ../../scripts/test-egress-guard.mjs scripts/check-logout-all-browser.mjs",
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",

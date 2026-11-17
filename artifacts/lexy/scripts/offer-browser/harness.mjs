@@ -75,6 +75,14 @@ export async function startHarness() {
     const address = server.httpServer.address();
     assert.equal(typeof address, "object");
     const origin = `http://127.0.0.1:${address.port}`;
+    // Complete cold transforms before the browser's interaction timers start.
+    // Both fixture roots share the real editor/client dependency graph.
+    console.log("Offer harness: warming fixture modules");
+    await Promise.all([
+      server.warmupRequest("/src/test-fixtures/controlled-offer-browser.tsx"),
+      server.warmupRequest("/src/test-fixtures/human-decision-browser.tsx"),
+    ]);
+    await server.waitForRequestsIdle();
     console.log("Offer harness: preparing fixture HTML");
     const html = await server.transformIndexHtml(
       "/__offer-regression",
@@ -119,7 +127,9 @@ export async function startHarness() {
         const context = await browser.createBrowserContext();
         const page = await context.newPage();
         page.setDefaultTimeout(10_000);
-        page.setDefaultNavigationTimeout(10_000);
+        // Navigation includes Vite module loading on busy development hosts.
+        // Keep action/selector timeouts at 10s so actual UI failures stay strict.
+        page.setDefaultNavigationTimeout(30_000);
         await page.setViewport({ width, height: 900 });
         const snapshots = new Map([
           [`${job}/${workflow}`, clone(mode === "decision" ? initial.offerState : initial)],

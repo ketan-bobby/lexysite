@@ -39,6 +39,7 @@ import router from "./recruiting-workflows";
 import { createControlledOffersRouter } from "./controlled-offers";
 import { checkAtsCampaignHttp } from "./ats-campaign-http-checks";
 import { checkInvitationEvidenceHttp } from "./ats-invitation-evidence-http-checks";
+import { checkGreenhouseOfferWorkspace } from "./greenhouse-offer-workspace-http-checks";
 import { recordInvitationProviderEvent } from "../lib/interview-provider-events";
 import type { InvitationProviderEvent } from "../lib/interview-provider-policy";
 import offerInboxRouter from "./offer-inbox";
@@ -382,6 +383,21 @@ test("controlled offers bind approval to version, send once and record recipient
     }
     return { jobId, workflowId, path, read, act };
   }
+  await t.test("Greenhouse local HR workspace preserves human and version authority", async () => {
+    await checkGreenhouseOfferWorkspace({
+      fixture,
+      request,
+      actorId,
+      tenantId: tenant,
+      actors: {
+        owner: "admin",
+        approver: "employerApprover",
+        candidate: "candidate",
+        foreign: "foreign",
+        other: "recruiter",
+      },
+    });
+  });
   const terms = {
     employerName: "Fixture employer",
     roleTitle: "Fixture engineer",

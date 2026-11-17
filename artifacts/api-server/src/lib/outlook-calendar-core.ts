@@ -76,11 +76,18 @@ export function scheduleBinding(tenantId: string, scheduleId: string): string {
 
 export function safeGraphPath(path: string): string {
   const url = new URL(path.startsWith("/") ? `https://graph.microsoft.com/v1.0${path}` : path);
+  // Panel consent binds to the delegated mailbox ID, not just its calendar.
+  // Permit only that minimal identity lookup in addition to /me/ resources.
+  const mailboxIdentity =
+    url.pathname === "/v1.0/me" &&
+    url.searchParams.get("$select") === "id" &&
+    [...url.searchParams].length === 1;
   if (
     url.origin !== "https://graph.microsoft.com" ||
-    !url.pathname.startsWith("/v1.0/me/") ||
+    (!url.pathname.startsWith("/v1.0/me/") && !mailboxIdentity) ||
     url.username ||
-    url.password
+    url.password ||
+    url.hash
   ) {
     throw new CalendarError(
       502,

@@ -1,5 +1,17 @@
 # Lexy documentation and IT acceptance pack
 
+**Current acceptance checklist:** use
+[the remaining team acceptance checklist](remaining-acceptance-2026-11-14.md)
+and its [editable execution sheet](remaining-acceptance-2026-11-14.csv).
+They separate 18 unexecuted team checks from two unfinished implementation items.
+Use [the consolidated development report](../qa/consolidated-development-acceptance-2026-11-14.md)
+for the dated broader run status, not proof of live acceptance.
+
+**November 14 addendum:** read
+[independent ATS and scheduling checks](../qa/independent-ats-checks-2026-11-14.md)
+for the current fixes, focused results and exact remaining boundaries. Share it
+alongside the older ZIP; that ZIP's source manifest does not cover later edits.
+
 **Latest authentication increment:** read `All-Device-Signout-Verification.md`.
 Staff and candidate settings support password-confirmed **Sign out all devices**
 with atomic private auditing; ordinary logout remains session-specific.
@@ -28,9 +40,9 @@ review. Source-Version.json identifies the exact allowlisted source content.
 Automated verification addendum:
 [repeatable Mail Holds browser and real-cookie checks](../qa/mail-holds-automated-verification-2026-11-10.md).
 The pack includes this report as `Mail-Holds-Automated-Verification.md`.
-Five browser scenarios and nine native-session denial scenarios passed. Native
-checks are opt-in and development-fingerprint guarded; logout is not claimed as
-server-side revocation of copied stateless tokens.
+Five browser scenarios and nine native-session denial scenarios passed. Those
+historical native checks predated server-side revocation. The later authentication
+increments above supersede their cookie-only logout boundary.
 
 Snapshot: **2026-11-10**. Internal, development-first handoff. This is documentation,
 not production approval or a claim that every provider integration has been live-tested.
@@ -38,9 +50,11 @@ not production approval or a claim that every provider integration has been live
 ## Share with the IT team
 
 Start with [the current code handover](code-handover.md): implemented capabilities,
-remaining boundaries and one ordered acceptance run. The latest source verification
-is [the November 10 closeout](../qa/code-handover-closeout-2026-11-10.md); do not
-substitute the historical regression counts below for that final result.
+remaining boundaries and links to the current acceptance checklist. The broader
+recorded verification is [the November 14 report](../qa/consolidated-development-acceptance-2026-11-14.md),
+with subsequent [campaign process checks](../qa/campaign-process-recovery-2026-11-14.md).
+The [November 10 closeout](../qa/code-handover-closeout-2026-11-10.md) and generated
+pack below are historical snapshots, not verification of later source changes.
 
 The generated download pack is under
 `generated-artifacts/lexy-it-handoff-2026-11-05/`:

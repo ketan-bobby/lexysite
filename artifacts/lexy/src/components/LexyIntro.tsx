@@ -311,7 +311,7 @@ function Scene0() {
         transition={{ duration: 1.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
         style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
       >
-        <img src={lexyLogo} alt="Lexy Logo" style={{ width: 192, marginBottom: 32, objectFit: "contain", filter: "drop-shadow(0 0 15px rgba(0,229,255,0.5))" }} />
+        <img src={lexyLogo} alt="Lexy Logo" className="lexy-brand-logo" style={{ width: 192, marginBottom: 32, objectFit: "contain" }} />
         <motion.div
           style={{ height: 1, background: "linear-gradient(to right, transparent, #00E5FF, transparent)", width: 256 }}
           initial={{ scaleX: 0, opacity: 0 }}
@@ -479,7 +479,7 @@ function Scene4() {
           animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
-        <img src={lexyLogo} alt="Lexy" style={{ width: 256, position: "relative", zIndex: 10 }} />
+        <img src={lexyLogo} alt="Lexy" className="lexy-brand-logo" style={{ width: 256, position: "relative", zIndex: 10 }} />
         <motion.p
           style={{ marginTop: 48, fontSize: 23, color: "rgba(255,255,255,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 500, position: "relative", zIndex: 10 }}
           initial={{ opacity: 0, y: 20 }}

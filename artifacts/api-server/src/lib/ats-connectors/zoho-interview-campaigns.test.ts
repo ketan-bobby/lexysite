@@ -32,6 +32,7 @@ import { zohoFailure } from "./zoho-oauth-provider";
 import { sendReEngagement } from "../agents/interview-reply";
 import { zohoCampaignReviews } from "./zoho-campaign-reviews";
 import { zohoStageHandoff } from "./zoho-stage-handoff";
+import { campaignProcesses } from "./fixtures/zoho-campaign-process";
 
 test("campaign policy refuses implicit approval and never treats simulation or uncertain sends as delivery", () => {
   assert.throws(
@@ -231,6 +232,7 @@ test("synthetic DB campaign journey: approved dispatch, completed evidence, corr
   let active = true;
   let mode = "sent";
   const sent: SendEmailInput[] = [];
+  const childHarnesses: ReturnType<typeof campaignProcesses>[] = [];
   const actorLookup = async () => {
     if (!active) throw Error("suspended");
     return actor;
@@ -698,26 +700,100 @@ test("synthetic DB campaign journey: approved dispatch, completed evidence, corr
     assert.equal(new Set(finished.recipients.map((r) => r.sessionId)).size, 16);
     const replayStarted = performance.now();
     assert((await Promise.all(Array.from({ length: 8 }, () => worker.tick()))).every((r) => !r));
+    const emptyReplayMs = Math.round(performance.now() - replayStarted);
+    const contentionElapsedMs = Math.round(performance.now() - started);
     assert.equal(sent.length - sentBefore, 16, "Empty-queue retries do not resend");
     assert.equal(
       (await dbAdmin.select().from(recipients).where(eq(recipients.id, lost.id)))[0].state,
       "review_required",
       "Contention never reclaims an interrupted/uncertain delivery",
     );
+    // Unlike a reconstructed dispatcher object, these are separate OS processes:
+    // kill one at a real dispatch checkpoint, then recover from durable SQL state.
+    const processRecoveryStarted = performance.now();
+    for (const [index, phase] of (["prepare", "send", "complete"] as const).entries()) {
+      apps = [{ applicationId: String(4000 + index), candidateId: String(5000 + index) }];
+      const restart = await draft();
+      await service.act(actor, restart.campaign.id, {
+        action: "approve",
+        snapshotHash: restart.campaign.snapshotHash,
+        confirm: true,
+      });
+      const processes = campaignProcesses({
+        tenantId,
+        campaignId: restart.campaign.id,
+        actorId: actor.id,
+      });
+      childHarnesses.push(processes);
+      const recipientId = restart.recipients[0].id;
+      const row = async () =>
+        (await dbAdmin.select().from(recipients).where(eq(recipients.id, recipientId)))[0];
+      if (phase === "complete") {
+        const raced = await Promise.all([processes.run(), processes.run()]);
+        assert.equal(raced.filter((result) => result.processed).length, 1);
+        assert.equal(
+          raced.reduce((sum, result) => sum + result.sends!, 0),
+          1,
+        );
+        const completed = await row();
+        assert.equal(completed.state, "sent");
+        const replay = await processes.run();
+        assert.equal(replay.processed, false);
+        assert.equal(replay.sends, 0);
+        const retained = await row();
+        assert.equal(retained.messageId, "synthetic-process-acceptance");
+        assert.equal(retained.sessionId, completed.sessionId);
+        const [session] = await dbAdmin
+          .select()
+          .from(sessions)
+          .where(eq(sessions.id, retained.sessionId!));
+        assert(session.inviteSentAt, "The committed fake acceptance survives the worker restart");
+      } else {
+        await processes.crash(phase);
+        const interrupted = await row();
+        assert.equal(interrupted.state, phase === "prepare" ? "preparing" : "sending");
+        assert.equal(Boolean(interrupted.sessionId), phase === "send");
+        assert.equal(interrupted.messageId, null);
+        assert.equal((await processes.run()).processed, false);
+        assert.equal((await row()).state, interrupted.state, "Fresh attempts are not reclaimed");
+        await dbAdmin
+          .update(recipients)
+          .set({ updatedAt: new Date(Date.now() - 11 * 60_000) })
+          .where(and(eq(recipients.id, recipientId), eq(recipients.tenantId, tenantId)));
+        const recovered = await processes.run();
+        assert.equal(recovered.processed, false);
+        assert.equal(recovered.sends, 0);
+        assert.equal((await row()).state, "review_required");
+        assert.equal((await row()).reason, "interrupted_attempt");
+        assert.equal((await row()).sessionId, interrupted.sessionId);
+        assert.equal((await processes.run()).sends, 0, "Restart never resends a held attempt");
+        if (interrupted.sessionId) {
+          const [session] = await dbAdmin
+            .select()
+            .from(sessions)
+            .where(eq(sessions.id, interrupted.sessionId));
+          assert.equal(session.inviteSentAt, null, "No accepted invitation is fabricated");
+        }
+      }
+    }
     console.log(
       JSON.stringify({
         kind: "isolated_campaign_contention",
         recipients: 16,
         workers: 8,
         waves: 3,
-        elapsedMs: Math.round(performance.now() - started),
-        emptyReplayMs: Math.round(performance.now() - replayStarted),
+        elapsedMs: contentionElapsedMs,
+        emptyReplayMs,
         sends: 16,
         interruptedAttemptRetained: true,
+        separateProcessRecovery: ["preparing", "sending", "committed_sent"],
+        realProcessKills: 2,
+        separateProcessElapsedMs: Math.round(performance.now() - processRecoveryStarted),
         productionCapacityClaim: false,
       }),
     );
   } finally {
+    await Promise.all(childHarnesses.map((harness) => harness.close()));
     await dbAdmin.delete(campaigns).where(eq(campaigns.tenantId, tenantId));
     await dbAdmin.delete(sessions).where(eq(sessions.tenantId, tenantId));
     await dbAdmin.delete(profiles).where(eq(profiles.tenantId, tenantId));

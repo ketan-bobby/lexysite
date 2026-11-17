@@ -40,6 +40,20 @@ import {
   stageRequestInput,
   stageRequestAction,
 } from "../lib/ats-connectors/zoho-stage-requests";
+import { zohoStageRules } from "../lib/ats-connectors/zoho-stage-rules";
+import {
+  zohoStageDispatch,
+  stageDispatchInput,
+  stageDispatchAction,
+} from "../lib/ats-connectors/zoho-stage-dispatch";
+import { GetZohoStageExecutionResponse } from "@workspace/api-zod";
+import { stageResolutionInput } from "../lib/ats-connectors/zoho-stage-resolution-policy";
+import { ruleInput, ruleAction } from "../lib/ats-connectors/zoho-stage-rule-policy";
+import {
+  GetZohoStageRulesResponse,
+  ProposeZohoStageRuleResponse,
+  ActOnZohoStageRuleResponse,
+} from "@workspace/api-zod";
 import {
   GetZohoStageRequestsResponse,
   PrepareZohoStageRequestResponse,
@@ -96,6 +110,8 @@ export function zohoRecruitAccountRouter(
   exportService = zohoReviewExport,
   noteService = zohoInterviewNotes,
   stageRequests = zohoStageRequests,
+  stageRules = zohoStageRules,
+  stageDispatch = zohoStageDispatch,
 ) {
   const router = Router();
   const safeError = (res: Response, error: unknown) => {
@@ -113,6 +129,97 @@ export function zohoRecruitAccountRouter(
       }
     };
   const stageIds = z.object({ id: z.uuid(), recipientId: z.uuid() });
+  router.post(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-execution/:requestId/resolution",
+    handle(async (req, actor) => {
+      const ids = stageIds.extend({ requestId: z.uuid() }).safeParse(req.params),
+        body = stageResolutionInput.safeParse(req.body);
+      if (!ids.success || !body.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageDispatch().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return GetZohoStageExecutionResponse.parse(
+        await scoped.resolve(ids.data.requestId, body.data),
+      );
+    }),
+  );
+  router.get(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-execution",
+    handle(async (req, actor) => {
+      const ids = stageIds.safeParse(req.params);
+      if (!ids.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageDispatch().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return GetZohoStageExecutionResponse.parse(await scoped.view());
+    }),
+  );
+  router.post(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-execution",
+    handle(async (req, actor) => {
+      const ids = stageIds.safeParse(req.params),
+        body = stageDispatchInput.safeParse(req.body);
+      if (!ids.success || !body.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageDispatch().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return GetZohoStageExecutionResponse.parse(await scoped.prepare(body.data));
+    }),
+  );
+  router.post(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-execution/:requestId/actions",
+    handle(async (req, actor) => {
+      const ids = stageIds.extend({ requestId: z.uuid() }).safeParse(req.params),
+        body = stageDispatchAction.safeParse(req.body);
+      if (!ids.success || !body.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageDispatch().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return GetZohoStageExecutionResponse.parse(await scoped.act(ids.data.requestId, body.data));
+    }),
+  );
+  router.get(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-rules",
+    handle(async (req, actor) => {
+      const ids = stageIds.safeParse(req.params);
+      if (!ids.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageRules().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return GetZohoStageRulesResponse.parse(await scoped.view());
+    }),
+  );
+  router.post(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-rules",
+    handle(async (req, actor) => {
+      const ids = stageIds.safeParse(req.params),
+        body = ruleInput.safeParse(req.body);
+      if (!ids.success || !body.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageRules().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return ProposeZohoStageRuleResponse.parse(await scoped.propose(body.data));
+    }),
+  );
+  router.post(
+    "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-rules/:ruleId/actions",
+    handle(async (req, actor) => {
+      const ids = stageIds.extend({ ruleId: z.uuid() }).safeParse(req.params),
+        body = ruleAction.safeParse(req.body);
+      if (!ids.success || !body.success) throw zohoFailure("invalid_request", 400);
+      const scoped = await stageRules().gateCandidateAccess(actor, {
+        campaignId: ids.data.id,
+        recipientId: ids.data.recipientId,
+      });
+      return ActOnZohoStageRuleResponse.parse(await scoped.act(ids.data.ruleId, body.data));
+    }),
+  );
   router.get(
     "/zoho-recruit/campaigns/:id/recipients/:recipientId/stage-requests",
     handle(async (req, actor) => {

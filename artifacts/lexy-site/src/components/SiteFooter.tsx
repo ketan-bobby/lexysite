@@ -2,7 +2,7 @@
  * SiteFooter — shared marketing-site footer.
  *
  * Structure (per brand feedback, "favorite version"):
- *   1. Large CTA band — "Ready to Build Better Hiring?" + trial/demo buttons
+ *   1. CTA band — routes both audiences (employer trial, candidate page, demo request)
  *   2. Footer body on a slightly darker surface (#FAFBFD) with a 1px
  *      top border (#E8EEF5) and generous vertical padding:
  *      brand column (lg logo, punchy tagline, 4 pills) + Product /
@@ -30,7 +30,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "For Employers", href: "/employers" },
       { label: "For Candidates", href: "/candidates" },
       { label: "Pricing", href: "/pricing" },
-      { label: "Start Free Trial", href: "/start-trial" },
+      { label: "Request a Guided Trial", href: "/start-trial" },
     ],
   },
   {
@@ -69,7 +69,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   },
 ];
 
-const PILLS = ["45+ Languages", "Evidence-Based", "Enterprise Ready", "Privacy First"];
+const PILLS = ["For employers", "For candidates", "Humans decide", "Privacy first"];
 
 const TRUST_STRIP: { icon: typeof ShieldCheck; label: string }[] = [
   { icon: ShieldCheck, label: "SOC 2 (coming)" },
@@ -89,44 +89,56 @@ export default function SiteFooter() {
   return (
     <footer id="footer">
       {/* CTA band — the loud part, so the footer itself can stay quiet */}
-      <div className="border-t border-border/50 px-6 py-20 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground text-balance">
-          Ready to Build Better Hiring?
+      <div className="section-navy px-6 py-20 text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-white text-balance">
+          Hiring for a role, or working on your next one?
         </h2>
+        <p className="mt-3 text-sm text-[hsl(214_45%_82%)] max-w-xl mx-auto text-balance">
+          Employers get an AI hiring team that does the legwork while people make the calls.
+          Candidates get a private AI career coach.
+        </p>
         <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/start-trial"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground hover:bg-[hsl(var(--primary-hover))] transition-colors focus-ring-navy"
           >
-            Start Free Trial
+            I'm hiring: request a guided trial
           </Link>
           <Link
-            href="/employers?demo=1"
-            className="inline-flex items-center justify-center rounded-full border border-border px-7 py-3 text-sm font-semibold text-foreground hover:bg-muted/60 transition-colors"
+            href="/candidates"
+            className="inline-flex items-center justify-center rounded-full border border-white/40 px-7 py-3 text-sm font-semibold text-white hover:bg-white/10 hover:border-white transition-colors focus-ring-navy"
           >
-            Book a Demo
+            I'm a candidate: see the career coach
+          </Link>
+        </div>
+        <div className="mt-4">
+          <Link
+            href="/employers?demo=1"
+            className="text-xs text-[hsl(214_45%_82%)] hover:text-white underline underline-offset-4 focus-ring-navy transition-colors"
+          >
+            Prefer to talk first? Request a demo
           </Link>
         </div>
       </div>
 
       {/* Footer body — slightly darker surface, subtle end-of-experience */}
-      <div className="bg-[#FAFBFD] border-t border-[#E8EEF5]">
+      <div className="bg-[hsl(var(--surface-sunken))] border-t-4 border-primary">
         {/* Links */}
         <div className="px-6 pt-20 md:pt-24 pb-14">
           <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-8">
             <div className="col-span-2">
               <LexyLogo size="lg" />
               <p className="text-sm text-foreground font-medium leading-relaxed mt-5">
-                Evidence-based hiring for modern teams.
+                Your AI hiring team. Your AI career coach.
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed mt-1">
-                AI evaluates consistently. Humans decide.
+                AI does the structured work. People make the decisions.
               </p>
               <div className="flex flex-wrap gap-2 mt-5 max-w-[300px]">
                 {PILLS.map((pill) => (
                   <span
                     key={pill}
-                    className="text-[11px] font-medium text-muted-foreground border border-border/60 bg-white rounded-full px-3 py-1"
+                    className="text-[11px] font-medium text-muted-foreground border border-border/60 bg-card rounded-full px-3 py-1"
                   >
                     {pill}
                   </span>
@@ -156,7 +168,7 @@ export default function SiteFooter() {
         </div>
 
         {/* Trust strip */}
-        <div className="border-t border-[#E8EEF5] px-6 py-6">
+        <div className="border-t border-border px-6 py-6">
           <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
               Designed to support
@@ -174,7 +186,7 @@ export default function SiteFooter() {
         </div>
 
         {/* Sign-off */}
-        <div className="border-t border-[#E8EEF5] px-6 py-6">
+        <div className="border-t border-border px-6 py-6">
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">© 2026 L3XY AI</p>
             <p className="text-xs font-medium text-foreground">
@@ -190,10 +202,10 @@ export default function SiteFooter() {
         </div>
 
         {/* Final brand statement */}
-        <div className="border-t border-[#E8EEF5] px-6 py-8 text-center">
+        <div className="border-t border-border px-6 py-8 text-center">
           <p className="text-sm md:text-base font-medium text-muted-foreground text-balance">
-            The future of hiring isn't built on resumes.{" "}
-            <span className="text-primary">It's built on evidence.</span>
+            Hiring decisions belong to people.{" "}
+            <span className="text-primary">Lexy helps them see the evidence.</span>
           </p>
         </div>
       </div>

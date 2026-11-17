@@ -735,26 +735,243 @@ export interface ZohoReviewExportReceipt {
   delivery: ZohoReviewExportReceiptDelivery;
 }
 
-export interface ZohoStageRequestInput {
+export type ZohoStageRuleEvidenceRequirements =
+  (typeof ZohoStageRuleEvidenceRequirements)[keyof typeof ZohoStageRuleEvidenceRequirements];
+
+export const ZohoStageRuleEvidenceRequirements = {
+  no_additional_fields_or_blueprint_actions: "no_additional_fields_or_blueprint_actions",
+} as const;
+
+export type ZohoStageRuleEvidenceNotifications =
+  (typeof ZohoStageRuleEvidenceNotifications)[keyof typeof ZohoStageRuleEvidenceNotifications];
+
+export const ZohoStageRuleEvidenceNotifications = {
+  no_automatic_messages_or_cross_application_changes:
+    "no_automatic_messages_or_cross_application_changes",
+} as const;
+
+export interface ZohoStageRuleEvidence {
+  /**
+   * @minLength 8
+   * @maxLength 200
+   */
+  contractReference: string;
+  /**
+   * @minLength 8
+   * @maxLength 200
+   */
+  isolationReference: string;
+  /**
+   * @minLength 8
+   * @maxLength 200
+   */
+  requirementsReference: string;
+  /**
+   * @minLength 8
+   * @maxLength 200
+   */
+  sideEffectsReference: string;
+  requirements: ZohoStageRuleEvidenceRequirements;
+  notifications: ZohoStageRuleEvidenceNotifications;
+}
+
+export interface ZohoStageRuleInput {
   /** @pattern ^[a-f0-9]{64}$ */
   expectedRevision: string;
+  /**
+   * @nullable
+   * @pattern ^[a-f0-9]{64}$
+   */
+  expectedRuleRevision: string | null;
+  requestId: string;
+  evidence: ZohoStageRuleEvidence;
+  confirm: true;
+}
+
+export type ZohoStageRuleActionAction =
+  (typeof ZohoStageRuleActionAction)[keyof typeof ZohoStageRuleActionAction];
+
+export const ZohoStageRuleActionAction = {
+  verify: "verify",
+  revoke: "revoke",
+} as const;
+
+export interface ZohoStageRuleAction {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  requestId: string;
+  action: ZohoStageRuleActionAction;
+  /**
+   * @minLength 8
+   * @maxLength 200
+   */
+  reviewReference?: string;
+  confirm: true;
+}
+
+export type ZohoStageRuleState = (typeof ZohoStageRuleState)[keyof typeof ZohoStageRuleState];
+
+export const ZohoStageRuleState = {
+  proposed: "proposed",
+  verified: "verified",
+  revoked: "revoked",
+} as const;
+
+export type ZohoStageRuleDecision =
+  (typeof ZohoStageRuleDecision)[keyof typeof ZohoStageRuleDecision];
+
+export const ZohoStageRuleDecision = {
+  advance: "advance",
+  hold: "hold",
+  decline: "decline",
+} as const;
+
+export interface ZohoStageRule {
+  id: string;
+  revision: string;
+  state: ZohoStageRuleState;
+  currentStatus: string;
+  targetStatus: string;
+  decision: ZohoStageRuleDecision;
+  evidence: ZohoStageRuleEvidence;
+  submittedBy: string;
+  submittedAt: number;
+  /** @nullable */
+  verifiedBy: string | null;
+  /** @nullable */
+  verifiedAt: number | null;
+  /** @nullable */
+  expiresAt: number | null;
+  /** @nullable */
+  reviewReference: string | null;
+  /** @nullable */
+  revokedBy: string | null;
+}
+
+export type ZohoStageRuleWorkspaceCurrentApplication = {
+  applicationId: string;
+  candidateId: string;
+  jobId: string;
+};
+
+export type ZohoStageRuleWorkspaceStatus =
+  (typeof ZohoStageRuleWorkspaceStatus)[keyof typeof ZohoStageRuleWorkspaceStatus];
+
+export const ZohoStageRuleWorkspaceStatus = {
+  unavailable: "unavailable",
+  proposal_required: "proposal_required",
+  pending_review: "pending_review",
+  verified: "verified",
+  expired: "expired",
+  stale: "stale",
+  revoked: "revoked",
+} as const;
+
+export interface ZohoStageRuleWorkspace {
+  campaignId: string;
+  recipientId: string;
+  sourceRevision: string;
+  currentApplication: ZohoStageRuleWorkspaceCurrentApplication;
+  status: ZohoStageRuleWorkspaceStatus;
+  canPropose: boolean;
+  canVerify: boolean;
+  canRevoke: boolean;
+  liveEnabled: false;
+  reason: string;
+  currentRule: ZohoStageRule | null;
+  /** @maxItems 1000 */
+  history: ZohoStageRule[];
+}
+
+export type ZohoStageResolutionInputAction =
+  (typeof ZohoStageResolutionInputAction)[keyof typeof ZohoStageResolutionInputAction];
+
+export const ZohoStageResolutionInputAction = {
+  propose: "propose",
+  approve: "approve",
+  reject: "reject",
+} as const;
+
+export interface ZohoStageResolutionInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedSourceRevision: string;
+  /** @minimum 1 */
+  expectedSequence: number;
+  commandId: string;
+  action: ZohoStageResolutionInputAction;
+  /**
+   * @minLength 20
+   * @maxLength 1000
+   */
+  reason: string;
+  /**
+   * @minLength 10
+   * @maxLength 200
+   */
+  evidenceReference: string;
+  confirm: true;
+  acknowledgeUnknown: true;
+  acknowledgeNoRetry: true;
+}
+
+export type ZohoStageResolutionReviewAction =
+  (typeof ZohoStageResolutionReviewAction)[keyof typeof ZohoStageResolutionReviewAction];
+
+export const ZohoStageResolutionReviewAction = {
+  approve: "approve",
+  reject: "reject",
+} as const;
+
+export interface ZohoStageResolutionReview {
+  action: ZohoStageResolutionReviewAction;
+  by: string;
+  /** @minimum 0 */
+  at: number;
+  reason: string;
+  evidenceReference: string;
+}
+
+export interface ZohoStageResolution {
+  proposedBy: string;
+  /** @minimum 0 */
+  proposedAt: number;
+  reason: string;
+  evidenceReference: string;
+  observedStatus: string;
+  review: ZohoStageResolutionReview | null;
+}
+
+export interface ZohoStageExecutionInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRuleRevision: string;
   requestId: string;
   confirm: true;
 }
 
-export type ZohoStageRequestActionAction =
-  (typeof ZohoStageRequestActionAction)[keyof typeof ZohoStageRequestActionAction];
+export type ZohoStageExecutionActionAction =
+  (typeof ZohoStageExecutionActionAction)[keyof typeof ZohoStageExecutionActionAction];
 
-export const ZohoStageRequestActionAction = {
+export const ZohoStageExecutionActionAction = {
   approve: "approve",
+  execute: "execute",
   withdraw: "withdraw",
   recover: "recover",
 } as const;
 
-export interface ZohoStageRequestAction {
+export interface ZohoStageExecutionAction {
   /** @pattern ^[a-f0-9]{64}$ */
   expectedRevision: string;
-  action: ZohoStageRequestActionAction;
+  /**
+   * @nullable
+   * @pattern ^[a-f0-9]{64}$
+   */
+  expectedRuleRevision: string | null;
+  requestId: string;
+  action: ZohoStageExecutionActionAction;
   confirm: true;
 }
 
@@ -799,6 +1016,58 @@ export interface ZohoStageRequest {
   canApprove: boolean;
   canWithdraw: boolean;
   canRecover: boolean;
+}
+
+export type ZohoStageExecutionRequest = ZohoStageRequest & {
+  canExecute: boolean;
+  /** @nullable */
+  executionRequestId: string | null;
+  /** @minimum 1 */
+  sequence: number;
+  canProposeResolution: boolean;
+  canReviewResolution: boolean;
+  resolution: ZohoStageResolution | null;
+};
+
+export interface ZohoStageExecutionWorkspace {
+  campaignId: string;
+  recipientId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  handoffRevision: string;
+  /**
+   * @nullable
+   * @pattern ^[a-f0-9]{64}$
+   */
+  ruleRevision: string | null;
+  transitionVerified: boolean;
+  liveEnabled: boolean;
+  canPrepare: boolean;
+  reason: string;
+  /** @maxItems 1000 */
+  requests: ZohoStageExecutionRequest[];
+}
+
+export interface ZohoStageRequestInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  requestId: string;
+  confirm: true;
+}
+
+export type ZohoStageRequestActionAction =
+  (typeof ZohoStageRequestActionAction)[keyof typeof ZohoStageRequestActionAction];
+
+export const ZohoStageRequestActionAction = {
+  approve: "approve",
+  withdraw: "withdraw",
+  recover: "recover",
+} as const;
+
+export interface ZohoStageRequestAction {
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedRevision: string;
+  action: ZohoStageRequestActionAction;
+  confirm: true;
 }
 
 export type ZohoStageRequestWorkspaceBlocker =
@@ -3636,6 +3905,131 @@ export interface AtsHandoffInput {
   snapshotHash?: string;
   acknowledgeReview?: boolean;
   mapping?: AtsHandoffInputMapping;
+}
+
+export interface GreenhouseOfferMoney {
+  /**
+   * @minimum 0
+   * @maximum 9007199254740991
+   */
+  amountMinor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+}
+
+export type GreenhouseOfferProposalValues = {
+  [key: string]: string | number | GreenhouseOfferMoney;
+};
+
+export interface GreenhouseOfferProposal {
+  /**
+   * @maxLength 128
+   * @nullable
+   */
+  openingId: string | null;
+  /**
+   * @maxLength 10
+   * @nullable
+   */
+  startDate: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  approverId: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  submitterId: string;
+  values: GreenhouseOfferProposalValues;
+}
+
+export type GreenhouseOfferWorkspaceInputAction =
+  (typeof GreenhouseOfferWorkspaceInputAction)[keyof typeof GreenhouseOfferWorkspaceInputAction];
+
+export const GreenhouseOfferWorkspaceInputAction = {
+  save: "save",
+  prepare: "prepare",
+  approve: "approve",
+  submit: "submit",
+  recover: "recover",
+} as const;
+
+export interface GreenhouseOfferWorkspaceInput {
+  action: GreenhouseOfferWorkspaceInputAction;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedLocalRevision: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expectedControlRevision?: string;
+  idempotencyKey: string;
+  confirm: boolean;
+  proposal?: GreenhouseOfferProposal;
+  attemptId?: string;
+}
+
+export interface GreenhouseOfferAttemptView {
+  id: string;
+  revision: string;
+  state: string;
+}
+
+export type GreenhouseOfferHistoryEntryState =
+  (typeof GreenhouseOfferHistoryEntryState)[keyof typeof GreenhouseOfferHistoryEntryState];
+
+export const GreenhouseOfferHistoryEntryState = {
+  prepared: "prepared",
+  approved: "approved",
+  claimed: "claimed",
+  draft_created: "draft_created",
+  provider_accepted: "provider_accepted",
+  verified_submission: "verified_submission",
+  not_sent: "not_sent",
+  review_required: "review_required",
+  observed_match: "observed_match",
+  observed_other: "observed_other",
+} as const;
+
+export interface GreenhouseOfferHistoryEntry {
+  /** @minimum 1 */
+  sequence: number;
+  attemptId: string;
+  state: GreenhouseOfferHistoryEntryState;
+  recordedAt: string;
+  /** @nullable */
+  actorId: string | null;
+  receiptRecorded: boolean;
+}
+
+export type GreenhouseOfferWorkspaceExecutionMode =
+  (typeof GreenhouseOfferWorkspaceExecutionMode)[keyof typeof GreenhouseOfferWorkspaceExecutionMode];
+
+export const GreenhouseOfferWorkspaceExecutionMode = {
+  unavailable: "unavailable",
+  simulated: "simulated",
+  controlled: "controlled",
+} as const;
+
+export interface GreenhouseOfferPerson {
+  id: string;
+  name: string;
+}
+
+export interface GreenhouseOfferWorkspace {
+  /** @maxItems 1000 */
+  history: GreenhouseOfferHistoryEntry[];
+  workflowRevision: number;
+  localRevision: string;
+  proposal: GreenhouseOfferProposal | null;
+  people: GreenhouseOfferPerson[];
+  canEdit: boolean;
+  canApprove: boolean;
+  canSubmit: boolean;
+  blockers: string[];
+  /** @nullable */
+  controlRevision: string | null;
+  attempt: GreenhouseOfferAttemptView | null;
+  executionMode: GreenhouseOfferWorkspaceExecutionMode;
 }
 
 export type OfferRoutingConfigurationMode =

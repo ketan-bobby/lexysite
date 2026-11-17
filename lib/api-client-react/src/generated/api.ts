@@ -116,6 +116,8 @@ import type {
   GoogleStaffCalendarConsentInput,
   GoogleStaffCalendarDisconnectInput,
   GoogleStaffCalendarStatus,
+  GreenhouseOfferWorkspace,
+  GreenhouseOfferWorkspaceInput,
   HealthStatus,
   HiringFunnel,
   IdeaCandiateProfile,
@@ -306,6 +308,9 @@ import type {
   ZohoRecruitImportSelection,
   ZohoReviewExportInput,
   ZohoReviewExportReceipt,
+  ZohoStageExecutionAction,
+  ZohoStageExecutionInput,
+  ZohoStageExecutionWorkspace,
   ZohoStageHandoff,
   ZohoStageHandoffInput,
   ZohoStageMapping,
@@ -315,6 +320,10 @@ import type {
   ZohoStageRequestAction,
   ZohoStageRequestInput,
   ZohoStageRequestWorkspace,
+  ZohoStageResolutionInput,
+  ZohoStageRuleAction,
+  ZohoStageRuleInput,
+  ZohoStageRuleWorkspace,
   ZoomLinkApproval,
   ZoomLinkDraft,
   ZoomLinkRemoval,
@@ -1438,6 +1447,228 @@ export const usePublishZohoInterviewNote = <
   return useMutation(getPublishZohoInterviewNoteMutationOptions(options));
 };
 
+export const getGetZohoStageRulesUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-rules`;
+};
+
+export const getZohoStageRules = async (
+  id: string,
+  recipientId: string,
+  options?: RequestInit,
+): Promise<ZohoStageRuleWorkspace> => {
+  return customFetch<ZohoStageRuleWorkspace>(getGetZohoStageRulesUrl(id, recipientId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoStageRulesQueryKey = (id: string, recipientId: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-rules`] as const;
+};
+
+export const getGetZohoStageRulesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoStageRules>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageRules>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoStageRulesQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoStageRules>>> = ({ signal }) =>
+    getZohoStageRules(id, recipientId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!(id && recipientId), ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoStageRules>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoStageRulesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoStageRules>>
+>;
+export type GetZohoStageRulesQueryError = ErrorType<unknown>;
+
+export function useGetZohoStageRules<
+  TData = Awaited<ReturnType<typeof getZohoStageRules>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageRules>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoStageRulesQueryOptions(id, recipientId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getProposeZohoStageRuleUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-rules`;
+};
+
+export const proposeZohoStageRule = async (
+  id: string,
+  recipientId: string,
+  zohoStageRuleInput: ZohoStageRuleInput,
+  options?: RequestInit,
+): Promise<ZohoStageRuleWorkspace> => {
+  return customFetch<ZohoStageRuleWorkspace>(getProposeZohoStageRuleUrl(id, recipientId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageRuleInput),
+  });
+};
+
+export const getProposeZohoStageRuleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof proposeZohoStageRule>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRuleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof proposeZohoStageRule>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageRuleInput> },
+  TContext
+> => {
+  const mutationKey = ["proposeZohoStageRule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof proposeZohoStageRule>>,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRuleInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return proposeZohoStageRule(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ProposeZohoStageRuleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof proposeZohoStageRule>>
+>;
+export type ProposeZohoStageRuleMutationBody = BodyType<ZohoStageRuleInput>;
+export type ProposeZohoStageRuleMutationError = ErrorType<unknown>;
+
+export const useProposeZohoStageRule = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof proposeZohoStageRule>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageRuleInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof proposeZohoStageRule>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageRuleInput> },
+  TContext
+> => {
+  return useMutation(getProposeZohoStageRuleMutationOptions(options));
+};
+
+export const getActOnZohoStageRuleUrl = (id: string, recipientId: string, ruleId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-rules/${ruleId}/actions`;
+};
+
+export const actOnZohoStageRule = async (
+  id: string,
+  recipientId: string,
+  ruleId: string,
+  zohoStageRuleAction: ZohoStageRuleAction,
+  options?: RequestInit,
+): Promise<ZohoStageRuleWorkspace> => {
+  return customFetch<ZohoStageRuleWorkspace>(getActOnZohoStageRuleUrl(id, recipientId, ruleId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zohoStageRuleAction),
+  });
+};
+
+export const getActOnZohoStageRuleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageRule>>,
+    TError,
+    { id: string; recipientId: string; ruleId: string; data: BodyType<ZohoStageRuleAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof actOnZohoStageRule>>,
+  TError,
+  { id: string; recipientId: string; ruleId: string; data: BodyType<ZohoStageRuleAction> },
+  TContext
+> => {
+  const mutationKey = ["actOnZohoStageRule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof actOnZohoStageRule>>,
+    { id: string; recipientId: string; ruleId: string; data: BodyType<ZohoStageRuleAction> }
+  > = (props) => {
+    const { id, recipientId, ruleId, data } = props ?? {};
+
+    return actOnZohoStageRule(id, recipientId, ruleId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActOnZohoStageRuleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof actOnZohoStageRule>>
+>;
+export type ActOnZohoStageRuleMutationBody = BodyType<ZohoStageRuleAction>;
+export type ActOnZohoStageRuleMutationError = ErrorType<unknown>;
+
+export const useActOnZohoStageRule = <TError = ErrorType<unknown>, TContext = unknown>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageRule>>,
+    TError,
+    { id: string; recipientId: string; ruleId: string; data: BodyType<ZohoStageRuleAction> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof actOnZohoStageRule>>,
+  TError,
+  { id: string; recipientId: string; ruleId: string; data: BodyType<ZohoStageRuleAction> },
+  TContext
+> => {
+  return useMutation(getActOnZohoStageRuleMutationOptions(options));
+};
+
 export const getGetZohoStageRequestsUrl = (id: string, recipientId: string) => {
   return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-requests`;
 };
@@ -1667,6 +1898,377 @@ export const useActOnZohoStageRequest = <
   TContext
 > => {
   return useMutation(getActOnZohoStageRequestMutationOptions(options));
+};
+
+/**
+ * @summary Read controlled execution requests and blockers without provider calls
+ */
+export const getGetZohoStageExecutionUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-execution`;
+};
+
+export const getZohoStageExecution = async (
+  id: string,
+  recipientId: string,
+  options?: RequestInit,
+): Promise<ZohoStageExecutionWorkspace> => {
+  return customFetch<ZohoStageExecutionWorkspace>(getGetZohoStageExecutionUrl(id, recipientId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetZohoStageExecutionQueryKey = (id: string, recipientId: string) => {
+  return [`/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-execution`] as const;
+};
+
+export const getGetZohoStageExecutionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getZohoStageExecution>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageExecution>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetZohoStageExecutionQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getZohoStageExecution>>> = ({ signal }) =>
+    getZohoStageExecution(id, recipientId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!(id && recipientId), ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getZohoStageExecution>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetZohoStageExecutionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getZohoStageExecution>>
+>;
+export type GetZohoStageExecutionQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Read controlled execution requests and blockers without provider calls
+ */
+
+export function useGetZohoStageExecution<
+  TData = Awaited<ReturnType<typeof getZohoStageExecution>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  recipientId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getZohoStageExecution>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetZohoStageExecutionQueryOptions(id, recipientId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Prepare an evidence-bound request without sending a stage change
+ */
+export const getPrepareZohoStageExecutionUrl = (id: string, recipientId: string) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-execution`;
+};
+
+export const prepareZohoStageExecution = async (
+  id: string,
+  recipientId: string,
+  zohoStageExecutionInput: ZohoStageExecutionInput,
+  options?: RequestInit,
+): Promise<ZohoStageExecutionWorkspace> => {
+  return customFetch<ZohoStageExecutionWorkspace>(
+    getPrepareZohoStageExecutionUrl(id, recipientId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(zohoStageExecutionInput),
+    },
+  );
+};
+
+export const getPrepareZohoStageExecutionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoStageExecution>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageExecutionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof prepareZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageExecutionInput> },
+  TContext
+> => {
+  const mutationKey = ["prepareZohoStageExecution"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof prepareZohoStageExecution>>,
+    { id: string; recipientId: string; data: BodyType<ZohoStageExecutionInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return prepareZohoStageExecution(id, recipientId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PrepareZohoStageExecutionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof prepareZohoStageExecution>>
+>;
+export type PrepareZohoStageExecutionMutationBody = BodyType<ZohoStageExecutionInput>;
+export type PrepareZohoStageExecutionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Prepare an evidence-bound request without sending a stage change
+ */
+export const usePrepareZohoStageExecution = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof prepareZohoStageExecution>>,
+    TError,
+    { id: string; recipientId: string; data: BodyType<ZohoStageExecutionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof prepareZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; data: BodyType<ZohoStageExecutionInput> },
+  TContext
+> => {
+  return useMutation(getPrepareZohoStageExecutionMutationOptions(options));
+};
+
+/**
+ * @summary Independently review closure without writing or retrying an ATS stage change
+ */
+export const getResolveZohoStageExecutionUrl = (
+  id: string,
+  recipientId: string,
+  requestId: string,
+) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-execution/${requestId}/resolution`;
+};
+
+export const resolveZohoStageExecution = async (
+  id: string,
+  recipientId: string,
+  requestId: string,
+  zohoStageResolutionInput: ZohoStageResolutionInput,
+  options?: RequestInit,
+): Promise<ZohoStageExecutionWorkspace> => {
+  return customFetch<ZohoStageExecutionWorkspace>(
+    getResolveZohoStageExecutionUrl(id, recipientId, requestId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(zohoStageResolutionInput),
+    },
+  );
+};
+
+export const getResolveZohoStageExecutionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resolveZohoStageExecution>>,
+    TError,
+    {
+      id: string;
+      recipientId: string;
+      requestId: string;
+      data: BodyType<ZohoStageResolutionInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resolveZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageResolutionInput> },
+  TContext
+> => {
+  const mutationKey = ["resolveZohoStageExecution"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resolveZohoStageExecution>>,
+    { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageResolutionInput> }
+  > = (props) => {
+    const { id, recipientId, requestId, data } = props ?? {};
+
+    return resolveZohoStageExecution(id, recipientId, requestId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResolveZohoStageExecutionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resolveZohoStageExecution>>
+>;
+export type ResolveZohoStageExecutionMutationBody = BodyType<ZohoStageResolutionInput>;
+export type ResolveZohoStageExecutionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Independently review closure without writing or retrying an ATS stage change
+ */
+export const useResolveZohoStageExecution = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resolveZohoStageExecution>>,
+    TError,
+    {
+      id: string;
+      recipientId: string;
+      requestId: string;
+      data: BodyType<ZohoStageResolutionInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resolveZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageResolutionInput> },
+  TContext
+> => {
+  return useMutation(getResolveZohoStageExecutionMutationOptions(options));
+};
+
+/**
+ * @summary Deliberately approve, execute, withdraw or observe one exact request
+ */
+export const getActOnZohoStageExecutionUrl = (
+  id: string,
+  recipientId: string,
+  requestId: string,
+) => {
+  return `/api/zoho-recruit/campaigns/${id}/recipients/${recipientId}/stage-execution/${requestId}/actions`;
+};
+
+export const actOnZohoStageExecution = async (
+  id: string,
+  recipientId: string,
+  requestId: string,
+  zohoStageExecutionAction: ZohoStageExecutionAction,
+  options?: RequestInit,
+): Promise<ZohoStageExecutionWorkspace> => {
+  return customFetch<ZohoStageExecutionWorkspace>(
+    getActOnZohoStageExecutionUrl(id, recipientId, requestId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(zohoStageExecutionAction),
+    },
+  );
+};
+
+export const getActOnZohoStageExecutionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageExecution>>,
+    TError,
+    {
+      id: string;
+      recipientId: string;
+      requestId: string;
+      data: BodyType<ZohoStageExecutionAction>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof actOnZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageExecutionAction> },
+  TContext
+> => {
+  const mutationKey = ["actOnZohoStageExecution"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof actOnZohoStageExecution>>,
+    { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageExecutionAction> }
+  > = (props) => {
+    const { id, recipientId, requestId, data } = props ?? {};
+
+    return actOnZohoStageExecution(id, recipientId, requestId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActOnZohoStageExecutionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof actOnZohoStageExecution>>
+>;
+export type ActOnZohoStageExecutionMutationBody = BodyType<ZohoStageExecutionAction>;
+export type ActOnZohoStageExecutionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Deliberately approve, execute, withdraw or observe one exact request
+ */
+export const useActOnZohoStageExecution = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof actOnZohoStageExecution>>,
+    TError,
+    {
+      id: string;
+      recipientId: string;
+      requestId: string;
+      data: BodyType<ZohoStageExecutionAction>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof actOnZohoStageExecution>>,
+  TError,
+  { id: string; recipientId: string; requestId: string; data: BodyType<ZohoStageExecutionAction> },
+  TContext
+> => {
+  return useMutation(getActOnZohoStageExecutionMutationOptions(options));
 };
 
 export const getCheckZohoStageMetadataUrl = (id: string, recipientId: string) => {
@@ -8035,6 +8637,164 @@ export function useGetEmployerOfferInboxItem<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getGetGreenhouseOfferWorkspaceUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/greenhouse-offer`;
+};
+
+export const getGreenhouseOfferWorkspace = async (
+  jobId: string,
+  workflowId: string,
+  options?: RequestInit,
+): Promise<GreenhouseOfferWorkspace> => {
+  return customFetch<GreenhouseOfferWorkspace>(
+    getGetGreenhouseOfferWorkspaceUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetGreenhouseOfferWorkspaceQueryKey = (jobId: string, workflowId: string) => {
+  return [`/api/jobs/${jobId}/candidate-workflows/${workflowId}/greenhouse-offer`] as const;
+};
+
+export const getGetGreenhouseOfferWorkspaceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetGreenhouseOfferWorkspaceQueryKey(jobId, workflowId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>> = ({
+    signal,
+  }) => getGreenhouseOfferWorkspace(jobId, workflowId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(jobId && workflowId),
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetGreenhouseOfferWorkspaceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>
+>;
+export type GetGreenhouseOfferWorkspaceQueryError = ErrorType<unknown>;
+
+export function useGetGreenhouseOfferWorkspace<
+  TData = Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: string,
+  workflowId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getGreenhouseOfferWorkspace>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGreenhouseOfferWorkspaceQueryOptions(jobId, workflowId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getControlGreenhouseOfferWorkspaceUrl = (jobId: string, workflowId: string) => {
+  return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/greenhouse-offer`;
+};
+
+export const controlGreenhouseOfferWorkspace = async (
+  jobId: string,
+  workflowId: string,
+  greenhouseOfferWorkspaceInput: GreenhouseOfferWorkspaceInput,
+  options?: RequestInit,
+): Promise<GreenhouseOfferWorkspace> => {
+  return customFetch<GreenhouseOfferWorkspace>(
+    getControlGreenhouseOfferWorkspaceUrl(jobId, workflowId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(greenhouseOfferWorkspaceInput),
+    },
+  );
+};
+
+export const getControlGreenhouseOfferWorkspaceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<GreenhouseOfferWorkspaceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<GreenhouseOfferWorkspaceInput> },
+  TContext
+> => {
+  const mutationKey = ["controlGreenhouseOfferWorkspace"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>,
+    { jobId: string; workflowId: string; data: BodyType<GreenhouseOfferWorkspaceInput> }
+  > = (props) => {
+    const { jobId, workflowId, data } = props ?? {};
+
+    return controlGreenhouseOfferWorkspace(jobId, workflowId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ControlGreenhouseOfferWorkspaceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>
+>;
+export type ControlGreenhouseOfferWorkspaceMutationBody = BodyType<GreenhouseOfferWorkspaceInput>;
+export type ControlGreenhouseOfferWorkspaceMutationError = ErrorType<unknown>;
+
+export const useControlGreenhouseOfferWorkspace = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>,
+    TError,
+    { jobId: string; workflowId: string; data: BodyType<GreenhouseOfferWorkspaceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof controlGreenhouseOfferWorkspace>>,
+  TError,
+  { jobId: string; workflowId: string; data: BodyType<GreenhouseOfferWorkspaceInput> },
+  TContext
+> => {
+  return useMutation(getControlGreenhouseOfferWorkspaceMutationOptions(options));
+};
 
 export const getGetCandidateOfferRoutingUrl = (jobId: string, workflowId: string) => {
   return `/api/jobs/${jobId}/candidate-workflows/${workflowId}/offer-routing`;

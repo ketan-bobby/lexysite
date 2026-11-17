@@ -1,4 +1,5 @@
 import SiteFooter from "@/components/SiteFooter";
+import ProductCapabilities from "@/components/ProductCapabilities";
 /*
  * employers.tsx — Public "for employers" marketing landing page.
  *
@@ -120,9 +121,9 @@ function DemoModal({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <div className="mb-7">
-              <h3 className="text-2xl font-semibold mb-1.5">Book a Demo</h3>
+              <h3 className="text-2xl font-semibold mb-1.5">Request a Demo</h3>
               <p className="text-sm text-muted-foreground">
-                Tell us a bit about yourself and we'll be in touch.
+                Leave your details and our team will contact you to arrange a time.
               </p>
             </div>
 
@@ -221,7 +222,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}
@@ -231,7 +232,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
 function Nav({ onBookDemo }: { onBookDemo: () => void }) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 backdrop-blur-xl bg-background/80">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center cursor-pointer">
@@ -242,8 +243,8 @@ function Nav({ onBookDemo }: { onBookDemo: () => void }) {
           <a href="#how-it-works" className="hover:text-foreground transition-colors">
             How It Works
           </a>
-          <a href="#why-lexy" className="hover:text-foreground transition-colors">
-            Why L3XY
+          <a href="#integrations" className="hover:text-foreground transition-colors">
+            Integrations
           </a>
           <Link href="/candidates" className="hover:text-foreground transition-colors">
             Candidates
@@ -255,14 +256,14 @@ function Nav({ onBookDemo }: { onBookDemo: () => void }) {
         <div className="flex items-center gap-3">
           <Link href="/start-trial">
             <button className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:border-primary/40 text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-              Start Trial
+              Guided Trial
             </button>
           </Link>
           <button
             onClick={onBookDemo}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Book a Demo
+            Request a Demo
           </button>
         </div>
       </div>
@@ -273,32 +274,32 @@ function Nav({ onBookDemo }: { onBookDemo: () => void }) {
 const intelligenceLayers = [
   {
     icon: Target,
-    title: "Define Success Before You Hire",
-    desc: "Transform job descriptions into structured success criteria that define what great looks like before hiring begins.",
+    title: "Agree what good looks like first",
+    desc: "Lexy turns your job description into clear success criteria and interview questions. Your team edits and approves them before any candidate is assessed.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
     icon: Users,
-    title: "Build Evidence, Not Profiles",
-    desc: "Capture structured interview evidence, competencies, behavioral signals, and recruiter observations—all connected in one place.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    title: "Collect evidence, not impressions",
+    desc: "Interview answers, scores against each criterion, and recruiter notes sit together for every candidate, so comparisons are like for like.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
   {
     icon: Brain,
-    title: "Recruiters Decide. Evidence Leads.",
-    desc: "Every recommendation is transparent, explainable, and always remains under recruiter control.",
+    title: "Recommendations you can question",
+    desc: "Every recommendation shows its reasons. Recruiters can disagree, add context, and make a different call.",
     color: "text-emerald-600",
     bg: "bg-emerald-600/10",
     border: "border-emerald-600/20",
   },
   {
     icon: Zap,
-    title: "Keep Great Candidates Engaged",
-    desc: "Automate outreach, schedule interviews, and reduce ghosting — so strong candidates stay engaged and move through the pipeline.",
+    title: "Fewer candidates left waiting",
+    desc: "Reviewed invitations, follow-ups and scheduling from your offered times help candidates keep moving instead of going quiet.",
     color: "text-amber-600",
     bg: "bg-amber-600/10",
     border: "border-amber-600/20",
@@ -308,155 +309,155 @@ const intelligenceLayers = [
 const agents = [
   {
     icon: Target,
-    name: "ICP Agent",
-    desc: "Creates structured Ideal Candidate Profiles from job descriptions.",
+    name: "Role profile",
+    desc: "Drafts an ideal candidate profile and success criteria from your job description, for your team to edit.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
     icon: Search,
-    name: "Sourcing Agent",
-    desc: "Finds candidates from ATS data, public profiles, GitHub, PDL, SERP APIs, and open sources.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    name: "Sourcing",
+    desc: "Looks for potential candidates in the sources enabled for your workspace, alongside the applicants you bring.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
   {
     icon: ClipboardCheck,
-    name: "Screening Agent",
-    desc: "Evaluates candidate profiles and matches them against job requirements.",
+    name: "Screening",
+    desc: "Reads resumes against the role, with personal details hidden, and explains how each one lines up.",
     color: "text-emerald-600",
     bg: "bg-emerald-600/10",
     border: "border-emerald-600/20",
   },
   {
     icon: Mic,
-    name: "AI Interview Agent",
-    desc: "Conducts AI-powered interviews, asks follow-ups, and scores responses.",
+    name: "Interviewer",
+    desc: "Runs structured interviews, asks follow-up questions, and scores answers against your criteria.",
     color: "text-amber-600",
     bg: "bg-amber-600/10",
     border: "border-amber-600/20",
   },
   {
     icon: Eye,
-    name: "Proctoring Agent",
-    desc: "Detects suspicious behavior and ensures interview integrity.",
+    name: "Interview integrity",
+    desc: "Flags unusual interview behaviour for a person to look at. A flag is never a decision on its own.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
     icon: BadgeCheck,
-    name: "Verification Agent",
-    desc: "Validates candidate identity and profile accuracy.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    name: "Profile checks",
+    desc: "Points out details in a candidate's profile that may need a closer look, so your team can follow up.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
   {
     icon: Mail,
-    name: "Outreach Agent",
-    desc: "Runs personalized outreach campaigns and improves response rates.",
+    name: "Outreach",
+    desc: "Drafts engagement and interview campaigns. Your team reviews and approves them before they are sent.",
     color: "text-emerald-600",
     bg: "bg-emerald-600/10",
     border: "border-emerald-600/20",
   },
   {
     icon: Bell,
-    name: "Anti-Ghosting Agent",
-    desc: "Reduces candidate drop-off by triggering timely follow-ups.",
+    name: "Follow-up",
+    desc: "Suggests timely reminders when a candidate has not replied, within the limits you set.",
     color: "text-amber-600",
     bg: "bg-amber-600/10",
     border: "border-amber-600/20",
   },
   {
     icon: Calendar,
-    name: "Scheduling Agent",
-    desc: "Automates interview scheduling and reminders.",
+    name: "Scheduling",
+    desc: "Lets candidates choose from the interview times your team offered, and sends reminders.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
     icon: BarChart3,
-    name: "Analytics Agent",
-    desc: "Tracks performance, hiring metrics, and decision quality.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    name: "Reporting",
+    desc: "Shows where candidates are in each role and how your process is running.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
 ];
 
 const howItWorks = [
   {
     num: "01",
-    title: "Define your hiring needs",
-    desc: "Lexy converts job descriptions into structured Ideal Candidate Profiles automatically.",
+    title: "Set up the role",
+    desc: "Lexy drafts success criteria and interview questions from your job description. You approve them.",
   },
   {
     num: "02",
-    title: "Source candidates automatically",
-    desc: "Lexy pulls candidates from multiple data sources and builds a unified talent pool.",
+    title: "Find or bring candidates",
+    desc: "Source new candidates, upload your own applicants, or bring selected candidates across from a connected ATS.",
   },
   {
     num: "03",
-    title: "Screen and interview candidates",
-    desc: "AI agents evaluate candidates through structured screening and AI-powered interviews.",
+    title: "Invite, after review",
+    desc: "Lexy prepares engagement and interview campaigns. Your team reviews them before anything is sent.",
   },
   {
     num: "04",
-    title: "Predict hiring outcomes",
-    desc: "Lexy generates fit scores, trust scores, conversion scores, and hiring confidence for every candidate.",
+    title: "Interview consistently",
+    desc: "Candidates take a structured interview and book any live conversations from the times you offered.",
   },
   {
     num: "05",
-    title: "Automate outreach and scheduling",
-    desc: "Candidates are automatically engaged, scheduled, and moved through the pipeline.",
+    title: "Review the evidence and decide",
+    desc: "Recruiters and hiring managers see answers, scores and reasons, then decide who moves forward.",
   },
   {
     num: "06",
-    title: "Improve hiring over time",
-    desc: "Lexy learns from outcomes, recruiter feedback, and hiring decisions to get smarter.",
+    title: "Make the offer your way",
+    desc: "Offers are prepared, approved and sent by your HR team. Lexy does not send offers on its own.",
   },
 ];
 
 const benefits = [
-  "Evaluate candidates through structured interviews—not keyword filters.",
-  "Understand how candidates think, communicate, and solve problems.",
-  "Make hiring decisions backed by structured evidence.",
-  "Keep great candidates engaged throughout the hiring process.",
+  "Every candidate for a role answers the same core questions.",
+  "Scores come with the answers and reasons behind them.",
+  "Recruiters review outreach before it reaches candidates.",
+  "Hiring managers decide, with the evidence in front of them.",
 ];
 
 const differentiators = [
   {
     icon: Brain,
-    title: "Stop hiring based on resumes",
-    desc: "Lexy evaluates real capability through structured interviews—so every hiring decision starts with evidence, not keywords.",
+    title: "Fair comparisons",
+    desc: "Structured interviews give every candidate the same chance to show what they can do, and give your team comparable evidence.",
     color: "text-primary",
     bg: "bg-primary/10",
     border: "border-primary/20",
   },
   {
     icon: Zap,
-    title: "Stop manually screening candidates",
-    desc: "Lexy's AI agents screen, interview, and follow up automatically—so recruiters spend their time making decisions, not managing tasks.",
-    color: "text-violet-600",
-    bg: "bg-violet-600/10",
-    border: "border-violet-600/20",
+    title: "Less admin for recruiters",
+    desc: "Lexy drafts, screens, interviews and schedules. Recruiters spend their time reviewing evidence and talking to people.",
+    color: "text-navy",
+    bg: "bg-navy/10",
+    border: "border-navy/20",
   },
   {
     icon: Layers,
-    title: "Stop stitching together tools",
-    desc: "One connected hiring intelligence platform replaces fragmented sourcing, interviews, outreach, and decision support.",
+    title: "Fits around your ATS",
+    desc: "Run Lexy on its own, or connect Zoho Recruit or Greenhouse so your ATS stays the system of record.",
     color: "text-emerald-600",
     bg: "bg-emerald-600/10",
     border: "border-emerald-600/20",
   },
   {
     icon: TrendingUp,
-    title: "Stop relying on dashboards without decisions",
-    desc: "Lexy doesn't just track your pipeline — Lexy recommends the next best action—and explains why.",
+    title: "Clear next steps",
+    desc: "For each candidate, Lexy suggests what to do next and explains why. Your team chooses whether to follow it.",
     color: "text-amber-600",
     bg: "bg-amber-600/10",
     border: "border-amber-600/20",
@@ -464,10 +465,32 @@ const differentiators = [
 ];
 
 const stats = [
-  { value: "45+", label: "Languages" },
-  { value: "3×", label: "Faster hiring" },
-  { value: "80%", label: "Less manual screening" },
-  { value: "100%", label: "Human-validated AI recommendations" },
+  { value: "Source", label: "or bring your own applicants" },
+  { value: "Interview", label: "with the same structure for all" },
+  { value: "Review", label: "answers, scores and reasons" },
+  { value: "Decide", label: "people make the call" },
+];
+
+const integrations = [
+  {
+    name: "Zoho Recruit",
+    available: [
+      "Bring selected candidates into Lexy for your team to review",
+      "Run Lexy interviews for those candidates",
+      "Send progress and approved assessment results back to Zoho Recruit",
+    ],
+    later:
+      "Steps that would move candidates between stages inside Zoho Recruit stay switched off until they are set up and approved with your team.",
+  },
+  {
+    name: "Greenhouse",
+    available: [
+      "Review the controlled employer-owned handoff workflow with our team",
+      "Plan how Greenhouse remains your system of record",
+    ],
+    later:
+      "Connected Greenhouse workflows require additional configuration and acceptance before activation. Connected financial offers are not available; your team manages offers in your own process.",
+  },
 ];
 
 function EmployerVideoPlayer() {
@@ -525,15 +548,15 @@ function EmployerVideoPlayer() {
 
 export default function Employers() {
   usePageMeta({
-    title: "AI Hiring Platform for Employers — Verified Hiring Signals",
+    title: "Lexy for Employers | Your AI Hiring Team, Run by Your Recruiters",
     description:
-      "Replace resume keyword screening with verified hiring signals. Structured AI interviews, capability-based matching, and evidence-based hiring decisions in one connected system.",
+      "Source or bring applicants, send reviewed interview campaigns, run structured interviews and review evidence, while your people make every decision. Works on its own or with Zoho Recruit or Greenhouse.",
     path: "/employers",
   });
   const [showDemo, setShowDemo] = useState(false);
   const openDemo = () => setShowDemo(true);
 
-  // Footer/pricing "Book a Demo" CTAs deep-link here with ?demo=1 — open the
+  // Footer/pricing demo-request CTAs deep-link here with ?demo=1 — open the
   // modal on arrival and strip the param so refresh/back doesn't re-open it.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -555,41 +578,41 @@ export default function Employers() {
       <Nav onBookDemo={openDemo} />
 
       {/* Hero */}
-      <section className="pt-40 pb-24 px-6">
+      <section className="hero-navy pt-40 pb-24 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-8">
             <Sparkles className="w-3 h-3" />
-            Interview-Based Hiring
+            For Employers
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.1] mb-6">
-            Stop screening resumes.
+            Your AI hiring team.
             <br />
-            <span className="gradient-text text-glow">Start hiring based on real signals.</span>
+            <span className="gradient-text text-glow">Your people make the calls.</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto mb-4 leading-relaxed">
-            Every interview becomes structured evidence your recruiters validate, creating
-            proprietary hiring intelligence your organization owns.
+            Lexy finds and screens candidates, sends interview invitations your team has approved,
+            runs structured interviews and lays out the evidence. Recruiters and hiring managers
+            decide. HR owns the offer.
           </p>
 
           <p className="text-base font-semibold text-primary mb-10">
-            See how candidates think, communicate, and perform — before you hire them.
+            Use it on its own, or ask about selected ATS-connected workflows.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={openDemo}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary"
-            >
-              See Hiring Intelligence
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <Link href="/start-trial">
+              <button className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105 glow-primary">
+                Request a Guided Trial
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
             <button
               onClick={openDemo}
               className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-base font-medium border border-border hover:border-primary/40 transition-colors text-muted-foreground hover:text-foreground"
             >
-              Book a Demo
+              Request a Demo
             </button>
           </div>
 
@@ -597,7 +620,7 @@ export default function Employers() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-20 pt-12 border-t border-border/50">
             {stats.map((s) => (
               <div key={s.label} className="text-center">
-                <div className="text-3xl font-semibold text-emerald-600 mb-1">{s.value}</div>
+                <div className="text-2xl sm:text-3xl font-semibold text-emerald-600 mb-1">{s.value}</div>
                 <div className="text-sm text-muted-foreground">{s.label}</div>
               </div>
             ))}
@@ -613,43 +636,43 @@ export default function Employers() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-6">
-              Hiring breaks when <span className="gradient-text">evidence is missing.</span>
+              Where hiring weeks <span className="gradient-text">actually go.</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Most hiring decisions are based on resumes, fragmented interviews, and subjective
-              opinions. The result is slower hiring, inconsistent evaluations, and missed talent.
+              Much of a recruiter's week goes on work that has to be done but does not need their
+              judgement. That leaves less time for the decisions that do.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
                 Icon: Timer,
-                title: "Decisions take too long",
-                desc: "Top candidates drop off while your team screens, schedules, and follows up.",
+                title: "Admin crowds out judgement",
+                desc: "Screening, chasing replies and booking calls take hours that could go on candidates.",
                 color: "text-primary",
                 bg: "bg-primary/10",
                 border: "border-primary/20",
               },
               {
                 Icon: Frown,
-                title: "Great candidates disappear",
-                desc: "Slow, inconsistent processes lead to disengagement and ghosting.",
-                color: "text-violet-600",
-                bg: "bg-violet-600/10",
-                border: "border-violet-600/20",
+                title: "Candidates go quiet",
+                desc: "Long gaps between messages make good people lose interest.",
+                color: "text-navy",
+                bg: "bg-navy/10",
+                border: "border-navy/20",
               },
               {
                 Icon: Crosshair,
-                title: "Resumes hide great talent",
-                desc: "Strong candidates get overlooked because signals are weak or delayed.",
+                title: "Resumes only say so much",
+                desc: "A well-formatted CV is not the same as being good at the job.",
                 color: "text-emerald-600",
                 bg: "bg-emerald-600/10",
                 border: "border-emerald-600/20",
               },
               {
                 Icon: Scale,
-                title: "Hiring decisions are inconsistent",
-                desc: "Different interviewers, different standards — no reliable way to compare candidates.",
+                title: "Interviews are hard to compare",
+                desc: "Different interviewers ask different questions, so decisions rest on uneven notes.",
                 color: "text-amber-600",
                 bg: "bg-amber-600/10",
                 border: "border-amber-600/20",
@@ -671,8 +694,8 @@ export default function Employers() {
           </div>
           <div className="text-center mt-10 space-y-2">
             <p className="text-base font-semibold text-foreground/90">
-              Lexy replaces opinions with structured evidence—so your team hires faster and with
-              greater confidence.
+              Lexy takes on the repetitive steps and gives your team consistent evidence to decide
+              with.
             </p>
           </div>
         </div>
@@ -683,13 +706,13 @@ export default function Employers() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Hiring doesn't end with interviews.
+              Clear criteria in.
               <br />
-              <span className="gradient-text">Intelligence begins there.</span>
+              <span className="gradient-text">Comparable evidence out.</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Every interview, recruiter review, and hiring decision contributes to a growing body
-              of hiring intelligence—so every future hire starts smarter than the last.
+              Your team sets the standard for each role. Lexy applies it the same way to every
+              candidate and shows its working.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -712,8 +735,7 @@ export default function Employers() {
             })}
           </div>
           <p className="text-center mt-10 text-base font-semibold gradient-text">
-            Every validated hiring decision strengthens your organization's hiring intelligence for
-            the next role.
+            Lexy recommends. Your people decide.
           </p>
         </div>
       </section>
@@ -724,11 +746,11 @@ export default function Employers() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div>
               <h2 className="text-3xl sm:text-4xl font-semibold mb-6">
-                Hire faster — <span className="gradient-text">with real signals, not resumes</span>
+                What a reviewer <span className="gradient-text">sees for each candidate</span>
               </h2>
               <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                Lexy replaces resume screening with structured interviews that generate evidence—not
-                assumptions—helping recruiters make faster, more confident hiring decisions.
+                Instead of a stack of CVs and scattered notes, your team gets one consistent view of
+                each candidate's interview, with the reasoning written out.
               </p>
               <ul className="space-y-4">
                 {benefits.map((b) => (
@@ -739,10 +761,10 @@ export default function Employers() {
                 ))}
               </ul>
             </div>
-            <div className="p-8 rounded-3xl border border-primary/20 bg-primary/5 self-center">
+            <div className="marketing-panel p-8 rounded-3xl self-center">
               <div className="space-y-4">
                 {[
-                  { label: "Role Alignment", value: "94%", w: "94%", color: "bg-primary" },
+                  { label: "Role criteria met", value: "Most", w: "84%", color: "bg-primary" },
                   {
                     label: "Communication Evidence",
                     value: "Strong",
@@ -757,7 +779,7 @@ export default function Employers() {
                     color: "bg-primary",
                   },
                   {
-                    label: "Recruiter Recommendation",
+                    label: "Lexy suggestion",
                     value: "Advance",
                     w: "85%",
                     color: "bg-primary",
@@ -777,13 +799,13 @@ export default function Employers() {
                   </div>
                 ))}
                 <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Recruiter Validation</span>
+                  <span className="text-xs text-muted-foreground">Decision</span>
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-600/10 text-emerald-600 border border-emerald-600/20">
-                    ✓ Recruiter Approved
+                    Recruiter to decide
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground/60 text-center pt-1">
-                  Every candidate measured the same way — clear, comparable signals
+                  Illustrative example. Every score links back to the answer behind it.
                 </p>
               </div>
             </div>
@@ -796,50 +818,23 @@ export default function Employers() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Evidence becomes <span className="gradient-text">intelligence.</span>
+              The employer journey, <span className="gradient-text">step by step.</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Instead of losing hiring knowledge after every interview, Lexy captures, validates,
-              and compounds it into hiring intelligence your organization owns.
+              From the job description to the offer, with your team in charge at each step.
             </p>
           </div>
 
-          <div className="relative lg:pb-16">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0">
-              {[
-                {
-                  step: "01",
-                  label: "Define Success",
-                  desc: "Create structured success criteria before hiring begins",
-                  color: "text-primary",
-                  bg: "bg-primary/10",
-                  border: "border-primary/20",
-                },
-                {
-                  step: "02",
-                  label: "Generate Evidence",
-                  desc: "Interview candidates and generate structured signals",
-                  color: "text-violet-600",
-                  bg: "bg-violet-600/10",
-                  border: "border-violet-600/20",
-                },
-                {
-                  step: "03",
-                  label: "Recruiter Validation",
-                  desc: "Human recruiters review, validate, and decide",
-                  color: "text-emerald-600",
-                  bg: "bg-emerald-600/10",
-                  border: "border-emerald-600/20",
-                },
-                {
-                  step: "04",
-                  label: "Build Hiring Intelligence",
-                  desc: "Every validated hiring decision becomes organizational knowledge",
-                  color: "text-amber-600",
-                  bg: "bg-amber-600/10",
-                  border: "border-amber-600/20",
-                },
-              ].map((item, i, arr) => (
+          <div className="relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4">
+              {howItWorks
+                .map((h, idx) => ({
+                  step: h.num,
+                  label: h.title,
+                  desc: h.desc,
+                  color: ["text-primary", "text-navy", "text-emerald-600"][idx % 3],
+                }))
+                .map((item, i, arr) => (
                 <div key={item.step} className="flex items-stretch">
                   <div className="flex-1 p-7 rounded-2xl border border-border bg-card card-hover">
                     <div
@@ -850,7 +845,7 @@ export default function Employers() {
                     <h3 className="font-semibold text-base mb-2">{item.label}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>
-                  {i < arr.length - 1 && (
+                  {i < arr.length - 1 && (i + 1) % 3 !== 0 && (
                     <div className="hidden lg:flex items-center px-2 text-muted-foreground/30">
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path
@@ -866,26 +861,6 @@ export default function Employers() {
                 </div>
               ))}
             </div>
-            <svg
-              className="hidden lg:block absolute left-0 right-0 bottom-0 w-full h-14 text-primary/40"
-              viewBox="0 0 1000 60"
-              preserveAspectRatio="none"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M878 0 C878 48, 122 48, 122 12"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeDasharray="6 6"
-              />
-              <path
-                d="M114 20 L122 6 L130 20"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
           </div>
           <div className="mt-10 flex items-center justify-center gap-3 text-muted-foreground">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-primary">
@@ -898,8 +873,8 @@ export default function Employers() {
               />
             </svg>
             <span className="text-sm font-medium">
-              Every validated decision feeds back into defining success —{" "}
-              <strong className="font-semibold text-foreground">a flywheel, not a pipeline.</strong>
+              Lexy does the legwork at each step —{" "}
+              <strong className="font-semibold text-foreground">people approve, decide and offer.</strong>
             </span>
           </div>
         </div>
@@ -916,7 +891,7 @@ export default function Employers() {
               </div>
               <ul className="divide-y divide-border/50">
                 {[
-                  { label: "Role Alignment", value: "94%" },
+                  { label: "Role criteria", value: "Mostly met" },
                   { label: "Communication", value: "Strong" },
                   { label: "Problem Solving", value: "High" },
                   { label: "Leadership", value: "Emerging" },
@@ -927,31 +902,30 @@ export default function Employers() {
                   </li>
                 ))}
                 <li className="flex items-center justify-between py-3">
-                  <span className="text-sm text-muted-foreground">Recruiter Validation</span>
+                  <span className="text-sm text-muted-foreground">Recruiter notes</span>
                   <span className="text-sm font-semibold text-emerald-600 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" /> Complete
+                    <CheckCircle className="w-4 h-4" /> Added
                   </span>
                 </li>
                 <li className="flex items-center justify-between py-3">
-                  <span className="text-sm text-muted-foreground">Recommendation</span>
+                  <span className="text-sm text-muted-foreground">Decision</span>
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-600/10 text-amber-600 border border-amber-600/20">
-                    Recruiter Review Awaiting
+                    Awaiting hiring manager
                   </span>
                 </li>
               </ul>
             </div>
             <div className="order-1 lg:order-2">
               <h2 className="text-3xl sm:text-4xl font-semibold mb-6">
-                Everything you need to make the right hiring decision —{" "}
-                <span className="gradient-text">in one place</span>
+                One place to review each candidate —{" "}
+                <span className="gradient-text">and decide together</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed mb-4">
-                Lexy gives every recruiter a complete view of candidate evidence, hiring risks, and
-                next-best actions—so every decision is faster, clearer, and backed by structured
-                signals.
+                Recruiters and hiring managers see the interview evidence, anything flagged for a
+                closer look, and Lexy's suggested next step with its reasons. Then they decide.
               </p>
               <p className="text-base font-semibold text-foreground/80">
-                No resume reviews. No guesswork. Just clear decisions.
+                Illustrative example. Your criteria and wording will differ.
               </p>
             </div>
           </div>
@@ -963,10 +937,27 @@ export default function Employers() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Traditional hiring is broken.
-              <br />
-              <span className="gradient-text">Here's what replaces it.</span>
+              Meet your <span className="gradient-text">AI hiring team.</span>
             </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Each specialist handles one part of the work. None of them makes a hiring decision.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-16">
+            {agents.map((a) => {
+              const Icon = a.icon;
+              return (
+                <div key={a.name} className="p-5 rounded-2xl border border-border bg-card card-hover">
+                  <div
+                    className={`w-10 h-10 rounded-xl ${a.bg} flex items-center justify-center mb-3`}
+                  >
+                    <Icon className={`w-5 h-5 ${a.color}`} />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1.5">{a.name}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{a.desc}</p>
+                </div>
+              );
+            })}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {differentiators.map((d) => {
@@ -989,59 +980,103 @@ export default function Employers() {
           </div>
           <div className="text-center mt-12 space-y-3">
             <p className="text-base font-semibold text-foreground/90">
-              Most hiring tools track the process.{" "}
-              <span className="gradient-text">Lexy drives the decision.</span>
+              Lexy does the legwork.{" "}
+              <span className="gradient-text">Your people make the decisions.</span>
             </p>
             <p className="text-sm font-medium text-primary tracking-wide">
-              Structured Evidence. Human Validation. Compounding Hiring Intelligence.
+              Reviewed outreach. Structured interviews. Human decisions. HR-owned offers.
             </p>
           </div>
         </div>
       </section>
 
+      {/* Integrations */}
+      <section id="integrations" className="py-24 px-6 border-t border-border/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
+              On its own, <span className="gradient-text">or with your ATS.</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Run your hiring workflow in Lexy, or discuss an ATS-connected setup.
+              Our initial focus is Zoho Recruit and Greenhouse, with different capabilities and
+              readiness for each. We review setup and acceptance requirements with your team
+              before activating a connected workflow.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {integrations.map((it) => (
+              <div key={it.name} className="p-8 rounded-2xl border border-border bg-card card-hover">
+                <h3 className="font-semibold text-lg mb-4">{it.name}</h3>
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-3">
+                  What the connection covers
+                </p>
+                <ul className="space-y-2.5 mb-6">
+                  {it.available.map((a) => (
+                    <li key={a} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                  Good to know
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{it.later}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
+            Using a different ATS? Lexy works on its own, and you can upload your applicants
+            directly. Tell us what you use when you request a trial.
+          </p>
+        </div>
+      </section>
+
+      <ProductCapabilities audience="employers" />
+
       {/* Candidate Experience */}
       <section className="py-24 px-6 border-t border-border/50">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-semibold mb-6">
-            The Best Candidates Don't Wait.
+            A better experience
             <br />
-            <span className="gradient-text">Your Process Shouldn't Either.</span>
+            <span className="gradient-text">for the people you interview.</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
-            Top candidates drop off when hiring is slow, unclear, or fragmented. Lexy fixes the
-            experience end-to-end — so you engage faster, reduce ghosting, and convert better
-            candidates.
+            Candidates notice when a process is clear and respectful. Lexy helps you keep in touch,
+            keep interviews consistent, and keep scheduling simple.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             {[
               {
                 Icon: Bot,
-                label: "Clear Candidate Signals — From Day One",
-                sub: "Profiles built from interviews, not resumes.",
+                label: "The same questions for everyone",
+                sub: "Each candidate gets a fair, structured interview.",
                 color: "text-primary",
                 bg: "bg-primary/10",
                 border: "border-primary/20",
               },
               {
                 Icon: MessageCircle,
-                label: "No More Candidate Drop-Off",
-                sub: "Fast, consistent communication at every step.",
-                color: "text-violet-600",
-                bg: "bg-violet-600/10",
-                border: "border-violet-600/20",
+                label: "Messages your team approved",
+                sub: "Invitations and follow-ups are reviewed before sending.",
+                color: "text-navy",
+                bg: "bg-navy/10",
+                border: "border-navy/20",
               },
               {
                 Icon: CalendarCheck,
-                label: "Faster Interviews. Zero Friction.",
-                sub: "Scheduling handled automatically — no back-and-forth.",
+                label: "Times that actually work",
+                sub: "Candidates pick from slots your team offered.",
                 color: "text-emerald-600",
                 bg: "bg-emerald-600/10",
                 border: "border-emerald-600/20",
               },
               {
                 Icon: Activity,
-                label: "Keep Candidates Engaged — Always",
-                sub: "Real-time updates so no one is left in the dark.",
+                label: "Clear next steps",
+                sub: "Candidates know where they stand in your process.",
                 color: "text-amber-600",
                 bg: "bg-amber-600/10",
                 border: "border-amber-600/20",
@@ -1062,8 +1097,8 @@ export default function Employers() {
             ))}
           </div>
           <p className="text-base font-semibold text-foreground/80 mt-10 max-w-2xl mx-auto">
-            The best candidates aren't rejecting your offer —<br />
-            <span className="gradient-text">they're dropping off before you get there.</span>
+            Employer interviews are separate from Lexy's candidate coaching.<br />
+            <span className="gradient-text">A candidate's private practice is never part of your assessment.</span>
           </p>
         </div>
       </section>
@@ -1071,29 +1106,39 @@ export default function Employers() {
       {/* CTA */}
       <section id="cta" className="py-24 px-6 border-t border-border/50">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="p-12 rounded-3xl border border-primary/20 bg-primary/5 glow-primary">
+          <div className="marketing-panel p-12 rounded-3xl">
             <Sparkles className="w-10 h-10 text-primary mx-auto mb-6" />
             <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-              Make Faster Hiring Decisions —<br />
-              <span className="gradient-text">With Real Candidate Signals</span>
+              Try your AI hiring team<br />
+              <span className="gradient-text">on one of your real roles</span>
             </h2>
             <p className="text-muted-foreground text-lg mb-4 max-w-xl mx-auto leading-relaxed">
-              Lexy replaces resume screening and manual workflows with real candidate evaluation —
-              so your team moves faster, hires better, and makes confident decisions.
+              Request a guided trial and we will review your request, then set up a workspace
+              around a role you are hiring for. Prefer a conversation first? Request a demo.
             </p>
             <p className="text-sm text-muted-foreground/60 mb-8">
-              Built for teams that want to move from screening to decision-making.
+              Trial requests are reviewed by our team. Plans and prices are on the pricing page.
             </p>
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href="/start-trial">
+                <button className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105">
+                  Request a Guided Trial
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </Link>
               <button
                 onClick={openDemo}
-                className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-105"
+                className="flex items-center gap-2 px-8 py-4 rounded-xl text-base font-medium border border-border hover:border-primary/40 transition-colors text-muted-foreground hover:text-foreground"
               >
-                Book a Demo
-                <ArrowRight className="w-5 h-5" />
+                Request a Demo
               </button>
-              <p className="text-xs text-muted-foreground/50">See it in action in 15 minutes.</p>
             </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Looking for your next role instead?{" "}
+              <Link href="/candidates" className="text-primary underline underline-offset-2">
+                See Lexy for candidates
+              </Link>
+            </p>
           </div>
         </div>
       </section>

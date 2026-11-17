@@ -1,5 +1,13 @@
 # Runbook: Production Database Migrations
 
+> **Current local setup clarification (2026-11-11):** See
+> [Local database migration order](local-database-migration-order.md).
+> This older runbook's automatic migrator/ledger description is aspirational;
+> `lib/db/package.json` does not implement a `migrate` command. Numbered files
+> also depend on supplemental SQL outside that directory. Do not run a wildcard
+> over SQL folders, replay all files over a dump, or use this document as an
+> empty-database bootstrap.
+
 **Owner:** Platform on-call · **Last reviewed:** 2026-05-17 · **Audience:** any
 engineer paged for a Lexy migration.
 

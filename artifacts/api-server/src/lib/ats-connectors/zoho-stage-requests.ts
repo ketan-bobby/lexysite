@@ -6,9 +6,12 @@ import { zohoStageValidation } from "./zoho-stage-validation";
 import { zohoCampaignReviews, assertZohoNoteSourceCurrent } from "./zoho-campaign-reviews";
 import { zohoInterviewNoteStore } from "./zoho-interview-note-store";
 import { zohoStageAuthority } from "./zoho-stage-authority";
+import { zohoStageConnection } from "./zoho-stage-connection";
 import { zohoStagePermission } from "./zoho-stage-permission";
 import { zohoStageRequestStore, type StageRequestRecord } from "./zoho-stage-request-store";
+import { stageResolutionInput, stageRequestClosed } from "./zoho-stage-resolution-policy";
 import {
+  stageWriteBindingSchema,
   type StageWriteSnapshot,
   type StageWriteActor,
   type StageWriteScope,
@@ -39,6 +42,8 @@ export function zohoStageRequests({
   ledger = zohoStageRequestStore(),
   authority = zohoInterviewNoteStore(),
   assertSourceCurrent = assertZohoNoteSourceCurrent,
+  recoveryConnections = zohoStageConnection({ mode: "read_only" }),
+  now = Date.now,
 } = {}) {
   const stageAuthority = zohoStageAuthority({ authority, assertCurrent: assertSourceCurrent });
   async function context(actor: StageWriteActor, scope: StageWriteScope) {
@@ -74,7 +79,8 @@ export function zohoStageRequests({
     updatedAt: row.updatedAt,
     stale: stale(row, c),
     // Local approval explicitly does not authorize a dispatch or waive provider rules.
-    canApprove: row.state === "prepared" && !stale(row, c) && c.h.ready,
+    canApprove:
+      row.purpose !== "execution" && row.state === "prepared" && !stale(row, c) && c.h.ready,
     canWithdraw: ["prepared", "approved"].includes(row.state),
     canRecover:
       [
@@ -86,7 +92,8 @@ export function zohoStageRequests({
       ].includes(row.state) &&
       row.snapshot.accountRef === c.c.accountRef &&
       row.snapshot.connectionRevision === c.permission.connectionRevision &&
-      row.snapshot.bindingHash === fingerprint(c.binding),
+      row.snapshot.bindingHash === fingerprint(c.binding) &&
+      !stageRequestClosed(row),
   });
   async function view(actor: StageWriteActor, scope: StageWriteScope) {
     const c = await context(actor, scope);
@@ -109,6 +116,12 @@ export function zohoStageRequests({
       reason:
         "Requests and approvals are saved locally. Live dispatch is unavailable until the employer's application-specific transition contract is verified. Approval never sends automatically.",
       requests: rows.map((r) => publicRow(r, c)),
+      resolutionSourceHash:
+        c.permission.connectionRevision &&
+        c.permission.custodyRevision &&
+        c.permission.configFingerprint
+          ? fingerprint(authorityContext(c))
+          : null,
     };
   }
   async function checkRemote(
@@ -129,29 +142,90 @@ export function zohoStageRequests({
       throw conflict();
     return m;
   }
+  function authorityContext(c: Awaited<ReturnType<typeof context>>) {
+    if (!c.permission.connectionRevision) throw conflict();
+    if (!c.permission.custodyRevision || !c.permission.configFingerprint) throw conflict();
+    return {
+      ...c.c,
+      sourceConnectionRevision: c.c.connectionRevision,
+      connectionRevision: c.permission.connectionRevision,
+      custodyRevision: c.permission.custodyRevision,
+      configFingerprint: c.permission.configFingerprint,
+      mappingRevision: c.h.mapping.revision,
+    };
+  }
   async function fenced<T>(
     actor: StageWriteActor,
     scope: StageWriteScope,
     c: Awaited<ReturnType<typeof context>>,
     work: Parameters<typeof authority.fence<T>>[2],
   ) {
-    if (!c.permission.connectionRevision) throw conflict();
-    if (!c.permission.custodyRevision || !c.permission.configFingerprint) throw conflict();
-    return stageAuthority.fence(
-      actor,
-      {
-        ...c.c,
-        sourceConnectionRevision: c.c.connectionRevision,
-        connectionRevision: c.permission.connectionRevision,
-        custodyRevision: c.permission.custodyRevision,
-        configFingerprint: c.permission.configFingerprint,
-        mappingRevision: c.h.mapping.revision,
-      },
-      work,
-    );
+    return stageAuthority.fence(actor, authorityContext(c), work);
   }
   const service = {
     view,
+    async resolve(
+      actor: StageWriteActor,
+      scope: StageWriteScope,
+      requestId: string,
+      raw: z.infer<typeof stageResolutionInput>,
+    ) {
+      const input = stageResolutionInput.parse(raw);
+      const c = await context(actor, scope);
+      const row = (await ledger.list(actor, scope)).find((r) => r.requestId === requestId);
+      const replay =
+        row?.resolution?.commandId === input.commandId ||
+        row?.resolution?.review?.commandId === input.commandId;
+      if (
+        !row ||
+        row.purpose !== "execution" ||
+        row.revision !== input.expectedRevision ||
+        c.h.revision !== input.expectedSourceRevision ||
+        row.snapshot.accountRef !== c.c.accountRef ||
+        row.snapshot.connectionRevision !== c.permission.connectionRevision ||
+        row.snapshot.bindingHash !== fingerprint(c.binding) ||
+        (!replay &&
+          (!publicRow(row, c).canRecover ||
+            !["observed_target", "observed_other"].includes(row.state) ||
+            row.sequence !== input.expectedSequence))
+      )
+        throw conflict();
+      // Same read-only custody and full source barrier as recovery. No execution
+      // switch, current transition proof or additional UPDATE consent is needed.
+      const authority = authorityContext(c);
+      const connection = await recoveryConnections.connect(actor, authority);
+      await connection.fence(async (tx) => {
+        const remote = await connection.provider.read(c.binding);
+        if (
+          fingerprint({
+            applicationId: remote.applicationId,
+            candidateId: remote.candidateId,
+            jobId: remote.jobId,
+          }) !== fingerprint(c.binding)
+        )
+          throw conflict();
+        await assertSourceCurrent(
+          actor,
+          scope.campaignId,
+          scope.recipientId,
+          c.c.sourceEvidenceHash,
+          c.c.latestReviewId,
+          tx,
+        );
+        await ledger.resolve(
+          actor,
+          scope,
+          requestId,
+          input,
+          {
+            status: remote.currentStatus,
+            sourceHash: fingerprint(authority),
+            at: now(),
+          },
+          tx,
+        );
+      });
+    },
     async prepare(
       actor: StageWriteActor,
       scope: StageWriteScope,
@@ -218,12 +292,35 @@ export function zohoStageRequests({
         const store = ledger.asWriterStore(binding, actor);
         const attempt = await store.get(actor, scope, requestId);
         if (!attempt) throw conflict();
-        await fenced(actor, scope, c, async () => {
-          // Read only after locking privacy, staff, source and account authority.
-          const remote = await checkRemote(actor, scope, c);
+        const connection = await recoveryConnections.connect(actor, authorityContext(c));
+        await connection.fence(async (tx) => {
+          // Exact application read under the adapter's authority fence, without
+          // re-entering metadata/context readers on additional pool connections.
+          const remote = z
+            .object({
+              ...stageWriteBindingSchema.shape,
+              currentStatus: z.string().min(1).max(100),
+            })
+            .parse(await connection.provider.read(binding));
+          if (
+            fingerprint({
+              applicationId: remote.applicationId,
+              candidateId: remote.candidateId,
+              jobId: remote.jobId,
+            }) !== fingerprint(binding)
+          )
+            throw conflict();
+          await assertSourceCurrent(
+            actor,
+            scope.campaignId,
+            scope.recipientId,
+            c.c.sourceEvidenceHash,
+            c.c.latestReviewId,
+            tx,
+          );
           return store.record(
             attempt,
-            remote.currentApplicationStatus === attempt.snapshot.targetStatus
+            remote.currentStatus === attempt.snapshot.targetStatus
               ? "observed_target"
               : "observed_other",
           );

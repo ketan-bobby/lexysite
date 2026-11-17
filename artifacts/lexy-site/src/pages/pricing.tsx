@@ -23,7 +23,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}
@@ -199,7 +199,7 @@ const PLAN_META: Record<
   starter: {
     icon: Zap,
     gradient: "from-black/[0.02] via-transparent to-transparent",
-    accent: "text-violet-600",
+    accent: "text-navy",
   },
   growth: {
     icon: TrendingUp,
@@ -251,7 +251,7 @@ const FAQS = [
   },
   {
     q: "Do you charge for candidates?",
-    a: "Never. Candidates use Lexy for free, forever. We only charge employers.",
+    a: "Employer subscriptions and candidate access are separate. See the candidate experience for career profiles, practice and available learning paths; confirm the access terms for any programme you join.",
   },
   {
     q: "Why don't you show prices?",
@@ -342,7 +342,7 @@ export default function Pricing() {
   usePageMeta({
     title: "Pricing",
     description:
-      "Simple, transparent pricing for the L3XY AI hiring platform. Start free — no implementation delays, live in minutes.",
+      "Plans and prices for Lexy, the AI hiring team for employers. Compare seats, interview limits, and what each plan includes.",
     path: "/pricing",
   });
   const [plans, setPlans] = useState<PlanPackage[]>(FALLBACK_PLANS);
@@ -392,8 +392,8 @@ export default function Pricing() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-6">
             One subscription unlocks the full platform. A small per-hire fee keeps us aligned with
-            the outcome you actually care about: hires that stick. Candidates use Lexy free,
-            forever.
+            the outcome you actually care about: hires that stick. Candidate career development
+            is a separate experience, with access terms explained for each programme.
           </p>
           <p className="text-sm text-muted-foreground/80 max-w-xl mx-auto">
             Pricing is tailored per region and team size — talk to sales for a quote.

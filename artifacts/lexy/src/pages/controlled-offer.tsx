@@ -50,7 +50,7 @@ function ControlledOfferResponse({ token }: { token: string }) {
       data-testid="controlled-offer-public"
     >
       <header data-testid="controlled-offer-brand" className="pb-4">
-        <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy" className="h-8 w-auto" />
+        <img src={`${import.meta.env.BASE_URL}lexy-logo.png`} alt="Lexy" className="lexy-brand-logo h-8 w-auto" />
       </header>
       {children}
     </main>

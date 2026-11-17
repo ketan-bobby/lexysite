@@ -61,7 +61,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const cls = size === "lg" ? "h-12" : size === "sm" ? "h-7" : "h-9";
   return (
     <img
-      src={`${import.meta.env.BASE_URL}lexy-ai-logo.png`}
+      src={`${import.meta.env.BASE_URL}lexy-ai-logo-navy-blue.png`}
       alt="L3xy AI"
       className={`${cls} w-auto object-contain select-none`}
       draggable={false}
@@ -72,7 +72,7 @@ function LexyLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 export default function Signup() {
   usePageMeta({
     title: "Sign Up",
-    description: "Create your L3XY AI account and start hiring with verified signals.",
+    description: "Create your Lexy employer account to run structured interviews and review candidate evidence with your team.",
     path: "/signup",
   });
   const [plan, setPlan] = useState<PlanCode>(() => readPlanFromUrl());

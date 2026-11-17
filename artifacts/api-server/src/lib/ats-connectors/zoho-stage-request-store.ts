@@ -14,6 +14,12 @@ import {
   type StageWriteStore,
 } from "./zoho-stage-write-core";
 import { fingerprint } from "../recruiting-workflows";
+import {
+  stageResolutionInput,
+  stageResolutionSchema,
+  stageRequestHeld,
+  stageRequestClosed,
+} from "./zoho-stage-resolution-policy";
 
 type Tx = Parameters<Parameters<typeof dbAdmin.transaction>[0]>[0];
 type Reader = Pick<typeof dbAdmin, "select">;
@@ -42,6 +48,7 @@ const persisted = stageWriteSnapshotSchema.omit({ binding: true, proof: true }).
 });
 const envelope = z.object({
   version: z.literal(1),
+  purpose: z.enum(["local", "execution"]).default("local"),
   campaignId: z.string(),
   requestId: z.uuid(),
   sequence: z.number().int().positive(),
@@ -50,11 +57,14 @@ const envelope = z.object({
   prepareRequestId: z.uuid(),
   executionRequestId: z.uuid().nullable(),
   snapshot: persisted,
+  resolution: stageResolutionSchema.nullable().default(null),
 });
 export type StageRequestRecord = z.infer<typeof envelope> & {
   createdAt: string;
   updatedAt: string;
   approvedBy: string | null;
+  resolutionCommands?: Record<string, string>;
+  preparedSequence?: number;
 };
 const conflict = () =>
   new CalendarError(
@@ -62,13 +72,6 @@ const conflict = () =>
     "zoho_stage_request_changed",
     "This request, interview decision or employer connection changed. Refresh and review again.",
   );
-const unresolved = new Set<StageRequestState>([
-  "claimed",
-  "provider_accepted",
-  "review_required",
-  "observed_target",
-  "observed_other",
-]);
 function pack(snapshot: StageWriteSnapshot) {
   const s = stageWriteSnapshotSchema.parse(snapshot);
   const { binding, proof, ...rest } = s;
@@ -86,7 +89,10 @@ function unpack(row: StageRequestRecord, binding: StageWriteBinding) {
     proof: proof ? { ...proof, ...binding } : null,
   });
 }
-export function zohoStageRequestStore(database = dbAdmin) {
+export function zohoStageRequestStore(
+  database = dbAdmin,
+  purpose: "local" | "execution" = "local",
+) {
   async function list(actor: StageWriteActor, scope: StageWriteScope, handle: Reader = database) {
     const rows = await handle
       .select()
@@ -121,11 +127,38 @@ export function zohoStageRequestStore(database = dbAdmin) {
         throw conflict();
       sequences.add(value.sequence);
       const prior = requests.get(value.requestId);
+      if (prior && prior.purpose !== value.purpose) throw conflict();
+      if (value.resolution?.review?.by === value.resolution?.proposedBy && value.resolution?.review)
+        throw conflict();
+      if (
+        prior &&
+        stageRequestClosed(prior) &&
+        (fingerprint(prior.resolution) !== fingerprint(value.resolution) ||
+          prior.state !== value.state ||
+          prior.revision !== value.revision ||
+          prior.executionRequestId !== value.executionRequestId ||
+          fingerprint(prior.snapshot) !== fingerprint(value.snapshot))
+      )
+        throw conflict();
       requests.set(value.requestId, {
         ...value,
         createdAt: prior?.createdAt ?? row.createdAt.toISOString(),
         updatedAt: row.createdAt.toISOString(),
         approvedBy: value.state === "approved" ? row.actorId : (prior?.approvedBy ?? null),
+        preparedSequence: prior?.preparedSequence ?? value.sequence,
+        resolutionCommands: {
+          ...prior?.resolutionCommands,
+          ...(value.resolution
+            ? {
+                [value.resolution.commandId]: value.resolution.commandHash,
+                ...(value.resolution.review
+                  ? {
+                      [value.resolution.review.commandId]: value.resolution.review.commandHash,
+                    }
+                  : {}),
+              }
+            : {}),
+        },
       });
     }
     return [...requests.values()].sort((a, b) => b.sequence - a.sequence);
@@ -149,7 +182,9 @@ export function zohoStageRequestStore(database = dbAdmin) {
     actor: StageWriteActor,
     scope: StageWriteScope,
     rows: StageRequestRecord[],
-    values: Omit<z.infer<typeof envelope>, "sequence">,
+    values: Omit<z.infer<typeof envelope>, "sequence" | "resolution"> & {
+      resolution?: z.infer<typeof stageResolutionSchema> | null;
+    },
   ) {
     const metadata = envelope.parse({
       ...values,
@@ -170,6 +205,22 @@ export function zohoStageRequestStore(database = dbAdmin) {
     });
     return (await list(actor, scope, tx)).find((r) => r.requestId === values.requestId)!;
   }
+  function afterClosure(
+    rows: StageRequestRecord[],
+    proof: StageWriteSnapshot["proof"] | StageRequestRecord["snapshot"]["proof"],
+    preparedSequence?: number,
+  ) {
+    const closed = rows.filter(stageRequestClosed);
+    if (!closed.length || purpose !== "execution") return;
+    const latest = Math.max(...closed.map((r) => r.sequence));
+    const at = Math.max(...closed.map((r) => r.resolution!.review!.at));
+    if (
+      !proof ||
+      proof.verifiedAt <= at ||
+      (preparedSequence !== undefined && preparedSequence <= latest)
+    )
+      throw conflict();
+  }
   return {
     list,
     async prepare(snapshot: StageWriteSnapshot, requestId: string, handle?: Tx) {
@@ -179,13 +230,17 @@ export function zohoStageRequestStore(database = dbAdmin) {
         s.actor,
         s.scope,
         async (tx, rows) => {
+          afterClosure(rows, s.proof);
           const revision = stageWriteRevision(s);
           const sameId = rows.find((r) => r.prepareRequestId === requestId);
-          if (sameId && sameId.revision !== revision) throw conflict();
+          if (sameId && (sameId.revision !== revision || sameId.purpose !== purpose))
+            throw conflict();
           if (sameId) return sameId;
-          const same = rows.find((r) => r.revision === revision && r.state !== "withdrawn");
+          const same = rows.find(
+            (r) => r.purpose === purpose && r.revision === revision && r.state !== "withdrawn",
+          );
           if (same) return same;
-          if (rows.some((r) => unresolved.has(r.state)))
+          if (rows.some(stageRequestHeld))
             throw new CalendarError(
               409,
               "zoho_stage_outcome_unresolved",
@@ -193,6 +248,7 @@ export function zohoStageRequestStore(database = dbAdmin) {
             );
           return append(tx, s.actor, s.scope, rows, {
             version: 1,
+            purpose,
             campaignId: s.scope.campaignId,
             requestId: randomUUID(),
             state: "prepared",
@@ -219,9 +275,101 @@ export function zohoStageRequestStore(database = dbAdmin) {
         async (tx, rows) => {
           const row = rows.find((r) => r.requestId === requestId);
           if (!row || row.revision !== revision) throw conflict();
+          if (state === "approved" && row.purpose !== purpose) throw conflict();
+          if (state === "approved") afterClosure(rows, row.snapshot.proof, row.preparedSequence);
           if (row.state === state) return row;
           if (!["prepared", "approved"].includes(row.state)) throw conflict();
           return append(tx, actor, scope, rows, { ...row, state });
+        },
+        handle,
+      );
+    },
+    async resolve(
+      actor: StageWriteActor,
+      scope: StageWriteScope,
+      requestId: string,
+      raw: z.infer<typeof stageResolutionInput>,
+      observation: { status: string; sourceHash: string; at: number },
+      handle: Tx,
+    ) {
+      const input = stageResolutionInput.parse(raw);
+      const commandHash = fingerprint({ actor, scope, requestId, input });
+      return locked(
+        actor,
+        scope,
+        async (tx, rows) => {
+          const row = rows.find((r) => r.requestId === requestId && r.purpose === "execution");
+          if (!row || row.revision !== input.expectedRevision) throw conflict();
+          const old = row.resolution;
+          const seen = row.resolutionCommands?.[input.commandId];
+          if (seen && seen !== commandHash) throw conflict();
+          const replay =
+            old?.commandId === input.commandId
+              ? old
+              : old?.review?.commandId === input.commandId
+                ? old.review
+                : null;
+          if (replay) {
+            if (replay.commandHash !== commandHash) throw conflict();
+            return row;
+          }
+          if (
+            row.sequence !== input.expectedSequence ||
+            stageRequestClosed(row) ||
+            !["observed_target", "observed_other"].includes(row.state) ||
+            !row.executionRequestId
+          )
+            throw conflict();
+          const expectedState =
+            observation.status === row.snapshot.targetStatus ? "observed_target" : "observed_other";
+          if (row.state !== expectedState) throw conflict();
+          if (input.action === "propose") {
+            return append(tx, actor, scope, rows, {
+              ...row,
+              resolution: stageResolutionSchema.parse({
+                commandId: input.commandId,
+                commandHash,
+                proposedBy: actor.id,
+                proposedAt: observation.at,
+                reason: input.reason,
+                evidenceReference: input.evidenceReference,
+                sourceHash: observation.sourceHash,
+                observedStatus: observation.status,
+                review: null,
+              }),
+            });
+          }
+          if (
+            !old ||
+            old.review ||
+            old.proposedBy === actor.id ||
+            old.sourceHash !== observation.sourceHash ||
+            old.observedStatus !== observation.status ||
+            observation.at < old.proposedAt ||
+            observation.at - old.proposedAt > 15 * 60_000 ||
+            old.evidenceReference.toLowerCase() === input.evidenceReference.toLowerCase()
+          )
+            throw conflict();
+          // Current proposer authority is part of review, not just historical attribution.
+          const proposer = await tx.execute(sql`SELECT id FROM users WHERE id=${old.proposedBy}
+          AND tenant_id=${actor.tenantId} AND role='tenant_admin' AND status='active'
+          AND account_erased_at IS NULL FOR SHARE`);
+          if (proposer.rows.length !== 1) throw conflict();
+          return append(tx, actor, scope, rows, {
+            ...row,
+            resolution: {
+              ...old,
+              review: {
+                commandId: input.commandId,
+                commandHash,
+                action: input.action,
+                by: actor.id,
+                at: observation.at,
+                reason: input.reason,
+                evidenceReference: input.evidenceReference,
+              },
+            },
+          });
         },
         handle,
       );
@@ -230,15 +378,28 @@ export function zohoStageRequestStore(database = dbAdmin) {
       return {
         claim: async (snapshot, input) =>
           locked(snapshot.actor, snapshot.scope, async (tx, rows) => {
-            const reused = rows.find((r) => r.executionRequestId === input.requestId);
-            if (reused && reused.revision !== input.expectedRevision) throw conflict();
-            const row = reused ?? rows.find((r) => r.revision === input.expectedRevision);
             if (
-              !row ||
-              stageWriteRevision(snapshot) !== row.revision ||
-              fingerprint(pack(snapshot)) !== fingerprint(row.snapshot)
+              recordingActor &&
+              (recordingActor.id !== snapshot.actor.id ||
+                recordingActor.tenantId !== snapshot.actor.tenantId)
             )
               throw conflict();
+            const reused = rows.find((r) => r.executionRequestId === input.requestId);
+            if (reused && reused.revision !== input.expectedRevision) throw conflict();
+            const row =
+              reused ??
+              rows.find((r) => r.revision === input.expectedRevision && r.purpose === purpose);
+            if (
+              !row ||
+              row.purpose !== purpose ||
+              stageWriteRevision(snapshot) !== row.revision ||
+              stageWriteRevision(unpack(row, binding)) !== row.revision
+            )
+              throw conflict();
+            afterClosure(rows, snapshot.proof, row.preparedSequence);
+            // Receipt events must name the real executor, never fall back to
+            // the immutable preparer when a different staff member executes.
+            if (!recordingActor && row.snapshot.actor.id !== snapshot.actor.id) throw conflict();
             if (row.state !== "approved") {
               if (!row.executionRequestId) throw conflict();
               return {
@@ -249,10 +410,11 @@ export function zohoStageRequestStore(database = dbAdmin) {
                   requestId: row.executionRequestId,
                   snapshot: unpack(row, binding),
                   state: row.state as StageWriteState,
+                  closed: stageRequestClosed(row),
                 },
               };
             }
-            if (rows.some((r) => r.requestId !== row.requestId && unresolved.has(r.state)))
+            if (rows.some((r) => r.requestId !== row.requestId && stageRequestHeld(r)))
               throw conflict();
             const claimed = await append(tx, snapshot.actor, snapshot.scope, rows, {
               ...row,
@@ -279,6 +441,7 @@ export function zohoStageRequestStore(database = dbAdmin) {
                 requestId: row.executionRequestId,
                 snapshot: unpack(row, binding),
                 state: row.state as StageWriteState,
+                closed: stageRequestClosed(row),
               }
             : null;
         },
@@ -289,7 +452,8 @@ export function zohoStageRequestStore(database = dbAdmin) {
             const row = rows.find((r) => r.requestId === attempt.id);
             if (!row || row.revision !== attempt.revision || !row.executionRequestId)
               throw conflict();
-            const terminal = ["verified", "not_sent"].includes(row.state);
+            const terminal =
+              ["verified", "not_sent"].includes(row.state) || stageRequestClosed(row);
             if (!terminal) {
               const allowed =
                 row.state === "claimed"
@@ -308,8 +472,16 @@ export function zohoStageRequestStore(database = dbAdmin) {
             const next =
               terminal || row.state === state
                 ? row
-                : await append(tx, actor, attempt.snapshot.scope, rows, { ...row, state });
-            return { ...attempt, state: next.state as StageWriteState };
+                : await append(tx, actor, attempt.snapshot.scope, rows, {
+                    ...row,
+                    state,
+                    resolution: null,
+                  });
+            return {
+              ...attempt,
+              state: next.state as StageWriteState,
+              closed: stageRequestClosed(next),
+            };
           });
         },
       };

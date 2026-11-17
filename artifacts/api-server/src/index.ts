@@ -1,4 +1,5 @@
 import { maintainAttendance } from "./lib/meeting-attendance-service";
+import { escalateStripeDormancy } from "./lib/stripe-sentinel-escalation";
 /**
  * index.ts — API Server Entry Point
  *
@@ -185,8 +186,8 @@ const isSchedulerLeader = (process.env.SCHEDULER_LEADER ?? "true").toLowerCase()
  * gate on secrets, so this sentinel is the guardrail: if the key is set       *
  * without the ack, log an ERROR at startup + hourly AND — because stdout      *
  * scrolls away unmonitored — escalate to channels a human actually sees:      *
- * in-app bell notifications + email to every platform_admin, at boot and      *
- * then daily (best-effort, never blocks startup).                             */
+ * in-app bell notifications at boot and daily. External email is production  *
+ * only; development retains the warning without contacting real staff.      */
 function stripeDormancySentinel() {
   if (!process.env.STRIPE_SECRET_KEY) return;
   if ((process.env.STRIPE_ENABLE_ACK ?? "").toLowerCase() === "true") {
@@ -201,19 +202,19 @@ function stripeDormancySentinel() {
   alarm();
   setInterval(alarm, 60 * 60 * 1000);
 
-  // Human-facing escalation: in-app + email to platform_admins, daily.
+  // Human-facing escalation: in-app everywhere, external mail only in production.
   const escalate = async () => {
     try {
       const { controlDb: db, usersTable, userNotificationsTable } = await import("@workspace/db");
       const { eq } = await import("drizzle-orm");
-      const { sendEmail, plainToHtml } = await import("./lib/email");
-      const { isPublicNotificationAddress } = await import("./lib/notification-address");
       const admins = await db
         .select({ id: usersTable.id, email: usersTable.email, tenantId: usersTable.tenantId })
         .from(usersTable)
         .where(eq(usersTable.role, "platform_admin"));
-      for (const admin of admins) {
-        await db
+      const result = await escalateStripeDormancy({
+        admins,
+        environment: process.env.NODE_ENV,
+        notify: (admin) => db
           .insert(userNotificationsTable)
           .values({
             tenantId: admin.tenantId,
@@ -222,33 +223,34 @@ function stripeDormancySentinel() {
             title: "ALERT: Unacknowledged STRIPE_SECRET_KEY detected",
             message,
             actionUrl: "/platform/subscriptions",
-          })
-          .catch(() => {});
-        if (!admin.email) continue;
-        if (!isPublicNotificationAddress(admin.email)) {
+          }),
+        suppressed: (admin, reason) => {
           logger.warn(
-            { userId: admin.id },
-            "[stripe-sentinel] non-public notification address: retained in-app warning, skipped external email",
+            { userId: admin.id, reason },
+            "[stripe-sentinel] retained in-app warning, skipped external email",
           );
-          continue;
-        }
-        const text = `${message}\n\n— L3xy Platform Sentinel`;
-        await sendEmail({
-          to: admin.email,
-          subject: "L3xy ALERT: unacknowledged Stripe key on deployment",
-          text,
-          html: plainToHtml(text),
-          audit: {
-            tenantId: admin.tenantId,
-            actorLabel: "Stripe Dormancy Sentinel",
-            subjectType: "external",
-            subjectLabel: admin.email,
-            action: "stripe.sentinel.alerted",
-            metadata: {},
-          },
-        }).catch(() => {});
-      }
-      logger.warn({ admins: admins.length }, "[stripe-sentinel] escalated to platform_admins (in-app + email)");
+        },
+        send: async (email, admin) => {
+          // Do not even initialize the email provider for suppressed recipients.
+          const { sendEmail, plainToHtml } = await import("./lib/email");
+          const text = `${message}\n\n— L3xy Platform Sentinel`;
+          return sendEmail({
+            to: email,
+            subject: "L3xy ALERT: unacknowledged Stripe key on deployment",
+            text,
+            html: plainToHtml(text),
+            audit: {
+              tenantId: admin.tenantId,
+              actorLabel: "Stripe Dormancy Sentinel",
+              subjectType: "external",
+              subjectLabel: email,
+              action: "stripe.sentinel.alerted",
+              metadata: {},
+            },
+          });
+        },
+      });
+      logger.warn(result, "[stripe-sentinel] internal warnings attempted; external email attempts follow environment policy");
     } catch (err) {
       logger.error({ err }, "[stripe-sentinel] escalation failed — hourly log remains the fallback");
     }

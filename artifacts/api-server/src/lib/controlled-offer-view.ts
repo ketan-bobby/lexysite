@@ -21,7 +21,13 @@ export function offerView(record: ControlledOfferRecord) {
 export function safeOfferSteps(steps: WorkflowStep[], canViewOffers = true) {
   return steps.map((step) => {
     // ATS identifiers/reviewed snapshots are served only by the dedicated owner-gated API.
-    const { atsHandoff: _ats, atsHandoffHistory: _atsHistory, ...publicStep } = step;
+    const {
+      atsHandoff: _ats,
+      atsHandoffHistory: _atsHistory,
+      greenhouseOfferProposal: _greenhouseProposal,
+      greenhouseOfferProposalHistory: _greenhouseProposalHistory,
+      ...publicStep
+    } = step;
     if (!canViewOffers) {
       const { controlledOffer: _offer, controlledOfferHistory: _history, ...rest } = publicStep;
       return rest;

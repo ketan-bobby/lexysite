@@ -65,6 +65,92 @@ try {
   } finally {
     await g.close();
   }
+  const hr = await harness.open();
+  try {
+    const mapping = {
+      system: "Greenhouse",
+      accountRef: "synthetic-account",
+      externalJobId: "101",
+      externalCandidateId: "202",
+      externalApplicationId: "303",
+      mappedBy: "owner",
+      mappedAt: "2026-01-01T00:00:00Z",
+    };
+    const state = {
+      connectionState: "not_connected",
+      workflowRevision: 1,
+      canManage: true,
+      ready: true,
+      stale: false,
+      mapping,
+      packet: {
+        id: "fixture-packet",
+        snapshotHash: "a".repeat(64),
+        approvedBy: "approver",
+        approvedAt: "2026-01-01T00:00:00Z",
+        exportedBy: "owner",
+        exportedAt: "2026-01-02T00:00:00Z",
+        content: {
+          offerOwner: "external_employer",
+          mapping,
+          decision: { outcome: "hire", testOnly: true, reason: "private reasoning" },
+        },
+      },
+    };
+    const reference = tid("greenhouse-hr-reference");
+    await hr.page.evaluate((s) => window.fixture.setGreenhouse(s), state);
+    await hr.page.waitForSelector(reference);
+    const text = await hr.page.$eval(reference, (e) => e.value);
+    assert.match(text, /application ID: 303/);
+    assert.doesNotMatch(text, /private reasoning|synthetic-account/);
+    await hr.page.evaluate(() =>
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async () => {
+            throw new Error("fixture clipboard denied");
+          },
+        },
+      }),
+    );
+    await hr.page.click(tid("greenhouse-hr-copy"));
+    await hr.page.waitForFunction(() =>
+      document.body.innerText.includes("Select and copy the reference text above"),
+    );
+    await hr.page.evaluate(() => window.fixture.setAuthority(false));
+    await hr.page.waitForFunction(
+      () => !document.querySelector('[data-testid="greenhouse-hr-reference"]'),
+    );
+    assert(!(await hr.page.content()).includes("Clipboard unavailable"));
+    await hr.page.evaluate(() => window.fixture.setAuthority(true));
+    await hr.page.waitForSelector(reference);
+    await hr.page.evaluate(() =>
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (value) => {
+            window.copiedHrReference = value;
+          },
+        },
+      }),
+    );
+    await hr.page.click(tid("greenhouse-hr-copy"));
+    await hr.page.waitForFunction(() =>
+      document.body.innerText.includes("Copied locally. Nothing was sent to Greenhouse."),
+    );
+    assert.equal(await hr.page.evaluate(() => window.copiedHrReference), text);
+    await hr.page.evaluate((s) => window.fixture.setGreenhouse({ ...s, stale: true }), state);
+    await hr.page.waitForFunction(
+      () => !document.querySelector('[data-testid="greenhouse-hr-reference"]'),
+    );
+    assert(!(await hr.page.content()).includes("Copied locally"));
+    await hr.check();
+    console.log(
+      "PASS Greenhouse HR guide: approved/exported snapshot only, minimal disclosure, clipboard fallback and authority/staleness removal; no provider write",
+    );
+  } finally {
+    await hr.close();
+  }
 } finally {
   await harness.close();
 }

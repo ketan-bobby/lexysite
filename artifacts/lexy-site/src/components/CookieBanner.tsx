@@ -40,7 +40,7 @@ export default function CookieBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[200] p-4 md:p-6">
-      <div className="max-w-5xl mx-auto bg-card border border-border rounded-2xl shadow-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+      <div className="max-w-5xl mx-auto bg-card border border-border border-l-4 border-l-primary rounded-2xl shadow-2xl shadow-[hsl(var(--navy)/0.25)] p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
             <Cookie className="w-4 h-4" />
@@ -78,7 +78,7 @@ export default function CookieBanner() {
           </button>
           <button
             onClick={accept}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] transition-colors"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             Accept All

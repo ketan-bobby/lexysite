@@ -26,6 +26,21 @@ export type WorkflowStep = {
   offerRoutingHistory?: OfferRoutingConfiguration[];
   atsHandoff?: AtsHandoffRecord;
   atsHandoffHistory?: AtsHandoffRecord[];
+  /** Private financial proposal; never serialize through generic workflow views. */
+  greenhouseOfferProposal?: {
+    version: number;
+    contextHash: string;
+    openingId: string | null;
+    startDate: string | null;
+    approverId: string;
+    submitterId: string;
+    values: Record<string, string | number | { amountMinor: number; currency: string }>;
+    savedBy: string;
+    savedAt: string;
+    saveRequestId: string;
+    saveRequestHash: string;
+  };
+  greenhouseOfferProposalHistory?: NonNullable<WorkflowStep["greenhouseOfferProposal"]>[];
   atsStageOwnership?: AtsStageOwnership;
   atsStageOwnershipHistory?: AtsStageOwnership[];
   /** Future native-offer actions opt in; never backfill historical hiring data. */

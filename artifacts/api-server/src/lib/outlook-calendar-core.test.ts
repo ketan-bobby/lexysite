@@ -69,10 +69,18 @@ test("Graph pagination can only target the same /me Graph resource", () => {
     "https://graph.microsoft.com/v1.0/users/other/events",
     "https://u:p@graph.microsoft.com/v1.0/me/events",
     "/me/../users/other",
+    "/me",
+    "/me?$select=displayName,mail",
+    "/me?$select=id&$expand=manager",
+    "/me?$select=id&$select=mail",
+    "/me?$select=id#fragment",
+    "https://evil.invalid/v1.0/me?$select=id",
+    "https://graph.microsoft.com/v1.0/users/other?$select=id",
   ]) {
     assert.throws(() => safeGraphPath(path));
   }
   assert.equal(safeGraphPath("/me/events"), "https://graph.microsoft.com/v1.0/me/events");
+  assert.equal(safeGraphPath("/me?$select=id"), "https://graph.microsoft.com/v1.0/me?$select=id");
 });
 test("availability consumes every page, including a conflict on the second page", async () => {
   let calls = 0;

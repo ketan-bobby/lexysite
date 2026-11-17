@@ -35,6 +35,7 @@
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
 
+  --color-navy: hsl(var(--navy));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
 
@@ -46,25 +47,30 @@
 }
 
 :root {
-  --background: 210 25% 98%;
-  --foreground: 223 60% 12%;
-  --border: 220 15% 90%;
+  /* Deep navy + electric blue identity */
+  --navy: 224 64% 16%;
+  --navy-deep: 226 70% 10%;
+  --primary-hover: 220 100% 42%;
+  --surface-sunken: 0 0% 95%;
+  --background: 0 0% 98%;
+  --foreground: 225 62% 11%;
+  --border: 220 28% 86%;
   --card: 0 0% 100%;
-  --card-foreground: 223 60% 12%;
+  --card-foreground: 225 62% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 223 60% 12%;
-  --primary: 210 100% 45%;
+  --popover-foreground: 225 62% 11%;
+  --primary: 220 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 15% 94%;
-  --secondary-foreground: 223 60% 18%;
-  --muted: 220 15% 94%;
-  --muted-foreground: 220 15% 45%;
-  --accent: 208 100% 94%;
-  --accent-foreground: 210 100% 40%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
-  --input: 220 15% 90%;
-  --ring: 210 100% 45%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 224 64% 16%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 222 22% 34%;
+  --accent: 0 0% 95%;
+  --accent-foreground: 220 100% 40%;
+  --destructive: 0 74% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 220 28% 84%;
+  --ring: 220 100% 50%;
   --radius: 0.75rem;
   --app-font-sans: "Geist", sans-serif;
 }
@@ -79,28 +85,86 @@
   }
 }
 
-/* Glow utilities */
+/* Solid electric-blue lift for primary CTAs (no glow haze) */
 .glow-primary {
-  box-shadow: 0 8px 30px rgba(0, 113, 227, 0.25);
+  box-shadow: 0 1px 0 hsl(var(--navy) / 0.4), 0 10px 24px -8px hsl(var(--primary) / 0.55);
 }
 .text-glow {
-  text-shadow: 0 0 30px rgba(48, 160, 232, 0.2);
+  text-shadow: none;
 }
 
-/* Gradient text */
+/* Former gradient text: now a decisive solid electric blue */
 .gradient-text {
-  background: linear-gradient(135deg, hsl(210 100% 45%), hsl(202 85% 58%));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: hsl(var(--primary));
 }
 
-/* Mesh gradient background */
+/* Page canvas: clean cool light surface with a navy hero band at top */
 .mesh-bg {
-  background:
-    radial-gradient(ellipse 70% 50% at 20% 10%, rgba(8, 80, 144, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(48, 160, 232, 0.05) 0%, transparent 50%),
-    hsl(var(--background));
+  background: hsl(var(--background));
+  border-top: 4px solid hsl(var(--primary));
+}
+
+/* Dark opening surfaces make the navy identity visible immediately.
+   Action blue stays darker for white button-label contrast; text blue
+   is separately lightened for contrast against the navy canvas. */
+.hero-navy {
+  --foreground: 0 0% 100%;
+  --muted-foreground: 218 32% 80%;
+  --border: 220 30% 46%;
+  background: hsl(var(--navy-deep));
+  color: hsl(var(--foreground));
+  border-bottom: 4px solid hsl(var(--primary));
+}
+.hero-navy .gradient-text,
+.hero-navy .text-primary,
+.hero-navy .text-navy {
+  color: #70a5ff;
+}
+.hero-navy button:not(.bg-primary):hover {
+  background: hsl(220 100% 65% / 0.12);
+  color: white;
+}
+.hero-navy :is(a, button):focus-visible {
+  outline-color: white;
+}
+
+/* Navy band surface for high-emphasis sections */
+.marketing-panel {
+  background: #fff;
+  border: 1px solid #cad0d9;
+  border-top: 4px solid hsl(var(--primary));
+  box-shadow: 0 6px 18px hsl(var(--navy-deep) / 0.06);
+}
+
+.section-navy {
+  background: hsl(var(--navy));
+  color: hsl(0 0% 100%);
+  background-image: linear-gradient(90deg, hsl(var(--primary)) 0, hsl(var(--primary)) 100%);
+  background-size: 100% 4px;
+  background-repeat: no-repeat;
+  background-color: hsl(var(--navy));
+}
+.focus-ring-navy:focus-visible {
+  outline: 2px solid hsl(0 0% 100%);
+  outline-offset: 3px;
+}
+
+/* Crisp, unmistakable focus states site-wide */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+button.bg-primary:hover,
+a.bg-primary:hover {
+  background-color: hsl(var(--primary-hover));
+}
+::selection {
+  background: hsl(var(--primary));
+  color: hsl(0 0% 100%);
 }
 
 /* Card hover effect */
@@ -111,8 +175,8 @@
     transform 0.2s;
 }
 .card-hover:hover {
-  border-color: rgba(0, 113, 227, 0.35);
-  box-shadow: 0 8px 25px rgba(0, 113, 227, 0.1);
+  border-color: rgba(0, 85, 255, 0.35);
+  box-shadow: 0 8px 25px rgba(0, 85, 255, 0.1);
   transform: translateY(-2px);
 }
 
@@ -218,10 +282,10 @@
 
 /* Featured capability card */
 .featured-card {
-  border-color: rgba(0, 113, 227, 0.35);
+  border-color: rgba(0, 85, 255, 0.35);
   box-shadow:
-    0 0 0 1px rgba(0, 113, 227, 0.15),
-    0 8px 30px rgba(0, 113, 227, 0.12);
+    0 0 0 1px rgba(0, 85, 255, 0.15),
+    0 8px 30px rgba(0, 85, 255, 0.12);
 }
 
 /* Typewriter caret (philosophy headings) */
@@ -240,4 +304,12 @@
 }
 .animate-caret-blink {
   animation: caret-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
