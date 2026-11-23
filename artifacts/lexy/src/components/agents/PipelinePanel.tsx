@@ -490,6 +490,7 @@ function CandidateCard({
   /* Canonical candidate id for the "Send Packet" deep-link to the profile page. */
   const hmCandidateId: string | null = c?.id || row.normalizedCandidateId || null;
   const [detailOpen, setDetailOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [emailEditOpen, setEmailEditOpen] = useState(false);
   const [emailValue, setEmailValue] = useState("");
@@ -1057,7 +1058,7 @@ function CandidateCard({
                card face stays airy: interview report, copy link, log reply,
                schedule, send packet, decline offer, external profiles,
                move-to-stage (no automation), and reject. ─────────────────── */}
-            <DropdownMenu>
+            <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button
                   size="icon"
@@ -1475,7 +1476,7 @@ function CandidateCard({
           {/* ── Footer: entry provenance + relative time · single primary action.
              Every secondary action lives in the ··· overflow menu above. ──── */}
           <div
-            className="flex items-center justify-between gap-2 pt-3 border-t border-border/40"
+            className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border/40"
             onClick={(e) => e.stopPropagation()}
           >
             <span className="text-xs text-muted-foreground truncate">
@@ -1496,6 +1497,20 @@ function CandidateCard({
             <div className="flex items-center gap-1 shrink-0">
               {(() => {
                 const s = row.stage;
+                /* Sourced rows have no automatic next-step handler here. Keep
+                 * manual placement visible instead of leaving an empty footer.
+                 * The existing menu explains that it triggers no agents/email;
+                 * selecting a destination still uses the server-gated mutation. */
+                if (s === "sourced" && row.sourcedId)
+                  return (
+                    <PrimaryLink
+                      label="Move to stage"
+                      icon={ArrowRight}
+                      disabled={moveWithoutAutomationMutation.isPending}
+                      title="Choose a stage — no emails or agents are triggered"
+                      onClick={() => setActionsOpen(true)}
+                    />
+                  );
                 /* Gated card: a missing contact email blocks the verification →
                  outreach step. Rather than a dead disabled link, the footer
                  action opens the inline Add-email flow directly. */

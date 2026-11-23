@@ -41,6 +41,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { QuickSearch } from "@/components/layout/QuickSearch";
 import { HelpBot } from "@/components/layout/HelpBot";
 import { apiBase, authHeaders } from "@/lib/api";
+import { canReadAgentStatus } from "@/lib/shell-permissions";
 
 /* ─── Internal authenticated fetch (returns JSON, throws on non-OK) ─────── */
 
@@ -392,7 +393,7 @@ function FloatingHelpButton({ phoneSlot = null }: { phoneSlot?: HTMLElement | nu
 /* ─── Main export ─────────────────────────────────────────────────────────── */
 
 export function AppLayout({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const [location, navigate] = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(
@@ -445,17 +446,20 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
     ? Math.max(0, notificationCount!.count) : 0;
 
   /* Poll the AI agent status every 10 seconds to update the status pill. */
-  const { data: agentData } = useQuery<any>({
-    queryKey: ["agent-status-pill"],
+  const canLoadAgentStatus = !isLoading && !!user && canReadAgentStatus(user.role);
+  const { data: agentData, isError: agentStatusError } = useQuery<any>({
+    queryKey: ["agent-status-pill", user?.id, user?.tenantId, user?.role],
     queryFn: () => layoutApiFetch("/agents"),
+    enabled: canLoadAgentStatus,
+    retry: false,
     refetchInterval: 10_000,
     staleTime: 5_000,
   });
-  const agents: any[] = agentData?.agents ?? [];
+  const agents: any[] = canLoadAgentStatus && !agentStatusError ? agentData?.agents ?? [] : [];
   const runningCount = agents.filter(a => a.status === "running").length;
 
   /* Pill label + colour: cyan when agents are active, green when idle. */
-  const agentPillLabel = runningCount > 0
+  const agentPillLabel = agentStatusError ? "AI status unavailable" : !agentData ? "Checking AI status" : runningCount > 0
     ? `${pluralize(runningCount, "Agent")} Running`
     : "AI Ready";
   const agentPillClass = runningCount > 0
@@ -970,6 +974,7 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
             <div ref={setHelpSlot} className="flex md:hidden" />
 
             {/* AI agent status pill — updates every 10s */}
+            {canLoadAgentStatus && (
             <div className={cn(
               "hidden md:flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-medium transition-colors",
               agentPillClass,
@@ -977,6 +982,7 @@ export function AppLayout({ children, style }: { children: React.ReactNode; styl
               <Zap className={cn("w-3.5 h-3.5", runningCount > 0 && "animate-pulse")} />
               <span>{agentPillLabel}</span>
             </div>
+            )}
 
             <ThemeToggle />
 

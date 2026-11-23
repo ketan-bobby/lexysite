@@ -8,6 +8,8 @@ servers:
     description: Base API path
 
 tags:
+  - name: qor-partner
+    description: Employer-scoped QOR intake and polling.
   - name: health
     description: Health operations
   - name: auth
@@ -48,6 +50,121 @@ tags:
     description: Analytics
 
 paths:
+  /partner/v1/interview-requests:
+    post:
+      tags: [qor-partner]
+      operationId: submitQorInterviewRequest
+      summary: Submit one employer-approved brief and one selected candidate
+      description: Records intake only. Does not send mail, create an interview or bypass L3XY review. The credential determines the employer.
+      security:
+        - qorBearer: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QorInterviewRequestInput" }
+            example:
+              externalApplicationId: qor-app-042
+              job:
+                externalId: qor-job-017
+                title: Customer Support Lead
+                brief: Lead a support team and improve escalation handling.
+                revision: "3"
+                approvalRef: qor-job-approval-009
+              candidate:
+                externalId: qor-candidate-042
+                firstName: Taylor
+                lastName: Example
+                email: taylor@example.invalid
+              selectionRef: qor-selection-021
+      responses:
+        "201":
+          description: Request recorded. The Location header points to the polling endpoint.
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QorInterviewReceipt" }
+              example: { requestId: "12345678-0000-4000-8000-000000000042", externalApplicationId: qor-app-042, replayed: false }
+        "200":
+          description: Same normalized submission already recorded; same request ID.
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QorInterviewReceipt" }
+              example: { requestId: "12345678-0000-4000-8000-000000000042", externalApplicationId: qor-app-042, replayed: true }
+        "400": { description: Invalid body or missing/invalid Idempotency-Key, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "401": { description: "Missing, invalid, expired or revoked credential", content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "403": { description: Credential lacks interviews:create or employer is suspended, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "404": { description: Request or candidate is unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "409":
+          description: Key or external application reused with a conflicting submission
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QorApiError" }
+              example: { code: request_conflict, error: The key or application already has a different submission. }
+        "503": { description: Partner service unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+  /partner/v1/interview-requests/{requestId}:
+    get:
+      tags: [qor-partner]
+      operationId: getQorInterviewRequest
+      summary: Poll invitation, interview and approved evidence independently
+      description: No webhooks. The report is null unless the current session-specific evidence revision has a separate QOR approval. Responses are not cacheable.
+      security:
+        - qorBearer: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current scoped status and, if approved for QOR, the reviewed report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QorInterviewStatus" }
+              examples:
+                recorded:
+                  value:
+                    requestId: "12345678-0000-4000-8000-000000000042"
+                    externalApplicationId: qor-app-042
+                    invitation: { status: not_sent, reportedAt: null }
+                    interview: { status: awaiting_review, completedAt: null }
+                    reportStatus: not_ready
+                    report: null
+                awaitingReportReview:
+                  value:
+                    requestId: "12345678-0000-4000-8000-000000000042"
+                    externalApplicationId: qor-app-042
+                    invitation: { status: staff_reported_sent, reportedAt: "2026-11-22T14:30:00Z" }
+                    interview: { status: completed, completedAt: "2026-11-22T15:24:00Z" }
+                    reportStatus: awaiting_review
+                    report: null
+                approved:
+                  value:
+                    requestId: "12345678-0000-4000-8000-000000000042"
+                    externalApplicationId: qor-app-042
+                    invitation: { status: staff_reported_sent, reportedAt: "2026-11-22T14:30:00Z" }
+                    interview: { status: completed, completedAt: "2026-11-22T15:24:00Z" }
+                    reportStatus: approved
+                    report:
+                      version: 1
+                      approvedAt: "2026-11-22T16:10:00Z"
+                      summary: The candidate described a structured escalation process.
+                      competencies:
+                        - { name: Escalation handling, evidence: Described severity triage and an owner for each escalation. }
+                      limitations: [No evidence was collected on workforce planning.]
+        "401": { description: "Missing, invalid, expired or revoked credential", content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "403": { description: Credential lacks interviews:read or employer is suspended, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "404": { description: "Unknown, invalid, other-employer or unavailable request", content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+        "503": { description: Partner service unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/QorApiError" } } } }
+
   /zoho-recruit/account:
     get:
       operationId: getZohoRecruitAccount
@@ -5640,7 +5757,94 @@ paths:
         "403":
           description: Platform administrator required
 components:
+  securitySchemes:
+    qorBearer:
+      type: http
+      scheme: bearer
+      description: Revocable opaque QOR credential, provisioned per employer and environment; not a staff session token.
   schemas:
+    QorInterviewRequestInput:
+      type: object
+      additionalProperties: false
+      required: [externalApplicationId, job, candidate, selectionRef]
+      properties:
+        externalApplicationId: { type: string, minLength: 1, maxLength: 128 }
+        selectionRef: { type: string, minLength: 1, maxLength: 128 }
+        job:
+          type: object
+          additionalProperties: false
+          required: [externalId, title, brief, revision, approvalRef]
+          properties:
+            externalId: { type: string, minLength: 1, maxLength: 128 }
+            title: { type: string, minLength: 1, maxLength: 200 }
+            brief: { type: string, minLength: 1, maxLength: 12000 }
+            revision: { type: string, minLength: 1, maxLength: 128 }
+            approvalRef: { type: string, minLength: 1, maxLength: 128 }
+        candidate:
+          type: object
+          additionalProperties: false
+          required: [externalId, firstName, lastName, email]
+          properties:
+            externalId: { type: string, minLength: 1, maxLength: 128 }
+            firstName: { type: string, minLength: 1, maxLength: 100 }
+            lastName: { type: string, minLength: 1, maxLength: 100 }
+            email: { type: string, format: email, maxLength: 254 }
+    QorInterviewReceipt:
+      type: object
+      required: [requestId, externalApplicationId, replayed]
+      properties:
+        requestId: { type: string, format: uuid }
+        externalApplicationId: { type: string }
+        replayed: { type: boolean }
+    QorInterviewStatus:
+      type: object
+      required: [requestId, externalApplicationId, invitation, interview, reportStatus, report]
+      properties:
+        requestId: { type: string, format: uuid }
+        externalApplicationId: { type: string }
+        invitation:
+          type: object
+          required: [status, reportedAt]
+          properties:
+            status: { type: string, enum: [not_sent, ready_to_share, staff_reported_sent] }
+            reportedAt: { type: ["string", "null"], format: date-time }
+        interview:
+          type: object
+          required: [status, completedAt]
+          properties:
+            status: { type: string, enum: [awaiting_review, prepared, in_progress, completed, expired, abandoned, needs_attention] }
+            completedAt: { type: ["string", "null"], format: date-time }
+        reportStatus: { type: string, enum: [not_ready, processing, awaiting_review, approved, withdrawn, needs_attention] }
+        report:
+          anyOf:
+            - $ref: "#/components/schemas/QorApprovedEvidence"
+            - type: "null"
+    QorApprovedEvidence:
+      type: object
+      additionalProperties: false
+      required: [version, approvedAt, summary, competencies, limitations]
+      properties:
+        version: { type: integer, minimum: 1 }
+        approvedAt: { type: string, format: date-time }
+        summary: { type: string }
+        competencies:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, evidence]
+            properties:
+              name: { type: string }
+              evidence: { type: string }
+        limitations:
+          type: array
+          items: { type: string }
+    QorApiError:
+      type: object
+      required: [code, error]
+      properties:
+        code: { type: string }
+        error: { type: string }
     MailHold:
       type: object
       required: [operationId, tenantId, candidateId, kind, reservedAt, version, lastReview, lastReviewedAt]

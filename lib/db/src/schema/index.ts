@@ -95,6 +95,7 @@ export * from "./job-recruiters";
 export * from "./recruiter-mail-accounts";
 export * from "./agent-runs";
 export * from "./evaluations";
+export * from "./qor-interview-requests";
 export * from "./recruiting-workflows";
 export * from "./sourcing-controls";
 export * from "./sourcing-metering";

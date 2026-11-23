@@ -28,9 +28,10 @@ import { pluralize } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { apiBase, apiFetch as authenticatedFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { saveScheduleDraft, type ScheduleSaveState } from "@/lib/schedule-save";
 import type { ScheduleCreateResult } from "@workspace/api-client-react";
-import { readNativeSchedules, readUpdatedSchedule, requireScheduleVersion, type ScheduleEditRecord } from "@/lib/schedule-edit";
+import { readCoordinatorSchedules, readUpdatedSchedule, requireScheduleVersion, type ScheduleEditRecord, type CoordinatorScheduleOverview } from "@/lib/schedule-edit";
 import { canReschedule } from "@/lib/schedule-reschedule";
 import { hasScheduleApplication, parseScheduleApplications } from "@/lib/schedule-applications";
 import { OfferedTimesDialog } from "@/components/scheduling/OfferedTimesDialog";
@@ -473,6 +474,8 @@ function ScheduleActions({ schedule, onSaved, onUpdate, onReschedule }: {
 
 export default function Coordinator() {
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
+  const scheduleQueryKey = ["coordinator-schedules", "overview", user?.id, user?.tenantId, user?.role];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialSlot, setInitialSlot] = useState<(InterviewSlot & { bufferMinutes: number }) | null>(null);
   const [draftKey, setDraftKey] = useState(0);
@@ -485,13 +488,16 @@ export default function Coordinator() {
     setDialogOpen(true);
   }
 
-  const { data: schedules = [], isLoading, isError, isFetching, dataUpdatedAt, refetch } = useQuery<ScheduleEditRecord[]>({
-    queryKey: ["coordinator-schedules"],
-    queryFn: async ({ signal }) => readNativeSchedules(await authenticatedFetch(`${BASE}/coordinator/schedules`, { signal })),
+  const { data: overview, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useQuery<CoordinatorScheduleOverview>({
+    queryKey: scheduleQueryKey,
+    queryFn: async ({ signal }) => readCoordinatorSchedules(await authenticatedFetch(`${BASE}/coordinator/schedules`, { signal })),
+    enabled: !authLoading && !!user,
     refetchInterval: COORDINATOR_REFRESH_INTERVAL,
     refetchOnWindowFocus: "always",
     refetchOnMount: "always",
   });
+  const schedules = overview?.schedules ?? [];
+  const unverified = overview?.unverified ?? [];
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ["coordinator-schedules"] });
@@ -500,15 +506,17 @@ export default function Coordinator() {
   async function recordSaved(saved: ScheduleEditRecord) {
     // Abort older polling responses before installing the authoritative receipt.
     await queryClient.cancelQueries({ queryKey: ["coordinator-schedules"] });
-    queryClient.setQueryData<ScheduleEditRecord[]>(["coordinator-schedules"], (rows) =>
-      rows?.map((row) => row.id === saved.id ? { ...row, ...saved } : row));
+    queryClient.setQueryData<CoordinatorScheduleOverview>(scheduleQueryKey, (current) =>
+      current ? { ...current, schedules: current.schedules.map((row) =>
+        row.id === saved.id ? { ...row, ...saved } : row) } : current);
     refresh();
   }
 
   const grouped = groupByDate(schedules);
   const sortedDates = Object.keys(grouped).sort();
   const requestedSchedule = new URLSearchParams(useSearch()).get("schedule");
-  const targetVisible = schedules.some((schedule) => schedule.id === requestedSchedule);
+  const targetVisible = schedules.some((schedule) => schedule.id === requestedSchedule) ||
+    unverified.some((schedule) => schedule.id === requestedSchedule);
   useEffect(() => {
     if (!requestedSchedule || !targetVisible || isLoading || isError) return;
     const element = document.getElementById(`schedule-${requestedSchedule}`);
@@ -569,7 +577,8 @@ export default function Coordinator() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Scheduled</p>
-              <p className="text-2xl font-bold">{isLoading || isError ? "—" : schedules.length}</p>
+              <p className="text-2xl font-bold">{isLoading || isError ? "—" : overview?.total ?? 0}</p>
+              {!isError && unverified.length > 0 && <p className="text-xs text-muted-foreground">{unverified.length} read-only; status counts cover validated records.</p>}
             </div>
           </CardContent>
         </Card>
@@ -600,6 +609,26 @@ export default function Coordinator() {
       <OutlookAvailabilityCard onChooseSlot={openSchedule} />
 
       {/* Schedule list */}
+      {!isError && unverified.length > 0 && (
+        <section className="mb-6 rounded-xl border border-amber-500/40 p-4 space-y-3" aria-label="Interviews requiring data review">
+          <h2 className="font-semibold">Some interviews need data review</h2>
+          <p className="text-sm text-muted-foreground">
+            These records were returned by the server, but could not be verified for editing.
+            Other interviews remain available. No records have been deleted.
+          </p>
+          {unverified.map((row) => (
+            <div key={row.position} id={row.id ? `schedule-${row.id}` : undefined} tabIndex={-1}
+              className="rounded-lg border border-border/60 p-3 text-sm space-y-1">
+              <p className="font-semibold">{row.candidateName || "Candidate name unavailable"} — Read-only</p>
+              <p>{row.jobTitle || "Role unavailable"}</p>
+              <p>{row.scheduledAt ? formatInterviewInstant(row.scheduledAt) : "Interview time could not be verified"}</p>
+              {row.id && <p className="break-all text-xs text-muted-foreground">Schedule ID: {row.id}</p>}
+              <p className="text-xs text-muted-foreground">Fields to check: {row.invalidFields.join(", ")}. Reload after correcting the response or updating the API.</p>
+            </div>
+          ))}
+          <Button variant="outline" onClick={() => void refetch()}>Reload schedule</Button>
+        </section>
+      )}
       {isError ? (
         <Card><CardContent className="p-6 space-y-3" role="alert">
           <p>The schedule list could not be loaded. This does not mean there are no interviews.</p>
@@ -609,7 +638,7 @@ export default function Coordinator() {
         <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
           <Loader2 className="w-5 h-5 animate-spin" /> Loading schedule…
         </div>
-      ) : sortedDates.length === 0 ? (
+      ) : sortedDates.length === 0 && unverified.length === 0 ? (
         <Card className="border-dashed border-2">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-4">
             <div className="p-4 bg-muted rounded-2xl">

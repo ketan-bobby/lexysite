@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { closeCandidateAccount, collectClosingAccountAvatars } from "./candidate-account-erasure";
+import { scrubQorInterviewRequests } from "./qor-interview-erasure";
 
 // Only call after resolving the candidate owner or authorising the staff caller.
 // Keep this inventory checked against the database by check:deletion-cascade-drift.
@@ -69,6 +70,7 @@ export const CANDIDATE_LINKED_TABLES = [
   "outreach_messages",
   "prep_plans",
   "prep_sessions",
+  "qor_interview_requests",
   "recruiter_avatar_video_jobs",
   "recruiter_inbox_items",
   "recruiting_workflows",
@@ -271,7 +273,9 @@ export async function purgeCandidateLinkedData(
   await tx.execute(
     sql`DELETE FROM sourced_candidates WHERE normalized_candidate_id = ${candidateId}`,
   );
+  await scrubQorInterviewRequests(tx, candidateId);
   for (const table of CANDIDATE_LINKED_TABLES) {
+    if (table === "qor_interview_requests") continue; // Scrub above; keep replay fences.
     if (retainApplications && table === "applications") continue;
     await tx.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE candidate_id = ${candidateId}`);
   }

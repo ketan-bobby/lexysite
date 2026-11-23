@@ -7,6 +7,123 @@
  */
 import * as zod from "zod";
 
+/**
+ * Records intake only. Does not send mail, create an interview or bypass L3XY review. The credential determines the employer.
+ * @summary Submit one employer-approved brief and one selected candidate
+ */
+export const submitQorInterviewRequestHeaderIdempotencyKeyMax = 128;
+
+export const submitQorInterviewRequestHeaderIdempotencyKeyRegExp = new RegExp("^[A-Za-z0-9._:-]+$");
+
+export const SubmitQorInterviewRequestHeader = zod.object({
+  "Idempotency-Key": zod
+    .string()
+    .min(1)
+    .max(submitQorInterviewRequestHeaderIdempotencyKeyMax)
+    .regex(submitQorInterviewRequestHeaderIdempotencyKeyRegExp),
+});
+
+export const submitQorInterviewRequestBodyExternalApplicationIdMax = 128;
+
+export const submitQorInterviewRequestBodySelectionRefMax = 128;
+
+export const submitQorInterviewRequestBodyJobExternalIdMax = 128;
+
+export const submitQorInterviewRequestBodyJobTitleMax = 200;
+
+export const submitQorInterviewRequestBodyJobBriefMax = 12000;
+
+export const submitQorInterviewRequestBodyJobRevisionMax = 128;
+
+export const submitQorInterviewRequestBodyJobApprovalRefMax = 128;
+
+export const submitQorInterviewRequestBodyCandidateExternalIdMax = 128;
+
+export const submitQorInterviewRequestBodyCandidateFirstNameMax = 100;
+
+export const submitQorInterviewRequestBodyCandidateLastNameMax = 100;
+
+export const submitQorInterviewRequestBodyCandidateEmailMax = 254;
+
+export const SubmitQorInterviewRequestBody = zod.object({
+  externalApplicationId: zod
+    .string()
+    .min(1)
+    .max(submitQorInterviewRequestBodyExternalApplicationIdMax),
+  selectionRef: zod.string().min(1).max(submitQorInterviewRequestBodySelectionRefMax),
+  job: zod.object({
+    externalId: zod.string().min(1).max(submitQorInterviewRequestBodyJobExternalIdMax),
+    title: zod.string().min(1).max(submitQorInterviewRequestBodyJobTitleMax),
+    brief: zod.string().min(1).max(submitQorInterviewRequestBodyJobBriefMax),
+    revision: zod.string().min(1).max(submitQorInterviewRequestBodyJobRevisionMax),
+    approvalRef: zod.string().min(1).max(submitQorInterviewRequestBodyJobApprovalRefMax),
+  }),
+  candidate: zod.object({
+    externalId: zod.string().min(1).max(submitQorInterviewRequestBodyCandidateExternalIdMax),
+    firstName: zod.string().min(1).max(submitQorInterviewRequestBodyCandidateFirstNameMax),
+    lastName: zod.string().min(1).max(submitQorInterviewRequestBodyCandidateLastNameMax),
+    email: zod.string().email().max(submitQorInterviewRequestBodyCandidateEmailMax),
+  }),
+});
+
+export const SubmitQorInterviewRequestResponse = zod.object({
+  requestId: zod.string().uuid(),
+  externalApplicationId: zod.string(),
+  replayed: zod.boolean(),
+});
+
+/**
+ * No webhooks. The report is null unless the current session-specific evidence revision has a separate QOR approval. Responses are not cacheable.
+ * @summary Poll invitation, interview and approved evidence independently
+ */
+export const GetQorInterviewRequestParams = zod.object({
+  requestId: zod.coerce.string().uuid(),
+});
+
+export const GetQorInterviewRequestResponse = zod.object({
+  requestId: zod.string().uuid(),
+  externalApplicationId: zod.string(),
+  invitation: zod.object({
+    status: zod.enum(["not_sent", "ready_to_share", "staff_reported_sent"]),
+    reportedAt: zod.date().nullable(),
+  }),
+  interview: zod.object({
+    status: zod.enum([
+      "awaiting_review",
+      "prepared",
+      "in_progress",
+      "completed",
+      "expired",
+      "abandoned",
+      "needs_attention",
+    ]),
+    completedAt: zod.date().nullable(),
+  }),
+  reportStatus: zod.enum([
+    "not_ready",
+    "processing",
+    "awaiting_review",
+    "approved",
+    "withdrawn",
+    "needs_attention",
+  ]),
+  report: zod.union([
+    zod.object({
+      version: zod.number().min(1),
+      approvedAt: zod.date(),
+      summary: zod.string(),
+      competencies: zod.array(
+        zod.object({
+          name: zod.string(),
+          evidence: zod.string(),
+        }),
+      ),
+      limitations: zod.array(zod.string()),
+    }),
+    zod.null(),
+  ]),
+});
+
 export const GetZohoRecruitAccountResponse = zod.object({
   configured: zod.boolean(),
   redirectUri: zod.string().nullable(),

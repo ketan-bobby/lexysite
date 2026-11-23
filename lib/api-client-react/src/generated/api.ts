@@ -229,6 +229,10 @@ import type {
   PublicInterviewBookingView,
   PublicTimeChangeRequestInput,
   PublicTimeChangeWithdrawalInput,
+  QorApiError,
+  QorInterviewReceipt,
+  QorInterviewRequestInput,
+  QorInterviewStatus,
   RecallReadiness,
   RecruiterInboxItem,
   RecruitingConfigurationUpdate,
@@ -348,6 +352,163 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * Records intake only. Does not send mail, create an interview or bypass L3XY review. The credential determines the employer.
+ * @summary Submit one employer-approved brief and one selected candidate
+ */
+export const getSubmitQorInterviewRequestUrl = () => {
+  return `/api/partner/v1/interview-requests`;
+};
+
+export const submitQorInterviewRequest = async (
+  qorInterviewRequestInput: QorInterviewRequestInput,
+  options?: RequestInit,
+): Promise<QorInterviewReceipt> => {
+  return customFetch<QorInterviewReceipt>(getSubmitQorInterviewRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(qorInterviewRequestInput),
+  });
+};
+
+export const getSubmitQorInterviewRequestMutationOptions = <
+  TError = ErrorType<QorApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitQorInterviewRequest>>,
+    TError,
+    { data: BodyType<QorInterviewRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitQorInterviewRequest>>,
+  TError,
+  { data: BodyType<QorInterviewRequestInput> },
+  TContext
+> => {
+  const mutationKey = ["submitQorInterviewRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && "mutationKey" in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitQorInterviewRequest>>,
+    { data: BodyType<QorInterviewRequestInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitQorInterviewRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitQorInterviewRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitQorInterviewRequest>>
+>;
+export type SubmitQorInterviewRequestMutationBody = BodyType<QorInterviewRequestInput>;
+export type SubmitQorInterviewRequestMutationError = ErrorType<QorApiError>;
+
+/**
+ * @summary Submit one employer-approved brief and one selected candidate
+ */
+export const useSubmitQorInterviewRequest = <
+  TError = ErrorType<QorApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitQorInterviewRequest>>,
+    TError,
+    { data: BodyType<QorInterviewRequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitQorInterviewRequest>>,
+  TError,
+  { data: BodyType<QorInterviewRequestInput> },
+  TContext
+> => {
+  return useMutation(getSubmitQorInterviewRequestMutationOptions(options));
+};
+
+/**
+ * No webhooks. The report is null unless the current session-specific evidence revision has a separate QOR approval. Responses are not cacheable.
+ * @summary Poll invitation, interview and approved evidence independently
+ */
+export const getGetQorInterviewRequestUrl = (requestId: string) => {
+  return `/api/partner/v1/interview-requests/${requestId}`;
+};
+
+export const getQorInterviewRequest = async (
+  requestId: string,
+  options?: RequestInit,
+): Promise<QorInterviewStatus> => {
+  return customFetch<QorInterviewStatus>(getGetQorInterviewRequestUrl(requestId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetQorInterviewRequestQueryKey = (requestId: string) => {
+  return [`/api/partner/v1/interview-requests/${requestId}`] as const;
+};
+
+export const getGetQorInterviewRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getQorInterviewRequest>>,
+  TError = ErrorType<QorApiError>,
+>(
+  requestId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getQorInterviewRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetQorInterviewRequestQueryKey(requestId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getQorInterviewRequest>>> = ({ signal }) =>
+    getQorInterviewRequest(requestId, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, enabled: !!requestId, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getQorInterviewRequest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetQorInterviewRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getQorInterviewRequest>>
+>;
+export type GetQorInterviewRequestQueryError = ErrorType<QorApiError>;
+
+/**
+ * @summary Poll invitation, interview and approved evidence independently
+ */
+
+export function useGetQorInterviewRequest<
+  TData = Awaited<ReturnType<typeof getQorInterviewRequest>>,
+  TError = ErrorType<QorApiError>,
+>(
+  requestId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getQorInterviewRequest>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetQorInterviewRequestQueryOptions(requestId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetZohoRecruitAccountUrl = () => {
   return `/api/zoho-recruit/account`;

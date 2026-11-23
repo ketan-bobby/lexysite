@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:qor-sandbox": "node scripts/qor-sandbox.mjs",
     "test:greenhouse-offer-controls": "node --import ../../scripts/test-egress-guard.mjs --import tsx --test --test-concurrency=1 --test-force-exit src/lib/ats-connectors/greenhouse-offer-controls.test.ts",
     "test:greenhouse-offer-http": "node --import ../../scripts/test-egress-guard.mjs --import tsx --test src/lib/ats-connectors/greenhouse-offer-http.test.ts src/lib/ats-connectors/greenhouse-offer-configuration.test.ts",
     "test:greenhouse-offer-assembly": "node --import ../../scripts/test-egress-guard.mjs --import tsx --test src/lib/ats-connectors/greenhouse-offer-assembly.test.ts",

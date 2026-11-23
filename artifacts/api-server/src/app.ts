@@ -32,7 +32,7 @@ import { recallEventsHandler } from "./routes/recall-events";
  * are called to populate the platform with realistic fixture data. This is
  * controlled by a flag in lib/seed.ts and never runs if rows already exist.
  */
-import express, { type Express, type Request, type Response } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -155,6 +155,16 @@ app.post("/api/billing/webhook", express.raw({ type: "application/json", limit: 
  * past the default and returned 413 "request entity too large". */
 app.post("/api/meeting-assistant/recall-events", express.raw({ type: "application/json", limit: "128kb" }), recallEventsHandler);
 app.use(express.json({ limit: "12mb" }));
+// body-parser can attach an entire rejected body to its error object. Partner
+// intake contains candidate contact data; do not log or store that object.
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  if (!/^\/api\/(?:partner|partner-review)\/v1\/interview-requests(?:\/|$)/i.test(req.path))
+    return next(err);
+  res.set("Cache-Control", "private, no-store").status(400).json({
+    code: "invalid_request",
+    error: "Invalid or oversized request body.",
+  });
+});
 app.use(express.urlencoded({ extended: true, limit: "12mb" }));
 /* Cookie parser — required for the resumable interview-session cookie that
    binds candidate sessions to a fingerprint with HMAC + nonce. */

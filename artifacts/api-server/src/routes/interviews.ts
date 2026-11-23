@@ -2314,6 +2314,10 @@ export function sanitizeCodeEvalForCandidate(ev: any) {
 
 router.post("/interviews/start", validate({ body: StartInterviewBody }), async (req, res) => {
   const { applicationId, planId } = req.body;
+  if (planId.startsWith("qor-prepared:")) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
   const [plan] = await db
     .select()
     .from(interviewPlansTable)
@@ -3722,7 +3726,9 @@ router.post(
     let connCandidateId: string | null = null;
     let connJobId: string | null = null;
 
-    if (session.applicationId && !["direct", "pipeline"].includes(session.applicationId)) {
+    if (session.applicationId.startsWith("qor-request:")) {
+      // QOR owns the application and hiring stage; finish native evidence only.
+    } else if (session.applicationId && !["direct", "pipeline"].includes(session.applicationId)) {
       const [app] = await db
         .select()
         .from(applicationsTable)

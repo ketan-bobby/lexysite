@@ -5,6 +5,149 @@
  * Lexy AI Hiring Platform API
  * OpenAPI spec version: 0.1.0
  */
+export type QorInterviewRequestInputJob = {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalId: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /**
+   * @minLength 1
+   * @maxLength 12000
+   */
+  brief: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  revision: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  approvalRef: string;
+};
+
+export type QorInterviewRequestInputCandidate = {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalId: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  firstName: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  lastName: string;
+  /** @maxLength 254 */
+  email: string;
+};
+
+export interface QorInterviewRequestInput {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  externalApplicationId: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  selectionRef: string;
+  job: QorInterviewRequestInputJob;
+  candidate: QorInterviewRequestInputCandidate;
+}
+
+export interface QorInterviewReceipt {
+  requestId: string;
+  externalApplicationId: string;
+  replayed: boolean;
+}
+
+export type QorInterviewStatusInvitationStatus =
+  (typeof QorInterviewStatusInvitationStatus)[keyof typeof QorInterviewStatusInvitationStatus];
+
+export const QorInterviewStatusInvitationStatus = {
+  not_sent: "not_sent",
+  ready_to_share: "ready_to_share",
+  staff_reported_sent: "staff_reported_sent",
+} as const;
+
+export type QorInterviewStatusInvitation = {
+  status: QorInterviewStatusInvitationStatus;
+  /** @nullable */
+  reportedAt: string | null;
+};
+
+export type QorInterviewStatusInterviewStatus =
+  (typeof QorInterviewStatusInterviewStatus)[keyof typeof QorInterviewStatusInterviewStatus];
+
+export const QorInterviewStatusInterviewStatus = {
+  awaiting_review: "awaiting_review",
+  prepared: "prepared",
+  in_progress: "in_progress",
+  completed: "completed",
+  expired: "expired",
+  abandoned: "abandoned",
+  needs_attention: "needs_attention",
+} as const;
+
+export type QorInterviewStatusInterview = {
+  status: QorInterviewStatusInterviewStatus;
+  /** @nullable */
+  completedAt: string | null;
+};
+
+export type QorInterviewStatusReportStatus =
+  (typeof QorInterviewStatusReportStatus)[keyof typeof QorInterviewStatusReportStatus];
+
+export const QorInterviewStatusReportStatus = {
+  not_ready: "not_ready",
+  processing: "processing",
+  awaiting_review: "awaiting_review",
+  approved: "approved",
+  withdrawn: "withdrawn",
+  needs_attention: "needs_attention",
+} as const;
+
+export type QorApprovedEvidenceCompetenciesItem = {
+  name: string;
+  evidence: string;
+};
+
+export interface QorApprovedEvidence {
+  /** @minimum 1 */
+  version: number;
+  approvedAt: string;
+  summary: string;
+  competencies: QorApprovedEvidenceCompetenciesItem[];
+  limitations: string[];
+}
+
+export interface QorInterviewStatus {
+  requestId: string;
+  externalApplicationId: string;
+  invitation: QorInterviewStatusInvitation;
+  interview: QorInterviewStatusInterview;
+  reportStatus: QorInterviewStatusReportStatus;
+  report: QorApprovedEvidence | null;
+}
+
+export interface QorApiError {
+  code: string;
+  error: string;
+}
+
 /**
  * @nullable
  */

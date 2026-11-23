@@ -14,6 +14,8 @@
 import { useEffect, useState } from "react";
 import { ShieldAlert } from "lucide-react";
 import { apiBase, apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { canReadImpersonation } from "@/lib/shell-permissions";
 
 interface ActiveSession {
   active: boolean;
@@ -28,18 +30,24 @@ interface ActiveSession {
 }
 
 export function ImpersonationBanner() {
-  const [data, setData] = useState<ActiveSession | null>(null);
+  const { user, isLoading } = useAuth();
+  const canLoad = !isLoading && !!user && canReadImpersonation(user.role);
+  const [session, setSession] = useState<{ viewerId: string; data: ActiveSession } | null>(null);
+  const data = canLoad && session?.viewerId === user?.id ? session.data : null;
   const [stopping, setStopping] = useState(false);
 
   useEffect(() => {
+    setSession(null);
+    if (!canLoad) return;
+    const viewerId = user!.id;
     let cancelled = false;
     const load = async () => {
       try {
         const r = await apiFetch(`${apiBase}/admin/impersonation/active`);
         if (!r.ok) return;
         const json: ActiveSession = await r.json();
-        if (!cancelled) setData(json);
-      } catch { /* silent — not all callers are admins */ }
+        if (!cancelled) setSession({ viewerId, data: json });
+      } catch { /* Preserve the page if the admin status check fails. */ }
     };
     void load();
     /* Re-poll every 60s so the banner reflects expiry without a
@@ -47,7 +55,7 @@ export function ImpersonationBanner() {
      * hard cap. */
     const t = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(t); };
-  }, []);
+  }, [canLoad, user?.id]);
 
   if (!data?.active) return null;
 
